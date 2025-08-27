@@ -1,4 +1,4 @@
-package com.yourname.phoneos.core.service;
+package jp.moyashi.phoneos.core.service;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;

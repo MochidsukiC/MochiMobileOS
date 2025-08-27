@@ -1,8 +1,8 @@
-package com.yourname.phoneos.core;
+package jp.moyashi.phoneos.core;
 
-import com.yourname.phoneos.core.service.*;
-import com.yourname.phoneos.core.ui.ScreenManager;
-import com.yourname.phoneos.core.ui.HomeScreen;
+import jp.moyashi.phoneos.core.service.*;
+import jp.moyashi.phoneos.core.ui.ScreenManager;
+import jp.moyashi.phoneos.core.apps.launcher.LauncherApp;
 import processing.core.PApplet;
 
 /**
@@ -27,6 +27,9 @@ public class Kernel extends PApplet {
     /** System clock service */
     private SystemClock systemClock;
     
+    /** Application loader service */
+    private AppLoader appLoader;
+    
     /**
      * Configures Processing settings before setup() is called.
      * Sets the display size and renderer.
@@ -50,10 +53,18 @@ public class Kernel extends PApplet {
         vfs = new VFS();
         settingsManager = new SettingsManager();
         systemClock = new SystemClock();
+        appLoader = new AppLoader(vfs);
         
-        // Initialize screen manager and set initial screen
+        // Scan for and load applications
+        appLoader.scanForApps();
+        
+        // Register built-in launcher application
+        LauncherApp launcherApp = new LauncherApp();
+        appLoader.registerApplication(launcherApp);
+        
+        // Initialize screen manager and set initial screen to launcher
         screenManager = new ScreenManager();
-        screenManager.pushScreen(new HomeScreen());
+        screenManager.pushScreen(launcherApp.getEntryScreen(this));
         
         System.out.println("Kernel: OS initialization complete");
     }
@@ -110,5 +121,13 @@ public class Kernel extends PApplet {
      */
     public ScreenManager getScreenManager() {
         return screenManager;
+    }
+    
+    /**
+     * Gets the application loader service.
+     * @return The AppLoader instance
+     */
+    public AppLoader getAppLoader() {
+        return appLoader;
     }
 }
