@@ -1,4 +1,4 @@
-package com.yourname.phoneos.core.service;
+package jp.moyashi.phoneos.core.service;
 
 /**
  * Virtual File System service for the phone OS.

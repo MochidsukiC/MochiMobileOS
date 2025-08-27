@@ -1,4 +1,4 @@
-package com.yourname.phoneos.core.ui;
+package jp.moyashi.phoneos.core.ui;
 
 import processing.core.PApplet;
 

@@ -11,5 +11,5 @@ dependencies {
 
 // Configuration for the main class
 application {
-    mainClass.set("com.yourname.phoneos.standalone.Main")
+    mainClass.set("jp.moyashi.phoneos.standalone.Main")
 }
