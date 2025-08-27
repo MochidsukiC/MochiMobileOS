@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(.gradlew build)",
+      "Bash(.gradlew.bat build)",
+      "Bash(cmd /c:*)",
+      "Bash(dir)",
+      "Bash(gradlew.bat build:*)",
+      "Bash(java:*)",
+      "Bash(./gradlew:*)",
+      "WebSearch",
+      "Bash(timeout:*)"
+    ],
+    "deny": [],
+    "ask": [],
+    "additionalDirectories": [
+      "C:\\c\\Users\\dora2\\IdeaProjects"
+    ]
+  }
+}
