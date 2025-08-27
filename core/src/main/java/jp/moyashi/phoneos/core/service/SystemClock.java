@@ -80,6 +80,15 @@ public class SystemClock {
     }
     
     /**
+     * Gets the system start time as milliseconds since epoch.
+     * 
+     * @return The system start time in milliseconds
+     */
+    public long getStartTime() {
+        return java.time.Instant.from(systemStartTime.atZone(java.time.ZoneId.systemDefault())).toEpochMilli();
+    }
+    
+    /**
      * Calculates the system uptime in milliseconds.
      * 
      * @return System uptime in milliseconds
