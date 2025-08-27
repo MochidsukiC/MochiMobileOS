@@ -3,6 +3,8 @@ package jp.moyashi.phoneos.core.apps.launcher.ui;
 import jp.moyashi.phoneos.core.Kernel;
 import jp.moyashi.phoneos.core.ui.Screen;
 import jp.moyashi.phoneos.core.app.IApplication;
+import jp.moyashi.phoneos.core.apps.launcher.model.HomePage;
+import jp.moyashi.phoneos.core.apps.launcher.model.Shortcut;
 import processing.core.PApplet;
 
 import java.util.List;
@@ -46,6 +48,15 @@ public class AppLibraryScreen implements Screen {
     /** Scroll offset for app list */
     private int scrollOffset;
     
+    /** Reference to home screen for adding shortcuts */
+    private jp.moyashi.phoneos.core.apps.launcher.ui.HomeScreen homeScreen;
+    
+    /** Long press detection for context menu */
+    private long touchStartTime;
+    private IApplication longPressedApp;
+    private boolean showingContextMenu;
+    private static final long LONG_PRESS_DURATION = 500; // 500ms
+    
     /** App list item configuration */
     private static final int ITEM_HEIGHT = 80;
     private static final int ITEM_PADDING = 10;
@@ -64,8 +75,19 @@ public class AppLibraryScreen implements Screen {
         this.accentColor = 0x4A90E2;     // Blue accent
         this.isInitialized = false;
         this.scrollOffset = 0;
+        this.homeScreen = null;
+        this.showingContextMenu = false;
         
         System.out.println("AppLibraryScreen: App library screen created");
+    }
+    
+    /**
+     * Sets the reference to the home screen for shortcut management.
+     * 
+     * @param homeScreen The HomeScreen instance
+     */
+    public void setHomeScreen(jp.moyashi.phoneos.core.apps.launcher.ui.HomeScreen homeScreen) {
+        this.homeScreen = homeScreen;
     }
     
     /**

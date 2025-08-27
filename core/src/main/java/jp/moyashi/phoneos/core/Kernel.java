@@ -3,6 +3,7 @@ package jp.moyashi.phoneos.core;
 import jp.moyashi.phoneos.core.service.*;
 import jp.moyashi.phoneos.core.ui.ScreenManager;
 import jp.moyashi.phoneos.core.apps.launcher.LauncherApp;
+import jp.moyashi.phoneos.core.apps.settings.SettingsApp;
 import processing.core.PApplet;
 
 /**
@@ -37,7 +38,7 @@ public class Kernel extends PApplet {
     @Override
     public void settings() {
         size(400, 600);  // Smartphone-like aspect ratio
-        System.out.println("Kernel: Processing settings configured");
+        System.out.println("📱 Kernel: Processing window configured (400x600)");
     }
     
     /**
@@ -47,26 +48,51 @@ public class Kernel extends PApplet {
      */
     @Override
     public void setup() {
+        System.out.println("=== MochiMobileOS Kernel Initialization ===");
         System.out.println("Kernel: Initializing OS services...");
         
         // Initialize core services
+        System.out.println("  -> Creating VFS (Virtual File System)...");
         vfs = new VFS();
+        
+        System.out.println("  -> Creating Settings Manager...");
         settingsManager = new SettingsManager();
+        
+        System.out.println("  -> Creating System Clock...");
         systemClock = new SystemClock();
+        
+        System.out.println("  -> Creating Application Loader...");
         appLoader = new AppLoader(vfs);
         
         // Scan for and load applications
+        System.out.println("  -> Scanning for external applications...");
         appLoader.scanForApps();
         
-        // Register built-in launcher application
+        // Register built-in applications
+        System.out.println("  -> Registering LauncherApp...");
         LauncherApp launcherApp = new LauncherApp();
         appLoader.registerApplication(launcherApp);
+        launcherApp.onInitialize(this);
+        
+        System.out.println("  -> Registering SettingsApp...");
+        SettingsApp settingsApp = new SettingsApp();
+        appLoader.registerApplication(settingsApp);
+        settingsApp.onInitialize(this);
+        
+        System.out.println("Kernel: Registered " + appLoader.getLoadedApps().size() + " applications");
         
         // Initialize screen manager and set initial screen to launcher
+        System.out.println("  -> Creating Screen Manager...");
         screenManager = new ScreenManager();
+        
+        System.out.println("▶️ Starting LauncherApp as initial screen...");
         screenManager.pushScreen(launcherApp.getEntryScreen(this));
         
-        System.out.println("Kernel: OS initialization complete");
+        System.out.println("✅ Kernel: OS initialization complete!");
+        System.out.println("    • LauncherApp is now running");
+        System.out.println("    • " + appLoader.getLoadedApps().size() + " applications available");
+        System.out.println("    • System ready for user interaction");
+        System.out.println("===========================================");
     }
     
     /**
