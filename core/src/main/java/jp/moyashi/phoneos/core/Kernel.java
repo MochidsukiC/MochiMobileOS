@@ -1,6 +1,7 @@
 package jp.moyashi.phoneos.core;
 
 import jp.moyashi.phoneos.core.service.*;
+import jp.moyashi.phoneos.core.ui.Screen;
 import jp.moyashi.phoneos.core.ui.ScreenManager;
 import jp.moyashi.phoneos.core.apps.launcher.LauncherApp;
 import jp.moyashi.phoneos.core.apps.settings.SettingsApp;
@@ -48,8 +49,12 @@ public class Kernel extends PApplet {
      */
     @Override
     public void setup() {
+        // CRITICAL FIX: Set frame rate immediately
+        frameRate(60);
+        
         System.out.println("=== MochiMobileOS Kernel Initialization ===");
         System.out.println("Kernel: Initializing OS services...");
+        System.out.println("Kernel: Frame rate set to 60 FPS");
         
         // Initialize core services
         System.out.println("  -> Creating VFS (Virtual File System)...");
@@ -84,9 +89,17 @@ public class Kernel extends PApplet {
         // Initialize screen manager and set initial screen to launcher
         System.out.println("  -> Creating Screen Manager...");
         screenManager = new ScreenManager();
+        System.out.println("✅ ScreenManager created: " + (screenManager != null));
         
         System.out.println("▶️ Starting LauncherApp as initial screen...");
-        screenManager.pushScreen(launcherApp.getEntryScreen(this));
+        Screen launcherScreen = launcherApp.getEntryScreen(this);
+        System.out.println("✅ LauncherApp screen obtained: " + (launcherScreen != null));
+        if (launcherScreen != null) {
+            System.out.println("   Screen title: " + launcherScreen.getScreenTitle());
+        }
+        
+        screenManager.pushScreen(launcherScreen);
+        System.out.println("✅ Screen pushed to ScreenManager");
         
         System.out.println("✅ Kernel: OS initialization complete!");
         System.out.println("    • LauncherApp is now running");
@@ -101,8 +114,53 @@ public class Kernel extends PApplet {
      */
     @Override
     public void draw() {
+        // FORCE bright background to ensure something is visible
+        background(100, 200, 100); // Bright green to ensure visibility
+        
+        // Debug logging with more detail
+        if (frameCount <= 10 || frameCount % 60 == 0) {
+            System.out.println("🎨 Kernel Frame " + frameCount + ": ScreenManager=" + (screenManager != null));
+            if (screenManager != null) {
+                System.out.println("   ScreenManager has current screen: " + (screenManager.getCurrentScreen() != null));
+                if (screenManager.getCurrentScreen() != null) {
+                    System.out.println("   Current screen: " + screenManager.getCurrentScreen().getScreenTitle());
+                }
+            }
+        }
+        
+        // ALWAYS draw debug info to verify Kernel draw() is being called
+        fill(255, 255, 255);
+        textAlign(LEFT, TOP);
+        textSize(14);
+        text("Kernel Frame: " + frameCount, 10, 10);
+        text("ScreenManager: " + (screenManager != null), 10, 30);
+        
         if (screenManager != null) {
-            screenManager.draw(this);
+            text("Has Screen: " + (screenManager.getCurrentScreen() != null), 10, 50);
+            try {
+                screenManager.draw(this);
+            } catch (Exception e) {
+                System.err.println("❌ ScreenManager draw error: " + e.getMessage());
+                e.printStackTrace();
+                // BIG error display
+                fill(255, 0, 0);
+                rect(50, height/2 - 50, width - 100, 100);
+                fill(255, 255, 255);
+                textAlign(CENTER, CENTER);
+                textSize(18);
+                text("SCREEN ERROR!", width/2, height/2 - 20);
+                textSize(12);
+                text("Error: " + e.getMessage(), width/2, height/2);
+                text("Check console for details", width/2, height/2 + 20);
+            }
+        } else {
+            // BIG loading indicator
+            fill(255, 255, 0);
+            rect(50, height/2 - 30, width - 100, 60);
+            fill(0);
+            textAlign(CENTER, CENTER);
+            textSize(18);
+            text("NO SCREEN MANAGER!", width/2, height/2);
         }
     }
     
@@ -114,6 +172,28 @@ public class Kernel extends PApplet {
     public void mousePressed() {
         if (screenManager != null) {
             screenManager.mousePressed(mouseX, mouseY);
+        }
+    }
+    
+    /**
+     * Handles mouse drag events.
+     * Delegates event handling to the current screen through the screen manager.
+     */
+    @Override
+    public void mouseDragged() {
+        if (screenManager != null) {
+            screenManager.mouseDragged(mouseX, mouseY);
+        }
+    }
+    
+    /**
+     * Handles mouse release events.
+     * Delegates event handling to the current screen through the screen manager.
+     */
+    @Override
+    public void mouseReleased() {
+        if (screenManager != null) {
+            screenManager.mouseReleased(mouseX, mouseY);
         }
     }
     

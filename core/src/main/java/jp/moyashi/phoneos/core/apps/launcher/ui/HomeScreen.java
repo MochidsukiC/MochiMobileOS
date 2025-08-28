@@ -142,20 +142,37 @@ public class HomeScreen implements Screen {
      */
     @Override
     public void draw(PApplet p) {
-        // Draw background
-        p.background(backgroundColor);
+        // Debug: Log first few draw calls
+        if (p.frameCount <= 3) {
+            System.out.println("🎨 HomeScreen: Drawing frame " + p.frameCount + " - initialized: " + isInitialized);
+        }
         
-        // Draw status bar
-        drawStatusBar(p);
-        
-        // Draw current page shortcuts
-        drawCurrentPage(p);
-        
-        // Draw navigation area
-        drawNavigationArea(p);
-        
-        // Draw page indicator dots
-        drawPageIndicators(p);
+        try {
+            // Draw background
+            p.background(backgroundColor);
+            
+            // Draw status bar
+            drawStatusBar(p);
+            
+            // Draw current page shortcuts
+            drawCurrentPage(p);
+            
+            // Draw navigation area
+            drawNavigationArea(p);
+            
+            // Draw page indicator dots
+            drawPageIndicators(p);
+            
+        } catch (Exception e) {
+            System.err.println("❌ HomeScreen: Draw error - " + e.getMessage());
+            e.printStackTrace();
+            // Fallback drawing
+            p.background(255, 0, 0);
+            p.fill(255);
+            p.textAlign(p.CENTER, p.CENTER);
+            p.textSize(16);
+            p.text("HomeScreen Error: " + e.getMessage(), p.width/2, p.height/2);
+        }
     }
     
     /**
@@ -413,34 +430,57 @@ public class HomeScreen implements Screen {
      * Initializes home pages and distributes apps across them.
      */
     private void initializeHomePages() {
-        homePages.clear();
-        
-        // Create first page
-        HomePage firstPage = new HomePage("Home");
-        homePages.add(firstPage);
-        
-        if (kernel != null && kernel.getAppLoader() != null) {
-            // Add all loaded apps except the launcher itself
-            List<IApplication> availableApps = new ArrayList<>();
-            for (IApplication app : kernel.getAppLoader().getLoadedApps()) {
-                if (!app.getApplicationId().equals("jp.moyashi.phoneos.core.apps.launcher")) {
-                    availableApps.add(app);
+        try {
+            homePages.clear();
+            
+            // Create first page
+            HomePage firstPage = new HomePage("Home");
+            homePages.add(firstPage);
+            
+            if (kernel != null && kernel.getAppLoader() != null) {
+                try {
+                    List<IApplication> loadedApps = kernel.getAppLoader().getLoadedApps();
+                    if (loadedApps != null) {
+                        // Add all loaded apps except the launcher itself
+                        List<IApplication> availableApps = new ArrayList<>();
+                        for (IApplication app : loadedApps) {
+                            if (app != null && !"jp.moyashi.phoneos.core.apps.launcher".equals(app.getApplicationId())) {
+                                availableApps.add(app);
+                            }
+                        }
+                        
+                        // Distribute apps across pages
+                        HomePage currentPage = firstPage;
+                        for (IApplication app : availableApps) {
+                            try {
+                                if (currentPage.isFull()) {
+                                    // Create new page if current is full
+                                    currentPage = new HomePage();
+                                    homePages.add(currentPage);
+                                }
+                                currentPage.addShortcut(app);
+                            } catch (Exception e) {
+                                System.err.println("Error adding app to page: " + e.getMessage());
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    System.err.println("Error accessing app loader: " + e.getMessage());
                 }
+            } else {
+                System.out.println("HomeScreen: Kernel or AppLoader is null - creating empty page");
             }
             
-            // Distribute apps across pages
-            HomePage currentPage = firstPage;
-            for (IApplication app : availableApps) {
-                if (currentPage.isFull()) {
-                    // Create new page if current is full
-                    currentPage = new HomePage();
-                    homePages.add(currentPage);
-                }
-                currentPage.addShortcut(app);
+            System.out.println("HomeScreen: Initialized " + homePages.size() + " pages with shortcuts");
+            
+        } catch (Exception e) {
+            System.err.println("Critical error in initializeHomePages: " + e.getMessage());
+            e.printStackTrace();
+            // Ensure we have at least one empty page
+            if (homePages.isEmpty()) {
+                homePages.add(new HomePage("Emergency"));
             }
         }
-        
-        System.out.println("HomeScreen: Initialized " + homePages.size() + " pages with shortcuts");
     }
     
     /**
@@ -449,23 +489,39 @@ public class HomeScreen implements Screen {
      * @param p The PApplet instance for drawing
      */
     private void drawStatusBar(PApplet p) {
-        p.fill(textColor, 180); // Semi-transparent text
-        p.textAlign(p.LEFT, p.TOP);
-        p.textSize(12);
-        
-        // Current time
-        if (kernel != null && kernel.getSystemClock() != null) {
-            p.text(kernel.getSystemClock().getFormattedTime(), 15, 15);
+        try {
+            p.fill(textColor, 180); // Semi-transparent text
+            p.textAlign(p.LEFT, p.TOP);
+            p.textSize(12);
+            
+            // Current time
+            if (kernel != null && kernel.getSystemClock() != null) {
+                try {
+                    p.text(kernel.getSystemClock().getFormattedTime(), 15, 15);
+                } catch (Exception e) {
+                    p.text("--:--", 15, 15);
+                }
+            } else {
+                p.text("No Clock", 15, 15);
+            }
+            
+            // System status
+            p.textAlign(p.RIGHT, p.TOP);
+            p.text("MochiOS", 385, 15);
+            
+            // Status indicator
+            p.fill(isInitialized ? 0x4CAF50 : 0xFF9800); // Green if ready, orange if not
+            p.noStroke();
+            p.ellipse(370, 20, 8, 8);
+            
+        } catch (Exception e) {
+            System.err.println("Error in drawStatusBar: " + e.getMessage());
+            // Fallback: just draw a simple status
+            p.fill(255);
+            p.textAlign(p.LEFT, p.TOP);
+            p.textSize(12);
+            p.text("Status Error", 15, 15);
         }
-        
-        // System status
-        p.textAlign(p.RIGHT, p.TOP);
-        p.text("MochiOS", 385, 15);
-        
-        // Status indicator
-        p.fill(isInitialized ? 0x4CAF50 : 0xFF9800); // Green if ready, orange if not
-        p.noStroke();
-        p.ellipse(370, 20, 8, 8);
     }
     
     /**
