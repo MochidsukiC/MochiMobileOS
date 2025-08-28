@@ -4,25 +4,25 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 /**
- * System clock service for the phone OS.
- * This class provides time and date functionality for the operating system.
- * Handles system time, formatting, and time-related operations.
+ * スマートフォンOS用のシステムクロックサービス。
+ * このクラスはオペレーティングシステムのための時刻と日付機能を提供する。
+ * システム時刻、フォーマット、時刻関連の操作を扱う。
  * 
  * @author YourName
  * @version 1.0
  */
 public class SystemClock {
     
-    /** Formatter for displaying time in HH:mm format */
+    /** HH:mm形式で時刻を表示するためのフォーマッター */
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
     
-    /** Formatter for displaying date in yyyy-MM-dd format */
+    /** yyyy-MM-dd形式で日付を表示するためのフォーマッター */
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     
-    /** Formatter for displaying full date and time */
+    /** 日付と時刻の完全形式を表示するためのフォーマッター */
     private static final DateTimeFormatter DATETIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     
-    /** System start time for uptime calculations */
+    /** 稼働時間計算のためのシステム開始時刻 */
     private final LocalDateTime systemStartTime;
     
     /**
@@ -35,72 +35,72 @@ public class SystemClock {
     }
     
     /**
-     * Gets the current system time.
+     * 現在のシステム時刻を取得する。
      * 
-     * @return Current LocalDateTime
+     * @return 現在のLocalDateTime
      */
     public LocalDateTime getCurrentTime() {
         return LocalDateTime.now();
     }
     
     /**
-     * Gets the current time formatted as HH:mm.
+     * HH:mm形式でフォーマットされた現在時刻を取得する。
      * 
-     * @return Current time as formatted string
+     * @return フォーマットされた時刻文字列
      */
     public String getFormattedTime() {
         return getCurrentTime().format(TIME_FORMAT);
     }
     
     /**
-     * Gets the current date formatted as yyyy-MM-dd.
+     * yyyy-MM-dd形式でフォーマットされた現在日付を取得する。
      * 
-     * @return Current date as formatted string
+     * @return フォーマットされた日付文字列
      */
     public String getFormattedDate() {
         return getCurrentTime().format(DATE_FORMAT);
     }
     
     /**
-     * Gets the current date and time formatted as yyyy-MM-dd HH:mm:ss.
+     * yyyy-MM-dd HH:mm:ss形式でフォーマットされた現在日時を取得する。
      * 
-     * @return Current date and time as formatted string
+     * @return フォーマットされた日時文字列
      */
     public String getFormattedDateTime() {
         return getCurrentTime().format(DATETIME_FORMAT);
     }
     
     /**
-     * Gets the system start time.
+     * システム開始時刻を取得する。
      * 
-     * @return The LocalDateTime when the system was started
+     * @return システムが開始されたときのLocalDateTime
      */
     public LocalDateTime getSystemStartTime() {
         return systemStartTime;
     }
     
     /**
-     * Gets the system start time as milliseconds since epoch.
+     * エポック時刻からのミリ秒でシステム開始時刻を取得する。
      * 
-     * @return The system start time in milliseconds
+     * @return ミリ秒単位のシステム開始時刻
      */
     public long getStartTime() {
         return java.time.Instant.from(systemStartTime.atZone(java.time.ZoneId.systemDefault())).toEpochMilli();
     }
     
     /**
-     * Calculates the system uptime in milliseconds.
+     * ミリ秒単位でシステム稼働時間を計算する。
      * 
-     * @return System uptime in milliseconds
+     * @return ミリ秒単位のシステム稼働時間
      */
     public long getUptimeMillis() {
         return java.time.Duration.between(systemStartTime, getCurrentTime()).toMillis();
     }
     
     /**
-     * Gets a formatted uptime string in hours:minutes:seconds format.
+     * 時間:分:秒形式でフォーマットされた稼働時間文字列を取得する。
      * 
-     * @return Formatted uptime string
+     * @return フォーマットされた稼働時間文字列
      */
     public String getFormattedUptime() {
         long uptimeMs = getUptimeMillis();
@@ -112,9 +112,9 @@ public class SystemClock {
     }
     
     /**
-     * Checks if the current time is within business hours (9 AM - 5 PM).
+     * 現在時刻が営業時間内（午前9時から午後5時）かどうかを確認する。
      * 
-     * @return true if current time is within business hours, false otherwise
+     * @return 現在時刻が営業時間内の場合true、そうでなければfalse
      */
     public boolean isBusinessHours() {
         int currentHour = getCurrentTime().getHour();

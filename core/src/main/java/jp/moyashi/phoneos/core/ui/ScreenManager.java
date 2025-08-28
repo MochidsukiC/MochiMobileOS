@@ -1,25 +1,27 @@
 package jp.moyashi.phoneos.core.ui;
 
 import jp.moyashi.phoneos.core.apps.launcher.ui.SafeHomeScreen;
+import jp.moyashi.phoneos.core.apps.launcher.ui.AppLibraryScreen;
+import jp.moyashi.phoneos.core.apps.launcher.ui.HomeScreen;
 import processing.core.PApplet;
 import java.util.Stack;
 
 /**
- * Screen manager for handling screen transitions and navigation in the phone OS.
- * This class manages a stack of screens, allowing for hierarchical navigation
- * with push/pop operations similar to mobile app navigation.
+ * スマートフォンOSでのスクリーン遷移とナビゲーションを扱うスクリーンマネージャー。
+ * このクラスはスクリーンのスタックを管理し、モバイルアプリナビゲーションと同様の
+ * push/pop操作で階層的なナビゲーションを可能にする。
  * 
  * @author YourName
  * @version 1.0
  */
 public class ScreenManager {
     
-    /** Stack of screens for navigation management */
+    /** ナビゲーション管理用のスクリーンスタック */
     private Stack<Screen> screenStack;
     
     /**
-     * Constructs a new ScreenManager instance.
-     * Initializes the screen stack for navigation management.
+     * 新しいScreenManagerインスタンスを構築する。
+     * ナビゲーション管理用のスクリーンスタックを初期化する。
      */
     public ScreenManager() {
         screenStack = new Stack<>();
@@ -27,10 +29,10 @@ public class ScreenManager {
     }
     
     /**
-     * Pushes a new screen onto the navigation stack.
-     * The new screen becomes the active screen and its setup() method is called.
+     * ナビゲーションスタックに新しいスクリーンをプッシュする。
+     * 新しいスクリーンがアクティブスクリーンになり、そのsetup()メソッドが呼び出される。
      * 
-     * @param screen The screen to push onto the stack
+     * @param screen スタックにプッシュするスクリーン
      */
     public void pushScreen(Screen screen) {
         if (screen != null) {
@@ -41,11 +43,11 @@ public class ScreenManager {
     }
     
     /**
-     * Pops the current screen from the navigation stack.
-     * The previous screen becomes active again.
-     * Calls cleanup() on the popped screen.
+     * ナビゲーションスタックから現在のスクリーンをポップする。
+     * 前のスクリーンが再びアクティブになる。
+     * ポップされたスクリーンのcleanup()を呼び出す。
      * 
-     * @return The popped screen, or null if stack is empty
+     * @return ポップされたスクリーン、またはスタックが空の場合null
      */
     public Screen popScreen() {
         if (!screenStack.isEmpty()) {
@@ -58,9 +60,9 @@ public class ScreenManager {
     }
     
     /**
-     * Gets the currently active screen without removing it from the stack.
+     * スタックから除去することなく現在アクティブなスクリーンを取得する。
      * 
-     * @return The current screen, or null if stack is empty
+     * @return 現在のスクリーン、またはスタックが空の場合null
      */
     public Screen getCurrentScreen() {
         if (!screenStack.isEmpty()) {
@@ -70,10 +72,10 @@ public class ScreenManager {
     }
     
     /**
-     * Draws the currently active screen.
-     * Delegates drawing to the current screen's draw() method.
+     * 現在アクティブなスクリーンを描画する。
+     * 描画を現在のスクリーンのdraw()メソッドに委託する。
      * 
-     * @param p The PApplet instance for drawing operations
+     * @param p 描画操作用のPAppletインスタンス
      */
     public void draw(PApplet p) {
         Screen currentScreen = getCurrentScreen();
@@ -86,10 +88,10 @@ public class ScreenManager {
     }
     
     /**
-     * Handles mouse press events by delegating to the current screen.
+     * 現在のスクリーンに委託してマウスプレスイベントを処理する。
      * 
-     * @param mouseX The x-coordinate of the mouse press
-     * @param mouseY The y-coordinate of the mouse press
+     * @param mouseX マウスプレスのx座標
+     * @param mouseY マウスプレスのy座標
      */
     public void mousePressed(int mouseX, int mouseY) {
         Screen currentScreen = getCurrentScreen();
@@ -99,54 +101,96 @@ public class ScreenManager {
     }
     
     /**
-     * Handles mouse drag events by delegating to the current screen.
+     * 現在のスクリーンに委託してマウスドラッグイベントを処理する。
      * 
-     * @param mouseX The x-coordinate of the mouse position
-     * @param mouseY The y-coordinate of the mouse position
+     * @param mouseX マウス位置のx座標
+     * @param mouseY マウス位置のy座標
      */
     public void mouseDragged(int mouseX, int mouseY) {
         Screen currentScreen = getCurrentScreen();
-        if (currentScreen != null && currentScreen instanceof SafeHomeScreen) {
-            ((SafeHomeScreen) currentScreen).mouseDragged(mouseX, mouseY);
+        System.out.println("ScreenManager: mouseDragged called at (" + mouseX + ", " + mouseY + ")");
+        System.out.println("ScreenManager: Current screen: " + (currentScreen != null ? currentScreen.getScreenTitle() : "null"));
+        
+        if (currentScreen != null) {
+            // SafeHomeScreenのサポート
+            if (currentScreen instanceof SafeHomeScreen) {
+                System.out.println("ScreenManager: Routing mouseDragged to SafeHomeScreen");
+                ((SafeHomeScreen) currentScreen).mouseDragged(mouseX, mouseY);
+            }
+            // AppLibraryScreenのサポート
+            else if (currentScreen instanceof AppLibraryScreen) {
+                System.out.println("ScreenManager: Routing mouseDragged to AppLibraryScreen");
+                ((AppLibraryScreen) currentScreen).mouseDragged(mouseX, mouseY);
+            }
+            // HomeScreenのサポート
+            else if (currentScreen instanceof HomeScreen) {
+                System.out.println("ScreenManager: Routing mouseDragged to HomeScreen");
+                ((HomeScreen) currentScreen).mouseDragged(mouseX, mouseY);
+            }
+            else {
+                System.out.println("ScreenManager: ⚠️ Unknown screen type for mouseDragged: " + currentScreen.getClass().getSimpleName());
+            }
+        } else {
+            System.out.println("ScreenManager: ⚠️ No current screen to route mouseDragged to");
         }
-        // Add support for other screens that implement drag handling
     }
     
     /**
-     * Handles mouse release events by delegating to the current screen.
+     * 現在のスクリーンに委託してマウスリリースイベントを処理する。
      * 
-     * @param mouseX The x-coordinate of the mouse position
-     * @param mouseY The y-coordinate of the mouse position
+     * @param mouseX マウス位置のx座標
+     * @param mouseY マウス位置のy座標
      */
     public void mouseReleased(int mouseX, int mouseY) {
         Screen currentScreen = getCurrentScreen();
-        if (currentScreen != null && currentScreen instanceof SafeHomeScreen) {
-            ((SafeHomeScreen) currentScreen).mouseReleased(mouseX, mouseY);
+        System.out.println("ScreenManager: mouseReleased called at (" + mouseX + ", " + mouseY + ")");
+        System.out.println("ScreenManager: Current screen: " + (currentScreen != null ? currentScreen.getScreenTitle() : "null"));
+        
+        if (currentScreen != null) {
+            // SafeHomeScreenのサポート
+            if (currentScreen instanceof SafeHomeScreen) {
+                System.out.println("ScreenManager: Routing to SafeHomeScreen");
+                ((SafeHomeScreen) currentScreen).mouseReleased(mouseX, mouseY);
+            }
+            // AppLibraryScreenのサポート
+            else if (currentScreen instanceof AppLibraryScreen) {
+                System.out.println("ScreenManager: Routing to AppLibraryScreen");
+                ((AppLibraryScreen) currentScreen).mouseReleased(mouseX, mouseY);
+            }
+            // HomeScreenのサポート
+            else if (currentScreen instanceof HomeScreen) {
+                System.out.println("ScreenManager: Routing to HomeScreen");
+                ((HomeScreen) currentScreen).mouseReleased(mouseX, mouseY);
+            }
+            else {
+                System.out.println("ScreenManager: ⚠️ Unknown screen type: " + currentScreen.getClass().getSimpleName());
+            }
+        } else {
+            System.out.println("ScreenManager: ⚠️ No current screen to route mouseReleased to");
         }
-        // Add support for other screens that implement release handling
     }
     
     /**
-     * Gets the number of screens in the navigation stack.
+     * ナビゲーションスタック内のスクリーン数を取得する。
      * 
-     * @return The stack size
+     * @return スタックのサイズ
      */
     public int getStackSize() {
         return screenStack.size();
     }
     
     /**
-     * Checks if there are any screens in the navigation stack.
+     * ナビゲーションスタックにスクリーンがあるかどうかを確認する。
      * 
-     * @return true if stack is empty, false otherwise
+     * @return スタックが空の場合true、そうでなければfalse
      */
     public boolean isEmpty() {
         return screenStack.isEmpty();
     }
     
     /**
-     * Clears all screens from the navigation stack.
-     * Calls cleanup() on each screen before removing it.
+     * ナビゲーションスタックからすべてのスクリーンをクリアする。
+     * スクリーンを除去する前にそれぞれのcleanup()を呼び出す。
      */
     public void clearAllScreens() {
         while (!screenStack.isEmpty()) {
@@ -156,9 +200,9 @@ public class ScreenManager {
     }
     
     /**
-     * Draws a default empty screen when no screens are active.
+     * アクティブなスクリーンがない時にデフォルトの空のスクリーンを描画する。
      * 
-     * @param p The PApplet instance for drawing operations
+     * @param p 描画操作用のPAppletインスタンス
      */
     private void drawEmptyScreen(PApplet p) {
         p.background(50); // Dark gray background

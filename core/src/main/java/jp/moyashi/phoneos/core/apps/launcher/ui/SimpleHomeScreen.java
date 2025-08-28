@@ -5,8 +5,8 @@ import jp.moyashi.phoneos.core.ui.Screen;
 import processing.core.PApplet;
 
 /**
- * Simple test version of HomeScreen to debug display issues.
- * This minimal implementation ensures we can see something on screen.
+ * 表示問題をデバッグするためのHomeScreenの簡単なテストバージョン。
+ * この最小限の実装により、画面上に何かを確実に表示できる。
  * 
  * @author YourName
  * @version 1.0 (Debug)

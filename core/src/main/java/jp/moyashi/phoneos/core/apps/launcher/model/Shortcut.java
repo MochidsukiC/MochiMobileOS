@@ -3,12 +3,12 @@ package jp.moyashi.phoneos.core.apps.launcher.model;
 import jp.moyashi.phoneos.core.app.IApplication;
 
 /**
- * Represents a shortcut to an application on the home screen.
- * A shortcut contains a reference to the application it represents,
- * along with positioning and customization information.
+ * ホーム画面上のアプリケーションへのショートカットを表す。
+ * ショートカットはそれが表すアプリケーションへの参照、
+ * 位置情報およびカスタマイゼーション情報を含む。
  * 
- * Shortcuts can be placed at specific grid positions on home screen pages
- * and may have custom display properties different from the original application.
+ * ショートカットはホーム画面ページの特定のグリッド位置に配置でき、
+ * 元のアプリケーションとは異なるカスタム表示プロパティを持つことができる。
  * 
  * @author YourName
  * @version 1.0
@@ -16,40 +16,40 @@ import jp.moyashi.phoneos.core.app.IApplication;
  */
 public class Shortcut {
     
-    /** The application this shortcut references */
+    /** このショートカットが参照するアプリケーション */
     private final IApplication application;
     
-    /** Grid column position (0-based) */
+    /** グリッド列位置（0ベース） */
     private int gridX;
     
-    /** Grid row position (0-based) */
+    /** グリッド行位置（0ベース） */
     private int gridY;
     
-    /** Custom display name for the shortcut (null to use app name) */
+    /** ショートカットのカスタム表示名（アプリ名を使用する場合null） */
     private String customName;
     
-    /** Whether this shortcut is currently being dragged */
+    /** このショートカットが現在ドラッグされているかどうか */
     private boolean isDragging;
     
-    /** Temporary position while dragging (screen coordinates) */
+    /** ドラッグ中の一時位置（画面座標） */
     private float dragX;
     private float dragY;
     
-    /** Animation offset for edit mode wiggle effect */
+    /** 編集モードの搖れエフェクト用アニメーションオフセット */
     private float wiggleOffset;
     
-    /** Unique identifier for this shortcut */
+    /** このショートカットの一意識別子 */
     private final String shortcutId;
     
-    /** Static counter for generating unique shortcut IDs */
+    /** 一意のショートカットID生成用静的カウンター */
     private static int nextId = 1;
     
     /**
-     * Creates a new shortcut for the specified application.
+     * 指定されたアプリケーション用の新しいショートカットを作成する。
      * 
-     * @param application The application this shortcut will reference
-     * @param gridX The initial grid column position
-     * @param gridY The initial grid row position
+     * @param application このショートカットが参照するアプリケーション
+     * @param gridX 初期グリッド列位置
+     * @param gridY 初期グリッド行位置
      */
     public Shortcut(IApplication application, int gridX, int gridY) {
         if (application == null) {
@@ -71,64 +71,64 @@ public class Shortcut {
     }
     
     /**
-     * Creates a new shortcut for the specified application at position (0,0).
+     * 位置(0,0)で指定されたアプリケーション用の新しいショートカットを作成する。
      * 
-     * @param application The application this shortcut will reference
+     * @param application このショートカットが参照するアプリケーション
      */
     public Shortcut(IApplication application) {
         this(application, 0, 0);
     }
     
     /**
-     * Gets the application this shortcut references.
+     * このショートカットが参照するアプリケーションを取得する。
      * 
-     * @return The IApplication instance
+     * @return IApplicationインスタンス
      */
     public IApplication getApplication() {
         return application;
     }
     
     /**
-     * Gets the grid column position of this shortcut.
+     * このショートカットのグリッド列位置を取得する。
      * 
-     * @return The grid X coordinate (0-based)
+     * @return グリッドX座標（0ベース）
      */
     public int getGridX() {
         return gridX;
     }
     
     /**
-     * Sets the grid column position of this shortcut.
+     * このショートカットのグリッド列位置を設定する。
      * 
-     * @param gridX The new grid X coordinate (0-based)
+     * @param gridX 新しいグリッドX座標（0ベース）
      */
     public void setGridX(int gridX) {
         this.gridX = gridX;
     }
     
     /**
-     * Gets the grid row position of this shortcut.
+     * このショートカットのグリッド行位置を取得する。
      * 
-     * @return The grid Y coordinate (0-based)
+     * @return グリッドY座標（0ベース）
      */
     public int getGridY() {
         return gridY;
     }
     
     /**
-     * Sets the grid row position of this shortcut.
+     * このショートカットのグリッド行位置を設定する。
      * 
-     * @param gridY The new grid Y coordinate (0-based)
+     * @param gridY 新しいグリッドY座標（0ベース）
      */
     public void setGridY(int gridY) {
         this.gridY = gridY;
     }
     
     /**
-     * Sets the grid position of this shortcut.
+     * このショートカットのグリッド位置を設定する。
      * 
-     * @param gridX The new grid X coordinate (0-based)
-     * @param gridY The new grid Y coordinate (0-based)
+     * @param gridX 新しいグリッドX座標（0ベース）
+     * @param gridY 新しいグリッドY座標（0ベース）
      */
     public void setGridPosition(int gridX, int gridY) {
         this.gridX = gridX;
@@ -136,92 +136,92 @@ public class Shortcut {
     }
     
     /**
-     * Gets the display name for this shortcut.
-     * If a custom name is set, returns that; otherwise returns the application name.
+     * このショートカットの表示名を取得する。
+     * カスタム名が設定されている場合はそれを返し、そうでなければアプリケーション名を返す。
      * 
-     * @return The name to display for this shortcut
+     * @return このショートカットに表示する名前
      */
     public String getDisplayName() {
         return customName != null ? customName : application.getName();
     }
     
     /**
-     * Gets the custom display name set for this shortcut.
+     * このショートカットに設定されたカスタム表示名を取得する。
      * 
-     * @return The custom name, or null if using the application's default name
+     * @return カスタム名、またはアプリケーションのデフォルト名を使用している場合null
      */
     public String getCustomName() {
         return customName;
     }
     
     /**
-     * Sets a custom display name for this shortcut.
+     * このショートカットにカスタム表示名を設定する。
      * 
-     * @param customName The custom name, or null to use the application's name
+     * @param customName カスタム名、またはアプリケーション名を使用する場合null
      */
     public void setCustomName(String customName) {
         this.customName = customName;
     }
     
     /**
-     * Checks if this shortcut is currently being dragged.
+     * このショートカットが現在ドラッグされているかどうかを確認する。
      * 
-     * @return true if the shortcut is being dragged, false otherwise
+     * @return ショートカットがドラッグされている場合true、そうでなければfalse
      */
     public boolean isDragging() {
         return isDragging;
     }
     
     /**
-     * Sets the dragging state of this shortcut.
+     * このショートカットのドラッグ状態を設定する。
      * 
-     * @param dragging true to mark as being dragged, false otherwise
+     * @param dragging ドラッグ中としてマークする場合true、そうでなければfalse
      */
     public void setDragging(boolean dragging) {
         this.isDragging = dragging;
     }
     
     /**
-     * Gets the current drag X position (screen coordinates).
+     * 現在のドラッグX位置（画面座標）を取得する。
      * 
-     * @return The drag X position
+     * @return ドラッグX位置
      */
     public float getDragX() {
         return dragX;
     }
     
     /**
-     * Sets the current drag X position (screen coordinates).
+     * 現在のドラッグX位置（画面座標）を設定する。
      * 
-     * @param dragX The new drag X position
+     * @param dragX 新しいドラッグX位置
      */
     public void setDragX(float dragX) {
         this.dragX = dragX;
     }
     
     /**
-     * Gets the current drag Y position (screen coordinates).
+     * 現在のドラッグY位置（画面座標）を取得する。
      * 
-     * @return The drag Y position
+     * @return ドラッグY位置
      */
     public float getDragY() {
         return dragY;
     }
     
     /**
-     * Sets the current drag Y position (screen coordinates).
+     * 現在のドラッグY位置（画面座標）を設定する。
      * 
-     * @param dragY The new drag Y position
+     * @param dragY 新しいドラッグY位置
      */
     public void setDragY(float dragY) {
         this.dragY = dragY;
     }
     
     /**
-     * Sets the drag position (screen coordinates).
+     * ドラッグ位置（画面座標）を設定する。
      * 
-     * @param dragX The new drag X position
-     * @param dragY The new drag Y position
+     * @param dragX 新しいドラッグX位置
+     * @param dragY 新しいドラッグY位置
      */
     public void setDragPosition(float dragX, float dragY) {
         this.dragX = dragX;
@@ -229,37 +229,37 @@ public class Shortcut {
     }
     
     /**
-     * Gets the current wiggle animation offset for edit mode.
+     * 編集モード用の現在の搖れアニメーションオフセットを取得する。
      * 
-     * @return The wiggle offset value
+     * @return 搖れオフセット値
      */
     public float getWiggleOffset() {
         return wiggleOffset;
     }
     
     /**
-     * Sets the wiggle animation offset for edit mode.
+     * 編集モード用の搖れアニメーションオフセットを設定する。
      * 
-     * @param wiggleOffset The new wiggle offset value
+     * @param wiggleOffset 新しい搖れオフセット値
      */
     public void setWiggleOffset(float wiggleOffset) {
         this.wiggleOffset = wiggleOffset;
     }
     
     /**
-     * Gets the unique identifier for this shortcut.
+     * このショートカットの一意識別子を取得する。
      * 
-     * @return The shortcut ID
+     * @return ショートカットID
      */
     public String getShortcutId() {
         return shortcutId;
     }
     
     /**
-     * Checks if this shortcut references the same application as another shortcut.
+     * このショートカットが他のショートカットと同じアプリケーションを参照しているかどうかを確認する。
      * 
-     * @param other The other shortcut to compare
-     * @return true if both shortcuts reference the same application
+     * @param other 比較する他のショートカット
+     * @return 両方のショートカットが同じアプリケーションを参照している場合true
      */
     public boolean referencesApplication(Shortcut other) {
         if (other == null) return false;
@@ -267,10 +267,10 @@ public class Shortcut {
     }
     
     /**
-     * Checks if this shortcut references the specified application.
+     * このショートカットが指定されたアプリケーションを参照しているかどうかを確認する。
      * 
-     * @param app The application to check
-     * @return true if this shortcut references the specified application
+     * @param app 確認するアプリケーション
+     * @return このショートカットが指定されたアプリケーションを参照している場合true
      */
     public boolean referencesApplication(IApplication app) {
         if (app == null) return false;
@@ -278,12 +278,12 @@ public class Shortcut {
     }
     
     /**
-     * Creates a copy of this shortcut with the same application reference
-     * but potentially different position and properties.
+     * 同じアプリケーション参照を持ち、異なる位置やプロパティを持つ可能性のある
+     * このショートカットのコピーを作成する。
      * 
-     * @param newGridX The grid X position for the copy
-     * @param newGridY The grid Y position for the copy
-     * @return A new Shortcut instance
+     * @param newGridX コピー用のグリッドX位置
+     * @param newGridY コピー用のグリッドY位置
+     * @return 新しいShortcutインスタンス
      */
     public Shortcut createCopy(int newGridX, int newGridY) {
         Shortcut copy = new Shortcut(application, newGridX, newGridY);
@@ -292,9 +292,9 @@ public class Shortcut {
     }
     
     /**
-     * Returns a string representation of this shortcut.
+     * このショートカットの文字列表現を返す。
      * 
-     * @return A string describing this shortcut
+     * @return このショートカットを説明する文字列
      */
     @Override
     public String toString() {
@@ -307,11 +307,11 @@ public class Shortcut {
     }
     
     /**
-     * Checks if this shortcut is equal to another object.
-     * Two shortcuts are considered equal if they have the same shortcut ID.
+     * このショートカットが他のオブジェクトと等しいかどうかを確認する。
+     * 2つのショートカットは同じショートカットIDを持つ場合に等しいとみなされる。
      * 
-     * @param obj The object to compare
-     * @return true if the objects are equal
+     * @param obj 比較するオブジェクト
+     * @return オブジェクトが等しい場合true
      */
     @Override
     public boolean equals(Object obj) {
@@ -322,9 +322,9 @@ public class Shortcut {
     }
     
     /**
-     * Returns the hash code for this shortcut.
+     * このショートカットのハッシュコードを返す。
      * 
-     * @return The hash code based on the shortcut ID
+     * @return ショートカットIDに基づくハッシュコード
      */
     @Override
     public int hashCode() {
