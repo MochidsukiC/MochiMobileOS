@@ -1,5 +1,6 @@
 package jp.moyashi.phoneos.core.ui;
 
+import jp.moyashi.phoneos.core.apps.launcher.ui.SafeHomeScreen;
 import processing.core.PApplet;
 import java.util.Stack;
 
@@ -95,6 +96,34 @@ public class ScreenManager {
         if (currentScreen != null) {
             currentScreen.mousePressed(mouseX, mouseY);
         }
+    }
+    
+    /**
+     * Handles mouse drag events by delegating to the current screen.
+     * 
+     * @param mouseX The x-coordinate of the mouse position
+     * @param mouseY The y-coordinate of the mouse position
+     */
+    public void mouseDragged(int mouseX, int mouseY) {
+        Screen currentScreen = getCurrentScreen();
+        if (currentScreen != null && currentScreen instanceof SafeHomeScreen) {
+            ((SafeHomeScreen) currentScreen).mouseDragged(mouseX, mouseY);
+        }
+        // Add support for other screens that implement drag handling
+    }
+    
+    /**
+     * Handles mouse release events by delegating to the current screen.
+     * 
+     * @param mouseX The x-coordinate of the mouse position
+     * @param mouseY The y-coordinate of the mouse position
+     */
+    public void mouseReleased(int mouseX, int mouseY) {
+        Screen currentScreen = getCurrentScreen();
+        if (currentScreen != null && currentScreen instanceof SafeHomeScreen) {
+            ((SafeHomeScreen) currentScreen).mouseReleased(mouseX, mouseY);
+        }
+        // Add support for other screens that implement release handling
     }
     
     /**

@@ -4,6 +4,9 @@ import jp.moyashi.phoneos.core.Kernel;
 import jp.moyashi.phoneos.core.app.IApplication;
 import jp.moyashi.phoneos.core.ui.Screen;
 import jp.moyashi.phoneos.core.apps.launcher.ui.HomeScreen;
+import jp.moyashi.phoneos.core.apps.launcher.ui.SimpleHomeScreen;
+import jp.moyashi.phoneos.core.apps.launcher.ui.BasicHomeScreen;
+import jp.moyashi.phoneos.core.apps.launcher.ui.SafeHomeScreen;
 import processing.core.PApplet;
 import processing.core.PImage;
 import processing.core.PGraphics;
@@ -41,7 +44,7 @@ public class LauncherApp implements IApplication {
     private static final String APP_DESCRIPTION = "System launcher and app manager";
     
     /** Reference to the main home screen instance */
-    private HomeScreen homeScreen;
+    private Screen homeScreen; // Changed to Screen interface to support both HomeScreen and SimpleHomeScreen
     
     /**
      * Constructs a new LauncherApp instance.
@@ -114,14 +117,32 @@ public class LauncherApp implements IApplication {
     @Override
     public Screen getEntryScreen(Kernel kernel) {
         if (homeScreen == null) {
-            System.out.println("🏠 LauncherApp: Creating advanced multi-page home screen...");
-            homeScreen = new HomeScreen(kernel);
-            System.out.println("✅ LauncherApp: Home screen created successfully!");
-            System.out.println("    • Multi-page launcher with drag & drop");
-            System.out.println("    • iOS/Android-style editing mode");
-            System.out.println("    • App Library integration");
-            System.out.println("    • Long press for edit mode");
-            System.out.println("    • Swipe gestures enabled");
+            // Progressive feature testing: Simple -> Basic -> Safe -> Advanced
+            String screenMode = "safe"; // Options: "simple", "basic", "safe", "advanced"
+            
+            switch (screenMode) {
+                case "simple":
+                    System.out.println("🔧 LauncherApp: Creating SIMPLE home screen for debugging...");
+                    homeScreen = new SimpleHomeScreen(kernel);
+                    System.out.println("✅ LauncherApp: Simple home screen created!");
+                    break;
+                case "basic":
+                    System.out.println("🏠 LauncherApp: Creating BASIC functional home screen...");
+                    homeScreen = new BasicHomeScreen(kernel);
+                    System.out.println("✅ LauncherApp: Basic home screen created!");
+                    break;
+                case "safe":
+                    System.out.println("🛡️ LauncherApp: Creating SAFE home screen with error handling...");
+                    homeScreen = new SafeHomeScreen(kernel);
+                    System.out.println("✅ LauncherApp: Safe home screen created!");
+                    break;
+                case "advanced":
+                default:
+                    System.out.println("🚀 LauncherApp: Creating ADVANCED multi-page home screen...");
+                    homeScreen = new HomeScreen(kernel);
+                    System.out.println("✅ LauncherApp: Advanced home screen created!");
+                    break;
+            }
         }
         return homeScreen;
     }
@@ -187,7 +208,7 @@ public class LauncherApp implements IApplication {
      * @return The HomeScreen instance, or null if not yet created
      */
     public HomeScreen getHomeScreen() {
-        return homeScreen;
+        return (HomeScreen) homeScreen;
     }
     
     /**
