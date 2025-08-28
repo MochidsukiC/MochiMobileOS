@@ -9,8 +9,8 @@ import java.util.List;
 import java.util.ArrayList;
 
 /**
- * Basic functional home screen with essential launcher features.
- * This is a simplified version of HomeScreen with core functionality only.
+ * 基本的なランチャー機能を持つ基本的な機能ホーム画面。
+ * これはコア機能のみを持つHomeScreenの簡素化されたバージョンです。
  * 
  * @author YourName
  * @version 1.5 (Basic)

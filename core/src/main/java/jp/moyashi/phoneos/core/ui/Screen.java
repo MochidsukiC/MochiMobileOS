@@ -3,9 +3,9 @@ package jp.moyashi.phoneos.core.ui;
 import processing.core.PApplet;
 
 /**
- * Base interface for all screens in the phone OS.
- * This interface defines the contract that all screen implementations must follow.
- * Screens handle drawing, user input, and lifecycle management.
+ * スマートフォンOSのすべてのスクリーンのベースインターフェース。
+ * このインターフェースはすべてのスクリーン実装が従うべき契約を定義する。
+ * スクリーンは描画、ユーザー入力、ライフサイクル管理を扱う。
  * 
  * @author YourName
  * @version 1.0
@@ -13,42 +13,42 @@ import processing.core.PApplet;
 public interface Screen {
     
     /**
-     * Called when the screen is first created or when it becomes active.
-     * Use this method to initialize screen-specific resources and state.
+     * スクリーンが最初に作成された時またはアクティブになった時に呼び出される。
+     * このメソッドを使用してスクリーン固有のリソースと状態を初期化する。
      */
     void setup();
     
     /**
-     * Called continuously to draw the screen contents.
-     * This method should handle all visual rendering for the screen.
+     * スクリーンのコンテンツを描画するために継続的に呼び出される。
+     * このメソッドはスクリーンのすべての視覚的レンダリングを処理する必要がある。
      * 
-     * @param p The PApplet instance for drawing operations
+     * @param p 描画操作用のPAppletインスタンス
      */
     void draw(PApplet p);
     
     /**
-     * Called when a mouse press event occurs while this screen is active.
-     * Handle user input and navigation logic in this method.
+     * このスクリーンがアクティブな間にマウスプレスイベントが発生した時に呼び出される。
+     * このメソッドでユーザー入力とナビゲーションロジックを処理する。
      * 
-     * @param mouseX The x-coordinate of the mouse press
-     * @param mouseY The y-coordinate of the mouse press
+     * @param mouseX マウスプレスのx座標
+     * @param mouseY マウスプレスのy座標
      */
     void mousePressed(int mouseX, int mouseY);
     
     /**
-     * Called when the screen is about to be hidden or destroyed.
-     * Use this method to clean up resources or save state.
-     * Default implementation does nothing.
+     * スクリーンが非表示になるまたは破棄される直前に呼び出される。
+     * このメソッドを使用してリソースをクリーンアップしたり状態を保存したりする。
+     * デフォルト実装は何もしない。
      */
     default void cleanup() {
         // Default empty implementation
     }
     
     /**
-     * Gets the title or name of this screen.
-     * This can be used for debugging or navigation history.
+     * このスクリーンのタイトルまたは名前を取得する。
+     * これはデバッグやナビゲーション履歴に使用できる。
      * 
-     * @return The screen title
+     * @return スクリーンのタイトル
      */
     default String getScreenTitle() {
         return this.getClass().getSimpleName();

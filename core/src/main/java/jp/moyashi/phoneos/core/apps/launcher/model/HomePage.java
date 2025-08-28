@@ -6,13 +6,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Represents a single page of the home screen in the launcher.
- * Each page contains a grid of shortcut positions and manages
- * the placement, organization, and manipulation of app shortcuts.
+ * ランチャーのホーム画面の単一ページを表す。
+ * 各ページはショートカット位置のグリッドを含み、アプリショートカットの
+ * 配置、整理、操作を管理する。
  * 
- * The page uses a grid-based layout system where each position
- * can contain at most one shortcut, and empty positions are available
- * for new shortcut placement.
+ * ページはグリッドベースのレイアウトシステムを使用し、各位置には
+ * 最大1つのショートカットのみを含むことができ、空の位置は
+ * 新しいショートカット配置に利用できる。
  * 
  * @author YourName
  * @version 1.0
@@ -20,28 +20,28 @@ import java.util.List;
  */
 public class HomePage {
     
-    /** Grid dimensions for the home page */
+    /** ホームページのグリッド寸法 */
     public static final int GRID_COLS = 4;
     public static final int GRID_ROWS = 5;
     public static final int MAX_SHORTCUTS = GRID_COLS * GRID_ROWS;
     
-    /** The shortcuts on this page, stored as a 2D array */
+    /** このページ上のショートカット、2D配列として格納 */
     private final Shortcut[][] grid;
     
-    /** List of all shortcuts on this page for easy iteration */
+    /** 簡単な反復処理のためのこのページ上のすべてのショートカットのリスト */
     private final List<Shortcut> shortcuts;
     
-    /** Custom name for this page (optional) */
+    /** このページのカスタム名（オプション） */
     private String pageName;
     
-    /** Unique identifier for this page */
+    /** このページの一意識別子 */
     private final String pageId;
     
-    /** Static counter for generating unique page IDs */
+    /** 一意のページID生成用静的カウンター */
     private static int nextPageId = 1;
     
     /**
-     * Creates a new empty home page.
+     * 新しい空のホームページを作成する。
      */
     public HomePage() {
         this.grid = new Shortcut[GRID_COLS][GRID_ROWS];
@@ -53,9 +53,9 @@ public class HomePage {
     }
     
     /**
-     * Creates a new home page with a custom name.
+     * カスタム名で新しいホームページを作成する。
      * 
-     * @param pageName The name for this page
+     * @param pageName このページの名前
      */
     public HomePage(String pageName) {
         this();
@@ -63,84 +63,84 @@ public class HomePage {
     }
     
     /**
-     * Gets the unique identifier for this page.
+     * このページの一意識別子を取得する。
      * 
-     * @return The page ID
+     * @return ページID
      */
     public String getPageId() {
         return pageId;
     }
     
     /**
-     * Gets the custom name for this page.
+     * このページのカスタム名を取得する。
      * 
-     * @return The page name, or null if no custom name is set
+     * @return ページ名、またはカスタム名が設定されていない場合null
      */
     public String getPageName() {
         return pageName;
     }
     
     /**
-     * Sets the custom name for this page.
+     * このページのカスタム名を設定する。
      * 
-     * @param pageName The new page name, or null to clear
+     * @param pageName 新しいページ名、またはクリアする場合null
      */
     public void setPageName(String pageName) {
         this.pageName = pageName;
     }
     
     /**
-     * Gets the display name for this page.
-     * If a custom name is set, returns that; otherwise returns a default name.
+     * このページの表示名を取得する。
+     * カスタム名が設定されている場合はそれを返し、そうでなければデフォルト名を返す。
      * 
-     * @return The name to display for this page
+     * @return このページに表示する名前
      */
     public String getDisplayName() {
         return pageName != null ? pageName : "Page " + pageId.substring(5);
     }
     
     /**
-     * Gets a list of all shortcuts on this page.
+     * このページ上のすべてのショートカットのリストを取得する。
      * 
-     * @return An unmodifiable view of the shortcuts list
+     * @return ショートカットリストの変更不可能ビュー
      */
     public List<Shortcut> getShortcuts() {
         return new ArrayList<>(shortcuts);
     }
     
     /**
-     * Gets the number of shortcuts currently on this page.
+     * 現在このページ上のショートカットの数を取得する。
      * 
-     * @return The shortcut count
+     * @return ショートカットの数
      */
     public int getShortcutCount() {
         return shortcuts.size();
     }
     
     /**
-     * Checks if this page is full (no empty positions).
+     * このページが満员（空の位置がない）かどうかを確認する。
      * 
-     * @return true if the page is at maximum capacity, false otherwise
+     * @return ページが最大容量の場合true、そうでなければfalse
      */
     public boolean isFull() {
         return shortcuts.size() >= MAX_SHORTCUTS;
     }
     
     /**
-     * Checks if this page is empty (no shortcuts).
+     * このページが空（ショートカットなし）かどうかを確認する。
      * 
-     * @return true if the page has no shortcuts, false otherwise
+     * @return ページにショートカットがない場合true、そうでなければfalse
      */
     public boolean isEmpty() {
         return shortcuts.isEmpty();
     }
     
     /**
-     * Gets the shortcut at the specified grid position.
+     * 指定されたグリッド位置のショートカットを取得する。
      * 
-     * @param gridX The grid column (0-based)
-     * @param gridY The grid row (0-based)
-     * @return The shortcut at that position, or null if empty or invalid position
+     * @param gridX グリッド列（0ベース）
+     * @param gridY グリッド行（0ベース）
+     * @return その位置のショートカット、または空または無効な位置の場合null
      */
     public Shortcut getShortcutAt(int gridX, int gridY) {
         if (!isValidPosition(gridX, gridY)) {
@@ -150,32 +150,32 @@ public class HomePage {
     }
     
     /**
-     * Checks if the specified grid position is valid.
+     * 指定されたグリッド位置が有効かどうかを確認する。
      * 
-     * @param gridX The grid column
-     * @param gridY The grid row
-     * @return true if the position is within bounds
+     * @param gridX グリッド列
+     * @param gridY グリッド行
+     * @return 位置が範囲内の場合true
      */
     public boolean isValidPosition(int gridX, int gridY) {
         return gridX >= 0 && gridX < GRID_COLS && gridY >= 0 && gridY < GRID_ROWS;
     }
     
     /**
-     * Checks if the specified grid position is empty.
+     * 指定されたグリッド位置が空かどうかを確認する。
      * 
-     * @param gridX The grid column
-     * @param gridY The grid row
-     * @return true if the position is valid and empty
+     * @param gridX グリッド列
+     * @param gridY グリッド行
+     * @return 位置が有効で空の場合true
      */
     public boolean isPositionEmpty(int gridX, int gridY) {
         return isValidPosition(gridX, gridY) && grid[gridX][gridY] == null;
     }
     
     /**
-     * Finds the next available empty position on this page.
-     * Searches from left to right, top to bottom.
+     * このページで次に利用可能な空の位置を検索する。
+     * 左から右へ、上から下へ検索する。
      * 
-     * @return An array [x, y] of the next empty position, or null if page is full
+     * @return 次の空の位置の配列[x, y]、またはページが満员の場合null
      */
     public int[] findNextEmptyPosition() {
         for (int y = 0; y < GRID_ROWS; y++) {
@@ -189,12 +189,12 @@ public class HomePage {
     }
     
     /**
-     * Adds a shortcut to this page at the specified position.
+     * 指定された位置のこのページにショートカットを追加する。
      * 
-     * @param shortcut The shortcut to add
-     * @param gridX The target grid column
-     * @param gridY The target grid row
-     * @return true if the shortcut was added successfully, false if position is occupied or invalid
+     * @param shortcut 追加するショートカット
+     * @param gridX ターゲットグリッド列
+     * @param gridY ターゲットグリッド行
+     * @return ショートカットが正常に追加された場合true、位置が占有されているか無効な場合false
      */
     public boolean addShortcut(Shortcut shortcut, int gridX, int gridY) {
         if (shortcut == null || !isPositionEmpty(gridX, gridY)) {
@@ -215,10 +215,10 @@ public class HomePage {
     }
     
     /**
-     * Adds a shortcut to this page at the next available position.
+     * 次に利用可能な位置のこのページにショートカットを追加する。
      * 
-     * @param shortcut The shortcut to add
-     * @return true if the shortcut was added successfully, false if page is full
+     * @param shortcut 追加するショートカット
+     * @return ショートカットが正常に追加された場合true、ページが満员の場合false
      */
     public boolean addShortcut(Shortcut shortcut) {
         int[] position = findNextEmptyPosition();
@@ -229,10 +229,10 @@ public class HomePage {
     }
     
     /**
-     * Creates and adds a new shortcut for the specified application.
+     * 指定されたアプリケーション用の新しいショートカットを作成し追加する。
      * 
-     * @param application The application to create a shortcut for
-     * @return true if the shortcut was created and added successfully
+     * @param application ショートカットを作成するアプリケーション
+     * @return ショートカットが正常に作成・追加された場合true
      */
     public boolean addShortcut(IApplication application) {
         if (application == null) {
@@ -243,12 +243,12 @@ public class HomePage {
     }
     
     /**
-     * Creates and adds a new shortcut for the specified application at the specified position.
+     * 指定された位置で指定されたアプリケーション用の新しいショートカットを作成し追加する。
      * 
-     * @param application The application to create a shortcut for
-     * @param gridX The target grid column
-     * @param gridY The target grid row
-     * @return true if the shortcut was created and added successfully
+     * @param application ショートカットを作成するアプリケーション
+     * @param gridX ターゲットグリッド列
+     * @param gridY ターゲットグリッド行
+     * @return ショートカットが正常に作成・追加された場合true
      */
     public boolean addShortcut(IApplication application, int gridX, int gridY) {
         if (application == null) {
@@ -259,10 +259,10 @@ public class HomePage {
     }
     
     /**
-     * Removes a shortcut from this page.
+     * このページからショートカットを削除する。
      * 
-     * @param shortcut The shortcut to remove
-     * @return true if the shortcut was removed, false if it wasn't on this page
+     * @param shortcut 削除するショートカット
+     * @return ショートカットが削除された場合true、このページになかった場合false
      */
     public boolean removeShortcut(Shortcut shortcut) {
         if (shortcut == null || !shortcuts.contains(shortcut)) {
@@ -285,11 +285,11 @@ public class HomePage {
     }
     
     /**
-     * Removes the shortcut at the specified position.
+     * 指定された位置のショートカットを削除する。
      * 
-     * @param gridX The grid column
-     * @param gridY The grid row
-     * @return The removed shortcut, or null if position was empty or invalid
+     * @param gridX グリッド列
+     * @param gridY グリッド行
+     * @return 削除されたショートカット、または位置が空または無効の場合null
      */
     public Shortcut removeShortcutAt(int gridX, int gridY) {
         Shortcut shortcut = getShortcutAt(gridX, gridY);
@@ -300,12 +300,12 @@ public class HomePage {
     }
     
     /**
-     * Moves a shortcut from one position to another on this page.
+     * このページ上でショートカットをある位置から別の位置に移動する。
      * 
-     * @param shortcut The shortcut to move
-     * @param newGridX The target grid column
-     * @param newGridY The target grid row
-     * @return true if the shortcut was moved successfully
+     * @param shortcut 移動するショートカット
+     * @param newGridX ターゲットグリッド列
+     * @param newGridY ターゲットグリッド行
+     * @return ショートカットが正常に移動された場合true
      */
     public boolean moveShortcut(Shortcut shortcut, int newGridX, int newGridY) {
         if (shortcut == null || !shortcuts.contains(shortcut) || !isValidPosition(newGridX, newGridY)) {
@@ -335,11 +335,11 @@ public class HomePage {
     }
     
     /**
-     * Swaps the positions of two shortcuts on this page.
+     * このページ上の2つのショートカットの位置を交換する。
      * 
-     * @param shortcut1 The first shortcut
-     * @param shortcut2 The second shortcut
-     * @return true if the shortcuts were swapped successfully
+     * @param shortcut1 最初のショートカット
+     * @param shortcut2 2番目のショートカット
+     * @return ショートカットが正常に交換された場合true
      */
     public boolean swapShortcuts(Shortcut shortcut1, Shortcut shortcut2) {
         if (shortcut1 == null || shortcut2 == null || 
@@ -366,10 +366,10 @@ public class HomePage {
     }
     
     /**
-     * Finds a shortcut that references the specified application.
+     * 指定されたアプリケーションを参照するショートカットを検索する。
      * 
-     * @param application The application to search for
-     * @return The first shortcut found that references the application, or null if none found
+     * @param application 検索するアプリケーション
+     * @return アプリケーションを参照する最初のショートカット、または見つからない場合null
      */
     public Shortcut findShortcutForApplication(IApplication application) {
         if (application == null) {
@@ -383,18 +383,18 @@ public class HomePage {
     }
     
     /**
-     * Checks if this page contains a shortcut for the specified application.
+     * このページに指定されたアプリケーション用のショートカットが含まれているかどうかを確認する。
      * 
-     * @param application The application to check for
-     * @return true if a shortcut exists for this application on this page
+     * @param application 確認するアプリケーション
+     * @return このページにこのアプリケーション用のショートカットが存在する場合true
      */
     public boolean hasShortcutForApplication(IApplication application) {
         return findShortcutForApplication(application) != null;
     }
     
     /**
-     * Compacts the page by moving all shortcuts to fill empty spaces.
-     * Shortcuts are moved to the earliest available positions, maintaining their relative order.
+     * すべてのショートカットを空のスペースを埋めるように移動してページを圧縮する。
+     * ショートカットは相対的な順序を維持しながら、最も早い利用可能な位置に移動される。
      */
     public void compact() {
         List<Shortcut> allShortcuts = new ArrayList<>(shortcuts);
@@ -411,7 +411,7 @@ public class HomePage {
     }
     
     /**
-     * Clears all shortcuts from this page.
+     * このページからすべてのショートカットをクリアする。
      */
     public void clear() {
         // Clear grid
@@ -428,9 +428,9 @@ public class HomePage {
     }
     
     /**
-     * Returns a string representation of this home page.
+     * このホームページの文字列表現を返す。
      * 
-     * @return A string describing this page
+     * @return このページを説明する文字列
      */
     @Override
     public String toString() {

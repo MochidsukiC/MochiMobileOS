@@ -4,26 +4,26 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Settings management service for the phone OS.
- * This class handles system configuration and user preferences.
- * Provides methods for storing and retrieving settings values.
+ * スマートフォンOS用の設定管理サービス。
+ * このクラスはシステム設定とユーザー設定を扱う。
+ * 設定値の保存と取得のためのメソッドを提供する。
  * 
  * @author YourName
  * @version 1.0
  */
 public class SettingsManager {
     
-    /** Internal storage for settings key-value pairs */
+    /** 設定のキー値ペアを格納する内部ストレージ */
     private Map<String, Object> settings;
     
     /**
-     * Constructs a new SettingsManager instance.
-     * Initializes the settings storage and loads default values.
+     * 新しいSettingsManagerインスタンスを構築する。
+     * 設定ストレージを初期化し、デフォルト値を読み込む。
      */
     public SettingsManager() {
         settings = new HashMap<>();
         loadDefaultSettings();
-        System.out.println("SettingsManager: Settings service initialized");
+        System.out.println("SettingsManager: 設定サービスを初期化完了");
     }
     
     /**

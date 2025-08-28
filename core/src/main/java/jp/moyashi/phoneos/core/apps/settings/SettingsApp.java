@@ -8,9 +8,9 @@ import processing.core.PGraphics;
 import processing.core.PImage;
 
 /**
- * Settings application for MochiMobileOS.
- * Provides access to system settings and configuration options.
- * This serves as a test application for the launcher and home screen functionality.
+ * MochiMobileOS用の設定アプリケーション。
+ * システム設定と構成オプションへのアクセスを提供する。
+ * これはランチャーとホーム画面機能のテストアプリケーションとして機能する。
  * 
  * @author YourName
  * @version 1.0
@@ -18,26 +18,26 @@ import processing.core.PImage;
  */
 public class SettingsApp implements IApplication {
     
-    /** Application metadata */
+    /** アプリケーションメタデータ */
     private static final String APP_ID = "jp.moyashi.phoneos.core.apps.settings";
     private static final String APP_NAME = "Settings";
     private static final String APP_VERSION = "1.0.0";
     private static final String APP_DESCRIPTION = "System settings and configuration";
     
-    /** Initialization state */
+    /** 初期化状態 */
     private boolean isInitialized = false;
     
     /**
-     * Creates a new Settings application instance.
+     * 新しい設定アプリケーションインスタンスを作成する。
      */
     public SettingsApp() {
         System.out.println("SettingsApp: Settings application created");
     }
     
     /**
-     * Gets the unique identifier for this application.
+     * このアプリケーションの一意識別子を取得する。
      * 
-     * @return The application ID
+     * @return アプリケーションID
      */
     @Override
     public String getApplicationId() {
@@ -45,9 +45,9 @@ public class SettingsApp implements IApplication {
     }
     
     /**
-     * Gets the display name of this application.
+     * このアプリケーションの表示名を取得する。
      * 
-     * @return The application name
+     * @return アプリケーション名
      */
     @Override
     public String getName() {
@@ -55,9 +55,9 @@ public class SettingsApp implements IApplication {
     }
     
     /**
-     * Gets the version of this application.
+     * このアプリケーションのバージョンを取得する。
      * 
-     * @return The application version
+     * @return アプリケーションバージョン
      */
     @Override
     public String getVersion() {
@@ -65,9 +65,9 @@ public class SettingsApp implements IApplication {
     }
     
     /**
-     * Gets the description of this application.
+     * このアプリケーションの説明を取得する。
      * 
-     * @return The application description
+     * @return アプリケーション説明
      */
     @Override
     public String getDescription() {
@@ -75,11 +75,11 @@ public class SettingsApp implements IApplication {
     }
     
     /**
-     * Gets the icon for this application.
-     * Creates a simple gear-like icon to represent settings.
+     * このアプリケーションのアイコンを取得する。
+     * 設定を表すシンプルな歯車状のアイコンを作成する。
      * 
-     * @param p The PApplet instance for drawing operations
-     * @return The application icon
+     * @param p 描画操作用のPAppletインスタンス
+     * @return アプリケーションアイコン
      */
     @Override
     public PImage getIcon(processing.core.PApplet p) {
@@ -119,10 +119,10 @@ public class SettingsApp implements IApplication {
     }
     
     /**
-     * Gets the entry screen for this application.
+     * このアプリケーションのエントリースクリーンを取得する。
      * 
-     * @param kernel The OS kernel instance
-     * @return The main screen of the settings app
+     * @param kernel OSカーネルインスタンス
+     * @return 設定アプリのメインスクリーン
      */
     @Override
     public Screen getEntryScreen(Kernel kernel) {
@@ -131,8 +131,8 @@ public class SettingsApp implements IApplication {
     }
     
     /**
-     * Initializes the settings application.
-     * Called when the application is first loaded.
+     * 設定アプリケーションを初期化する。
+     * アプリケーションが最初に読み込まれるときに呼び出される。
      */
     @Override
     public void onInitialize(Kernel kernel) {
@@ -143,8 +143,8 @@ public class SettingsApp implements IApplication {
     }
     
     /**
-     * Cleans up the settings application.
-     * Called when the application is being unloaded.
+     * 設定アプリケーションをクリーンアップする。
+     * アプリケーションがアンロードされるときに呼び出される。
      */
     @Override
     public void onDestroy() {
@@ -155,9 +155,9 @@ public class SettingsApp implements IApplication {
     }
     
     /**
-     * Checks if the application is initialized.
+     * アプリケーションが初期化されているかどうかを確認する。
      * 
-     * @return true if initialized, false otherwise
+     * @return 初期化されている場合true、そうでなければfalse
      */
     public boolean isInitialized() {
         return isInitialized;

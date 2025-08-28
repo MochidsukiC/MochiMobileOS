@@ -5,6 +5,9 @@ import jp.moyashi.phoneos.core.ui.Screen;
 import jp.moyashi.phoneos.core.app.IApplication;
 import jp.moyashi.phoneos.core.apps.launcher.model.HomePage;
 import jp.moyashi.phoneos.core.apps.launcher.model.Shortcut;
+import jp.moyashi.phoneos.core.input.GestureListener;
+import jp.moyashi.phoneos.core.input.GestureEvent;
+import jp.moyashi.phoneos.core.input.GestureType;
 import processing.core.PApplet;
 
 import java.util.ArrayList;
@@ -28,7 +31,7 @@ import java.util.List;
  * @version 3.0
  * @since 1.0
  */
-public class HomeScreen implements Screen {
+public class HomeScreen implements Screen, GestureListener {
     
     /** Reference to the OS kernel for accessing system services */
     private final Kernel kernel;
@@ -132,6 +135,12 @@ public class HomeScreen implements Screen {
         System.out.println("    • Drag icons to rearrange");
         System.out.println("    • Swipe left/right for pages");
         System.out.println("    • Swipe up for App Library");
+        
+        // Register gesture listener
+        if (kernel != null && kernel.getGestureManager() != null) {
+            kernel.getGestureManager().addGestureListener(this);
+            System.out.println("HomeScreen: Registered gesture listener");
+        }
     }
     
     /**
@@ -323,9 +332,12 @@ public class HomeScreen implements Screen {
             if (currentPage != null) {
                 // Try to move to new position
                 if (currentPage.moveShortcut(draggedShortcut, gridPos[0], gridPos[1])) {
-                    System.out.println("HomeScreen: Moved shortcut to (" + gridPos[0] + ", " + gridPos[1] + ")");
+                    System.out.println("HomeScreen: ショートカットを移動しました (" + gridPos[0] + ", " + gridPos[1] + ")");
+                    
+                    // レイアウトを自動保存
+                    saveCurrentLayout();
                 } else {
-                    System.out.println("HomeScreen: Cannot move shortcut - position occupied or invalid");
+                    System.out.println("HomeScreen: ショートカット移動失敗 - 位置が占有済みか無効");
                 }
             }
         }
@@ -401,7 +413,24 @@ public class HomeScreen implements Screen {
         HomePage currentPage = getCurrentPage();
         if (currentPage != null) {
             currentPage.removeShortcut(shortcut);
-            System.out.println("HomeScreen: Removed shortcut for " + shortcut.getDisplayName());
+            System.out.println("HomeScreen: ショートカット削除: " + shortcut.getDisplayName());
+            
+            // レイアウトを自動保存
+            saveCurrentLayout();
+        }
+    }
+    
+    /**
+     * 現在のレイアウトをLayoutManagerに保存する。
+     */
+    private void saveCurrentLayout() {
+        if (kernel != null && kernel.getLayoutManager() != null && homePages != null) {
+            boolean success = kernel.getLayoutManager().saveLayout(homePages);
+            if (success) {
+                System.out.println("HomeScreen: レイアウト保存成功");
+            } else {
+                System.err.println("HomeScreen: レイアウト保存失敗");
+            }
         }
     }
     
@@ -410,6 +439,12 @@ public class HomeScreen implements Screen {
      */
     @Override
     public void cleanup() {
+        // Unregister gesture listener
+        if (kernel != null && kernel.getGestureManager() != null) {
+            kernel.getGestureManager().removeGestureListener(this);
+            System.out.println("HomeScreen: Unregistered gesture listener");
+        }
+        
         isInitialized = false;
         resetDragState();
         isEditing = false;
@@ -427,59 +462,100 @@ public class HomeScreen implements Screen {
     }
     
     /**
-     * Initializes home pages and distributes apps across them.
+     * ホームページのリストを取得する。
+     * AppLibraryScreenからアクセスするために使用される。
+     * 
+     * @return ホームページのリスト
+     */
+    public List<HomePage> getHomePages() {
+        return homePages;
+    }
+    
+    /**
+     * ホームページを初期化し、保存されたレイアウトを読み込むかアプリを配置する。
+     * まず保存されたレイアウトの読み込みを試行し、存在しない場合はデフォルトレイアウトを作成する。
      */
     private void initializeHomePages() {
         try {
             homePages.clear();
             
-            // Create first page
-            HomePage firstPage = new HomePage("Home");
-            homePages.add(firstPage);
-            
-            if (kernel != null && kernel.getAppLoader() != null) {
-                try {
-                    List<IApplication> loadedApps = kernel.getAppLoader().getLoadedApps();
-                    if (loadedApps != null) {
-                        // Add all loaded apps except the launcher itself
-                        List<IApplication> availableApps = new ArrayList<>();
-                        for (IApplication app : loadedApps) {
-                            if (app != null && !"jp.moyashi.phoneos.core.apps.launcher".equals(app.getApplicationId())) {
-                                availableApps.add(app);
-                            }
-                        }
-                        
-                        // Distribute apps across pages
-                        HomePage currentPage = firstPage;
-                        for (IApplication app : availableApps) {
-                            try {
-                                if (currentPage.isFull()) {
-                                    // Create new page if current is full
-                                    currentPage = new HomePage();
-                                    homePages.add(currentPage);
-                                }
-                                currentPage.addShortcut(app);
-                            } catch (Exception e) {
-                                System.err.println("Error adding app to page: " + e.getMessage());
-                            }
-                        }
-                    }
-                } catch (Exception e) {
-                    System.err.println("Error accessing app loader: " + e.getMessage());
+            // 保存されたレイアウトを読み込む試行
+            boolean layoutLoaded = false;
+            if (kernel != null && kernel.getLayoutManager() != null) {
+                System.out.println("HomeScreen: 保存されたレイアウトを読み込み中...");
+                List<HomePage> savedLayout = kernel.getLayoutManager().loadLayout();
+                
+                if (savedLayout != null && !savedLayout.isEmpty()) {
+                    homePages.addAll(savedLayout);
+                    layoutLoaded = true;
+                    System.out.println("HomeScreen: 保存されたレイアウトを復元しました (" + homePages.size() + "ページ)");
+                } else {
+                    System.out.println("HomeScreen: 保存されたレイアウトが見つかりません、デフォルトレイアウトを作成");
                 }
-            } else {
-                System.out.println("HomeScreen: Kernel or AppLoader is null - creating empty page");
             }
             
-            System.out.println("HomeScreen: Initialized " + homePages.size() + " pages with shortcuts");
+            // 保存されたレイアウトがない場合はデフォルトレイアウトを作成
+            if (!layoutLoaded) {
+                createDefaultLayout();
+            }
+            
+            System.out.println("HomeScreen: " + homePages.size() + "ページでホーム画面を初期化完了");
             
         } catch (Exception e) {
-            System.err.println("Critical error in initializeHomePages: " + e.getMessage());
+            System.err.println("HomeScreen: initializeHomePages でクリティカルエラー: " + e.getMessage());
             e.printStackTrace();
-            // Ensure we have at least one empty page
+            // 緊急時は少なくとも1つの空ページを確保
             if (homePages.isEmpty()) {
                 homePages.add(new HomePage("Emergency"));
             }
+        }
+    }
+    
+    /**
+     * デフォルトのレイアウトを作成し、利用可能なアプリを配置する。
+     */
+    private void createDefaultLayout() {
+        // 最初のページを作成
+        HomePage firstPage = new HomePage("Home");
+        homePages.add(firstPage);
+        
+        if (kernel != null && kernel.getAppLoader() != null) {
+            try {
+                List<IApplication> loadedApps = kernel.getAppLoader().getLoadedApps();
+                if (loadedApps != null) {
+                    // ランチャー以外のロード済みアプリを追加
+                    List<IApplication> availableApps = new ArrayList<>();
+                    for (IApplication app : loadedApps) {
+                        if (app != null && !"jp.moyashi.phoneos.core.apps.launcher".equals(app.getApplicationId())) {
+                            availableApps.add(app);
+                        }
+                    }
+                    
+                    HomePage currentPage = firstPage;
+                    for (IApplication app : availableApps) {
+                        try {
+                            if (currentPage.isFull()) {
+                                // 現在のページが満員の場合は新しいページを作成
+                                currentPage = new HomePage();
+                                homePages.add(currentPage);
+                            }
+                            currentPage.addShortcut(app);
+                        } catch (Exception e) {
+                            System.err.println("HomeScreen: ページへのアプリ追加エラー: " + e.getMessage());
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("HomeScreen: AppLoaderアクセスエラー: " + e.getMessage());
+            }
+        } else {
+            System.out.println("HomeScreen: KernelまたはAppLoaderがnull - 空のページを作成");
+        }
+        
+        // デフォルトレイアウトを保存
+        if (kernel != null && kernel.getLayoutManager() != null) {
+            kernel.getLayoutManager().saveLayout(homePages);
+            System.out.println("HomeScreen: デフォルトレイアウトを保存しました");
         }
     }
     
@@ -880,5 +956,141 @@ public class HomeScreen implements Screen {
             return null;
         }
         return homePages.get(currentPageIndex);
+    }
+    
+    // ===========================================
+    // GestureListener Implementation
+    // ===========================================
+    
+    @Override
+    public boolean onGesture(GestureEvent event) {
+        System.out.println("HomeScreen: Received gesture: " + event);
+        
+        switch (event.getType()) {
+            case TAP:
+                return handleTap(event.getCurrentX(), event.getCurrentY());
+                
+            case LONG_PRESS:
+                return handleLongPress(event.getCurrentX(), event.getCurrentY());
+                
+            case SWIPE_LEFT:
+                return handleSwipeLeft();
+                
+            case SWIPE_RIGHT:
+                return handleSwipeRight();
+                
+            case SWIPE_UP:
+                return handleSwipeUp();
+                
+            default:
+                return false; // 処理しないジェスチャー
+        }
+    }
+    
+    @Override
+    public boolean isInBounds(int x, int y) {
+        // HomeScreenが現在のスクリーンの場合のみ処理
+        return kernel != null && 
+               kernel.getScreenManager() != null && 
+               kernel.getScreenManager().getCurrentScreen() == this;
+    }
+    
+    @Override
+    public int getPriority() {
+        return 50; // 中優先度
+    }
+    
+    /**
+     * タップジェスチャーを処理する。
+     * 
+     * @param x X座標
+     * @param y Y座標
+     * @return 処理した場合true
+     */
+    private boolean handleTap(int x, int y) {
+        System.out.println("HomeScreen: Handling tap at (" + x + ", " + y + ")");
+        
+        // ナビゲーションエリア（下部）のタップでApp Libraryを開く
+        if (y > (600 - NAV_AREA_HEIGHT)) {
+            openAppLibrary();
+            return true;
+        }
+        
+        // ショートカットのタップ処理
+        Shortcut tappedShortcut = getShortcutAtPosition(x, y);
+        if (tappedShortcut != null) {
+            if (isEditing) {
+                // 編集モードでは削除ボタンかアイコンかをチェック
+                if (isClickingDeleteButton( x, y,tappedShortcut)) {
+                    removeShortcut(tappedShortcut);
+                }
+            } else {
+                // 通常モードではアプリ起動
+                launchApplication(tappedShortcut.getApplication());
+            }
+            return true;
+        }
+        
+        return false;
+    }
+    
+    /**
+     * 長押しジェスチャーを処理する。
+     * 
+     * @param x X座標
+     * @param y Y座標
+     * @return 処理した場合true
+     */
+    private boolean handleLongPress(int x, int y) {
+        System.out.println("HomeScreen: Handling long press at (" + x + ", " + y + ")");
+        
+        // 長押しで編集モード切り替え
+        if (!isEditing) {
+            toggleEditMode();
+            return true;
+        }
+        
+        return false;
+    }
+    
+    /**
+     * 左スワイプジェスチャーを処理する。
+     * 
+     * @return 処理した場合true
+     */
+    private boolean handleSwipeLeft() {
+        System.out.println("HomeScreen: Left swipe detected - next page");
+        if (currentPageIndex < homePages.size() - 1) {
+            currentPageIndex++;
+            System.out.println("HomeScreen: Switched to page " + (currentPageIndex + 1));
+            return true;
+        }
+        return false;
+    }
+    
+    /**
+     * 右スワイプジェスチャーを処理する。
+     * 
+     * @return 処理した場合true
+     */
+    private boolean handleSwipeRight() {
+        System.out.println("HomeScreen: Right swipe detected - previous page");
+        if (currentPageIndex > 0) {
+            currentPageIndex--;
+            System.out.println("HomeScreen: Switched to page " + (currentPageIndex + 1));
+            return true;
+        }
+        return false;
+    }
+    
+    /**
+     * 上スワイプジェスチャーを処理する。
+     * 
+     * @return 処理した場合true
+     */
+    private boolean handleSwipeUp() {
+        System.out.println("HomeScreen: Up swipe detected - opening App Library");
+        openAppLibrary();
+        return true;
     }
 }

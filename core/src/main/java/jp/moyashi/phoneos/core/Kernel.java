@@ -3,121 +3,142 @@ package jp.moyashi.phoneos.core;
 import jp.moyashi.phoneos.core.service.*;
 import jp.moyashi.phoneos.core.ui.Screen;
 import jp.moyashi.phoneos.core.ui.ScreenManager;
+import jp.moyashi.phoneos.core.ui.popup.PopupManager;
+import jp.moyashi.phoneos.core.input.GestureManager;
 import jp.moyashi.phoneos.core.apps.launcher.LauncherApp;
 import jp.moyashi.phoneos.core.apps.settings.SettingsApp;
 import processing.core.PApplet;
 
 /**
- * The main OS kernel that serves as the heart of the phone OS.
- * This class extends PApplet to utilize Processing's graphics capabilities.
- * It manages all system services and the GUI through the ScreenManager.
+ * スマートフォンOSの中核となるメインカーネル。
+ * ProcessingのグラフィックスAPIを利用するためPAppletを継承している。
+ * すべてのシステムサービスとScreenManagerを通じたGUIを管理する。
  * 
  * @author YourName
  * @version 1.0
  */
 public class Kernel extends PApplet {
     
-    /** Screen manager for handling UI and screen transitions */
+    /** UIと画面遷移を管理するスクリーンマネージャー */
     private ScreenManager screenManager;
     
-    /** Virtual file system service */
+    /** 仮想ファイルシステムサービス */
     private VFS vfs;
     
-    /** Settings management service */
+    /** 設定管理サービス */
     private SettingsManager settingsManager;
     
-    /** System clock service */
+    /** システムクロックサービス */
     private SystemClock systemClock;
     
-    /** Application loader service */
+    /** アプリケーション読み込みサービス */
     private AppLoader appLoader;
     
+    /** レイアウト管理サービス */
+    private LayoutManager layoutManager;
+    
+    /** グローバルポップアップマネージャー */
+    private PopupManager popupManager;
+    
+    /** Kernelレベルジェスチャーマネージャー */
+    private GestureManager gestureManager;
+    
     /**
-     * Configures Processing settings before setup() is called.
-     * Sets the display size and renderer.
+     * setup()が呼ばれる前にProcessingの設定を行う。
+     * ディスプレイサイズとレンダラーを設定する。
      */
     @Override
     public void settings() {
-        size(400, 600);  // Smartphone-like aspect ratio
+        size(400, 600);  // スマートフォンに似たアスペクト比
         System.out.println("📱 Kernel: Processing window configured (400x600)");
     }
     
     /**
-     * Initializes the OS kernel and all its services.
-     * This method is called once when the program starts.
-     * Creates instances of all core services and the screen manager.
+     * OSカーネルとすべてのサービスを初期化する。
+     * このメソッドはプログラム開始時に一度だけ呼ばれる。
+     * すべてのコアサービスとスクリーンマネージャーのインスタンスを作成する。
      */
     @Override
     public void setup() {
-        // CRITICAL FIX: Set frame rate immediately
+        // 重要な修正: フレームレートを即座に設定
         frameRate(60);
         
-        System.out.println("=== MochiMobileOS Kernel Initialization ===");
-        System.out.println("Kernel: Initializing OS services...");
-        System.out.println("Kernel: Frame rate set to 60 FPS");
+        System.out.println("=== MochiMobileOS カーネル初期化 ===");
+        System.out.println("Kernel: OSサービスを初期化中...");
+        System.out.println("Kernel: フレームレートを60FPSに設定");
         
-        // Initialize core services
-        System.out.println("  -> Creating VFS (Virtual File System)...");
+        // コアサービスの初期化
+        System.out.println("  -> VFS（仮想ファイルシステム）作成中...");
         vfs = new VFS();
         
-        System.out.println("  -> Creating Settings Manager...");
+        System.out.println("  -> 設定マネージャー作成中...");
         settingsManager = new SettingsManager();
         
-        System.out.println("  -> Creating System Clock...");
+        System.out.println("  -> システムクロック作成中...");
         systemClock = new SystemClock();
         
-        System.out.println("  -> Creating Application Loader...");
+        System.out.println("  -> アプリケーションローダー作成中...");
         appLoader = new AppLoader(vfs);
         
-        // Scan for and load applications
-        System.out.println("  -> Scanning for external applications...");
+        // アプリケーションをスキャンして読み込む
+        System.out.println("  -> 外部アプリケーションをスキャン中...");
         appLoader.scanForApps();
         
-        // Register built-in applications
-        System.out.println("  -> Registering LauncherApp...");
+        System.out.println("  -> レイアウト管理サービス作成中...");
+        layoutManager = new LayoutManager(vfs, appLoader);
+        
+        System.out.println("  -> グローバルポップアップマネージャー作成中...");
+        popupManager = new PopupManager();
+        
+        System.out.println("  -> Kernelレベルジェスチャーマネージャー作成中...");
+        gestureManager = new GestureManager();
+        
+        // 組み込みアプリケーションを登録
+        System.out.println("  -> LauncherAppを登録中...");
         LauncherApp launcherApp = new LauncherApp();
         appLoader.registerApplication(launcherApp);
         launcherApp.onInitialize(this);
         
-        System.out.println("  -> Registering SettingsApp...");
+        System.out.println("  -> SettingsAppを登録中...");
         SettingsApp settingsApp = new SettingsApp();
         appLoader.registerApplication(settingsApp);
         settingsApp.onInitialize(this);
         
-        System.out.println("Kernel: Registered " + appLoader.getLoadedApps().size() + " applications");
+        System.out.println("Kernel: " + appLoader.getLoadedApps().size() + " 個のアプリケーションを登録");
         
-        // Initialize screen manager and set initial screen to launcher
-        System.out.println("  -> Creating Screen Manager...");
+        // スクリーンマネージャーを初期化してランチャーを初期画面に設定
+        System.out.println("  -> スクリーンマネージャー作成中...");
         screenManager = new ScreenManager();
-        System.out.println("✅ ScreenManager created: " + (screenManager != null));
+        System.out.println("✅ ScreenManager作成済み: " + (screenManager != null));
         
-        System.out.println("▶️ Starting LauncherApp as initial screen...");
+        System.out.println("▶️ LauncherAppを初期画面として開始中...");
         Screen launcherScreen = launcherApp.getEntryScreen(this);
-        System.out.println("✅ LauncherApp screen obtained: " + (launcherScreen != null));
+        System.out.println("✅ LauncherApp画面取得済み: " + (launcherScreen != null));
         if (launcherScreen != null) {
-            System.out.println("   Screen title: " + launcherScreen.getScreenTitle());
+            System.out.println("   画面タイトル: " + launcherScreen.getScreenTitle());
         }
         
         screenManager.pushScreen(launcherScreen);
-        System.out.println("✅ Screen pushed to ScreenManager");
+        System.out.println("✅ 画面をScreenManagerにプッシュ済み");
         
-        System.out.println("✅ Kernel: OS initialization complete!");
-        System.out.println("    • LauncherApp is now running");
-        System.out.println("    • " + appLoader.getLoadedApps().size() + " applications available");
-        System.out.println("    • System ready for user interaction");
-        System.out.println("===========================================");
+        System.out.println("✅ Kernel: OS初期化完了！");
+        System.out.println("    • LauncherAppが実行中");
+        System.out.println("    • " + appLoader.getLoadedApps().size() + " 個のアプリケーションが利用可能");
+        System.out.println("    • システムはユーザー操作に対応可能");
+        System.out.println("=======================================");
     }
     
     /**
-     * Main drawing loop called continuously by Processing.
-     * Delegates drawing to the current screen through the screen manager.
+     * Processingによって継続的に呼ばれるメイン描画ループ。
+     * スクリーンマネージャーを通じて現在の画面に描画を委譲する。
      */
     @Override
     public void draw() {
-        // FORCE bright background to ensure something is visible
-        background(100, 200, 100); // Bright green to ensure visibility
+        // 何かが見えるように明るい背景を強制表示
+        background(100, 200, 100); // 視認性確保のための明るい緑色
         
-        // Debug logging with more detail
+        // 詳細なデバッグログ出力
+        /*
         if (frameCount <= 10 || frameCount % 60 == 0) {
             System.out.println("🎨 Kernel Frame " + frameCount + ": ScreenManager=" + (screenManager != null));
             if (screenManager != null) {
@@ -127,8 +148,10 @@ public class Kernel extends PApplet {
                 }
             }
         }
+
+         */
         
-        // ALWAYS draw debug info to verify Kernel draw() is being called
+        // Kernel draw()が呼ばれていることを確認するため常にデバッグ情報を描画
         fill(255, 255, 255);
         textAlign(LEFT, TOP);
         textSize(14);
@@ -142,98 +165,168 @@ public class Kernel extends PApplet {
             } catch (Exception e) {
                 System.err.println("❌ ScreenManager draw error: " + e.getMessage());
                 e.printStackTrace();
-                // BIG error display
+                // 大きなエラー表示
                 fill(255, 0, 0);
                 rect(50, height/2 - 50, width - 100, 100);
                 fill(255, 255, 255);
                 textAlign(CENTER, CENTER);
                 textSize(18);
-                text("SCREEN ERROR!", width/2, height/2 - 20);
+                text("画面エラー!", width/2, height/2 - 20);
                 textSize(12);
-                text("Error: " + e.getMessage(), width/2, height/2);
-                text("Check console for details", width/2, height/2 + 20);
+                text("エラー: " + e.getMessage(), width/2, height/2);
+                text("詳細はコンソールを確認", width/2, height/2 + 20);
             }
         } else {
-            // BIG loading indicator
+            // 大きな読み込み中インジケーター
             fill(255, 255, 0);
             rect(50, height/2 - 30, width - 100, 60);
             fill(0);
             textAlign(CENTER, CENTER);
             textSize(18);
-            text("NO SCREEN MANAGER!", width/2, height/2);
+            text("スクリーンマネージャーなし!", width/2, height/2);
+        }
+        
+        // ジェスチャーマネージャーの更新（長押し検出など）
+        if (gestureManager != null) {
+            gestureManager.update();
+        }
+        
+        // ポップアップを最上位に描画（すべての描画の最後）
+        if (popupManager != null) {
+            popupManager.draw(this);
         }
     }
     
     /**
-     * Handles mouse press events.
-     * Delegates event handling to the current screen through the screen manager.
+     * マウスプレスイベントを処理する。
+     * スクリーンマネージャーを通じて現在の画面にイベント処理を委譲する。
      */
     @Override
     public void mousePressed() {
+        System.out.println("Kernel: mousePressed at (" + mouseX + ", " + mouseY + ")");
+        
+        // 1. ポップアップマネージャーが先にイベントを処理
+        if (popupManager != null && popupManager.handleMouseClick(mouseX, mouseY)) {
+            System.out.println("Kernel: Popup handled mousePressed, stopping propagation");
+            return;
+        }
+        
+        // 2. ジェスチャーマネージャーでジェスチャー検出開始
+        if (gestureManager != null) {
+            gestureManager.handleMousePressed(mouseX, mouseY);
+        }
+        
+        // 3. 従来のイベント処理（後方互換のため残す）
         if (screenManager != null) {
             screenManager.mousePressed(mouseX, mouseY);
         }
     }
     
     /**
-     * Handles mouse drag events.
-     * Delegates event handling to the current screen through the screen manager.
+     * マウスドラッグイベントを処理する。
+     * スクリーンマネージャーを通じて現在の画面にイベント処理を委譲する。
      */
     @Override
     public void mouseDragged() {
+        System.out.println("Kernel: mouseDragged at (" + mouseX + ", " + mouseY + ")");
+        
+        // 1. ポップアップ表示中はドラッグイベントをブロック
+        if (popupManager != null && popupManager.hasActivePopup()) {
+            System.out.println("Kernel: Popup active, ignoring mouseDragged");
+            return;
+        }
+        
+        // 2. ジェスチャーマネージャーでドラッグ処理
+        if (gestureManager != null) {
+            gestureManager.handleMouseDragged(mouseX, mouseY);
+        }
+        
+        // 3. 従来のドラッグ処理（後方互換のため残す）
         if (screenManager != null) {
             screenManager.mouseDragged(mouseX, mouseY);
         }
     }
     
     /**
-     * Handles mouse release events.
-     * Delegates event handling to the current screen through the screen manager.
+     * マウスリリースイベントを処理する。
+     * スクリーンマネージャーを通じて現在の画面にイベント処理を委譲する。
      */
     @Override
     public void mouseReleased() {
+        System.out.println("Kernel: mouseReleased at (" + mouseX + ", " + mouseY + ")");
+        
+        // 1. ジェスチャーマネージャーでリリース処理
+        if (gestureManager != null) {
+            gestureManager.handleMouseReleased(mouseX, mouseY);
+        }
+        
+        // 2. 従来のリリース処理（後方互換のため残す）
         if (screenManager != null) {
             screenManager.mouseReleased(mouseX, mouseY);
         }
     }
     
     /**
-     * Gets the virtual file system service.
-     * @return The VFS instance
+     * 仮想ファイルシステムサービスを取得する。
+     * @return VFSインスタンス
      */
     public VFS getVFS() {
         return vfs;
     }
     
     /**
-     * Gets the settings manager service.
-     * @return The SettingsManager instance
+     * 設定管理サービスを取得する。
+     * @return SettingsManagerインスタンス
      */
     public SettingsManager getSettingsManager() {
         return settingsManager;
     }
     
     /**
-     * Gets the system clock service.
-     * @return The SystemClock instance
+     * システムクロックサービスを取得する。
+     * @return SystemClockインスタンス
      */
     public SystemClock getSystemClock() {
         return systemClock;
     }
     
     /**
-     * Gets the screen manager.
-     * @return The ScreenManager instance
+     * スクリーンマネージャーを取得する。
+     * @return ScreenManagerインスタンス
      */
     public ScreenManager getScreenManager() {
         return screenManager;
     }
     
     /**
-     * Gets the application loader service.
-     * @return The AppLoader instance
+     * アプリケーションローダーサービスを取得する。
+     * @return AppLoaderインスタンス
      */
     public AppLoader getAppLoader() {
         return appLoader;
+    }
+    
+    /**
+     * レイアウト管理サービスを取得する。
+     * @return LayoutManagerインスタンス
+     */
+    public LayoutManager getLayoutManager() {
+        return layoutManager;
+    }
+    
+    /**
+     * グローバルポップアップマネージャーを取得する。
+     * @return PopupManagerインスタンス
+     */
+    public PopupManager getPopupManager() {
+        return popupManager;
+    }
+    
+    /**
+     * Kernelレベルジェスチャーマネージャーを取得する。
+     * @return GestureManagerインスタンス
+     */
+    public GestureManager getGestureManager() {
+        return gestureManager;
     }
 }

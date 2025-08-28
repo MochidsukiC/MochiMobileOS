@@ -11,11 +11,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A safe version of HomeScreen with error handling to debug display issues.
- * This version has extensive error checking and fallback drawing.
+ * 表示問題をデバッグするためのエラーハンドリング付きHomeScreenの安全版。
+ * このバージョンには広範囲なエラーチェックとフォールバック描画が含まれている。
  * 
  * @author YourName  
- * @version 1.0 (Safe Debug Version)
+ * @version 1.0 (セーフ・デバッグ版)
  */
 public class SafeHomeScreen implements Screen {
     
@@ -26,21 +26,21 @@ public class SafeHomeScreen implements Screen {
     private boolean isShowingAppLibrary = false;  // Flag for app library page
     private List<IApplication> allApps;  // All available apps for library
     
-    // Drag/swipe detection
+    // ドラッグ/スワイプ検知
     private boolean isDragging = false;
     private int dragStartX = 0;
     private int dragStartY = 0;
     private int dragCurrentX = 0;
     private int dragCurrentY = 0;
-    private static final int SWIPE_THRESHOLD = 50;  // Minimum distance for swipe
-    private static final int SWIPE_VERTICAL_THRESHOLD = 100;  // Max vertical movement
+    private static final int SWIPE_THRESHOLD = 50;  // スワイプの最小距離
+    private static final int SWIPE_VERTICAL_THRESHOLD = 100;  // 最大垂直移動
     
-    // Colors
+    // 色設定
     private final int backgroundColor = 0x1E1E1E;
     private final int textColor = 0xFFFFFF;
     private final int accentColor = 0x4A90E2;
     
-    // Grid configuration  
+    // グリッド設定  
     private static final int GRID_COLS = 4;
     private static final int GRID_ROWS = 5;
     private static final int ICON_SIZE = 64;
@@ -52,19 +52,19 @@ public class SafeHomeScreen implements Screen {
         this.currentPageIndex = 0;
         this.isShowingAppLibrary = false;
         this.allApps = new ArrayList<>();
-        System.out.println("✅ SafeHomeScreen: Created safe home screen with app library support");
+        System.out.println("✅ SafeHomeScreen: アプリライブラリーサポート付きセーフホームスクリーンを作成");
     }
     
     @Override
     public void setup() {
         try {
             isInitialized = true;
-            System.out.println("🚀 SafeHomeScreen: Starting safe initialization...");
+            System.out.println("🚀 SafeHomeScreen: セーフ初期化を開始...");
             
-            // Safe initialization of home pages
+            // ホームページの安全な初期化
             initializeHomePagesWithErrorHandling();
             
-            System.out.println("✅ SafeHomeScreen: Safe initialization complete!");
+            System.out.println("✅ SafeHomeScreen: セーフ初期化完了!");
             System.out.println("    • Pages: " + homePages.size());
             System.out.println("    • Current page shortcuts: " + 
                 (homePages.isEmpty() ? 0 : homePages.get(0).getShortcutCount()));
@@ -519,8 +519,9 @@ public class SafeHomeScreen implements Screen {
                             currentPageIndex++;
                             System.out.println("📄 Swiped left: Switched to page " + (currentPageIndex + 1));
                         } else {
-                            isShowingAppLibrary = true;
-                            System.out.println("📚 Swiped left: Opened App Library");
+                            // AppLibraryScreenに遷移
+                            openAppLibrary();
+                            System.out.println("📚 Swiped left: Navigating to App Library Screen");
                         }
                     }
                 }
@@ -554,6 +555,33 @@ public class SafeHomeScreen implements Screen {
             }
         } catch (Exception e) {
             System.err.println("Error in handleAppClick: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * AppLibraryScreenを開く。
+     */
+    private void openAppLibrary() {
+        try {
+            System.out.println("SafeHomeScreen: Opening AppLibraryScreen");
+            
+            if (kernel != null && kernel.getScreenManager() != null) {
+                // AppLibraryScreenを作成
+                AppLibraryScreen appLibraryScreen = new AppLibraryScreen(kernel);
+                
+                // HomeScreenの参照を設定（ショートカット追加のため）
+                // SafeHomeScreenをHomeScreenとして使用できるように、適切な方法を検討する必要があります
+                // 今回は直接設定はしませんが、必要に応じて後で実装
+                
+                // AppLibraryScreenに遷移
+                kernel.getScreenManager().pushScreen(appLibraryScreen);
+                System.out.println("SafeHomeScreen: ✅ Successfully pushed AppLibraryScreen");
+            } else {
+                System.err.println("SafeHomeScreen: Cannot open AppLibrary - ScreenManager not available");
+            }
+        } catch (Exception e) {
+            System.err.println("SafeHomeScreen: Error opening AppLibrary: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 }

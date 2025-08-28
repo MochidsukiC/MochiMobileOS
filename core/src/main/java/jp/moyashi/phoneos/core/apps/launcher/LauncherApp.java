@@ -12,18 +12,18 @@ import processing.core.PImage;
 import processing.core.PGraphics;
 
 /**
- * The built-in Launcher application for MochiMobileOS.
- * This is the primary interface application that manages the home screen
- * and provides access to all other applications in the system.
+ * MochiMobileOS用の組み込みランチャーアプリケーション。
+ * これはホーム画面を管理し、システム内の他のすべてのアプリケーションへの
+ * アクセスを提供する主要なインターフェースアプリケーション。
  * 
- * The LauncherApp is responsible for:
- * - Displaying app shortcuts on the home screen
- * - Providing access to the app library
- * - Managing app organization and shortcuts
- * - Serving as the default entry point for the OS
+ * LauncherAppの責務:
+ * - ホーム画面でのアプリショートカット表示
+ * - アプリライブラリーへのアクセス提供
+ * - アプリの整理とショートカット管理
+ * - OSのデフォルトエントリーポイントとしての機能
  * 
- * This application is automatically registered by the Kernel during OS initialization
- * and serves as the default screen when the OS starts.
+ * このアプリケーションはOS初期化時にカーネルによって自動的に登録され、
+ * OSの開始時にデフォルト画面として機能する。
  * 
  * @author YourName
  * @version 1.0
@@ -31,26 +31,26 @@ import processing.core.PGraphics;
  */
 public class LauncherApp implements IApplication {
     
-    /** The application display name */
+    /** アプリケーション表示名 */
     private static final String APP_NAME = "Launcher";
     
-    /** The application unique identifier */
+    /** アプリケーションの一意識別子 */
     private static final String APP_ID = "jp.moyashi.phoneos.core.apps.launcher";
     
-    /** The application version */
+    /** アプリケーションバージョン */
     private static final String APP_VERSION = "1.0.0";
     
-    /** The application description */
+    /** アプリケーションの説明 */
     private static final String APP_DESCRIPTION = "System launcher and app manager";
     
-    /** Reference to the main home screen instance */
-    private Screen homeScreen; // Changed to Screen interface to support both HomeScreen and SimpleHomeScreen
+    /** メインホームスクリーンインスタンスへの参照 */
+    private Screen homeScreen; // HomeScreenとSimpleHomeScreenの両方をサポートするためScreenインターフェースに変更
     
     /**
      * Constructs a new LauncherApp instance.
      */
     public LauncherApp() {
-        System.out.println("LauncherApp: Launcher application created");
+        System.out.println("LauncherApp: ランチャーアプリケーションを作成");
     }
     
     /**
@@ -118,7 +118,7 @@ public class LauncherApp implements IApplication {
     public Screen getEntryScreen(Kernel kernel) {
         if (homeScreen == null) {
             // Progressive feature testing: Simple -> Basic -> Safe -> Advanced
-            String screenMode = "safe"; // Options: "simple", "basic", "safe", "advanced"
+            String screenMode = "advanced"; // Options: "simple", "basic", "safe", "advanced"
             
             switch (screenMode) {
                 case "simple":

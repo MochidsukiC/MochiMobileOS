@@ -7,15 +7,15 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Application loader service responsible for discovering, loading, and managing
- * applications within the MochiMobileOS environment.
+ * MochiMobileOS環境内でのアプリケーションの発見、読み込み、管理を担当する
+ * アプリケーションローダーサービス。
  * 
- * This service scans the virtual file system for application packages (JAR files)
- * in the /apps/ directory, dynamically loads them, and maintains a registry of
- * available applications that can be launched by the user.
+ * このサービスは仮想ファイルシステムの/apps/ディレクトリ内のアプリケーション
+ * パッケージ（JARファイル）をスキャンし、動的にロードして、ユーザーが起動
+ * 可能な利用可能アプリケーションのレジストリを維持する。
  * 
- * The AppLoader works in conjunction with the VFS to provide a plugin-style
- * architecture where applications can be installed and removed at runtime.
+ * AppLoaderはVFSと連携してプラグインスタイルのアーキテクチャを提供し、
+ * アプリケーションを実行時にインストール・削除できるようにする。
  * 
  * @author YourName
  * @version 1.0
@@ -23,19 +23,19 @@ import java.util.List;
  */
 public class AppLoader {
     
-    /** Virtual file system instance for accessing application files */
+    /** アプリケーションファイルにアクセスするための仮想ファイルシステムインスタンス */
     private final VFS vfs;
     
-    /** List of successfully loaded applications */
+    /** 正常に読み込まれたアプリケーションのリスト */
     private final List<IApplication> loadedApps;
     
-    /** Flag indicating whether apps have been scanned */
+    /** アプリケーションがスキャンされたかどうかを示すフラグ */
     private boolean hasScannedApps;
     
     /**
-     * Constructs a new AppLoader service instance.
+     * 新しいAppLoaderサービスインスタンスを構築する。
      * 
-     * @param vfs The virtual file system service for accessing application files
+     * @param vfs アプリケーションファイルにアクセスするための仮想ファイルシステムサービス
      */
     public AppLoader(VFS vfs) {
         this.vfs = vfs;
@@ -46,19 +46,19 @@ public class AppLoader {
     }
     
     /**
-     * Scans the VFS /apps/ directory for application packages and attempts to load them.
-     * This method looks for .jar files that contain classes implementing the IApplication
-     * interface and dynamically loads them into the application registry.
+     * VFSの/apps/ディレクトリでアプリケーションパッケージをスキャンし、読み込みを試みる。
+     * このメソッドはIApplicationインターフェースを実装したクラスを含む
+     * .jarファイルを検索し、動的にアプリケーションレジストリに読み込む。
      * 
-     * The scanning process involves:
-     * 1. Querying the VFS for files in /apps/ directory
-     * 2. Filtering for .jar files
-     * 3. Using reflection to load application classes
-     * 4. Instantiating applications that implement IApplication
-     * 5. Adding valid applications to the loaded apps list
+     * スキャン処理には以下が含まれる：
+     * 1. /apps/ディレクトリ内のファイルをVFSに問い合わせ
+     * 2. .jarファイルでフィルタリング
+     * 3. リフレクションを使用してアプリケーションクラスを読み込み
+     * 4. IApplicationを実装したアプリケーションをインスタンス化
+     * 5. 有効なアプリケーションを読み込まれたアプリリストに追加
      * 
-     * This is a placeholder implementation that will be expanded when the VFS
-     * supports actual file system operations.
+     * これはVFSが実際のファイルシステム操作をサポートするようになった時に
+     * 拡張されるプレースホルダー実装である。
      */
     public void scanForApps() {
         System.out.println("AppLoader: Scanning /apps/ directory for applications...");
@@ -88,29 +88,29 @@ public class AppLoader {
     }
     
     /**
-     * Returns an immutable list of all successfully loaded applications.
-     * Applications are returned in the order they were loaded during the scan process.
+     * 正常に読み込まれたすべてのアプリケーションの不変リストを返す。
+     * アプリケーションはスキャン処理中に読み込まれた順序で返される。
      * 
-     * @return An immutable list of loaded IApplication instances
+     * @return 読み込まれたIApplicationインスタンスの不変リスト
      */
     public List<IApplication> getLoadedApps() {
         return Collections.unmodifiableList(loadedApps);
     }
     
     /**
-     * Gets the number of currently loaded applications.
+     * 現在読み込まれているアプリケーションの数を取得する。
      * 
-     * @return The count of loaded applications
+     * @return 読み込まれたアプリケーションの数
      */
     public int getLoadedAppCount() {
         return loadedApps.size();
     }
     
     /**
-     * Finds an application by its unique application ID.
+     * 一意のアプリケーションIDでアプリケーションを検索する。
      * 
-     * @param applicationId The unique identifier of the application to find
-     * @return The IApplication instance with the matching ID, or null if not found
+     * @param applicationId 検索するアプリケーションの一意識別子
+     * @return 一致するIDを持つIApplicationインスタンス、または見つからない場合null
      */
     public IApplication findApplicationById(String applicationId) {
         return loadedApps.stream()
@@ -120,12 +120,12 @@ public class AppLoader {
     }
     
     /**
-     * Finds an application by its display name.
-     * Note that display names are not guaranteed to be unique, so this method
-     * returns the first matching application found.
+     * 表示名でアプリケーションを検索する。
+     * 表示名は一意であることが保証されていないため、このメソッドは
+     * 最初に見つかった一致するアプリケーションを返す。
      * 
-     * @param name The display name of the application to find
-     * @return The first IApplication instance with the matching name, or null if not found
+     * @param name 検索するアプリケーションの表示名
+     * @return 一致する名前を持つ最初のIApplicationインスタンス、または見つからない場合null
      */
     public IApplication findApplicationByName(String name) {
         return loadedApps.stream()
@@ -135,12 +135,12 @@ public class AppLoader {
     }
     
     /**
-     * Manually registers an application with the loader.
-     * This method is useful for built-in applications that don't need to be
-     * loaded from JAR files, such as the system launcher.
+     * ローダーにアプリケーションを手動で登録する。
+     * このメソッドはシステムランチャーなど、JARファイルから
+     * 読み込みを行う必要のない組み込みアプリケーションに有用である。
      * 
-     * @param application The application instance to register
-     * @return true if the application was successfully registered, false if it was already registered
+     * @param application 登録するアプリケーションインスタンス
+     * @return アプリケーションが正常に登録された場合true、すでに登録済みの場合false
      */
     public boolean registerApplication(IApplication application) {
         if (application == null) {
@@ -161,10 +161,10 @@ public class AppLoader {
     }
     
     /**
-     * Unregisters an application from the loader.
+     * ローダーからアプリケーションの登録を解除する。
      * 
-     * @param applicationId The unique identifier of the application to unregister
-     * @return true if the application was successfully unregistered, false if not found
+     * @param applicationId 登録解除するアプリケーションの一意識別子
+     * @return アプリケーションが正常に登録解除された場合true、見つからない場合false
      */
     public boolean unregisterApplication(String applicationId) {
         IApplication app = findApplicationById(applicationId);
@@ -177,8 +177,8 @@ public class AppLoader {
     }
     
     /**
-     * Refreshes the application list by re-scanning the /apps/ directory.
-     * This method clears the current loaded applications and performs a fresh scan.
+     * /apps/ディレクトリを再スキャンしてアプリケーションリストを更新する。
+     * このメソッドは現在読み込まれているアプリケーションをクリアし、新たなスキャンを実行する。
      */
     public void refreshApps() {
         System.out.println("AppLoader: Refreshing application list...");
@@ -192,18 +192,18 @@ public class AppLoader {
     }
     
     /**
-     * Checks if the application scanning has been performed.
+     * アプリケーションスキャンが実行されたかどうかを確認する。
      * 
-     * @return true if apps have been scanned, false otherwise
+     * @return アプリケーションがスキャン済みの場合true、そうでなければfalse
      */
     public boolean hasScannedForApps() {
         return hasScannedApps;
     }
     
     /**
-     * Gets the VFS instance used by this AppLoader.
+     * このAppLoaderが使用するVFSインスタンスを取得する。
      * 
-     * @return The VFS instance
+     * @return VFSインスタンス
      */
     public VFS getVFS() {
         return vfs;

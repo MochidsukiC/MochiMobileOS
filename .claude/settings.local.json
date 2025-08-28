@@ -12,7 +12,8 @@
       "Bash(timeout:*)",
       "Bash(find:*)",
       "Bash(.gradlew :standalone:run)",
-      "Read(C:\\Users\\dora2\\.gradle\\caches\\modules-2\\files-2.1\\org.processing/**)"
+      "Read(C:\\Users\\dora2\\.gradle\\caches\\modules-2\\files-2.1\\org.processing/**)",
+      "Bash(gradlew:*)"
     ],
     "deny": [],
     "ask": [],
