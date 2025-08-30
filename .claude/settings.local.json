@@ -13,7 +13,12 @@
       "Bash(find:*)",
       "Bash(.gradlew :standalone:run)",
       "Read(C:\\Users\\dora2\\.gradle\\caches\\modules-2\\files-2.1\\org.processing/**)",
-      "Bash(gradlew:*)"
+      "Bash(gradlew:*)",
+      "Bash(dir:*)",
+      "Bash(copy:*)",
+      "Bash(set PROCESSING_CORE=C:Usersdora2.gradlecachesmodules-2files-2.1org.processingcore4.4.4ec469f2254e9dfd4e2c8e7683f44750cfcd0000core-4.4.4.jar)",
+      "Bash(grep:*)",
+      "Bash(awk:*)"
     ],
     "deny": [],
     "ask": [],

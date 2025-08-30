@@ -14,11 +14,24 @@ import java.util.List;
  * 最大1つのショートカットのみを含むことができ、空の位置は
  * 新しいショートカット配置に利用できる。
  * 
+ * 特殊なページタイプ（AppLibraryなど）もサポートし、異なる表示方式と
+ * インタラクション方式を提供する。
+ * 
  * @author YourName
  * @version 1.0
  * @since 1.0
  */
 public class HomePage {
+    
+    /**
+     * ページタイプを定義する列挙型
+     */
+    public enum PageType {
+        /** 通常のホームページ（グリッドレイアウト） */
+        NORMAL,
+        /** AppLibraryページ（リストレイアウト、スクロール可能） */
+        APP_LIBRARY
+    }
     
     /** ホームページのグリッド寸法 */
     public static final int GRID_COLS = 4;
@@ -37,29 +50,57 @@ public class HomePage {
     /** このページの一意識別子 */
     private final String pageId;
     
+    /** ページタイプ */
+    private final PageType pageType;
+    
+    /** AppLibraryページ用のスクロールオフセット */
+    private int scrollOffset;
+    
+    /** AppLibraryページ用の全アプリケーションリスト */
+    private List<IApplication> allApplications;
+    
     /** 一意のページID生成用静的カウンター */
     private static int nextPageId = 1;
     
     /**
-     * 新しい空のホームページを作成する。
+     * 新しい空の通常ホームページを作成する。
      */
     public HomePage() {
-        this.grid = new Shortcut[GRID_COLS][GRID_ROWS];
-        this.shortcuts = new ArrayList<>();
-        this.pageName = null;
-        this.pageId = "page_" + (nextPageId++);
+        this(PageType.NORMAL, null);
+    }
+    
+    /**
+     * 指定されたページタイプで新しいホームページを作成する。
+     * 
+     * @param pageType ページタイプ
+     * @param pageName ページ名
+     */
+    public HomePage(PageType pageType, String pageName) {
+        this.pageType = pageType;
+        this.pageName = pageName;
+        this.pageId = (pageType == PageType.APP_LIBRARY) ? "app_library" : "page_" + (nextPageId++);
+        this.scrollOffset = 0;
+        this.allApplications = new ArrayList<>();
+        
+        if (pageType == PageType.NORMAL) {
+            this.grid = new Shortcut[GRID_COLS][GRID_ROWS];
+            this.shortcuts = new ArrayList<>();
+        } else {
+            // AppLibraryページではグリッドは使用しない
+            this.grid = null;
+            this.shortcuts = new ArrayList<>();
+        }
         
         System.out.println("HomePage: Created new home page with ID " + pageId);
     }
     
     /**
-     * カスタム名で新しいホームページを作成する。
+     * カスタム名で新しい通常ホームページを作成する。
      * 
      * @param pageName このページの名前
      */
     public HomePage(String pageName) {
-        this();
-        this.pageName = pageName;
+        this(PageType.NORMAL, pageName);
     }
     
     /**
@@ -437,7 +478,113 @@ public class HomePage {
         return "HomePage{" +
                 "id=" + pageId +
                 ", name=" + pageName +
-                ", shortcuts=" + shortcuts.size() + "/" + MAX_SHORTCUTS +
+                ", type=" + pageType +
+                ", shortcuts=" + shortcuts.size() + "/" + (pageType == PageType.NORMAL ? MAX_SHORTCUTS : "∞") +
                 '}';
+    }
+    
+    // ===========================================
+    // AppLibrary専用メソッド
+    // ===========================================
+    
+    /**
+     * ページタイプを取得する。
+     * 
+     * @return ページタイプ
+     */
+    public PageType getPageType() {
+        return pageType;
+    }
+    
+    /**
+     * AppLibraryページかどうかを判定する。
+     * 
+     * @return AppLibraryページの場合true
+     */
+    public boolean isAppLibraryPage() {
+        return pageType == PageType.APP_LIBRARY;
+    }
+    
+    /**
+     * スクロールオフセットを取得する（AppLibraryページ専用）。
+     * 
+     * @return スクロールオフセット
+     */
+    public int getScrollOffset() {
+        return scrollOffset;
+    }
+    
+    /**
+     * スクロールオフセットを設定する（AppLibraryページ専用）。
+     * 
+     * @param scrollOffset 新しいスクロールオフセット
+     */
+    public void setScrollOffset(int scrollOffset) {
+        if (pageType == PageType.APP_LIBRARY) {
+            this.scrollOffset = Math.max(0, scrollOffset);
+        }
+    }
+    
+    /**
+     * 全アプリケーションリストを設定する（AppLibraryページ専用）。
+     * 
+     * @param applications アプリケーションのリスト
+     */
+    public void setAllApplications(List<IApplication> applications) {
+        if (pageType == PageType.APP_LIBRARY) {
+            this.allApplications.clear();
+            if (applications != null) {
+                this.allApplications.addAll(applications);
+            }
+        }
+    }
+    
+    /**
+     * 全アプリケーションリストを取得する（AppLibraryページ専用）。
+     * 
+     * @return アプリケーションのリスト
+     */
+    public List<IApplication> getAllApplications() {
+        return new ArrayList<>(allApplications);
+    }
+    
+    /**
+     * AppLibraryページでスクロールが必要かどうかを判定する。
+     * 
+     * @param visibleHeight 表示可能な高さ
+     * @param itemHeight アイテム1つあたりの高さ
+     * @return スクロールが必要な場合true
+     */
+    public boolean needsScrolling(int visibleHeight, int itemHeight) {
+        if (pageType != PageType.APP_LIBRARY) {
+            return false;
+        }
+        
+        int totalHeight = allApplications.size() * itemHeight;
+        return totalHeight > visibleHeight;
+    }
+    
+    /**
+     * 指定した座標のアプリケーションを取得する（AppLibraryページ専用）。
+     * 
+     * @param x X座標
+     * @param y Y座標
+     * @param listStartY リスト開始Y座標
+     * @param itemHeight アイテム高さ
+     * @return 該当するアプリケーション、またはnull
+     */
+    public IApplication getApplicationAtPosition(int x, int y, int listStartY, int itemHeight) {
+        if (pageType != PageType.APP_LIBRARY || y < listStartY) {
+            return null;
+        }
+        
+        int adjustedY = y + scrollOffset - listStartY;
+        int itemIndex = adjustedY / itemHeight;
+        
+        if (itemIndex >= 0 && itemIndex < allApplications.size()) {
+            return allApplications.get(itemIndex);
+        }
+        
+        return null;
     }
 }
