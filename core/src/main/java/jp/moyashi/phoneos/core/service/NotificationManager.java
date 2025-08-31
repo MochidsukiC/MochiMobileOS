@@ -1,0 +1,592 @@
+package jp.moyashi.phoneos.core.service;
+
+import jp.moyashi.phoneos.core.notification.INotification;
+import jp.moyashi.phoneos.core.notification.SimpleNotification;
+import jp.moyashi.phoneos.core.input.GestureEvent;
+import jp.moyashi.phoneos.core.input.GestureType;
+import jp.moyashi.phoneos.core.input.GestureListener;
+import jp.moyashi.phoneos.core.Kernel;
+import processing.core.PApplet;
+import processing.core.PFont;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
+
+/**
+ * 通知センターの状態と通知の管理を行うサービス。
+ * 画面上からスライドイン/アウトするアニメーション付きで通知センターを表示し、
+ * 通知の追加、削除、表示を担当する。
+ * 
+ * @author YourName
+ * @version 1.0
+ * @since 1.0
+ */
+public class NotificationManager implements GestureListener {
+    
+    /** 通知のリスト（スレッドセーフ） */
+    private final List<INotification> notifications;
+    
+    /** 現在の表示状態 */
+    private boolean isVisible;
+    
+    /** アニメーション進行度（0.0 = 非表示, 1.0 = 完全表示） */
+    private float animationProgress;
+    
+    /** アニメーションの目標進行度 */
+    private float targetAnimationProgress;
+    
+    /** アニメーション速度 */
+    private static final float ANIMATION_SPEED = 0.12f;
+    
+    /** 通知センターの高さ（画面の何割を占めるか） */
+    private static final float NOTIFICATION_CENTER_HEIGHT_RATIO = 0.6f;
+    
+    /** 通知アイテムの高さ */
+    private static final float NOTIFICATION_HEIGHT = 80;
+    
+    /** 通知間のマージン */
+    private static final float NOTIFICATION_MARGIN = 8;
+    
+    /** 画面の幅（描画時に取得） */
+    private float screenWidth = 400;
+    
+    /** 画面の高さ（描画時に取得） */
+    private float screenHeight = 600;
+    
+    /** 背景のアルファ値 */
+    private static final int BACKGROUND_ALPHA = 230;
+    
+    /** スクロールオフセット */
+    private float scrollOffset = 0;
+    
+    /** 最大スクロール量 */
+    private float maxScrollOffset = 0;
+    
+    /**
+     * NotificationManagerを作成する。
+     */
+    public NotificationManager() {
+        this.notifications = new CopyOnWriteArrayList<>();
+        this.isVisible = false;
+        this.animationProgress = 0.0f;
+        this.targetAnimationProgress = 0.0f;
+        
+        System.out.println("NotificationManager: Notification center service initialized");
+        
+        // テスト用通知を追加
+        addTestNotifications();
+    }
+    
+    /**
+     * テスト用の通知を追加する。
+     */
+    private void addTestNotifications() {
+        addNotification("\u30b7\u30b9\u30c6\u30e0", "\u30b7\u30b9\u30c6\u30e0\u66f4\u65b0", "MochiMobileOS\u306e\u65b0\u3057\u3044\u30d0\u30fc\u30b8\u30e7\u30f3\u304c\u5229\u7528\u53ef\u80fd\u3067\u3059", 1);
+        addNotification("\u8a2d\u5b9a", "Wi-Fi\u63a5\u7d9a", "\u30db\u30fc\u30e0\u30cd\u30c3\u30c8\u30ef\u30fc\u30af\u306b\u63a5\u7d9a\u3057\u307e\u3057\u305f", 0);
+        addNotification("\u30e1\u30c3\u30bb\u30fc\u30b8", "\u65b0\u7740\u30e1\u30c3\u30bb\u30fc\u30b8", "\u53cb\u9054\u304b\u3089\u30e1\u30c3\u30bb\u30fc\u30b8\u304c\u5c4a\u304d\u307e\u3057\u305f", 2);
+        addNotification("\u30a2\u30d7\u30ea\u30b9\u30c8\u30a2", "\u30a2\u30d7\u30ea\u66f4\u65b0", "3\u3064\u306e\u30a2\u30d7\u30ea\u304c\u66f4\u65b0\u3055\u308c\u307e\u3057\u305f", 0);
+    }
+    
+    /**
+     * 通知センターを表示する。
+     */
+    public void show() {
+        if (!isVisible) {
+            isVisible = true;
+            targetAnimationProgress = 1.0f;
+            System.out.println("NotificationManager: Showing notification center with " + notifications.size() + " notifications");
+        }
+    }
+    
+    /**
+     * 通知センターを非表示にする。
+     */
+    public void hide() {
+        if (isVisible) {
+            isVisible = false;
+            targetAnimationProgress = 0.0f;
+            scrollOffset = 0; // スクロール位置をリセット
+            System.out.println("NotificationManager: Hiding notification center");
+        }
+    }
+    
+    /**
+     * 表示状態を切り替える。
+     */
+    public void toggle() {
+        if (isVisible) {
+            hide();
+        } else {
+            show();
+        }
+    }
+    
+    /**
+     * 新しい通知を追加する。
+     * 
+     * @param sender 送信者
+     * @param title タイトル
+     * @param content 内容
+     * @param priority 優先度（0=低、1=通常、2=高）
+     * @return 追加された通知のID
+     */
+    public String addNotification(String sender, String title, String content, int priority) {
+        String id = "notification_" + System.currentTimeMillis() + "_" + notifications.size();
+        SimpleNotification notification = new SimpleNotification(id, title, content, sender, priority);
+        
+        // 優先度順でソート（高優先度が上に）
+        notifications.add(notification);
+        notifications.sort((n1, n2) -> Integer.compare(n2.getPriority(), n1.getPriority()));
+        
+        System.out.println("NotificationManager: Added notification '" + title + "' from " + sender);
+        updateScrollLimits();
+        return id;
+    }
+    
+    /**
+     * 通知を削除する。
+     * 
+     * @param notificationId 削除する通知のID
+     * @return 削除に成功した場合true
+     */
+    public boolean removeNotification(String notificationId) {
+        boolean removed = notifications.removeIf(notification -> {
+            if (notification.getId().equals(notificationId)) {
+                notification.dismiss();
+                System.out.println("NotificationManager: Removed notification '" + notification.getTitle() + "'");
+                return true;
+            }
+            return false;
+        });
+        
+        if (removed) {
+            updateScrollLimits();
+        }
+        
+        return removed;
+    }
+    
+    /**
+     * 指定されたIDの通知を取得する。
+     * 
+     * @param notificationId 通知ID
+     * @return 見つかった場合は通知、見つからない場合はnull
+     */
+    public INotification getNotification(String notificationId) {
+        return notifications.stream()
+                .filter(notification -> notification.getId().equals(notificationId))
+                .findFirst()
+                .orElse(null);
+    }
+    
+    /**
+     * すべての通知を削除する。
+     */
+    public void clearAllNotifications() {
+        int count = notifications.size();
+        notifications.forEach(INotification::dismiss);
+        notifications.clear();
+        scrollOffset = 0;
+        updateScrollLimits();
+        System.out.println("NotificationManager: Cleared " + count + " notifications");
+    }
+    
+    /**
+     * 読み済みの通知を削除する。
+     */
+    public void clearReadNotifications() {
+        List<INotification> toRemove = notifications.stream()
+                .filter(INotification::isRead)
+                .collect(Collectors.toList());
+        
+        toRemove.forEach(INotification::dismiss);
+        notifications.removeAll(toRemove);
+        updateScrollLimits();
+        
+        System.out.println("NotificationManager: Cleared " + toRemove.size() + " read notifications");
+    }
+    
+    /**
+     * 未読通知の数を取得する。
+     * 
+     * @return 未読通知数
+     */
+    public int getUnreadCount() {
+        return (int) notifications.stream().filter(n -> !n.isRead()).count();
+    }
+    
+    /**
+     * 総通知数を取得する。
+     * 
+     * @return 通知数
+     */
+    public int getNotificationCount() {
+        return notifications.size();
+    }
+    
+    /**
+     * 通知センターが表示中かどうかを確認する。
+     * 
+     * @return 表示中の場合true
+     */
+    public boolean isVisible() {
+        return isVisible;
+    }
+    
+    /**
+     * スクロール制限を更新する。
+     */
+    private void updateScrollLimits() {
+        float contentHeight = notifications.size() * (NOTIFICATION_HEIGHT + NOTIFICATION_MARGIN) + NOTIFICATION_MARGIN;
+        float availableHeight = screenHeight * NOTIFICATION_CENTER_HEIGHT_RATIO - 80; // ヘッダー分を引く
+        maxScrollOffset = Math.max(0, contentHeight - availableHeight);
+        
+        // スクロール位置を制限内に調整
+        scrollOffset = Math.max(0, Math.min(scrollOffset, maxScrollOffset));
+    }
+    
+    /**
+     * 通知センターを描画する。
+     * 
+     * @param p Processing描画コンテキスト
+     */
+    public void draw(PApplet p) {
+        // 画面サイズを更新
+        screenWidth = p.width;
+        screenHeight = p.height;
+        
+        // アニメーション進行度を更新
+        updateAnimation();
+        
+        // 完全に非表示の場合は描画をスキップ
+        if (animationProgress <= 0.01f) {
+            return;
+        }
+        
+        p.pushMatrix();
+        p.pushStyle();
+        
+        try {
+            // 背景オーバーレイ描画
+            drawBackgroundOverlay(p);
+            
+            // 通知センターパネル描画
+            drawNotificationPanel(p);
+            
+        } finally {
+            p.popStyle();
+            p.popMatrix();
+        }
+        
+        updateScrollLimits();
+    }
+    
+    /**
+     * 背景オーバーレイを描画する（画面全体を暗くする効果）。
+     */
+    private void drawBackgroundOverlay(PApplet p) {
+        int alpha = (int) (80 * animationProgress);
+        p.fill(0, 0, 0, alpha);
+        p.noStroke();
+        p.rect(0, 0, screenWidth, screenHeight);
+    }
+    
+    /**
+     * 通知センターパネルを描画する。
+     */
+    private void drawNotificationPanel(PApplet p) {
+        float panelHeight = screenHeight * NOTIFICATION_CENTER_HEIGHT_RATIO;
+        float panelY = -panelHeight + panelHeight * animationProgress;
+        
+        // パネル背景
+        int backgroundAlpha = (int) (BACKGROUND_ALPHA * animationProgress);
+        p.fill(35, 35, 40, backgroundAlpha);
+        p.noStroke();
+        p.rect(0, panelY, screenWidth, panelHeight, 0, 0, 20, 20);
+        
+        // パネル下部の取っ手
+        drawHandle(p, panelY + panelHeight - 20);
+        
+        // ヘッダー描画
+        drawHeader(p, panelY);
+        
+        // 通知描画
+        drawNotifications(p, panelY + 60, panelHeight - 80);
+    }
+    
+    /**
+     * パネル下部の取っ手を描画する。
+     */
+    private void drawHandle(PApplet p, float y) {
+        float handleWidth = 40;
+        float handleHeight = 4;
+        float handleX = (screenWidth - handleWidth) / 2;
+        
+        int handleAlpha = (int) (150 * animationProgress);
+        p.fill(255, 255, 255, handleAlpha);
+        p.noStroke();
+        p.rect(handleX, y, handleWidth, handleHeight, handleHeight / 2);
+    }
+    
+    /**
+     * パネルヘッダーを描画する。
+     */
+    private void drawHeader(PApplet p, float panelY) {
+        int textAlpha = (int) (255 * animationProgress);
+        
+        // 日本語フォントを設定
+        if (p instanceof Kernel) {
+            Kernel kernel = (Kernel) p;
+            PFont japaneseFont = kernel.getJapaneseFont();
+            if (japaneseFont != null) {
+                p.textFont(japaneseFont);
+            }
+        }
+        
+        // タイトル
+        p.fill(255, 255, 255, textAlpha);
+        p.textAlign(PApplet.CENTER, PApplet.TOP);
+        p.textSize(18);
+        p.text("\u901a\u77e5\u30bb\u30f3\u30bf\u30fc", screenWidth / 2, panelY + 15);
+        
+        // 通知数表示
+        p.fill(180, 180, 180, textAlpha);
+        p.textSize(12);
+        int unreadCount = getUnreadCount();
+        String countText = notifications.size() + " \u4ef6\u306e\u901a\u77e5";
+        if (unreadCount > 0) {
+            countText += " (" + unreadCount + " \u4ef6\u672a\u8aad)";
+        }
+        p.text(countText, screenWidth / 2, panelY + 38);
+        
+        // クリアボタン（右上）
+        if (notifications.size() > 0) {
+            p.fill(100, 150, 200, textAlpha);
+            p.textAlign(PApplet.RIGHT, PApplet.TOP);
+            p.textSize(10);
+            p.text("\u3059\u3079\u3066\u30af\u30ea\u30a2", screenWidth - 12, panelY + 15);
+        }
+    }
+    
+    /**
+     * 通知を描画する。
+     */
+    private void drawNotifications(PApplet p, float startY, float availableHeight) {
+        if (notifications.isEmpty()) {
+            drawEmptyMessage(p, startY, availableHeight);
+            return;
+        }
+        
+        // クリッピングマスクを設定（スクロール領域）
+        p.pushMatrix();
+        
+        float currentY = startY - scrollOffset + NOTIFICATION_MARGIN;
+        
+        for (INotification notification : notifications) {
+            if (!notification.isDismissible()) {
+                continue; // 削除された通知はスキップ
+            }
+            
+            // 表示範囲外の通知はスキップ（パフォーマンス向上）
+            if (currentY + NOTIFICATION_HEIGHT < startY || currentY > startY + availableHeight) {
+                currentY += NOTIFICATION_HEIGHT + NOTIFICATION_MARGIN;
+                continue;
+            }
+            
+            float notificationWidth = screenWidth - 2 * NOTIFICATION_MARGIN;
+            
+            // 通知を描画
+            try {
+                notification.draw(p, NOTIFICATION_MARGIN, currentY, notificationWidth, NOTIFICATION_HEIGHT);
+            } catch (Exception e) {
+                System.err.println("NotificationManager: Error drawing notification '" + notification.getId() + "': " + e.getMessage());
+            }
+            
+            currentY += NOTIFICATION_HEIGHT + NOTIFICATION_MARGIN;
+        }
+        
+        p.popMatrix();
+    }
+    
+    /**
+     * 通知がない場合のメッセージを描画する。
+     */
+    private void drawEmptyMessage(PApplet p, float startY, float availableHeight) {
+        // 日本語フォントを設定
+        if (p instanceof Kernel) {
+            Kernel kernel = (Kernel) p;
+            PFont japaneseFont = kernel.getJapaneseFont();
+            if (japaneseFont != null) {
+                p.textFont(japaneseFont);
+            }
+        }
+        
+        p.fill(150, 150, 150, (int) (255 * animationProgress));
+        p.textAlign(PApplet.CENTER, PApplet.CENTER);
+        p.textSize(16);
+        p.text("\u901a\u77e5\u306f\u3042\u308a\u307e\u305b\u3093", screenWidth / 2, startY + availableHeight / 2);
+    }
+    
+    /**
+     * アニメーション進行度を更新する。
+     */
+    private void updateAnimation() {
+        if (Math.abs(animationProgress - targetAnimationProgress) > 0.01f) {
+            animationProgress += (targetAnimationProgress - animationProgress) * ANIMATION_SPEED;
+        } else {
+            animationProgress = targetAnimationProgress;
+        }
+    }
+    
+    /**
+     * ジェスチャーイベントを処理する。
+     * 
+     * @param event ジェスチャーイベント
+     * @return イベントを処理した場合true
+     */
+    public boolean onGesture(GestureEvent event) {
+        // 非表示の場合は処理しない
+        if (animationProgress <= 0.1f) {
+            return false;
+        }
+        
+        float panelHeight = screenHeight * NOTIFICATION_CENTER_HEIGHT_RATIO;
+        float panelY = -panelHeight + panelHeight * animationProgress;
+        
+        // 通知センターパネル外のタップで閉じる
+        if (event.getCurrentY() > panelY + panelHeight - 20) {
+            System.out.println("NotificationManager: Tapped outside panel, hiding notification center");
+            hide();
+            return true;
+        }
+        
+        // 上向きスワイプでも閉じる
+        if (event.getType() == GestureType.SWIPE_UP) {
+            System.out.println("NotificationManager: Swipe up detected, hiding notification center");
+            hide();
+            return true;
+        }
+        
+        // ヘッダーエリアのクリック処理
+        if (event.getCurrentY() >= panelY && event.getCurrentY() <= panelY + 60) {
+            return handleHeaderClick(event, panelY);
+        }
+        
+        // 通知エリアでのスクロール処理
+        if (event.getType() == GestureType.DRAG_MOVE && maxScrollOffset > 0) {
+            float deltaY = event.getCurrentY() - event.getStartY();
+            scrollOffset = Math.max(0, Math.min(scrollOffset - deltaY * 0.5f, maxScrollOffset));
+            return true;
+        }
+        
+        // 通知のクリック処理
+        return handleNotificationClick(event, panelY);
+    }
+    
+    /**
+     * ヘッダーエリアのクリックを処理する。
+     */
+    private boolean handleHeaderClick(GestureEvent event, float panelY) {
+        // "すべてクリア" ボタンのクリック
+        if (event.getCurrentX() >= screenWidth - 80 && event.getCurrentX() <= screenWidth - 12 &&
+            event.getCurrentY() >= panelY + 10 && event.getCurrentY() <= panelY + 30) {
+            clearAllNotifications();
+            return true;
+        }
+        
+        return false;
+    }
+    
+    /**
+     * 通知のクリックを処理する。
+     */
+    private boolean handleNotificationClick(GestureEvent event, float panelY) {
+        float startY = panelY + 60;
+        float currentY = startY - scrollOffset + NOTIFICATION_MARGIN;
+        
+        for (INotification notification : notifications) {
+            if (!notification.isDismissible()) {
+                continue;
+            }
+            
+            float notificationWidth = screenWidth - 2 * NOTIFICATION_MARGIN;
+            
+            // 通知の範囲内かチェック
+            if (event.getCurrentX() >= NOTIFICATION_MARGIN && 
+                event.getCurrentX() <= NOTIFICATION_MARGIN + notificationWidth &&
+                event.getCurrentY() >= currentY && 
+                event.getCurrentY() <= currentY + NOTIFICATION_HEIGHT) {
+                
+                // 削除ボタンのクリックチェック
+                if (notification instanceof SimpleNotification) {
+                    SimpleNotification simpleNotif = (SimpleNotification) notification;
+                    if (simpleNotif.isDismissButtonClicked(event.getCurrentX(), event.getCurrentY(), 
+                            NOTIFICATION_MARGIN, currentY, notificationWidth)) {
+                        removeNotification(notification.getId());
+                        return true;
+                    }
+                }
+                
+                // 通知のクリック処理
+                if (notification.onClick(event.getCurrentX(), event.getCurrentY())) {
+                    System.out.println("NotificationManager: Clicked notification: " + notification.getTitle());
+                    return true;
+                }
+            }
+            
+            currentY += NOTIFICATION_HEIGHT + NOTIFICATION_MARGIN;
+        }
+        
+        return false;
+    }
+    
+    /**
+     * 現在のアニメーション進行度を取得する（デバッグ用）。
+     * 
+     * @return アニメーション進行度（0.0-1.0）
+     */
+    public float getAnimationProgress() {
+        return animationProgress;
+    }
+    
+    /** 動的優先度（表示状態に応じて変更される） */
+    private int dynamicPriority = 900;
+    
+    // GestureListener interface implementation
+    
+    /**
+     * ジェスチャーの優先度を返す。
+     * 通知センターは動的優先度システムを使用する。
+     * 
+     * @return 動的優先度
+     */
+    @Override
+    public int getPriority() {
+        return dynamicPriority;
+    }
+    
+    /**
+     * 動的優先度を設定する（表示レイヤー順に応じて更新）。
+     * 
+     * @param priority 新しい優先度
+     */
+    public void setDynamicPriority(int priority) {
+        this.dynamicPriority = priority;
+        System.out.println("NotificationManager: Dynamic priority updated to " + priority);
+    }
+    
+    /**
+     * 指定された座標が通知センターの範囲内かどうかを確認する。
+     * 
+     * @param x X座標
+     * @param y Y座標
+     * @return 通知センターが表示中で範囲内の場合true
+     */
+    @Override
+    public boolean isInBounds(int x, int y) {
+        // 通知センターが表示中の場合、画面全体をカバー
+        return this.isVisible && animationProgress > 0.1f;
+    }
+}
