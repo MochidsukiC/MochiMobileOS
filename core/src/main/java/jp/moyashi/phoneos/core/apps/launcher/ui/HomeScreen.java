@@ -234,8 +234,9 @@ public class HomeScreen implements Screen, GestureListener {
         swipeStartX = mouseX;
         isSwipingPages = false;
         
-        // Check if click is in navigation area (swipe to app library)
-        if (mouseY > (600 - NAV_AREA_HEIGHT)) {
+        // Check if click is in navigation area (app library), but not in control center area
+        // Control center area starts at 90% of screen height (540px), nav area ends at 500px
+        if (mouseY > (600 - NAV_AREA_HEIGHT) && mouseY < 540) {
             openAppLibrary();
             return;
         }
@@ -283,7 +284,7 @@ public class HomeScreen implements Screen, GestureListener {
         int startX = (400 - gridWidth) / 2;
         
         int iconX = startX + shortcut.getGridX() * (ICON_SIZE + ICON_SPACING);
-        int iconY = startY + shortcut.getGridY() * (ICON_SIZE + ICON_SPACING + 15);
+        int iconY = startY + shortcut.getGridY() * (ICON_SIZE + ICON_SPACING + 20);
         
         int deleteX = iconX + ICON_SIZE - 8;
         int deleteY = iconY + 8;
@@ -324,7 +325,7 @@ public class HomeScreen implements Screen, GestureListener {
         int startX = (400 - gridWidth) / 2;
         
         int iconX = startX + shortcut.getGridX() * (ICON_SIZE + ICON_SPACING);
-        int iconY = startY + shortcut.getGridY() * (ICON_SIZE + ICON_SPACING + 15);
+        int iconY = startY + shortcut.getGridY() * (ICON_SIZE + ICON_SPACING + 20);
         
         // 画面上での削除ボタン位置を計算（座標変換を考慮）
         float screenDeleteX = totalOffset + shortcutPageIndex * 400 + iconX + ICON_SIZE - 8;
@@ -392,7 +393,7 @@ public class HomeScreen implements Screen, GestureListener {
             int startX = (400 - gridWidth) / 2;
             
             int localShortcutX = startX + shortcut.getGridX() * (ICON_SIZE + ICON_SPACING);
-            int shortcutY = startY + shortcut.getGridY() * (ICON_SIZE + ICON_SPACING + 15);
+            int shortcutY = startY + shortcut.getGridY() * (ICON_SIZE + ICON_SPACING + 20);
             
             // 画面上でのショートカット位置を計算（座標変換を考慮）
             int screenShortcutX = (int) (totalOffset + shortcutPageIndex * 400 + localShortcutX);
@@ -406,7 +407,7 @@ public class HomeScreen implements Screen, GestureListener {
             int startX = (400 - gridWidth) / 2;
             
             int shortcutX = startX + shortcut.getGridX() * (ICON_SIZE + ICON_SPACING);
-            int shortcutY = startY + shortcut.getGridY() * (ICON_SIZE + ICON_SPACING + 15);
+            int shortcutY = startY + shortcut.getGridY() * (ICON_SIZE + ICON_SPACING + 20);
             
             dragOffsetX = mouseX - shortcutX;
             dragOffsetY = mouseY - shortcutY;
@@ -483,7 +484,7 @@ public class HomeScreen implements Screen, GestureListener {
         }
         
         int gridX = (screenX - startX) / (ICON_SIZE + ICON_SPACING);
-        int gridY = (screenY - startY) / (ICON_SIZE + ICON_SPACING + 15);
+        int gridY = (screenY - startY) / (ICON_SIZE + ICON_SPACING + 20);
         
         if (gridX >= 0 && gridX < GRID_COLS && gridY >= 0 && gridY < GRID_ROWS) {
             return new int[]{gridX, gridY};
@@ -616,6 +617,20 @@ public class HomeScreen implements Screen, GestureListener {
      */
     public List<HomePage> getHomePages() {
         return homePages;
+    }
+    
+    /**
+     * 最初のページ（メインホームページ）に移動する。
+     * スペースキーによるホームナビゲーション用。
+     */
+    public void navigateToFirstPage() {
+        System.out.println("HomeScreen: Navigating to first page");
+        
+        if (!homePages.isEmpty() && currentPageIndex != 0 && !isAnimating) {
+            startPageTransition(0);
+        } else if (currentPageIndex == 0) {
+            System.out.println("HomeScreen: Already on first page");
+        }
     }
     
     /**
@@ -1010,7 +1025,7 @@ public class HomeScreen implements Screen, GestureListener {
             if (shortcut.isDragging()) continue; // Draw dragged shortcuts last
             
             int x = startX + shortcut.getGridX() * (ICON_SIZE + ICON_SPACING);
-            int y = startY + shortcut.getGridY() * (ICON_SIZE + ICON_SPACING + 15); // Extra space for app name
+            int y = startY + shortcut.getGridY() * (ICON_SIZE + ICON_SPACING + 20); // Extra space for app name
             
             // Apply wiggle animation if in edit mode
             if (isEditing) {
@@ -1199,16 +1214,23 @@ public class HomeScreen implements Screen, GestureListener {
             drawAppIcon(p, app, x + ICON_SIZE/2, y + ICON_SIZE/2);
         }
         
-        // アプリ名を描画
-        p.fill(textColor);
+        // アプリ名を描画（ドラッグ中も同じスタイル）
         p.noStroke();
-        p.textAlign(p.CENTER, p.TOP);
-        p.textSize(10);
+        p.textAlign(p.CENTER, p.TOP); // 中央配置、上詰め
+        p.textSize(11); // メインのアイコンと同じフォントサイズ
+        
         String displayName = shortcut.getDisplayName();
-        if (displayName.length() > 8) {
-            displayName = displayName.substring(0, 7) + "...";
+        if (displayName.length() > 10) {
+            displayName = displayName.substring(0, 9) + "...";
         }
-        p.text(displayName, x + ICON_SIZE/2, y + ICON_SIZE + 5);
+        
+        // テキストの影を追加（ドラッグ中も可読性向上）
+        p.fill(0, 0, 0, 120); // 少し濃い影
+        p.text(displayName, x + ICON_SIZE/2 + 1, y + ICON_SIZE + 9);
+        
+        // メインテキストを描画
+        p.fill(255, 255, 255); // 白色テキスト
+        p.text(displayName, x + ICON_SIZE/2, y + ICON_SIZE + 8);
     }
     
     /**
@@ -1231,7 +1253,7 @@ public class HomeScreen implements Screen, GestureListener {
             for (int gridY = 0; gridY < GRID_ROWS; gridY++) {
                 if (currentPage.isPositionEmpty(gridX, gridY)) {
                     int x = startX + gridX * (ICON_SIZE + ICON_SPACING);
-                    int y = startY + gridY * (ICON_SIZE + ICON_SPACING + 15);
+                    int y = startY + gridY * (ICON_SIZE + ICON_SPACING + 20);
                     
                     p.rect(x, y, ICON_SIZE, ICON_SIZE, 12);
                 }
@@ -1278,14 +1300,24 @@ public class HomeScreen implements Screen, GestureListener {
             p.line(x + ICON_SIZE - 12, y + 12, x + ICON_SIZE - 4, y + 4);
         }
         
-        // Draw app name
-        p.fill(textColor);
+        // Draw app name below the icon
+        p.fill(255, 255, 255); // 白色テキストで視認性向上
         p.noStroke();
+        p.textAlign(p.CENTER, p.TOP); // 中央配置、上詰め
+        p.textSize(11); // 適切なフォントサイズ
+        
         String displayName = shortcut.getDisplayName();
-        if (displayName.length() > 8) {
-            displayName = displayName.substring(0, 7) + "...";
+        if (displayName.length() > 10) {
+            displayName = displayName.substring(0, 9) + "...";
         }
-        p.text(displayName, x + ICON_SIZE/2, y + ICON_SIZE + 5);
+        
+        // テキストの影を追加して可読性向上
+        p.fill(0, 0, 0, 100); // 半透明の黒い影
+        p.text(displayName, x + ICON_SIZE/2 + 1, y + ICON_SIZE + 9);
+        
+        // メインテキストを描画
+        p.fill(255, 255, 255); // 白色テキスト
+        p.text(displayName, x + ICON_SIZE/2, y + ICON_SIZE + 8);
     }
     
     /**
@@ -1446,7 +1478,7 @@ public class HomeScreen implements Screen, GestureListener {
         
         for (Shortcut shortcut : page.getShortcuts()) {
             int iconX = startX + shortcut.getGridX() * (ICON_SIZE + ICON_SPACING);
-            int iconY = startY + shortcut.getGridY() * (ICON_SIZE + ICON_SPACING + 15);
+            int iconY = startY + shortcut.getGridY() * (ICON_SIZE + ICON_SPACING + 20);
             
             if (x >= iconX && x <= iconX + ICON_SIZE && 
                 y >= iconY && y <= iconY + ICON_SIZE) {
@@ -1512,15 +1544,17 @@ public class HomeScreen implements Screen, GestureListener {
     }
     
     /**
-     * Opens the app library screen.
+     * Opens the app library by switching to the App Library page within the home screen.
      */
     private void openAppLibrary() {
-        System.out.println("HomeScreen: Opening app library");
+        System.out.println("HomeScreen: Navigating to integrated App Library page");
         
-        if (kernel != null && kernel.getScreenManager() != null) {
-            AppLibraryScreen appLibrary = new AppLibraryScreen(kernel);
-            appLibrary.setHomeScreen(this); // Pass reference for "Add to Home" functionality
-            kernel.getScreenManager().pushScreen(appLibrary);
+        // AppLibraryページ（最後のページ）に切り替え
+        if (!homePages.isEmpty()) {
+            int appLibraryPageIndex = homePages.size() - 1;
+            if (appLibraryPageIndex != currentPageIndex && !isAnimating) {
+                startPageTransition(appLibraryPageIndex);
+            }
         }
     }
     
@@ -1620,7 +1654,7 @@ public class HomeScreen implements Screen, GestureListener {
                 return handleSwipeRight();
                 
             case SWIPE_UP:
-                return handleSwipeUp();
+                return handleSwipeUp(event);
                 
             default:
                 return false; // 処理しないジェスチャー
@@ -1669,8 +1703,8 @@ public class HomeScreen implements Screen, GestureListener {
             return handleAppLibraryTap(pageX, pageY, targetPage);
         }
         
-        // ナビゲーションエリア（下部）のタップでApp Libraryを開く
-        if (pageY > (600 - NAV_AREA_HEIGHT)) {
+        // ナビゲーションエリア（下部）のタップでApp Libraryを開く（コントロールセンター領域を除く）
+        if (pageY > (600 - NAV_AREA_HEIGHT) && pageY < 540) {
             openAppLibrary();
             return true;
         }
@@ -1882,8 +1916,15 @@ public class HomeScreen implements Screen, GestureListener {
      * 
      * @return 処理した場合true
      */
-    private boolean handleSwipeUp() {
-        System.out.println("HomeScreen: Up swipe detected - opening App Library");
+    private boolean handleSwipeUp(GestureEvent event) {
+        // 画面下部（高さの90%以上）からのスワイプアップはKernelのコントロールセンター用に予約
+        if (event.getStartY() >= 600 * 0.9f) {
+            System.out.println("HomeScreen: Bottom swipe up detected - letting Kernel handle control center");
+            return false; // Kernelに処理を委譲
+        }
+        
+        // 画面の中央部からのスワイプアップでApp Libraryを開く
+        System.out.println("HomeScreen: Up swipe detected - opening integrated App Library");
         openAppLibrary();
         return true;
     }

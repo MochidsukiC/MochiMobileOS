@@ -200,6 +200,27 @@ public class ScreenManager {
     }
     
     /**
+     * キーボード入力イベントを現在の画面に委譲する。
+     * 
+     * @param key 押されたキー
+     * @param keyCode キーコード
+     */
+    public void keyPressed(char key, int keyCode) {
+        System.out.println("ScreenManager: keyPressed - key: " + key + ", keyCode: " + keyCode);
+        
+        if (!screenStack.isEmpty()) {
+            Screen currentScreen = screenStack.peek();
+            System.out.println("ScreenManager: Current screen: " + currentScreen.getScreenTitle());
+            System.out.println("ScreenManager: Routing keyPressed to " + currentScreen.getClass().getSimpleName());
+            
+            // 現在の画面がキーイベントを処理できるかチェック
+            // 今のところScreenインターフェースにkeyPressedメソッドはないので、
+            // 必要に応じて将来的に追加可能
+            System.out.println("ScreenManager: Screen does not handle key events directly");
+        }
+    }
+    
+    /**
      * アクティブなスクリーンがない時にデフォルトの空のスクリーンを描画する。
      * 
      * @param p 描画操作用のPAppletインスタンス

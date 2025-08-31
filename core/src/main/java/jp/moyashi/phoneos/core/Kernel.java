@@ -1,23 +1,29 @@
 package jp.moyashi.phoneos.core;
 
+import jp.moyashi.phoneos.core.app.IApplication;
 import jp.moyashi.phoneos.core.service.*;
 import jp.moyashi.phoneos.core.ui.Screen;
 import jp.moyashi.phoneos.core.ui.ScreenManager;
 import jp.moyashi.phoneos.core.ui.popup.PopupManager;
 import jp.moyashi.phoneos.core.input.GestureManager;
+import jp.moyashi.phoneos.core.input.GestureListener;
+import jp.moyashi.phoneos.core.input.GestureEvent;
+import jp.moyashi.phoneos.core.input.GestureType;
 import jp.moyashi.phoneos.core.apps.launcher.LauncherApp;
 import jp.moyashi.phoneos.core.apps.settings.SettingsApp;
 import processing.core.PApplet;
+import processing.core.PFont;
 
 /**
  * スマートフォンOSの中核となるメインカーネル。
  * ProcessingのグラフィックスAPIを利用するためPAppletを継承している。
  * すべてのシステムサービスとScreenManagerを通じたGUIを管理する。
+ * コントロールセンター用のジェスチャー処理も担当する。
  * 
  * @author YourName
  * @version 1.0
  */
-public class Kernel extends PApplet {
+public class Kernel extends PApplet implements GestureListener {
     
     /** UIと画面遷移を管理するスクリーンマネージャー */
     private ScreenManager screenManager;
@@ -43,6 +49,15 @@ public class Kernel extends PApplet {
     /** Kernelレベルジェスチャーマネージャー */
     private GestureManager gestureManager;
     
+    /** コントロールセンター管理サービス */
+    private ControlCenterManager controlCenterManager;
+    
+    /** 通知センター管理サービス */
+    private NotificationManager notificationManager;
+    
+    /** 日本語フォント */
+    private PFont japaneseFont;
+    
     /**
      * setup()が呼ばれる前にProcessingの設定を行う。
      * ディスプレイサイズとレンダラーを設定する。
@@ -63,7 +78,18 @@ public class Kernel extends PApplet {
         // 重要な修正: フレームレートを即座に設定
         frameRate(60);
         
+        // 日本語フォントの初期化
         System.out.println("=== MochiMobileOS カーネル初期化 ===");
+        System.out.println("Kernel: 日本語フォントを設定中...");
+        try {
+            japaneseFont = createFont("Meiryo", 16, true);
+            textFont(japaneseFont);
+            System.out.println("Kernel: Meiryoフォントを正常に読み込みました");
+        } catch (Exception e) {
+            System.err.println("Kernel: Meiryoフォントの読み込みに失敗: " + e.getMessage());
+            System.err.println("Kernel: デフォルトフォントを使用します");
+        }
+        
         System.out.println("Kernel: OSサービスを初期化中...");
         System.out.println("Kernel: フレームレートを60FPSに設定");
         
@@ -92,6 +118,22 @@ public class Kernel extends PApplet {
         
         System.out.println("  -> Kernelレベルジェスチャーマネージャー作成中...");
         gestureManager = new GestureManager();
+        
+        System.out.println("  -> コントロールセンター管理サービス作成中...");
+        controlCenterManager = new ControlCenterManager();
+        setupControlCenter();
+        
+        System.out.println("  -> 通知センター管理サービス作成中...");
+        notificationManager = new NotificationManager();
+        
+        // コントロールセンターを最高優先度のジェスチャーリスナーとして登録
+        gestureManager.addGestureListener(controlCenterManager);
+        
+        // 通知センターを高優先度のジェスチャーリスナーとして登録
+        gestureManager.addGestureListener(notificationManager);
+        
+        // Kernelを最低優先度のジェスチャーリスナーとして登録
+        gestureManager.addGestureListener(this);
         
         // 組み込みアプリケーションを登録
         System.out.println("  -> LauncherAppを登録中...");
@@ -191,6 +233,19 @@ public class Kernel extends PApplet {
             gestureManager.update();
         }
         
+        // 動的優先度を更新（描画順序に基づく）
+        updateDynamicPriorities();
+        
+        // 通知センターを描画（最初に、背景の一部として）
+        if (notificationManager != null) {
+            notificationManager.draw(this);
+        }
+        
+        // コントロールセンターを描画（通知センターの上に）
+        if (controlCenterManager != null) {
+            controlCenterManager.draw(this);
+        }
+        
         // ポップアップを最上位に描画（すべての描画の最後）
         if (popupManager != null) {
             popupManager.draw(this);
@@ -211,13 +266,34 @@ public class Kernel extends PApplet {
             return;
         }
         
-        // 2. ジェスチャーマネージャーでジェスチャー検出開始
+        // 2. 通知センターが表示中の場合、そのイベント処理を優先
+        if (notificationManager != null && notificationManager.isVisible()) {
+            // ジェスチャーマネージャーを通じてイベントを処理する
+            if (gestureManager != null) {
+                gestureManager.handleMousePressed(mouseX, mouseY);
+            }
+            return;
+        }
+        
+        // 3. コントロールセンターが表示中の場合、そのイベント処理を優先
+        if (controlCenterManager != null && controlCenterManager.isVisible()) {
+            // ジェスチャーマネージャーを通じてイベントを処理する
+            if (gestureManager != null) {
+                gestureManager.handleMousePressed(mouseX, mouseY);
+            }
+            return;
+        }
+        
+        // 4. ジェスチャーマネージャーでジェスチャー検出開始（常に実行）
         if (gestureManager != null) {
             gestureManager.handleMousePressed(mouseX, mouseY);
         }
         
-        // 3. 従来のイベント処理（後方互換のため残す）
-        if (screenManager != null) {
+        // 4. 従来のイベント処理（後方互換のため残す）
+        // ただし、コントロールセンターや通知センターが表示中の場合はブロック
+        if (screenManager != null && 
+            (controlCenterManager == null || !controlCenterManager.isVisible()) &&
+            (notificationManager == null || !notificationManager.isVisible())) {
             screenManager.mousePressed(mouseX, mouseY);
         }
     }
@@ -236,13 +312,16 @@ public class Kernel extends PApplet {
             return;
         }
         
-        // 2. ジェスチャーマネージャーでドラッグ処理
+        // 2. ジェスチャーマネージャーでドラッグ処理（常に実行）
         if (gestureManager != null) {
             gestureManager.handleMouseDragged(mouseX, mouseY);
         }
         
         // 3. 従来のドラッグ処理（後方互換のため残す）
-        if (screenManager != null) {
+        // ただし、コントロールセンターや通知センターが表示中の場合はブロック
+        if (screenManager != null && 
+            (controlCenterManager == null || !controlCenterManager.isVisible()) &&
+            (notificationManager == null || !notificationManager.isVisible())) {
             screenManager.mouseDragged(mouseX, mouseY);
         }
     }
@@ -255,14 +334,37 @@ public class Kernel extends PApplet {
     public void mouseReleased() {
         System.out.println("Kernel: mouseReleased at (" + mouseX + ", " + mouseY + ")");
         
-        // 1. ジェスチャーマネージャーでリリース処理
+        // 1. ジェスチャーマネージャーでリリース処理（常に実行）
         if (gestureManager != null) {
             gestureManager.handleMouseReleased(mouseX, mouseY);
         }
         
         // 2. 従来のリリース処理（後方互換のため残す）
-        if (screenManager != null) {
+        // ただし、コントロールセンターや通知センターが表示中の場合はブロック
+        if (screenManager != null && 
+            (controlCenterManager == null || !controlCenterManager.isVisible()) &&
+            (notificationManager == null || !notificationManager.isVisible())) {
             screenManager.mouseReleased(mouseX, mouseY);
+        }
+    }
+    
+    /**
+     * キーボード入力イベントを処理する。
+     * スペースキーでホーム画面に戻る機能を提供する。
+     */
+    @Override
+    public void keyPressed() {
+        System.out.println("Kernel: keyPressed - key: " + key + ", keyCode: " + keyCode);
+        
+        // スペースキー（32）でホーム画面に戻る
+        if (key == ' ' || keyCode == 32) {
+            navigateToHome();
+            return;
+        }
+        
+        // その他のキーイベントを現在の画面に委譲
+        if (screenManager != null) {
+            screenManager.keyPressed(key, keyCode);
         }
     }
     
@@ -328,5 +430,287 @@ public class Kernel extends PApplet {
      */
     public GestureManager getGestureManager() {
         return gestureManager;
+    }
+    
+    /**
+     * コントロールセンター管理サービスを取得する。
+     * @return ControlCenterManagerインスタンス
+     */
+    public ControlCenterManager getControlCenterManager() {
+        return controlCenterManager;
+    }
+    
+    /**
+     * 通知センター管理サービスのインスタンスを取得する。
+     * 
+     * @return 通知センターマネージャー
+     */
+    public NotificationManager getNotificationManager() {
+        return notificationManager;
+    }
+    
+    /**
+     * 日本語対応フォントを取得する。
+     * 
+     * @return 日本語フォント、初期化されていない場合はnull
+     */
+    public PFont getJapaneseFont() {
+        return japaneseFont;
+    }
+    
+    /**
+     * Kernelレベルでのジェスチャーイベント処理。
+     * 主に画面上からのスワイプダウンで通知センター、画面下からのスワイプアップでコントロールセンターを表示する処理を行う。
+     * 
+     * @param event ジェスチャーイベント
+     * @return イベントを処理した場合true
+     */
+    @Override
+    public boolean onGesture(GestureEvent event) {
+        // 通知センターとコントロールセンターの処理はGestureManagerが自動的に優先度に基づいて処理するため、
+        // ここでは手動チェックは不要
+        
+        // 画面上からのスワイプダウンで通知センターを表示
+        if (event.getType() == GestureType.SWIPE_DOWN) {
+            // 画面上部（高さの10%以下）からのスワイプダウンを検出
+            if (event.getStartY() <= height * 0.1f) {
+                System.out.println("Kernel: Detected swipe down from top at y=" + event.getStartY() + 
+                                 ", showing notification center");
+                if (notificationManager != null) {
+                    notificationManager.show();
+                    return true;
+                }
+            }
+        }
+        
+        // 画面下からのスワイプアップでコントロールセンターを表示
+        if (event.getType() == GestureType.SWIPE_UP) {
+            // 画面下部（高さの90%以上）からのスワイプアップを検出
+            if (event.getStartY() >= height * 0.9f) {
+                System.out.println("Kernel: Detected swipe up from bottom at y=" + event.getStartY() + 
+                                 ", showing control center");
+                if (controlCenterManager != null) {
+                    controlCenterManager.show();
+                    return true;
+                }
+            }
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Kernelは画面全体を処理対象とする。
+     * 
+     * @param x X座標
+     * @param y Y座標
+     * @return 常にtrue
+     */
+    @Override
+    public boolean isInBounds(int x, int y) {
+        return true;
+    }
+    
+    /**
+     * Kernelの優先度は最低に設定する。
+     * 他のリスナーがイベントを処理しなかった場合のみ処理される。
+     * 
+     * @return 最低優先度（-1000）
+     */
+    @Override
+    public int getPriority() {
+        return -1000;
+    }
+    
+    /**
+     * ホーム画面に戻る処理を実行する。
+     * コントロールセンターの非表示、ホーム画面への遷移、ホーム画面内での最初のページへの移動を行う。
+     */
+    private void navigateToHome() {
+        System.out.println("Kernel: Navigating to home screen");
+        
+        // 1. コントロールセンターが表示されている場合は閉じる
+        if (controlCenterManager != null && controlCenterManager.isVisible()) {
+            System.out.println("Kernel: Closing control center");
+            controlCenterManager.hide();
+            return;
+        }
+        
+        // 2. 現在の画面を確認
+        if (screenManager != null) {
+            Screen currentScreen = screenManager.getCurrentScreen();
+            
+            if (currentScreen != null) {
+                String currentScreenTitle = currentScreen.getScreenTitle();
+                System.out.println("Kernel: Current screen: " + currentScreenTitle);
+                
+                // ホーム画面でない場合はホーム画面に戻る
+                if (!"Home Screen".equals(currentScreenTitle)) {
+                    // ホーム画面に戻る（LauncherAppを検索）
+                    if (appLoader != null) {
+                        IApplication launcherApp = findLauncherApp();
+                        if (launcherApp != null) {
+                            System.out.println("Kernel: Returning to home screen");
+                            screenManager.clearAllScreens();
+                            screenManager.pushScreen(launcherApp.getEntryScreen(this));
+                        }
+                    }
+                } else {
+                    // 既にホーム画面にいる場合は最初のページに戻る
+                    if (currentScreen instanceof jp.moyashi.phoneos.core.apps.launcher.ui.HomeScreen) {
+                        System.out.println("Kernel: Already on home screen, navigating to first page");
+                        jp.moyashi.phoneos.core.apps.launcher.ui.HomeScreen homeScreen = 
+                            (jp.moyashi.phoneos.core.apps.launcher.ui.HomeScreen) currentScreen;
+                        homeScreen.navigateToFirstPage();
+                    }
+                }
+            }
+        }
+    }
+    
+    /**
+     * LauncherAppを検索して取得する。
+     * 
+     * @return LauncherAppのインスタンス、見つからない場合はnull
+     */
+    private IApplication findLauncherApp() {
+        if (appLoader == null) return null;
+        
+        for (IApplication app : appLoader.getLoadedApps()) {
+            if ("jp.moyashi.phoneos.core.apps.launcher".equals(app.getApplicationId())) {
+                return app;
+            }
+        }
+        return null;
+    }
+    
+    /**
+     * コントロールセンターに様々なアイテムを追加してセットアップする。
+     */
+    private void setupControlCenter() {
+        if (controlCenterManager == null) {
+            return;
+        }
+        
+        System.out.println("  -> コントロールセンターアイテムを追加中...");
+        
+        // ToggleItemをimportするため
+        jp.moyashi.phoneos.core.controls.ToggleItem toggleItem;
+        
+        // WiFi切り替え
+        toggleItem = new jp.moyashi.phoneos.core.controls.ToggleItem(
+            "wifi", "WiFi", "ワイヤレス接続のオン/オフ", 
+            false, (isOn) -> System.out.println("WiFi toggled: " + isOn)
+        );
+        controlCenterManager.addItem(toggleItem);
+        
+        // Bluetooth切り替え
+        toggleItem = new jp.moyashi.phoneos.core.controls.ToggleItem(
+            "bluetooth", "Bluetooth", "Bluetooth接続のオン/オフ", 
+            false, (isOn) -> System.out.println("Bluetooth toggled: " + isOn)
+        );
+        controlCenterManager.addItem(toggleItem);
+        
+        // 機内モード
+        toggleItem = new jp.moyashi.phoneos.core.controls.ToggleItem(
+            "airplane_mode", "機内モード", "すべての通信をオフにする", 
+            false, (isOn) -> System.out.println("Airplane mode toggled: " + isOn)
+        );
+        controlCenterManager.addItem(toggleItem);
+        
+        // モバイルデータ
+        toggleItem = new jp.moyashi.phoneos.core.controls.ToggleItem(
+            "mobile_data", "モバイルデータ", "携帯電話ネットワーク経由のデータ通信", 
+            true, (isOn) -> System.out.println("Mobile data toggled: " + isOn)
+        );
+        controlCenterManager.addItem(toggleItem);
+        
+        // 位置情報サービス
+        toggleItem = new jp.moyashi.phoneos.core.controls.ToggleItem(
+            "location", "位置情報", "GPS位置情報サービス", 
+            true, (isOn) -> System.out.println("Location services toggled: " + isOn)
+        );
+        controlCenterManager.addItem(toggleItem);
+        
+        // 自動回転
+        toggleItem = new jp.moyashi.phoneos.core.controls.ToggleItem(
+            "auto_rotate", "画面回転", "デバイスの向きに応じて画面を回転", 
+            true, (isOn) -> System.out.println("Auto rotate toggled: " + isOn)
+        );
+        controlCenterManager.addItem(toggleItem);
+        
+        // バッテリーセーバー
+        toggleItem = new jp.moyashi.phoneos.core.controls.ToggleItem(
+            "battery_saver", "バッテリーセーバー", "電力消費を抑制する省電力モード", 
+            false, (isOn) -> System.out.println("Battery saver toggled: " + isOn)
+        );
+        controlCenterManager.addItem(toggleItem);
+        
+        // ホットスポット
+        toggleItem = new jp.moyashi.phoneos.core.controls.ToggleItem(
+            "hotspot", "ホットスポット", "他のデバイスとの接続を共有", 
+            false, (isOn) -> System.out.println("Hotspot toggled: " + isOn)
+        );
+        controlCenterManager.addItem(toggleItem);
+        
+        // サイレントモード
+        toggleItem = new jp.moyashi.phoneos.core.controls.ToggleItem(
+            "silent_mode", "サイレント", "着信音と通知音をオフにする", 
+            false, (isOn) -> System.out.println("Silent mode toggled: " + isOn)
+        );
+        controlCenterManager.addItem(toggleItem);
+        
+        // ダークモード
+        toggleItem = new jp.moyashi.phoneos.core.controls.ToggleItem(
+            "dark_mode", "ダークモード", "暗い色調のテーマを使用", 
+            false, (isOn) -> System.out.println("Dark mode toggled: " + isOn)
+        );
+        controlCenterManager.addItem(toggleItem);
+        
+        System.out.println("  -> " + controlCenterManager.getItemCount() + "個のコントロールアイテムを追加完了");
+    }
+    
+    /**
+     * 表示状態に応じて動的優先度を更新する。
+     * レイヤーの表示順序に基づいて、最上位のレイヤーが最高優先度を持つ。
+     */
+    private void updateDynamicPriorities() {
+        // ベース優先度
+        int basePriority = 100;
+        
+        // 両方とも表示されていない場合のデフォルト優先度
+        if ((notificationManager == null || !notificationManager.isVisible()) &&
+            (controlCenterManager == null || !controlCenterManager.isVisible())) {
+            // 通知センターとコントロールセンター両方が非表示の場合、デフォルト優先度を設定
+            if (notificationManager != null) {
+                notificationManager.setDynamicPriority(900);  // デフォルト高優先度
+            }
+            if (controlCenterManager != null) {
+                controlCenterManager.setDynamicPriority(1000); // デフォルト最高優先度
+            }
+            return;
+        }
+        
+        // 現在表示中のレイヤーに基づいて優先度を設定
+        // 描画順序: 通知センター（先に描画/下層） -> コントロールセンター（後に描画/上層）
+        
+        if (notificationManager != null && notificationManager.isVisible()) {
+            if (controlCenterManager != null && controlCenterManager.isVisible()) {
+                // 両方表示中: コントロールセンターが上層なので高優先度
+                notificationManager.setDynamicPriority(basePriority + 100); // 通知センター: 200
+                controlCenterManager.setDynamicPriority(basePriority + 200); // コントロールセンター: 300
+            } else {
+                // 通知センターのみ表示中
+                notificationManager.setDynamicPriority(basePriority + 200); // 通知センター: 300
+            }
+        }
+        
+        if (controlCenterManager != null && controlCenterManager.isVisible()) {
+            if (notificationManager == null || !notificationManager.isVisible()) {
+                // コントロールセンターのみ表示中
+                controlCenterManager.setDynamicPriority(basePriority + 200); // コントロールセンター: 300
+            }
+            // 両方表示中の場合は上記で既に設定済み
+        }
     }
 }

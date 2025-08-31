@@ -18,7 +18,14 @@
       "Bash(copy:*)",
       "Bash(set PROCESSING_CORE=C:Usersdora2.gradlecachesmodules-2files-2.1org.processingcore4.4.4ec469f2254e9dfd4e2c8e7683f44750cfcd0000core-4.4.4.jar)",
       "Bash(grep:*)",
-      "Bash(awk:*)"
+      "Bash(awk:*)",
+      "Bash(.\\gradlew.bat:*)",
+      "Bash(del \"C:\\Users\\dora2\\IdeaProjects\\MochiMobileOS\\standalone\\mochi_os_data\\system\\launcher_layout.json\")",
+      "Bash(run_direct.bat)",
+      "Bash(chcp:*)",
+      "Bash(./run_direct.bat)",
+      "Bash(del /q /f corebuildclassesjavamainjpmoyashiphoneoscoreservice*.class)",
+      "Bash(od:*)"
     ],
     "deny": [],
     "ask": [],

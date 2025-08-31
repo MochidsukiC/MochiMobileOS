@@ -4,6 +4,7 @@ import jp.moyashi.phoneos.core.app.IApplication;
 import jp.moyashi.phoneos.core.ui.Screen;
 import jp.moyashi.phoneos.core.Kernel;
 import jp.moyashi.phoneos.core.apps.settings.ui.SettingsScreen;
+import jp.moyashi.phoneos.core.controls.ToggleItem;
 import processing.core.PGraphics;
 import processing.core.PImage;
 
@@ -133,12 +134,125 @@ public class SettingsApp implements IApplication {
     /**
      * 設定アプリケーションを初期化する。
      * アプリケーションが最初に読み込まれるときに呼び出される。
+     * コントロールセンター用のテストトグルも登録する。
      */
     @Override
     public void onInitialize(Kernel kernel) {
         if (!isInitialized) {
             isInitialized = true;
             System.out.println("SettingsApp: Settings application initialized");
+            
+            // コントロールセンター用テストトグルを作成・登録
+            setupControlCenterItems(kernel);
+            
+            // 通知センター用テスト通知を作成・登録
+            setupNotificationCenterTests(kernel);
+        }
+    }
+    
+    /**
+     * コントロールセンター用のテストアイテムをセットアップする。
+     * 
+     * @param kernel OSカーネルインスタンス
+     */
+    private void setupControlCenterItems(Kernel kernel) {
+        try {
+            // ナイトビジョントグル
+            ToggleItem nightVisionToggle = new ToggleItem(
+                "settings.nightvision",
+                "\u30ca\u30a4\u30c8\u30d3\u30b8\u30e7\u30f3",
+                "\u753b\u9762\u3092\u6697\u3044\u30c6\u30fc\u30de\u306b\u5207\u308a\u66ff\u3048\u307e\u3059",
+                false, // 初期状態: OFF
+                (isOn) -> {
+                    System.out.println("SettingsApp: Night vision " + (isOn ? "enabled" : "disabled"));
+                    // TODO: 実際のナイトモード切り替え処理を実装
+                }
+            );
+            
+            // Wi-Fi切り替えトグル（シミュレーション）
+            ToggleItem wifiToggle = new ToggleItem(
+                "settings.wifi",
+                "Wi-Fi",
+                "\u30ef\u30a4\u30e4\u30ec\u30b9\u63a5\u7d9a\u3092\u7ba1\u7406\u3057\u307e\u3059",
+                true, // 初期状態: ON
+                (isOn) -> {
+                    System.out.println("SettingsApp: Wi-Fi " + (isOn ? "connected" : "disconnected"));
+                    // TODO: 実際のWi-Fi切り替え処理を実装
+                }
+            );
+            
+            // Bluetooth切り替えトグル（シミュレーション）
+            ToggleItem bluetoothToggle = new ToggleItem(
+                "settings.bluetooth",
+                "Bluetooth",
+                "\u30c7\u30d0\u30a4\u30b9\u9593\u306e\u8fd1\u8ddd\u96e2\u901a\u4fe1\u3092\u7ba1\u7406\u3057\u307e\u3059",
+                false, // 初期状態: OFF
+                (isOn) -> {
+                    System.out.println("SettingsApp: Bluetooth " + (isOn ? "enabled" : "disabled"));
+                    // TODO: 実際のBluetooth切り替え処理を実装
+                }
+            );
+            
+            // 機内モードトグル（シミュレーション）
+            ToggleItem airplaneModeToggle = new ToggleItem(
+                "settings.airplane",
+                "\u6a5f\u5185\u30e2\u30fc\u30c9",
+                "\u3059\u3079\u3066\u306e\u7121\u7dda\u901a\u4fe1\u3092\u30aa\u30d5\u306b\u3057\u307e\u3059",
+                false, // 初期状態: OFF
+                (isOn) -> {
+                    System.out.println("SettingsApp: Airplane mode " + (isOn ? "enabled" : "disabled"));
+                    // TODO: 実際の機内モード切り替え処理を実装
+                    
+                    // 機内モードONの場合、他の通信機能も自動的にOFFにする
+                    if (isOn) {
+                        wifiToggle.setOn(false);
+                        bluetoothToggle.setOn(false);
+                    }
+                }
+            );
+            
+            // コントロールセンターにトグルを追加
+            if (kernel.getControlCenterManager() != null) {
+                kernel.getControlCenterManager().addItem(nightVisionToggle);
+                kernel.getControlCenterManager().addItem(wifiToggle);
+                kernel.getControlCenterManager().addItem(bluetoothToggle);
+                kernel.getControlCenterManager().addItem(airplaneModeToggle);
+                
+                System.out.println("SettingsApp: Added 4 test toggles to control center");
+            } else {
+                System.err.println("SettingsApp: ControlCenterManager is not available");
+            }
+            
+        } catch (Exception e) {
+            System.err.println("SettingsApp: Error setting up control center items: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    /**
+     * 通知センター用のテスト通知をセットアップする。
+     * 
+     * @param kernel OSカーネルインスタンス
+     */
+    private void setupNotificationCenterTests(Kernel kernel) {
+        try {
+            if (kernel.getNotificationManager() != null) {
+                // テスト通知を追加（NotificationManagerのコンストラクタで既に追加されているが、追加で設定アプリからも追加）
+                kernel.getNotificationManager().addNotification(
+                    "\u8a2d\u5b9a\u30a2\u30d7\u30ea", 
+                    "\u901a\u77e5\u30c6\u30b9\u30c8", 
+                    "\u8a2d\u5b9a\u30a2\u30d7\u30ea\u304b\u3089\u9001\u4fe1\u3055\u308c\u305f\u30c6\u30b9\u30c8\u901a\u77e5\u3067\u3059\u3002\u901a\u77e5\u30bb\u30f3\u30bf\u30fc\u304c\u6b63\u5e38\u306b\u52d5\u4f5c\u3057\u3066\u3044\u307e\u3059\u3002", 
+                    1
+                );
+                
+                System.out.println("SettingsApp: Added test notification to notification center");
+            } else {
+                System.err.println("SettingsApp: NotificationManager is not available");
+            }
+            
+        } catch (Exception e) {
+            System.err.println("SettingsApp: Error setting up notification center tests: " + e.getMessage());
+            e.printStackTrace();
         }
     }
     

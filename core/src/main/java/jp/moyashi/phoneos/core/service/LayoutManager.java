@@ -69,6 +69,7 @@ public class LayoutManager {
                 PageLayoutData pageData = new PageLayoutData();
                 pageData.pageIndex = i;
                 pageData.pageName = page.getPageName();
+                pageData.pageType = page.getPageType();
                 pageData.shortcuts = new ArrayList<>();
                 
                 // 各ショートカットの情報を保存
@@ -137,7 +138,10 @@ public class LayoutManager {
             
             // 各ページを復元
             for (PageLayoutData pageData : layoutData) {
-                HomePage page = new HomePage(pageData.pageName);
+                // PageTypeが保存されている場合はそれを使用、ない場合はデフォルト
+                HomePage.PageType pageType = (pageData.pageType != null) ? 
+                    pageData.pageType : HomePage.PageType.NORMAL;
+                HomePage page = new HomePage(pageType, pageData.pageName);
                 
                 // 各ショートカットを復元
                 for (ShortcutLayoutData shortcutData : pageData.shortcuts) {
@@ -153,6 +157,21 @@ public class LayoutManager {
                     } else {
                         System.out.println("LayoutManager: アプリケーションが見つかりません: " + 
                                          shortcutData.applicationId);
+                    }
+                }
+                
+                // AppLibraryページの場合は全アプリケーションを設定
+                if (page.isAppLibraryPage()) {
+                    List<IApplication> allApps = appLoader.getLoadedApps();
+                    if (allApps != null) {
+                        List<IApplication> availableApps = new ArrayList<>();
+                        for (IApplication app : allApps) {
+                            if (app != null && !"jp.moyashi.phoneos.core.apps.launcher".equals(app.getApplicationId())) {
+                                availableApps.add(app);
+                            }
+                        }
+                        page.setAllApplications(availableApps);
+                        System.out.println("LayoutManager: AppLibraryページに " + availableApps.size() + " 個のアプリを設定");
                     }
                 }
                 
@@ -204,6 +223,9 @@ public class LayoutManager {
         
         /** ページのカスタム名 */
         public String pageName;
+        
+        /** ページのタイプ */
+        public HomePage.PageType pageType;
         
         /** ページ内のショートカット一覧 */
         public List<ShortcutLayoutData> shortcuts;
