@@ -55,7 +55,14 @@ public class GestureManager {
             listeners.add(listener);
             // 優先度順にソート
             listeners.sort(Comparator.comparingInt(GestureListener::getPriority).reversed());
-            System.out.println("GestureManager: Added gesture listener with priority " + listener.getPriority());
+            System.out.println("GestureManager: Added gesture listener " + listener.getClass().getSimpleName() + " with priority " + listener.getPriority());
+            
+            // デバッグ: 現在の優先度順序を出力
+            System.out.println("GestureManager: Current listener order:");
+            for (int i = 0; i < listeners.size(); i++) {
+                GestureListener l = listeners.get(i);
+                System.out.println("  " + (i+1) + ". " + l.getClass().getSimpleName() + " (priority: " + l.getPriority() + ")");
+            }
         }
     }
     
@@ -76,6 +83,22 @@ public class GestureManager {
     public void clearGestureListeners() {
         listeners.clear();
         System.out.println("GestureManager: Cleared all gesture listeners");
+    }
+    
+    /**
+     * 既存のジェスチャーリスナーを優先度順に再ソートする。
+     * 動的優先度変更時に呼び出される。
+     */
+    public void resortListeners() {
+        listeners.sort(Comparator.comparingInt(GestureListener::getPriority).reversed());
+        System.out.println("GestureManager: Re-sorted listeners by priority");
+        
+        // デバッグ: 現在の優先度順序を出力
+        System.out.println("GestureManager: Updated listener order:");
+        for (int i = 0; i < listeners.size(); i++) {
+            GestureListener l = listeners.get(i);
+            System.out.println("  " + (i+1) + ". " + l.getClass().getSimpleName() + " (priority: " + l.getPriority() + ")");
+        }
     }
     
     /**
@@ -225,18 +248,26 @@ public class GestureManager {
      * @param event 配信するイベント
      */
     private void dispatchGestureEvent(GestureEvent event) {
-        System.out.println("GestureManager: Dispatching gesture: " + event);
+        System.out.println("GestureManager: Dispatching gesture: " + event + " to " + listeners.size() + " listeners");
         
-        for (GestureListener listener : listeners) {
+        for (int i = 0; i < listeners.size(); i++) {
+            GestureListener listener = listeners.get(i);
             try {
+                System.out.println("GestureManager: Checking listener " + (i+1) + ": " + listener.getClass().getSimpleName() + " (priority: " + listener.getPriority() + ")");
+                
                 if (listener.isInBounds(event.getCurrentX(), event.getCurrentY())) {
+                    System.out.println("GestureManager: Listener " + listener.getClass().getSimpleName() + " is in bounds, calling onGesture");
                     if (listener.onGesture(event)) {
-                        System.out.println("GestureManager: Gesture handled by listener");
+                        System.out.println("GestureManager: Gesture handled by " + listener.getClass().getSimpleName() + " - stopping dispatch");
                         return; // イベントが処理された
+                    } else {
+                        System.out.println("GestureManager: Listener " + listener.getClass().getSimpleName() + " did not handle gesture, continuing");
                     }
+                } else {
+                    System.out.println("GestureManager: Listener " + listener.getClass().getSimpleName() + " is not in bounds, skipping");
                 }
             } catch (Exception e) {
-                System.err.println("GestureManager: Error in gesture listener: " + e.getMessage());
+                System.err.println("GestureManager: Error in gesture listener " + listener.getClass().getSimpleName() + ": " + e.getMessage());
                 e.printStackTrace();
             }
         }

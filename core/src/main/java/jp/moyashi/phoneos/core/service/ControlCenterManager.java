@@ -63,7 +63,7 @@ public class ControlCenterManager implements GestureListener {
     private float scrollVelocity = 0.0f;
     
     /** 摩擦係数（スクロールの減速） */
-    private static final float FRICTION = 0.9f;
+    private static final float FRICTION = 0.85f;
     
     /** スクロール感度 */
     private static final float SCROLL_SENSITIVITY = 1.5f;
@@ -79,6 +79,9 @@ public class ControlCenterManager implements GestureListener {
     
     /** 動的優先度（表示状態に応じて変更される） */
     private int dynamicPriority = 0;
+    
+    /** ジェスチャーマネージャーへの参照（優先度変更時の再ソート用） */
+    private jp.moyashi.phoneos.core.input.GestureManager gestureManager;
     
     /**
      * ControlCenterManagerを作成する。
@@ -99,7 +102,12 @@ public class ControlCenterManager implements GestureListener {
         if (!isVisible) {
             isVisible = true;
             targetAnimationProgress = 1.0f;
+            
+            // コントロールセンターが表示される時は最高優先度に設定
+            setDynamicPriority(15000); // ロック画面(8000)より高い優先度
+            
             System.out.println("ControlCenterManager: Showing control center with " + items.size() + " items");
+            System.out.println("ControlCenterManager: Set priority to 15000 (highest)");
         }
     }
     
@@ -111,6 +119,9 @@ public class ControlCenterManager implements GestureListener {
             isVisible = false;
             targetAnimationProgress = 0.0f;
             
+            // コントロールセンターが非表示になる時は低い優先度に設定
+            setDynamicPriority(0); // 低い優先度に戻す
+            
             // スクロール状態をリセット（次回表示時に先頭から表示される）
             scrollOffset = 0.0f;
             scrollVelocity = 0.0f;
@@ -118,6 +129,7 @@ public class ControlCenterManager implements GestureListener {
             lastDragY = 0;
             
             System.out.println("ControlCenterManager: Hiding control center");
+            System.out.println("ControlCenterManager: Set priority to 0 (low)");
         }
     }
     
@@ -514,149 +526,6 @@ public class ControlCenterManager implements GestureListener {
         }
     }
     
-    /**
-     * ジェスチャーイベントを処理する。
-     * 
-     * @param event ジェスチャーイベント
-     * @return イベントを処理した場合true
-     */
-    public boolean onGesture(GestureEvent event) {
-        // 非表示の場合は処理しない
-        if (animationProgress <= 0.1f) {
-            return false;
-        }
-        
-        float panelHeight = screenHeight * CONTROL_CENTER_HEIGHT_RATIO;
-        float panelY = screenHeight - panelHeight * animationProgress;
-        
-        // コントロールセンターパネル外のタップで閉じる
-        // （現在は全画面表示のため、上部のヘッダー領域外でのタップで判定）
-        float headerHeight = 70; // ヘッダー部分の高さ
-        if (event.getType() == jp.moyashi.phoneos.core.input.GestureType.TAP && 
-            event.getCurrentY() < panelY + headerHeight) {
-            System.out.println("ControlCenterManager: Tapped outside panel content area, hiding control center");
-            hide();
-            return true;
-        }
-        
-        // アイテム領域内の座標を計算（ヘッダー分の余白を確保）
-        float startY = panelY + 70;
-        float availableHeight = panelHeight - 90;
-        
-        // アイテム領域内でのスクロール処理
-        if (event.getCurrentY() >= startY && event.getCurrentY() <= startY + availableHeight) {
-            // ドラッグ開始
-            if (event.getType() == jp.moyashi.phoneos.core.input.GestureType.DRAG_START) {
-                isDragScrolling = true;
-                lastDragY = event.getCurrentY();
-                scrollVelocity = 0; // 慣性を停止
-                System.out.println("ControlCenterManager: Drag scroll started at Y=" + lastDragY);
-                return true;
-            }
-            
-            // ドラッグ中 - リアルタイムスクロール
-            if (event.getType() == jp.moyashi.phoneos.core.input.GestureType.DRAG_MOVE && isDragScrolling) {
-                float currentY = event.getCurrentY();
-                float deltaY = currentY - lastDragY;
-                
-                // ドラッグの動きに応じてスクロールオフセットを更新
-                // 下向きドラッグ（deltaY > 0）で上スクロール（コンテンツが下に移動）
-                // 上向きドラッグ（deltaY < 0）で下スクロール（コンテンツが上に移動）
-                scrollOffset -= deltaY * SCROLL_SENSITIVITY;
-                
-                // スクロール範囲を制限
-                scrollOffset = Math.max(0, Math.min(scrollOffset, maxScrollOffset));
-                
-                lastDragY = currentY;
-                System.out.println("ControlCenterManager: Drag scrolling - deltaY=" + deltaY + ", scrollOffset=" + scrollOffset);
-                return true;
-            }
-            
-            // ドラッグ終了 - 慣性を設定
-            if (event.getType() == jp.moyashi.phoneos.core.input.GestureType.DRAG_END && isDragScrolling) {
-                isDragScrolling = false;
-                
-                // ドラッグの最終的な動きから慣性速度を計算
-                float deltaY = event.getCurrentY() - event.getStartY();
-                if (Math.abs(deltaY) > 20) { // 十分な移動距離がある場合
-                    scrollVelocity = -deltaY * SCROLL_SENSITIVITY * 0.3f; // 慣性方向を設定
-                }
-                
-                System.out.println("ControlCenterManager: Drag scroll ended, velocity=" + scrollVelocity);
-                return true;
-            }
-            
-            // 上向きスワイプで下にスクロール（コンテンツが上に移動）
-            if (event.getType() == jp.moyashi.phoneos.core.input.GestureType.SWIPE_UP) {
-                scrollVelocity = SCROLL_SENSITIVITY * 10; // 下向きスクロール
-                System.out.println("ControlCenterManager: Swipe up - scroll down");
-                return true;
-            }
-            
-            // 下向きスワイプで上にスクロール（コンテンツが下に移動）
-            // ただし、スクロール位置が0より大きい場合のみ（コンテンツが既にスクロールされている場合）
-            if (event.getType() == jp.moyashi.phoneos.core.input.GestureType.SWIPE_DOWN) {
-                if (scrollOffset > 0) {
-                    scrollVelocity = -SCROLL_SENSITIVITY * 10; // 上向きスクロール
-                    System.out.println("ControlCenterManager: Swipe down - scroll up");
-                    return true;
-                } else {
-                    // スクロール位置が0の場合は、コントロールセンターを閉じる
-                    System.out.println("ControlCenterManager: Swipe down at top, hiding control center");
-                    hide();
-                    return true;
-                }
-            }
-        }
-        
-        // アイテム領域外での下向きスワイプでも閉じる
-        if (event.getType() == jp.moyashi.phoneos.core.input.GestureType.SWIPE_DOWN) {
-            System.out.println("ControlCenterManager: Swipe down detected, hiding control center");
-            hide();
-            return true;
-        }
-        
-        // 左右スワイプをブロック（下のレイヤーに貫通させない）
-        if (event.getType() == jp.moyashi.phoneos.core.input.GestureType.SWIPE_LEFT || 
-            event.getType() == jp.moyashi.phoneos.core.input.GestureType.SWIPE_RIGHT) {
-            System.out.println("ControlCenterManager: Left/Right swipe blocked (control center is visible)");
-            return true; // イベントを消費して下のレイヤーに渡さない
-        }
-        
-        // アイテムとのインタラクション処理
-        float currentY = startY + ITEM_MARGIN - scrollOffset;
-        
-        for (IControlCenterItem item : items) {
-            if (!item.isVisible() || !item.isEnabled()) {
-                continue;
-            }
-            
-            // 表示領域内のアイテムのみ処理
-            if (currentY + ITEM_HEIGHT >= startY && currentY <= startY + availableHeight) {
-                float itemX = ITEM_MARGIN;
-                float itemWidth = screenWidth - 2 * ITEM_MARGIN;
-                
-                // ドラッグスクロール中でない場合のみアイテムの相互作用を処理
-                if (!isDragScrolling && item.isInBounds(event.getCurrentX(), event.getCurrentY(), itemX, currentY, itemWidth, ITEM_HEIGHT)) {
-                    try {
-                        if (item.onGesture(event)) {
-                            System.out.println("ControlCenterManager: Item '" + item.getId() + "' handled gesture");
-                            return true;
-                        }
-                    } catch (Exception e) {
-                        System.err.println("ControlCenterManager: Error in item gesture handling: " + e.getMessage());
-                    }
-                }
-            }
-            
-            currentY += ITEM_HEIGHT + ITEM_MARGIN;
-        }
-        
-        // コントロールセンターが表示されているときは、処理されなかったジェスチャーも
-        // すべてブロックして下のレイヤーに貫通させない
-        System.out.println("ControlCenterManager: Gesture blocked (control center is visible): " + event.getType());
-        return true;
-    }
     
     /**
      * 現在のアニメーション進行度を取得する（デバッグ用）。
@@ -695,7 +564,136 @@ public class ControlCenterManager implements GestureListener {
      * @param priority 設定する優先度
      */
     public void setDynamicPriority(int priority) {
+        int oldPriority = this.dynamicPriority;
         this.dynamicPriority = priority;
+        
+        // 優先度が変更された場合、ジェスチャーマネージャーにリスナーの再ソートを要求
+        if (oldPriority != priority && gestureManager != null) {
+            gestureManager.removeGestureListener(this);
+            gestureManager.addGestureListener(this);
+            System.out.println("ControlCenterManager: Priority changed from " + oldPriority + " to " + priority + ", re-sorted gesture listeners");
+        }
+    }
+    
+    /**
+     * ジェスチャーマネージャーの参照を設定する。
+     * 
+     * @param gestureManager ジェスチャーマネージャー
+     */
+    public void setGestureManager(jp.moyashi.phoneos.core.input.GestureManager gestureManager) {
+        this.gestureManager = gestureManager;
+    }
+    
+    /**
+     * ジェスチャーイベントを処理する。
+     * コントロールセンターが表示中の場合、すべてのジェスチャーを受け取り、
+     * 適切なアクション（項目選択、スクロール、非表示）を実行する。
+     * 
+     * @param event ジェスチャーイベント
+     * @return イベントを処理した場合true
+     */
+    @Override
+    public boolean onGesture(GestureEvent event) {
+        // コントロールセンターが表示されていない場合は処理しない
+        if (!isVisible || animationProgress <= 0.1f) {
+            return false;
+        }
+        
+        System.out.println("ControlCenterManager: Processing gesture - " + event.getType() + " at (" + 
+                          event.getCurrentX() + ", " + event.getCurrentY() + ")");
+        
+        // ジェスチャータイプに応じた処理
+        switch (event.getType()) {
+            case SWIPE_DOWN:
+                // 下向きスワイプでコントロールセンターを非表示
+                hide();
+                return true; // イベントを消費
+                
+            case TAP:
+                // クリックイベント処理（項目選択など）
+                handleControlCenterClick(event.getCurrentX(), event.getCurrentY());
+                return true; // イベントを消費
+                
+            case DRAG_MOVE:
+                // ドラッグによるスクロール処理
+                handleControlCenterScroll(event);
+                return true; // イベントを消費
+                
+            case DRAG_END:
+                // ドラッグ終了時にフラグをリセット
+                isDragScrolling = false;
+                System.out.println("ControlCenterManager: Drag ended, resetting scroll state");
+                return true; // イベントを消費
+                
+            case SWIPE_UP:
+            case SWIPE_LEFT:
+            case SWIPE_RIGHT:
+                // その他のスワイプも消費（下位レイヤーに渡さない）
+                return true;
+                
+            default:
+                // その他のジェスチャーも消費
+                return true;
+        }
+    }
+    
+    /**
+     * コントロールセンター内のクリックを処理する。
+     * 
+     * @param x クリック座標X
+     * @param y クリック座標Y
+     */
+    private void handleControlCenterClick(int x, int y) {
+        // 項目領域内のクリック判定とアクション実行
+        // パネルの実際の位置を計算（描画ロジックと一致させる）
+        float panelHeight = screenHeight * CONTROL_CENTER_HEIGHT_RATIO;
+        float panelY = screenHeight - panelHeight * animationProgress;
+        float startY = panelY + 70; // ヘッダー分の70pxオフセットを追加
+        float itemY = startY + ITEM_MARGIN - scrollOffset;
+        
+        System.out.println("ControlCenterManager: Click at (" + x + ", " + y + ")");
+        System.out.println("ControlCenterManager: startY=" + startY + ", scrollOffset=" + scrollOffset + ", itemY=" + itemY);
+        
+        for (IControlCenterItem item : items) {
+            // 描画と同じように非表示アイテムをスキップ
+            if (!item.isVisible()) {
+                System.out.println("ControlCenterManager: Skipping invisible item '" + item.getDisplayName() + "'");
+                continue;
+            }
+            
+            System.out.println("ControlCenterManager: Checking item '" + item.getDisplayName() + "' at Y range [" + itemY + " - " + (itemY + ITEM_HEIGHT) + "]");
+            if (y >= itemY && y <= itemY + ITEM_HEIGHT) {
+                System.out.println("ControlCenterManager: Item clicked - " + item.getDisplayName());
+                // アイテムのジェスチャー処理を呼び出す
+                GestureEvent tapEvent = new GestureEvent(jp.moyashi.phoneos.core.input.GestureType.TAP, x, y, x, y, System.currentTimeMillis(), System.currentTimeMillis());
+                item.onGesture(tapEvent);
+                return;
+            }
+            itemY += ITEM_HEIGHT + ITEM_MARGIN;
+        }
+    }
+    
+    /**
+     * コントロールセンターのスクロールを処理する。
+     * 
+     * @param event ドラッグイベント
+     */
+    private void handleControlCenterScroll(GestureEvent event) {
+        if (!isDragScrolling) {
+            isDragScrolling = true;
+            lastDragY = event.getCurrentY();
+            scrollVelocity = 0;
+        } else {
+            float deltaY = event.getCurrentY() - lastDragY;
+            scrollOffset -= deltaY * SCROLL_SENSITIVITY;
+            
+            // スクロール範囲の制限
+            if (scrollOffset < 0) scrollOffset = 0;
+            if (scrollOffset > maxScrollOffset) scrollOffset = maxScrollOffset;
+            
+            scrollVelocity = -deltaY * SCROLL_SENSITIVITY;
+            lastDragY = event.getCurrentY();
+        }
     }
     
     /**
@@ -708,6 +706,8 @@ public class ControlCenterManager implements GestureListener {
     @Override
     public boolean isInBounds(int x, int y) {
         // コントロールセンターが表示中の場合、画面全体をカバー
-        return this.isVisible && animationProgress > 0.1f;
+        boolean inBounds = this.isVisible && animationProgress > 0.1f;
+        System.out.println("ControlCenterManager.isInBounds(" + x + ", " + y + ") = " + inBounds + " (visible=" + isVisible + ", animProgress=" + animationProgress + ", priority=" + getPriority() + ")");
+        return inBounds;
     }
 }

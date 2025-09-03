@@ -64,6 +64,9 @@ public class NotificationManager implements GestureListener {
     /** 最大スクロール量 */
     private float maxScrollOffset = 0;
     
+    /** Kernelの参照（動的優先度変更時の再ソート用） */
+    private jp.moyashi.phoneos.core.Kernel kernel;
+    
     /**
      * NotificationManagerを作成する。
      */
@@ -87,6 +90,13 @@ public class NotificationManager implements GestureListener {
         addNotification("\u8a2d\u5b9a", "Wi-Fi\u63a5\u7d9a", "\u30db\u30fc\u30e0\u30cd\u30c3\u30c8\u30ef\u30fc\u30af\u306b\u63a5\u7d9a\u3057\u307e\u3057\u305f", 0);
         addNotification("\u30e1\u30c3\u30bb\u30fc\u30b8", "\u65b0\u7740\u30e1\u30c3\u30bb\u30fc\u30b8", "\u53cb\u9054\u304b\u3089\u30e1\u30c3\u30bb\u30fc\u30b8\u304c\u5c4a\u304d\u307e\u3057\u305f", 2);
         addNotification("\u30a2\u30d7\u30ea\u30b9\u30c8\u30a2", "\u30a2\u30d7\u30ea\u66f4\u65b0", "3\u3064\u306e\u30a2\u30d7\u30ea\u304c\u66f4\u65b0\u3055\u308c\u307e\u3057\u305f", 0);
+        // スクロールテスト用の追加通知
+        addNotification("\u30e1\u30fc\u30eb", "\u65b0\u7740\u30e1\u30fc\u30eb", "\u4ed5\u4e8b\u306e\u30e1\u30fc\u30eb\u304c\u5c4a\u3044\u3066\u3044\u307e\u3059", 1);
+        addNotification("\u30ab\u30ec\u30f3\u30c0\u30fc", "\u4f1a\u8b70\u306e\u30ea\u30de\u30a4\u30f3\u30c0\u30fc", "15\u5206\u5f8c\u306b\u4f1a\u8b70\u304c\u59cb\u307e\u308a\u307e\u3059", 2);
+        addNotification("\u5929\u6c17", "\u96e8\u306e\u4e88\u5831", "\u4eca\u65e5\u306e\u5348\u5f8c\u304b\u3089\u96e8\u304c\u964d\u308a\u307e\u3059", 0);
+        addNotification("\u30bb\u30ad\u30e5\u30ea\u30c6\u30a3", "\u30bb\u30ad\u30e5\u30ea\u30c6\u30a3\u66f4\u65b0", "\u30bb\u30ad\u30e5\u30ea\u30c6\u30a3\u30a2\u30c3\u30d7\u30c7\u30fc\u30c8\u304c\u5fc5\u8981\u3067\u3059", 2);
+        addNotification("\u30d0\u30c3\u30c6\u30ea\u30fc", "\u30d0\u30c3\u30c6\u30ea\u30fc\u4f4e\u4e0b", "\u30d0\u30c3\u30c6\u30ea\u30fc\u304c20%\u4ee5\u4e0b\u3067\u3059", 1);
+        addNotification("\u30b9\u30c8\u30ec\u30fc\u30b8", "\u30b9\u30c8\u30ec\u30fc\u30b8\u4e0d\u8db3", "\u30b9\u30c8\u30ec\u30fc\u30b8\u304c\u6e80\u5bb9\u306b\u8fd1\u3065\u3044\u3066\u3044\u307e\u3059", 1);
     }
     
     /**
@@ -96,6 +106,7 @@ public class NotificationManager implements GestureListener {
         if (!isVisible) {
             isVisible = true;
             targetAnimationProgress = 1.0f;
+            setDynamicPriority(10000); // ロック画面(8000)より高い優先度でControlCenter(15000)より低い
             System.out.println("NotificationManager: Showing notification center with " + notifications.size() + " notifications");
         }
     }
@@ -108,6 +119,7 @@ public class NotificationManager implements GestureListener {
             isVisible = false;
             targetAnimationProgress = 0.0f;
             scrollOffset = 0; // スクロール位置をリセット
+            setDynamicPriority(900); // 元の優先度に戻す
             System.out.println("NotificationManager: Hiding notification center");
         }
     }
@@ -224,6 +236,29 @@ public class NotificationManager implements GestureListener {
      */
     public int getNotificationCount() {
         return notifications.size();
+    }
+    
+    /**
+     * 最新の通知を指定した数だけ取得する。
+     * ロック画面でのプレビュー表示に使用される。
+     * 
+     * @param count 取得する通知の最大数
+     * @return 最新通知のリスト
+     */
+    public List<INotification> getRecentNotifications(int count) {
+        if (notifications.isEmpty()) {
+            return new ArrayList<>();
+        }
+        
+        // 最新の通知から順に取得
+        int size = Math.min(count, notifications.size());
+        List<INotification> recent = new ArrayList<>();
+        
+        for (int i = notifications.size() - 1; i >= notifications.size() - size; i--) {
+            recent.add(notifications.get(i));
+        }
+        
+        return recent;
     }
     
     /**
@@ -462,11 +497,23 @@ public class NotificationManager implements GestureListener {
             return true;
         }
         
-        // 上向きスワイプでも閉じる
+        // 上向きスワイプで閉じる（ただし、通知エリア内でスクロール可能な場合は除く）
         if (event.getType() == GestureType.SWIPE_UP) {
-            System.out.println("NotificationManager: Swipe up detected, hiding notification center");
-            hide();
-            return true;
+            float notificationAreaStart = panelY + 60;
+            float notificationAreaHeight = panelHeight - 80;
+            
+            // 通知エリア内でスクロールが可能な場合はスクロール処理を優先
+            if (event.getCurrentY() >= notificationAreaStart && 
+                event.getCurrentY() <= notificationAreaStart + notificationAreaHeight &&
+                maxScrollOffset > 0) {
+                // スクロール処理に委譲（後続の処理で処理される）
+                // ここでは何もしない
+            } else {
+                // 通知エリア外や、スクロールが不要な場合は通知センターを閉じる
+                System.out.println("NotificationManager: Swipe up detected outside scroll area, hiding notification center");
+                hide();
+                return true;
+            }
         }
         
         // ヘッダーエリアのクリック処理
@@ -474,11 +521,36 @@ public class NotificationManager implements GestureListener {
             return handleHeaderClick(event, panelY);
         }
         
-        // 通知エリアでのスクロール処理
-        if (event.getType() == GestureType.DRAG_MOVE && maxScrollOffset > 0) {
-            float deltaY = event.getCurrentY() - event.getStartY();
-            scrollOffset = Math.max(0, Math.min(scrollOffset - deltaY * 0.5f, maxScrollOffset));
-            return true;
+        // 通知エリアでのスクロール処理 - SwipeジェスチャーとDragの両方に対応
+        float notificationAreaStart = panelY + 60;
+        float notificationAreaHeight = panelHeight - 80;
+        boolean inNotificationArea = event.getCurrentY() >= notificationAreaStart && 
+                                   event.getCurrentY() <= notificationAreaStart + notificationAreaHeight;
+        
+        if ((event.getType() == GestureType.DRAG_MOVE || 
+             event.getType() == GestureType.SWIPE_UP || 
+             event.getType() == GestureType.SWIPE_DOWN) && 
+             maxScrollOffset > 0 && inNotificationArea) {
+            
+            if (event.getType() == GestureType.DRAG_MOVE) {
+                // ドラッグ中のスムーズなスクロール
+                float deltaY = event.getCurrentY() - event.getStartY();
+                scrollOffset = Math.max(0, Math.min(scrollOffset - deltaY * 1.2f, maxScrollOffset));
+                System.out.println("NotificationManager: Drag scroll, offset: " + scrollOffset);
+                return true;
+            } else if (event.getType() == GestureType.SWIPE_UP) {
+                // 上向きスワイプで下にスクロール（通知を上に移動）
+                float scrollAmount = 80.0f; // iOSライクなスクロール量
+                scrollOffset = Math.min(maxScrollOffset, scrollOffset + scrollAmount);
+                System.out.println("NotificationManager: Swipe up scroll, offset: " + scrollOffset);
+                return true;
+            } else if (event.getType() == GestureType.SWIPE_DOWN) {
+                // 下向きスワイプで上にスクロール（通知を下に移動）
+                float scrollAmount = 80.0f;
+                scrollOffset = Math.max(0, scrollOffset - scrollAmount);
+                System.out.println("NotificationManager: Swipe down scroll, offset: " + scrollOffset);
+                return true;
+            }
         }
         
         // 通知のクリック処理
@@ -573,8 +645,24 @@ public class NotificationManager implements GestureListener {
      * @param priority 新しい優先度
      */
     public void setDynamicPriority(int priority) {
-        this.dynamicPriority = priority;
-        System.out.println("NotificationManager: Dynamic priority updated to " + priority);
+        if (this.dynamicPriority != priority) {
+            this.dynamicPriority = priority;
+            System.out.println("NotificationManager: Dynamic priority updated to " + priority);
+            
+            // GestureManagerに再ソートを要求
+            if (kernel != null && kernel.getGestureManager() != null) {
+                kernel.getGestureManager().resortListeners();
+            }
+        }
+    }
+    
+    /**
+     * Kernelの参照を設定する。
+     * 
+     * @param kernel Kernelインスタンス
+     */
+    public void setKernel(jp.moyashi.phoneos.core.Kernel kernel) {
+        this.kernel = kernel;
     }
     
     /**

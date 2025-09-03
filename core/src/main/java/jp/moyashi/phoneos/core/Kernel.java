@@ -11,8 +11,10 @@ import jp.moyashi.phoneos.core.input.GestureEvent;
 import jp.moyashi.phoneos.core.input.GestureType;
 import jp.moyashi.phoneos.core.apps.launcher.LauncherApp;
 import jp.moyashi.phoneos.core.apps.settings.SettingsApp;
+import jp.moyashi.phoneos.core.ui.LayerManager;
 import processing.core.PApplet;
 import processing.core.PFont;
+import processing.event.MouseEvent;
 
 /**
  * スマートフォンOSの中核となるメインカーネル。
@@ -55,8 +57,24 @@ public class Kernel extends PApplet implements GestureListener {
     /** 通知センター管理サービス */
     private NotificationManager notificationManager;
     
+    /** ロック状態管理サービス */
+    private LockManager lockManager;
+    
+    /** 動的レイヤー管理システム */
+    private LayerManager layerManager;
+    
     /** 日本語フォント */
     private PFont japaneseFont;
+    
+    // ESCキー長押し検出用変数
+    /** ESCキーが押されている時間 */
+    private long escKeyPressTime = 0;
+    
+    /** ESCキーが現在押されているかどうか */
+    private boolean escKeyPressed = false;
+    
+    /** 長押し判定時間（ミリ秒） */
+    private static final long LONG_PRESS_DURATION = 2000; // 2秒
     
     /**
      * setup()が呼ばれる前にProcessingの設定を行う。
@@ -121,10 +139,18 @@ public class Kernel extends PApplet implements GestureListener {
         
         System.out.println("  -> コントロールセンター管理サービス作成中...");
         controlCenterManager = new ControlCenterManager();
+        controlCenterManager.setGestureManager(gestureManager);
         setupControlCenter();
         
         System.out.println("  -> 通知センター管理サービス作成中...");
         notificationManager = new NotificationManager();
+        notificationManager.setKernel(this); // Kernelの参照を設定
+        
+        System.out.println("  -> ロック状態管理サービス作成中...");
+        lockManager = new LockManager(settingsManager);
+        
+        System.out.println("  -> 動的レイヤー管理システム作成中...");
+        layerManager = new LayerManager(gestureManager);
         
         // コントロールセンターを最高優先度のジェスチャーリスナーとして登録
         gestureManager.addGestureListener(controlCenterManager);
@@ -153,18 +179,32 @@ public class Kernel extends PApplet implements GestureListener {
         screenManager = new ScreenManager();
         System.out.println("✅ ScreenManager作成済み: " + (screenManager != null));
         
-        System.out.println("▶️ LauncherAppを初期画面として開始中...");
-        Screen launcherScreen = launcherApp.getEntryScreen(this);
-        System.out.println("✅ LauncherApp画面取得済み: " + (launcherScreen != null));
-        if (launcherScreen != null) {
-            System.out.println("   画面タイトル: " + launcherScreen.getScreenTitle());
+        // ロック状態に基づいて初期画面を決定
+        if (lockManager.isLocked()) {
+            System.out.println("▶️ OSがロック状態 - ロック画面を初期画面として開始中...");
+            jp.moyashi.phoneos.core.ui.lock.LockScreen lockScreen = 
+                new jp.moyashi.phoneos.core.ui.lock.LockScreen(this);
+            screenManager.pushScreen(lockScreen);
+            System.out.println("✅ ロック画面をScreenManagerにプッシュ済み");
+        } else {
+            System.out.println("▶️ OSがアンロック状態 - LauncherAppを初期画面として開始中...");
+            Screen launcherScreen = launcherApp.getEntryScreen(this);
+            System.out.println("✅ LauncherApp画面取得済み: " + (launcherScreen != null));
+            if (launcherScreen != null) {
+                System.out.println("   画面タイトル: " + launcherScreen.getScreenTitle());
+            }
+            
+            screenManager.pushScreen(launcherScreen);
+            System.out.println("✅ 画面をScreenManagerにプッシュ済み");
         }
         
-        screenManager.pushScreen(launcherScreen);
-        System.out.println("✅ 画面をScreenManagerにプッシュ済み");
-        
         System.out.println("✅ Kernel: OS初期化完了！");
-        System.out.println("    • LauncherAppが実行中");
+        if (lockManager.isLocked()) {
+            System.out.println("    • ロック画面が表示されています");
+            System.out.println("    • パターン入力でアンロックできます (デフォルト: L字型パターン)");
+        } else {
+            System.out.println("    • LauncherAppが実行中");
+        }
         System.out.println("    • " + appLoader.getLoadedApps().size() + " 個のアプリケーションが利用可能");
         System.out.println("    • システムはユーザー操作に対応可能");
         System.out.println("=======================================");
@@ -233,21 +273,31 @@ public class Kernel extends PApplet implements GestureListener {
             gestureManager.update();
         }
         
+        // レイヤー管理システムによる描画とジェスチャー優先度管理
+        if (layerManager != null) {
+            layerManager.updateAndRender(this);
+        }
+        
+        // 従来のシステム描画（レイヤー管理に移行するまでの互換性維持）
+        // TODO: すべてのコンポーネントをレイヤー管理システムに移行後、以下のコードを削除
+        
         // 動的優先度を更新（描画順序に基づく）
-        updateDynamicPriorities();
+        // DISABLED: ControlCenterManagerとNotificationManagerが独自に優先度を管理するため、
+        // ここでの上書きを無効化。コントロールセンターが15000の高優先度を維持できるようになる。
+        // updateDynamicPriorities();
         
         // 通知センターを描画（最初に、背景の一部として）
-        if (notificationManager != null) {
+        if (notificationManager != null && !isComponentManagedByLayer("notification_center")) {
             notificationManager.draw(this);
         }
         
         // コントロールセンターを描画（通知センターの上に）
-        if (controlCenterManager != null) {
+        if (controlCenterManager != null && !isComponentManagedByLayer("control_center")) {
             controlCenterManager.draw(this);
         }
         
         // ポップアップを最上位に描画（すべての描画の最後）
-        if (popupManager != null) {
+        if (popupManager != null && !isComponentManagedByLayer("popup")) {
             popupManager.draw(this);
         }
     }
@@ -258,7 +308,11 @@ public class Kernel extends PApplet implements GestureListener {
      */
     @Override
     public void mousePressed() {
+        System.out.println("========================================");
         System.out.println("Kernel: mousePressed at (" + mouseX + ", " + mouseY + ")");
+        System.out.println("ControlCenter visible: " + (controlCenterManager != null ? controlCenterManager.isVisible() : "null"));
+        System.out.println("NotificationManager visible: " + (notificationManager != null ? notificationManager.isVisible() : "null"));
+        System.out.println("========================================");
         
         // 1. ポップアップマネージャーが先にイベントを処理
         if (popupManager != null && popupManager.handleMouseClick(mouseX, mouseY)) {
@@ -290,11 +344,14 @@ public class Kernel extends PApplet implements GestureListener {
         }
         
         // 4. 従来のイベント処理（後方互換のため残す）
-        // ただし、コントロールセンターや通知センターが表示中の場合はブロック
+        // ただし、ロック中、コントロールセンターや通知センターが表示中の場合はブロック
         if (screenManager != null && 
+            (lockManager == null || !lockManager.isLocked()) &&
             (controlCenterManager == null || !controlCenterManager.isVisible()) &&
             (notificationManager == null || !notificationManager.isVisible())) {
             screenManager.mousePressed(mouseX, mouseY);
+        } else if (lockManager != null && lockManager.isLocked()) {
+            System.out.println("Kernel: Device is locked - mouse input handled by lock screen only");
         }
     }
     
@@ -318,8 +375,9 @@ public class Kernel extends PApplet implements GestureListener {
         }
         
         // 3. 従来のドラッグ処理（後方互換のため残す）
-        // ただし、コントロールセンターや通知センターが表示中の場合はブロック
+        // ただし、ロック中、コントロールセンターや通知センターが表示中の場合はブロック
         if (screenManager != null && 
+            (lockManager == null || !lockManager.isLocked()) &&
             (controlCenterManager == null || !controlCenterManager.isVisible()) &&
             (notificationManager == null || !notificationManager.isVisible())) {
             screenManager.mouseDragged(mouseX, mouseY);
@@ -340,8 +398,9 @@ public class Kernel extends PApplet implements GestureListener {
         }
         
         // 2. 従来のリリース処理（後方互換のため残す）
-        // ただし、コントロールセンターや通知センターが表示中の場合はブロック
+        // ただし、ロック中、コントロールセンターや通知センターが表示中の場合はブロック
         if (screenManager != null && 
+            (lockManager == null || !lockManager.isLocked()) &&
             (controlCenterManager == null || !controlCenterManager.isVisible()) &&
             (notificationManager == null || !notificationManager.isVisible())) {
             screenManager.mouseReleased(mouseX, mouseY);
@@ -349,16 +408,115 @@ public class Kernel extends PApplet implements GestureListener {
     }
     
     /**
+     * Processingのmousewheel()メソッド（複数の実装を試す）
+     */
+    public void mouseWheel() {
+        System.out.println("Kernel: mouseWheel() called (no args)!");
+        if (mouseEvent != null) {
+            float wheelRotation = mouseEvent.getCount();
+            System.out.println("Kernel: wheelRotation = " + wheelRotation);
+            handleMouseWheel((int)wheelRotation);
+        } else {
+            System.out.println("Kernel: mouseEvent is null!");
+        }
+    }
+    
+    /**
+     * Processing 4.x用のmouseWheelメソッド
+     */
+    @Override
+    public void mouseWheel(MouseEvent event) {
+        System.out.println("Kernel: mouseWheel(MouseEvent) called!");
+        float wheelRotation = event.getCount();
+        System.out.println("Kernel: wheelRotation = " + wheelRotation);
+        handleMouseWheel((int)wheelRotation);
+    }
+    
+    /**
+     * マウスホイールイベント処理。
+     * ホイールスクロールをドラッグジェスチャーに変換してスクロール機能を提供する。
+     */
+    private void handleMouseWheel(int wheelRotation) {
+        System.out.println("==========================================");
+        System.out.println("Kernel: handleMouseWheel - rotation: " + wheelRotation + " at (" + mouseX + ", " + mouseY + ")");
+        System.out.println("GestureManager: " + (gestureManager != null ? "exists" : "null"));
+        System.out.println("==========================================");
+        
+        if (gestureManager != null && wheelRotation != 0) {
+            // ホイールをドラッグジェスチャーとしてシミュレート
+            int scrollAmount = wheelRotation * 30; // スクロール量を調整
+            
+            // ドラッグ開始をシミュレート
+            gestureManager.handleMousePressed(mouseX, mouseY);
+            
+            // ドラッグ移動をシミュレート（Y軸方向のみ）
+            gestureManager.handleMouseDragged(mouseX, mouseY + scrollAmount);
+            
+            // ドラッグ終了をシミュレート
+            gestureManager.handleMouseReleased(mouseX, mouseY + scrollAmount);
+            
+            System.out.println("Kernel: Converted wheel scroll to drag gesture (scrollAmount: " + scrollAmount + ")");
+        }
+    }
+    
+    /**
      * キーボード入力イベントを処理する。
      * スペースキーでホーム画面に戻る機能を提供する。
+     * ただし、ロック中はスペースキーを無効化する。
      */
     @Override
     public void keyPressed() {
-        System.out.println("Kernel: keyPressed - key: " + key + ", keyCode: " + keyCode);
+        System.out.println("========================================");
+        System.out.println("Kernel: keyPressed - key: '" + key + "', keyCode: " + keyCode);
+        System.out.println("========================================");
         
-        // スペースキー（32）でホーム画面に戻る
+        // ESCキーの処理
+        if (keyCode == 27) { // ESC key code
+            handleEscKeyPress();
+            key = 0; // ProcessingのデフォルトESC動作を無効化
+            return;
+        }
+        
+        // スペースキー（ホームボタン）の処理
         if (key == ' ' || keyCode == 32) {
-            navigateToHome();
+            if (lockManager != null && lockManager.isLocked()) {
+                // ロック中：パターン入力エリアをハイライト表示
+                System.out.println("Kernel: Home button pressed while locked - highlighting pattern input");
+                highlightPatternInput();
+                return;
+            } else {
+                // アンロック時：ホーム画面に戻る
+                navigateToHome();
+                return;
+            }
+        }
+        
+        // テスト用：すべてのキーコードをログ出力
+        System.out.println("Kernel: Checking keyCode " + keyCode + " for special keys");
+        
+        // Page Up/Down キーでマウスホイールをシミュレート (複数のキーコードを試す)
+        if (keyCode == 33 || keyCode == 366) { // Page Up キー (WindowsとJavaで異なる場合)
+            System.out.println("Kernel: Page Up pressed - simulating wheel up");
+            handleMouseWheel(-1); // 上向きスクロール
+            return;
+        }
+        
+        if (keyCode == 34 || keyCode == 367) { // Page Down キー
+            System.out.println("Kernel: Page Down pressed - simulating wheel down");
+            handleMouseWheel(1); // 下向きスクロール
+            return;
+        }
+        
+        // より簡単なテスト用キーを追加
+        if (key == 'q' || key == 'Q') {
+            System.out.println("Kernel: Q pressed - simulating wheel up");
+            handleMouseWheel(-1);
+            return;
+        }
+        
+        if (key == 'e' || key == 'E') {
+            System.out.println("Kernel: E pressed - simulating wheel down");
+            handleMouseWheel(1);
             return;
         }
         
@@ -366,6 +524,113 @@ public class Kernel extends PApplet implements GestureListener {
         if (screenManager != null) {
             screenManager.keyPressed(key, keyCode);
         }
+    }
+    
+    /**
+     * キーリリースイベント処理。
+     * ESCキーの長押し検出に使用される。
+     */
+    @Override
+    public void keyReleased() {
+        System.out.println("Kernel: keyReleased - key: " + key + ", keyCode: " + keyCode);
+        
+        // ESCキーのリリース処理
+        if (keyCode == 27) { // ESC key code
+            handleEscKeyRelease();
+            key = 0; // ProcessingのデフォルトESC動作を無効化
+        }
+        
+        // keyReleasedはScreenManagerでサポートされていないため、コメントアウト
+        // if (screenManager != null) {
+        //     screenManager.keyReleased(key, keyCode);
+        // }
+    }
+    
+    /**
+     * ESCキープレス処理。
+     * 長押し検出を開始する。
+     */
+    private void handleEscKeyPress() {
+        if (!escKeyPressed) {
+            escKeyPressed = true;
+            escKeyPressTime = System.currentTimeMillis();
+            System.out.println("Kernel: ESC key pressed - starting long press detection");
+        }
+    }
+    
+    /**
+     * ESCキーリリース処理。
+     * 短押し（ロック）か長押し（シャットダウン）かを判定する。
+     */
+    private void handleEscKeyRelease() {
+        if (escKeyPressed) {
+            escKeyPressed = false;
+            long pressDuration = System.currentTimeMillis() - escKeyPressTime;
+            
+            System.out.println("Kernel: ESC key released after " + pressDuration + "ms");
+            
+            if (pressDuration >= LONG_PRESS_DURATION) {
+                // 長押し：シャットダウン
+                System.out.println("Kernel: ESC long press detected - initiating shutdown");
+                handleShutdown();
+            } else {
+                // 短押し：ロック
+                System.out.println("Kernel: ESC short press detected - locking device");
+                handleDeviceLock();
+            }
+        }
+    }
+    
+    /**
+     * デバイスロック処理。
+     * 現在のロック状態に関わらずロック画面を表示する。
+     */
+    private void handleDeviceLock() {
+        System.out.println("Kernel: Locking device - switching to lock screen");
+        
+        if (lockManager != null) {
+            lockManager.lock(); // デバイスをロック状態にする
+            
+            // ロック画面に切り替え
+            try {
+                jp.moyashi.phoneos.core.ui.lock.LockScreen lockScreen = 
+                    new jp.moyashi.phoneos.core.ui.lock.LockScreen(this);
+                
+                // 現在の画面をクリアしてロック画面をプッシュ
+                screenManager.clearAllScreens();
+                screenManager.pushScreen(lockScreen);
+                
+                System.out.println("Kernel: Device locked successfully");
+            } catch (Exception e) {
+                System.err.println("Kernel: Error switching to lock screen: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+    }
+    
+    /**
+     * システムシャットダウン処理。
+     */
+    private void handleShutdown() {
+        System.out.println("Kernel: Initiating system shutdown...");
+        
+        // シャットダウンメッセージを表示
+        background(20, 25, 35);
+        fill(255, 255, 255);
+        textAlign(CENTER, CENTER);
+        textSize(24);
+        text("システムをシャットダウンしています...", width / 2, height / 2);
+        
+        // 少し遅延してから終了
+        new Thread(() -> {
+            try {
+                Thread.sleep(1500);
+                System.out.println("Kernel: Shutdown complete");
+                exit();
+            } catch (InterruptedException e) {
+                System.err.println("Kernel: Shutdown interrupted: " + e.getMessage());
+            }
+        }).start();
     }
     
     /**
@@ -447,6 +712,24 @@ public class Kernel extends PApplet implements GestureListener {
      */
     public NotificationManager getNotificationManager() {
         return notificationManager;
+    }
+    
+    /**
+     * ロック状態管理サービスのインスタンスを取得する。
+     * 
+     * @return ロック管理サービス
+     */
+    public LockManager getLockManager() {
+        return lockManager;
+    }
+    
+    /**
+     * 動的レイヤー管理システムのインスタンスを取得する。
+     * 
+     * @return レイヤーマネージャー
+     */
+    public LayerManager getLayerManager() {
+        return layerManager;
     }
     
     /**
@@ -712,5 +995,32 @@ public class Kernel extends PApplet implements GestureListener {
             }
             // 両方表示中の場合は上記で既に設定済み
         }
+    }
+    
+    /**
+     * パターン入力エリアをハイライト表示する。
+     * ロック中にホームボタンが押された際に呼び出される。
+     */
+    private void highlightPatternInput() {
+        // 現在の画面がロック画面の場合、パターンハイライト機能を呼び出す
+        if (screenManager != null) {
+            Screen currentScreen = screenManager.getCurrentScreen();
+            if (currentScreen instanceof jp.moyashi.phoneos.core.ui.lock.LockScreen) {
+                jp.moyashi.phoneos.core.ui.lock.LockScreen lockScreen = 
+                    (jp.moyashi.phoneos.core.ui.lock.LockScreen) currentScreen;
+                lockScreen.highlightPatternArea();
+            }
+        }
+    }
+    
+    /**
+     * 指定されたコンポーネントがレイヤー管理システムで管理されているかチェックする。
+     * 
+     * @param componentId コンポーネントID
+     * @return レイヤー管理されている場合true
+     */
+    private boolean isComponentManagedByLayer(String componentId) {
+        if (layerManager == null) return false;
+        return layerManager.isLayerVisible(componentId);
     }
 }

@@ -25,7 +25,11 @@
       "Bash(chcp:*)",
       "Bash(./run_direct.bat)",
       "Bash(del /q /f corebuildclassesjavamainjpmoyashiphoneoscoreservice*.class)",
-      "Bash(od:*)"
+      "Bash(od:*)",
+      "Bash(del \"C:\\Users\\dora2\\IdeaProjects\\MochiMobileOS\\core\\src\\main\\java\\jp\\moyashi\\phoneos\\core\\ui\\lock\\LockScreenTest.java\")",
+      "Bash(rg:*)",
+      "Bash(tasklist)",
+      "Bash(del /q /f \"core\\build\\classes\\java\\main\\jp\\moyashi\\phoneos\\core\\service\\*.class\")"
     ],
     "deny": [],
     "ask": [],
