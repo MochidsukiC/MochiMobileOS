@@ -5,8 +5,8 @@ import jp.moyashi.phoneos.core.ui.Screen;
 import jp.moyashi.phoneos.core.Kernel;
 import jp.moyashi.phoneos.core.apps.settings.ui.SettingsScreen;
 import jp.moyashi.phoneos.core.controls.ToggleItem;
-import processing.core.PGraphics;
 import processing.core.PImage;
+import java.net.URL;
 
 /**
  * MochiMobileOS用の設定アプリケーション。
@@ -77,46 +77,32 @@ public class SettingsApp implements IApplication {
     
     /**
      * このアプリケーションのアイコンを取得する。
-     * 設定を表すシンプルな歯車状のアイコンを作成する。
+     * クラスパスからアイコンを読み込む。
      * 
      * @param p 描画操作用のPAppletインスタンス
-     * @return アプリケーションアイコン
+     * @return アプリケーションアイコンのPImage。読み込めない場合はnull。
      */
     @Override
     public PImage getIcon(processing.core.PApplet p) {
-        // Create graphics buffer for icon
-        PGraphics icon = p.createGraphics(64, 64);
-        
-        icon.beginDraw();
-        icon.background(0x666666); // Gray background
-        icon.noStroke();
-        
-        // Draw gear shape
-        icon.fill(0xFFFFFF); // White gear
-        
-        // Outer gear circle
-        icon.ellipse(32, 32, 40, 40);
-        
-        // Inner hole
-        icon.fill(0x666666);
-        icon.ellipse(32, 32, 16, 16);
-        
-        // Gear teeth (simplified)
-        icon.fill(0xFFFFFF);
-        icon.rect(30, 8, 4, 12);   // Top
-        icon.rect(30, 44, 4, 12);  // Bottom
-        icon.rect(8, 30, 12, 4);   // Left
-        icon.rect(44, 30, 12, 4);  // Right
-        
-        // Diagonal teeth
-        icon.rect(18, 14, 8, 3);   // Top-left
-        icon.rect(38, 14, 8, 3);   // Top-right
-        icon.rect(18, 47, 8, 3);   // Bottom-left
-        icon.rect(38, 47, 8, 3);   // Bottom-right
-        
-        icon.endDraw();
-        
-        return icon;
+        try {
+            // Gradleの標準リソースパス (src/main/resources) から読み込む
+            URL iconUrl = getClass().getResource("/settings/icon.png");
+            if (iconUrl == null) {
+                System.err.println("SettingsApp: Failed to find icon resource '/settings/icon.png' in classpath. Make sure it's in 'core/src/main/resources/settings/'");
+                return null;
+            }
+            PImage icon = p.loadImage(iconUrl.toExternalForm());
+            if (icon == null) {
+                System.err.println("SettingsApp: Failed to load icon from URL: " + iconUrl.toExternalForm());
+                return null;
+            }
+            System.out.println("SettingsApp: Icon '" + iconUrl.toExternalForm() + "' loaded successfully.");
+            return icon;
+        } catch (Exception e) {
+            System.err.println("SettingsApp: Exception while loading icon: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
     }
     
     /**

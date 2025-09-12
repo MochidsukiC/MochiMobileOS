@@ -23,7 +23,7 @@ public class SimpleHomeScreen implements Screen {
     }
     
     @Override
-    public void setup() {
+    public void setup(processing.core.PApplet p) {
         isInitialized = true;
         System.out.println("🚀 SimpleHomeScreen: Setup complete!");
     }
@@ -98,7 +98,7 @@ public class SimpleHomeScreen implements Screen {
     }
     
     @Override
-    public void mousePressed(int mouseX, int mouseY) {
+    public void mousePressed(processing.core.PApplet p, int mouseX, int mouseY) {
         System.out.println("🖱️ SimpleHomeScreen: Mouse clicked at (" + mouseX + ", " + mouseY + ")");
         
         // Test: change background color on click
@@ -107,7 +107,7 @@ public class SimpleHomeScreen implements Screen {
     }
     
     @Override
-    public void cleanup() {
+    public void cleanup(processing.core.PApplet p) {
         isInitialized = false;
         System.out.println("🧹 SimpleHomeScreen: Cleanup completed");
     }

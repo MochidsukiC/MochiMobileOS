@@ -128,7 +128,7 @@ public class HomeScreen implements Screen, GestureListener {
      * Sets up the app shortcuts and prepares the UI for display.
      */
     @Override
-    public void setup() {
+    public void setup(processing.core.PApplet p) {
         if (isInitialized) {
             System.out.println("⚠️ HomeScreen: setup() called again - skipping duplicate initialization");
             return;
@@ -226,7 +226,7 @@ public class HomeScreen implements Screen, GestureListener {
      * @param mouseY The y-coordinate of the mouse press
      */
     @Override
-    public void mousePressed(int mouseX, int mouseY) {
+    public void mousePressed(processing.core.PApplet p, int mouseX, int mouseY) {
         System.out.println("HomeScreen: Touch at (" + mouseX + ", " + mouseY + ")");
         
         touchStartTime = System.currentTimeMillis();
@@ -253,8 +253,13 @@ public class HomeScreen implements Screen, GestureListener {
                 // Start potential dragging
                 startDragging(clickedShortcut, mouseX, mouseY);
             } else {
-                // Normal mode - launch app or detect long press for edit mode
-                launchApplication(clickedShortcut.getApplication());
+                // Normal mode - launch app with animation
+                int gridWidth = GRID_COLS * (ICON_SIZE + ICON_SPACING) - ICON_SPACING;
+                int startX = (400 - gridWidth) / 2;
+                int startY = 80;
+                float iconX = startX + clickedShortcut.getGridX() * (ICON_SIZE + ICON_SPACING) + ICON_SIZE / 2;
+                float iconY = startY + clickedShortcut.getGridY() * (ICON_SIZE + ICON_SPACING + 20) + ICON_SIZE / 2;
+                launchApplicationWithAnimation(clickedShortcut.getApplication(), iconX, iconY, ICON_SIZE);
             }
         } else {
             // Empty area - could be page swipe or long press for edit mode
@@ -339,7 +344,7 @@ public class HomeScreen implements Screen, GestureListener {
      * Note: このメソッドは後方互換性のために残されていますが、
      * 実際の処理は GestureManager システムで行われます。
      */
-    public void mouseDragged(int mouseX, int mouseY) {
+    public void mouseDragged(processing.core.PApplet p, int mouseX, int mouseY) {
         // GestureManagerシステムが有効な場合は何もしない
         // 実際のドラッグ処理は onGesture -> handleDragMove で実行される
         System.out.println("HomeScreen: mouseDragged called - delegating to GestureManager");
@@ -350,7 +355,7 @@ public class HomeScreen implements Screen, GestureListener {
      * Note: このメソッドは後方互換性のために残されていますが、
      * 実際の処理は GestureManager システムで行われます。
      */
-    public void mouseReleased(int mouseX, int mouseY) {
+    public void mouseReleased(processing.core.PApplet p, int mouseX, int mouseY) {
         // GestureManagerシステムが有効な場合は基本的に何もしない
         // 実際の処理は onGesture -> handleDragEnd, handleLongPress で実行される
         System.out.println("HomeScreen: mouseReleased called - delegating to GestureManager");
@@ -538,7 +543,7 @@ public class HomeScreen implements Screen, GestureListener {
      * Cleans up resources when the screen is deactivated.
      */
     @Override
-    public void cleanup() {
+    public void cleanup(processing.core.PApplet p) {
         // Unregister gesture listener
         if (kernel != null && kernel.getGestureManager() != null) {
             kernel.getGestureManager().removeGestureListener(this);
@@ -567,7 +572,7 @@ public class HomeScreen implements Screen, GestureListener {
                     "resources/wallpaper.png", 
                     "wallpaper.jpg",                // ルートディレクトリ
                     "../resources/wallpaper.jpg",   // 相対パス
-                    "core/src/resources/settings/personalSettings/backGround/blue.png"  // 既存画像
+                    "core/src/resources/settings/personalSettings/backGround/images.jpg"  // 既存画像
                 };
                 
                 // 現在の作業ディレクトリを表示（デバッグ用）
@@ -1321,25 +1326,46 @@ public class HomeScreen implements Screen, GestureListener {
     }
     
     /**
-     * Draws an individual app icon (placeholder implementation).
-     * 
+     * Draws an individual app icon.
+     * If the application provides an icon image, it is drawn.
+     * Otherwise, a placeholder is drawn.
+     *
      * @param p The PApplet instance for drawing
      * @param app The application to draw an icon for
      * @param centerX The center X coordinate for the icon
      * @param centerY The center Y coordinate for the icon
      */
     private void drawAppIcon(PApplet p, IApplication app, int centerX, int centerY) {
-        // For now, draw a simple colored square as the app icon
-        p.fill(accentColor);
-        p.noStroke();
-        p.rect(centerX - 20, centerY - 20, 40, 40, 8);
-        
-        // Draw app initial
-        p.fill(textColor);
-        p.textAlign(p.CENTER, p.CENTER);
-        p.textSize(20);
-        String initial = app.getName().substring(0, 1).toUpperCase();
-        p.text(initial, centerX, centerY - 2);
+        if (app == null) {
+            return;
+        }
+
+        processing.core.PImage icon = app.getIcon(p);
+
+        if (icon != null) {
+            p.imageMode(p.CENTER);
+            // Draw the icon, ensuring it fits within the icon size with some padding
+            float padding = 8;
+            float drawableSize = ICON_SIZE - padding * 2;
+            p.image(icon, centerX, centerY, drawableSize, drawableSize);
+            p.imageMode(p.CORNER); // Reset image mode to default
+        } else {
+            // Fallback to placeholder if icon is null
+            p.rectMode(p.CENTER);
+            p.fill(accentColor);
+            p.noStroke();
+            p.rect(centerX, centerY, 40, 40, 8);
+            
+            // Draw app initial
+            p.fill(textColor);
+            p.textAlign(p.CENTER, p.CENTER);
+            p.textSize(20);
+            if (app.getName() != null && !app.getName().isEmpty()) {
+                String initial = app.getName().substring(0, 1).toUpperCase();
+                p.text(initial, centerX, centerY - 2);
+            }
+            p.rectMode(p.CORNER); // Reset rect mode to default
+        }
     }
     
     /**
@@ -1578,6 +1604,44 @@ public class HomeScreen implements Screen, GestureListener {
     }
     
     /**
+     * アニメーション付きでアプリケーションを起動する
+     */
+    private void launchApplicationWithAnimation(IApplication app, float iconX, float iconY, float iconSize) {
+        System.out.println("HomeScreen: Launching app with animation: " + app.getName());
+        System.out.println("HomeScreen: Icon position: (" + iconX + ", " + iconY + "), size: " + iconSize);
+        
+        if (kernel != null && kernel.getScreenManager() != null) {
+            try {
+                Screen appScreen = app.getEntryScreen(kernel);
+                System.out.println("HomeScreen: Got app screen: " + appScreen.getScreenTitle());
+                
+                // Get app icon for animation
+                processing.core.PImage appIcon = null;
+                if (kernel instanceof processing.core.PApplet) {
+                    processing.core.PApplet pApplet = (processing.core.PApplet) kernel;
+                    appIcon = app.getIcon(pApplet);
+                    System.out.println("HomeScreen: Got app icon: " + (appIcon != null ? appIcon.width + "x" + appIcon.height : "null"));
+                } else {
+                    System.out.println("HomeScreen: Kernel is not PApplet instance: " + kernel.getClass().getSimpleName());
+                }
+                
+                // Launch with animation
+                if (appIcon != null) {
+                    System.out.println("HomeScreen: Calling pushScreenWithAnimation...");
+                    kernel.getScreenManager().pushScreenWithAnimation(appScreen, iconX, iconY, iconSize, appIcon);
+                } else {
+                    System.out.println("HomeScreen: No icon available, using normal launch");
+                    // Fallback to normal launch
+                    kernel.getScreenManager().pushScreen(appScreen);
+                }
+            } catch (Exception e) {
+                System.err.println("HomeScreen: Failed to launch app with animation " + app.getName() + ": " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+    }
+    
+    /**
      * Refreshes the home screen pages.
      */
     public void refreshApps() {
@@ -1725,8 +1789,14 @@ public class HomeScreen implements Screen, GestureListener {
                         removeShortcut(tappedShortcut);
                     }
                 } else {
-                    // 通常モードではアプリ起動
-                    launchApplication(tappedShortcut.getApplication());
+                    // 通常モードではアプリ起動（アニメーション付き）
+                    // ショートカットの画面上での位置を計算
+                    HomePage currentPage = homePages.get(targetPageIndex);
+                    int startX = (400 - (GRID_COLS * (ICON_SIZE + ICON_SPACING) - ICON_SPACING)) / 2;
+                    int startY = 80;
+                    float iconX = startX + tappedShortcut.getGridX() * (ICON_SIZE + ICON_SPACING) + ICON_SIZE / 2;
+                    float iconY = startY + tappedShortcut.getGridY() * (ICON_SIZE + ICON_SPACING + 20) + ICON_SIZE / 2;
+                    launchApplicationWithAnimation(tappedShortcut.getApplication(), iconX, iconY, ICON_SIZE);
                 }
                 return true;
             }
@@ -1766,7 +1836,10 @@ public class HomeScreen implements Screen, GestureListener {
             IApplication tappedApp = appLibraryPage.getApplicationAtPosition(x, y, startY, itemHeight);
             if (tappedApp != null) {
                 System.out.println("HomeScreen: AppLibraryでアプリをタップ: " + tappedApp.getName());
-                launchApplication(tappedApp);
+                // アイコン位置を計算（AppLibraryアイテム用）
+                float iconX = 20 + 32; // ITEM_PADDING + ICON_SIZE/2
+                float iconY = startY + ((y - startY) / itemHeight) * itemHeight + itemHeight / 2;
+                launchApplicationWithAnimation(tappedApp, iconX, iconY, 32); // AppLibraryのアイコンサイズは32
                 return true;
             }
         }

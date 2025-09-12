@@ -5,6 +5,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.ArrayList;
 
 /**
  * スマートフォンOS用の仮想ファイルシステムサービス。
@@ -185,5 +189,142 @@ public class VFS {
     public boolean fileExists(String path) {
         Path filePath = resolveVFSPath(path);
         return Files.exists(filePath);
+    }
+    
+    /**
+     * ディレクトリが存在するかどうかを確認する。
+     * 
+     * @param path 確認するディレクトリのパス（VFS内の相対パス）
+     * @return ディレクトリが存在する場合true、しない場合false
+     */
+    public boolean directoryExists(String path) {
+        Path dirPath = resolveVFSPath(path);
+        return Files.exists(dirPath) && Files.isDirectory(dirPath);
+    }
+    
+    /**
+     * ディレクトリを作成する。
+     * 
+     * @param path 作成するディレクトリのパス（VFS内の相対パス）
+     * @return ディレクトリの作成に成功した場合true、失敗した場合false
+     */
+    public boolean createDirectory(String path) {
+        try {
+            Path dirPath = resolveVFSPath(path);
+            Files.createDirectories(dirPath);
+            System.out.println("VFS: ディレクトリ作成成功: " + path);
+            return true;
+        } catch (IOException e) {
+            System.err.println("VFS: ディレクトリ作成エラー [" + path + "]: " + e.getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * 指定されたディレクトリ内のファイル一覧を取得する。
+     * 
+     * @param directoryPath ディレクトリのパス（VFS内の相対パス）
+     * @return ファイル名のリスト、ディレクトリが存在しない場合は空のリスト
+     */
+    public List<String> listFiles(String directoryPath) {
+        try {
+            Path dirPath = resolveVFSPath(directoryPath);
+            
+            if (!Files.exists(dirPath) || !Files.isDirectory(dirPath)) {
+                System.out.println("VFS: ディレクトリが存在しません: " + directoryPath);
+                return new ArrayList<>();
+            }
+            
+            try (Stream<Path> stream = Files.list(dirPath)) {
+                List<String> files = stream
+                    .filter(Files::isRegularFile)
+                    .map(Path::getFileName)
+                    .map(Path::toString)
+                    .collect(Collectors.toList());
+                
+                System.out.println("VFS: ディレクトリスキャン完了: " + directoryPath + " (" + files.size() + "ファイル)");
+                return files;
+            }
+            
+        } catch (IOException e) {
+            System.err.println("VFS: ディレクトリスキャンエラー [" + directoryPath + "]: " + e.getMessage());
+            return new ArrayList<>();
+        }
+    }
+    
+    /**
+     * 指定されたディレクトリ内の特定の拡張子を持つファイル一覧を取得する。
+     * 
+     * @param directoryPath ディレクトリのパス（VFS内の相対パス）
+     * @param extension 拡張子（例: ".jar", ".class"）
+     * @return 指定拡張子のファイル名のリスト、ディレクトリが存在しない場合は空のリスト
+     */
+    public List<String> listFilesByExtension(String directoryPath, String extension) {
+        try {
+            Path dirPath = resolveVFSPath(directoryPath);
+            
+            if (!Files.exists(dirPath) || !Files.isDirectory(dirPath)) {
+                System.out.println("VFS: ディレクトリが存在しません: " + directoryPath);
+                return new ArrayList<>();
+            }
+            
+            try (Stream<Path> stream = Files.list(dirPath)) {
+                List<String> files = stream
+                    .filter(Files::isRegularFile)
+                    .map(Path::getFileName)
+                    .map(Path::toString)
+                    .filter(name -> name.toLowerCase().endsWith(extension.toLowerCase()))
+                    .collect(Collectors.toList());
+                
+                System.out.println("VFS: 拡張子フィルタースキャン完了: " + directoryPath + " (" + files.size() + "個の" + extension + "ファイル)");
+                return files;
+            }
+            
+        } catch (IOException e) {
+            System.err.println("VFS: 拡張子フィルタースキャンエラー [" + directoryPath + ", " + extension + "]: " + e.getMessage());
+            return new ArrayList<>();
+        }
+    }
+    
+    /**
+     * 指定されたディレクトリ内のサブディレクトリ一覧を取得する。
+     * 
+     * @param directoryPath ディレクトリのパス（VFS内の相対パス）
+     * @return サブディレクトリ名のリスト、ディレクトリが存在しない場合は空のリスト
+     */
+    public List<String> listDirectories(String directoryPath) {
+        try {
+            Path dirPath = resolveVFSPath(directoryPath);
+            
+            if (!Files.exists(dirPath) || !Files.isDirectory(dirPath)) {
+                System.out.println("VFS: ディレクトリが存在しません: " + directoryPath);
+                return new ArrayList<>();
+            }
+            
+            try (Stream<Path> stream = Files.list(dirPath)) {
+                List<String> directories = stream
+                    .filter(Files::isDirectory)
+                    .map(Path::getFileName)
+                    .map(Path::toString)
+                    .collect(Collectors.toList());
+                
+                System.out.println("VFS: サブディレクトリスキャン完了: " + directoryPath + " (" + directories.size() + "ディレクトリ)");
+                return directories;
+            }
+            
+        } catch (IOException e) {
+            System.err.println("VFS: サブディレクトリスキャンエラー [" + directoryPath + "]: " + e.getMessage());
+            return new ArrayList<>();
+        }
+    }
+    
+    /**
+     * ファイルの完全パスを取得する。
+     * 
+     * @param path VFS内の相対パス
+     * @return 実際のファイルシステムでの完全パス
+     */
+    public String getFullPath(String path) {
+        return resolveVFSPath(path).toAbsolutePath().toString();
     }
 }

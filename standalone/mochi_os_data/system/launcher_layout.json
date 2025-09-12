@@ -1,0 +1,24 @@
+[
+  {
+    "pageIndex": 0,
+    "pageName": "Home",
+    "pageType": "NORMAL",
+    "shortcuts": [
+      {
+        "applicationId": "jp.moyashi.mvapplication",
+        "gridX": 0,
+        "gridY": 0
+      },
+      {
+        "applicationId": "jp.moyashi.phoneos.core.apps.settings",
+        "gridX": 1,
+        "gridY": 0
+      },
+      {
+        "applicationId": "jp.moyashi.phoneos.calculator",
+        "gridX": 2,
+        "gridY": 0
+      }
+    ]
+  }
+]

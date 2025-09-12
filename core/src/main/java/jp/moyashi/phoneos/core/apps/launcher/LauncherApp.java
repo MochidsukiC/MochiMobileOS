@@ -197,7 +197,7 @@ public class LauncherApp implements IApplication {
     public void onDestroy() {
         System.out.println("LauncherApp: Launcher application shutting down");
         if (homeScreen != null) {
-            homeScreen.cleanup();
+            homeScreen.cleanup(null); // LauncherApp onDestroy context - no PApplet available
             homeScreen = null;
         }
     }

@@ -89,7 +89,7 @@ public class AppLibraryScreen_Complete implements Screen {
      * Loads the complete list of available applications.
      */
     @Override
-    public void setup() {
+    public void setup(processing.core.PApplet p) {
         isInitialized = true;
         loadAllApps();
         System.out.println("AppLibraryScreen: App library initialized with " + 
@@ -137,7 +137,7 @@ public class AppLibraryScreen_Complete implements Screen {
      * @param mouseY The y-coordinate of the mouse press
      */
     @Override
-    public void mousePressed(int mouseX, int mouseY) {
+    public void mousePressed(processing.core.PApplet p, int mouseX, int mouseY) {
         System.out.println("AppLibraryScreen: Touch at (" + mouseX + ", " + mouseY + ")");
         
         touchStartTime = System.currentTimeMillis();
@@ -171,7 +171,7 @@ public class AppLibraryScreen_Complete implements Screen {
     /**
      * Handles mouse release for long press detection.
      */
-    public void mouseReleased(int mouseX, int mouseY) {
+    public void mouseReleased(processing.core.PApplet p, int mouseX, int mouseY) {
         long pressDuration = System.currentTimeMillis() - touchStartTime;
         
         if (pressDuration >= LONG_PRESS_DURATION && longPressedApp != null && !showingContextMenu) {
@@ -184,7 +184,7 @@ public class AppLibraryScreen_Complete implements Screen {
      * Cleans up resources when the screen is deactivated.
      */
     @Override
-    public void cleanup() {
+    public void cleanup(processing.core.PApplet p) {
         isInitialized = false;
         allApps = null;
         hideContextMenu();
