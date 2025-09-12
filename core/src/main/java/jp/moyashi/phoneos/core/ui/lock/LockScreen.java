@@ -183,7 +183,7 @@ public class LockScreen implements Screen, GestureListener {
      * パターングリッドの位置を計算し、レイヤーシステムに登録する。
      */
     @Override
-    public void setup() {
+    public void setup(processing.core.PApplet p) {
         System.out.println("LockScreen: ロック画面のセットアップ中...");
         
         // パターングリッドの中心位置を計算（画面中央下部）
@@ -571,7 +571,7 @@ public class LockScreen implements Screen, GestureListener {
      * @param mouseY マウスY座標
      */
     @Override
-    public void mousePressed(int mouseX, int mouseY) {
+    public void mousePressed(processing.core.PApplet p, int mouseX, int mouseY) {
         // ジェスチャー処理に委譲
         System.out.println("LockScreen: mousePressed - delegating to gesture system");
     }
@@ -942,7 +942,7 @@ public class LockScreen implements Screen, GestureListener {
      * レイヤー管理システムとジェスチャーリスナーの登録を解除する。
      */
     @Override
-    public void cleanup() {
+    public void cleanup(PApplet p) {
         System.out.println("LockScreen: クリーンアップ実行中...");
         
         // レイヤー管理システムから登録解除

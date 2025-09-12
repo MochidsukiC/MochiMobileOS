@@ -56,7 +56,7 @@ public class SafeHomeScreen implements Screen {
     }
     
     @Override
-    public void setup() {
+    public void setup(processing.core.PApplet p) {
         try {
             isInitialized = true;
             System.out.println("🚀 SafeHomeScreen: セーフ初期化を開始...");
@@ -245,7 +245,7 @@ public class SafeHomeScreen implements Screen {
     }
     
     @Override
-    public void mousePressed(int mouseX, int mouseY) {
+    public void mousePressed(processing.core.PApplet p, int mouseX, int mouseY) {
         System.out.println("🖱️ SafeHomeScreen: Mouse pressed at (" + mouseX + ", " + mouseY + ")");
         
         try {
@@ -264,7 +264,7 @@ public class SafeHomeScreen implements Screen {
     /**
      * Handles mouse drag events for page swiping
      */
-    public void mouseDragged(int mouseX, int mouseY) {
+    public void mouseDragged(processing.core.PApplet p, int mouseX, int mouseY) {
         try {
             dragCurrentX = mouseX;
             dragCurrentY = mouseY;
@@ -286,7 +286,7 @@ public class SafeHomeScreen implements Screen {
     /**
      * Handles mouse release events for completing swipe gestures or app clicks
      */
-    public void mouseReleased(int mouseX, int mouseY) {
+    public void mouseReleased(processing.core.PApplet p, int mouseX, int mouseY) {
         System.out.println("🖱️ SafeHomeScreen: Mouse released at (" + mouseX + ", " + mouseY + ")");
         
         try {
@@ -334,7 +334,7 @@ public class SafeHomeScreen implements Screen {
     }
     
     @Override
-    public void cleanup() {
+    public void cleanup(PApplet p) {
         isInitialized = false;
         System.out.println("🧹 SafeHomeScreen: Cleanup completed");
     }

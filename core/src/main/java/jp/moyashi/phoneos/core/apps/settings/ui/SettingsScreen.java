@@ -70,7 +70,7 @@ public class SettingsScreen implements Screen {
      * Initializes the settings screen.
      */
     @Override
-    public void setup() {
+    public void setup(processing.core.PApplet p) {
         isInitialized = true;
         System.out.println("SettingsScreen: Settings screen initialized");
     }
@@ -102,7 +102,7 @@ public class SettingsScreen implements Screen {
      * @param mouseY The y-coordinate of the mouse press
      */
     @Override
-    public void mousePressed(int mouseX, int mouseY) {
+    public void mousePressed(processing.core.PApplet p, int mouseX, int mouseY) {
         System.out.println("SettingsScreen: Touch at (" + mouseX + ", " + mouseY + ")");
         
         // Check if clicking back button
@@ -122,7 +122,7 @@ public class SettingsScreen implements Screen {
      * Cleans up resources when screen is deactivated.
      */
     @Override
-    public void cleanup() {
+    public void cleanup(processing.core.PApplet p) {
         isInitialized = false;
         System.out.println("SettingsScreen: Settings screen cleaned up");
     }

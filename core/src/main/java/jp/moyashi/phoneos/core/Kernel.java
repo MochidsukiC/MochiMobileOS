@@ -11,6 +11,7 @@ import jp.moyashi.phoneos.core.input.GestureEvent;
 import jp.moyashi.phoneos.core.input.GestureType;
 import jp.moyashi.phoneos.core.apps.launcher.LauncherApp;
 import jp.moyashi.phoneos.core.apps.settings.SettingsApp;
+import jp.moyashi.phoneos.core.apps.calculator.CalculatorApp;
 import jp.moyashi.phoneos.core.ui.LayerManager;
 import processing.core.PApplet;
 import processing.core.PFont;
@@ -171,6 +172,10 @@ public class Kernel extends PApplet implements GestureListener {
         SettingsApp settingsApp = new SettingsApp();
         appLoader.registerApplication(settingsApp);
         settingsApp.onInitialize(this);
+        
+        System.out.println("  -> CalculatorAppを登録中...");
+        CalculatorApp calculatorApp = new CalculatorApp();
+        appLoader.registerApplication(calculatorApp);
         
         System.out.println("Kernel: " + appLoader.getLoadedApps().size() + " 個のアプリケーションを登録");
         

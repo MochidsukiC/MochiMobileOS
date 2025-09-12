@@ -40,7 +40,7 @@ public class BasicHomeScreen implements Screen {
     }
     
     @Override
-    public void setup() {
+    public void setup(processing.core.PApplet p) {
         System.out.println("🚀 BasicHomeScreen: Starting setup...");
         isInitialized = true;
         loadApps();
@@ -257,7 +257,7 @@ public class BasicHomeScreen implements Screen {
     }
     
     @Override
-    public void mousePressed(int mouseX, int mouseY) {
+    public void mousePressed(processing.core.PApplet p, int mouseX, int mouseY) {
         System.out.println("🖱️ BasicHomeScreen: Click at (" + mouseX + ", " + mouseY + ")");
         
         // Check navigation area (App Library)
@@ -325,7 +325,7 @@ public class BasicHomeScreen implements Screen {
     }
     
     @Override
-    public void cleanup() {
+    public void cleanup(processing.core.PApplet p) {
         isInitialized = false;
         System.out.println("🧹 BasicHomeScreen: Cleanup completed");
     }
