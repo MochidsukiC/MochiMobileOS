@@ -369,7 +369,7 @@ public class Kernel extends PApplet implements GestureListener {
         System.out.println("Kernel: mouseDragged at (" + mouseX + ", " + mouseY + ")");
         
         // 1. ポップアップ表示中はドラッグイベントをブロック
-        if (popupManager != null && popupManager.hasActivePopup()) {
+        if (popupManager != null && popupManager.isPopupVisible()) {
             System.out.println("Kernel: Popup active, ignoring mouseDragged");
             return;
         }

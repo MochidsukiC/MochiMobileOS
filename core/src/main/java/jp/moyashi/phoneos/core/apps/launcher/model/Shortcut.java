@@ -40,7 +40,10 @@ public class Shortcut {
     
     /** このショートカットの一意識別子 */
     private final String shortcutId;
-    
+
+    /** 常時表示フィールド（Dock）内の位置（-1の場合はDockにない） */
+    private int dockPosition;
+
     /** 一意のショートカットID生成用静的カウンター */
     private static int nextId = 1;
     
@@ -64,6 +67,7 @@ public class Shortcut {
         this.dragX = 0;
         this.dragY = 0;
         this.wiggleOffset = 0;
+        this.dockPosition = -1; // 初期値はDockにない状態
         this.shortcutId = "shortcut_" + (nextId++);
         
         System.out.println("Shortcut: Created shortcut for " + application.getName() + 
@@ -292,8 +296,35 @@ public class Shortcut {
     }
     
     /**
+     * 常時表示フィールド（Dock）内の位置を取得する。
+     *
+     * @return Dock内の位置（0-3）、Dockにない場合は-1
+     */
+    public int getDockPosition() {
+        return dockPosition;
+    }
+
+    /**
+     * 常時表示フィールド（Dock）内の位置を設定する。
+     *
+     * @param dockPosition Dock内の位置（0-3）、Dockから削除する場合は-1
+     */
+    public void setDockPosition(int dockPosition) {
+        this.dockPosition = dockPosition;
+    }
+
+    /**
+     * このショートカットが常時表示フィールド（Dock）にあるかどうかを確認する。
+     *
+     * @return Dockにある場合true
+     */
+    public boolean isInDock() {
+        return dockPosition >= 0;
+    }
+
+    /**
      * このショートカットの文字列表現を返す。
-     * 
+     *
      * @return このショートカットを説明する文字列
      */
     @Override
@@ -301,6 +332,7 @@ public class Shortcut {
         return "Shortcut{" +
                 "app=" + application.getName() +
                 ", pos=(" + gridX + "," + gridY + ")" +
+                ", dockPos=" + dockPosition +
                 ", dragging=" + isDragging +
                 ", id=" + shortcutId +
                 '}';
