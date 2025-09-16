@@ -38,6 +38,12 @@ public class PopupMenu {
     
     /** 無効化されたアイテムの色 */
     private int disabledColor;
+
+    /** 角の丸み */
+    private int cornerRadius;
+
+    /** 影の色 */
+    private int shadowColor;
     
     /**
      * デフォルトのPopupMenuを作成する。
@@ -48,10 +54,12 @@ public class PopupMenu {
         this.y = -1; // 中央
         this.width = -1; // 自動
         this.height = -1; // 自動
-        this.backgroundColor = 0xFF2A2A2A; // ダークグレー
-        this.textColor = 0xFFFFFFFF; // 白
-        this.borderColor = 0xFF4A90E2; // 青
+        this.backgroundColor = 0xFF3C3C3C; // モダンなダークグレー
+        this.textColor = 0xFFEAEAEA; // オフホワイト
+        this.borderColor = 0x00000000; // 透明 (影で境界を表現)
         this.disabledColor = 0xFF888888; // グレー
+        this.cornerRadius = 12; // 角の丸み
+        this.shadowColor = 0x80000000; // 50%の黒い影
     }
     
     /**
@@ -144,6 +152,19 @@ public class PopupMenu {
         this.borderColor = borderColor;
         return this;
     }
+
+    /**
+     * スタイリングを設定する。
+     *
+     * @param cornerRadius 角の丸み
+     * @param shadowColor 影の色
+     * @return このPopupMenuインスタンス（メソッドチェーン用）
+     */
+    public PopupMenu setStyle(int cornerRadius, int shadowColor) {
+        this.cornerRadius = cornerRadius;
+        this.shadowColor = shadowColor;
+        return this;
+    }
     
     // Getters
     
@@ -157,6 +178,8 @@ public class PopupMenu {
     public int getTextColor() { return textColor; }
     public int getBorderColor() { return borderColor; }
     public int getDisabledColor() { return disabledColor; }
+    public int getCornerRadius() { return cornerRadius; }
+    public int getShadowColor() { return shadowColor; }
     
     /**
      * 指定した座標がメニュー内かどうかをチェックする。

@@ -30,7 +30,11 @@
       "Bash(rg:*)",
       "Bash(tasklist)",
       "Bash(del /q /f \"core\\build\\classes\\java\\main\\jp\\moyashi\\phoneos\\core\\service\\*.class\")",
-      "Bash(./run_test.bat)"
+      "Bash(./run_test.bat)",
+      "Bash(rm:*)",
+      "Bash(../gradlew compileJava:*)",
+      "Bash(del /q /f \"standalone\\build\\classes\\java\\main\\jp\\moyashi\\phoneos\\standalone\\*.class\")",
+      "Bash(del /q /f \"C:\\Users\\dora2\\IdeaProjects\\MochiMobileOS\\core\\build\\classes\\java\\main\\jp\\moyashi\\phoneos\\core\\service\\*.class\")"
     ],
     "deny": [],
     "ask": [],

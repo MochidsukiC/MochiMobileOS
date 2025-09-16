@@ -1,6 +1,7 @@
 package jp.moyashi.phoneos.core.ui.popup;
 
 import processing.core.PApplet;
+import jp.moyashi.phoneos.core.input.GestureEvent;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
@@ -30,7 +31,13 @@ public class PopupManager {
     
     /** 最小メニュー幅 */
     private static final int MIN_MENU_WIDTH = 150;
-    
+
+    /** 影のオフセット */
+    private static final int SHADOW_OFFSET = 5;
+
+    /** 区切り線の色 */
+    private static final int SEPARATOR_COLOR = 0xFF666666;
+
     /**
      * PopupManagerを作成する。
      */
@@ -98,11 +105,30 @@ public class PopupManager {
     
     /**
      * 現在ポップアップが表示されているかどうかを確認する。
-     * 
+     *
      * @return ポップアップが表示中の場合true
      */
-    public boolean hasActivePopup() {
+    public boolean isPopupVisible() {
         return currentPopup != null;
+    }
+
+    /**
+     * ジェスチャーイベントを処理する。
+     *
+     * @param event ジェスチャーイベント
+     * @return ポップアップがイベントを処理した場合true
+     */
+    public boolean handleGesture(GestureEvent event) {
+        if (currentPopup == null) {
+            return false;
+        }
+
+        // タップイベントの場合、マウスクリックとして処理
+        if (event.getType() == jp.moyashi.phoneos.core.input.GestureType.TAP) {
+            return handleMouseClick((int)event.getCurrentX(), (int)event.getCurrentY());
+        }
+
+        return false;
     }
     
     /**
@@ -180,17 +206,22 @@ public class PopupManager {
         int menuY = bounds[1];
         int menuWidth = bounds[2];
         int menuHeight = bounds[3];
+        int cornerRadius = popup.getCornerRadius();
         
         // 半透明背景オーバーレイ
         p.fill(0, 0, 0, 120);
         p.noStroke();
         p.rect(0, 0, p.width, p.height);
+
+        // ドロップシャドウ描画
+        p.fill(popup.getShadowColor());
+        p.noStroke();
+        p.rect(menuX + SHADOW_OFFSET, menuY + SHADOW_OFFSET, menuWidth, menuHeight, cornerRadius);
         
         // メニュー背景
         p.fill(popup.getBackgroundColor());
-        p.stroke(popup.getBorderColor());
-        p.strokeWeight(2);
-        p.rect(menuX, menuY, menuWidth, menuHeight, 8);
+        p.noStroke();
+        p.rect(menuX, menuY, menuWidth, menuHeight, cornerRadius);
         
         // タイトル描画
         int currentY = menuY + MENU_PADDING;
@@ -202,7 +233,7 @@ public class PopupManager {
             currentY += ITEM_HEIGHT;
             
             // タイトル区切り線
-            p.stroke(popup.getBorderColor());
+            p.stroke(SEPARATOR_COLOR);
             p.strokeWeight(1);
             p.line(menuX + MENU_PADDING, currentY, menuX + menuWidth - MENU_PADDING, currentY);
             currentY += 5;
@@ -215,7 +246,7 @@ public class PopupManager {
         for (PopupItem item : popup.getItems()) {
             if (item.getText().equals("---")) {
                 // セパレーター
-                p.stroke(popup.getBorderColor());
+                p.stroke(SEPARATOR_COLOR);
                 p.strokeWeight(1);
                 p.line(menuX + MENU_PADDING, currentY + ITEM_HEIGHT / 2, 
                       menuX + menuWidth - MENU_PADDING, currentY + ITEM_HEIGHT / 2);

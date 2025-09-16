@@ -58,7 +58,13 @@ public class HomePage {
     
     /** AppLibraryページ用の全アプリケーションリスト */
     private List<IApplication> allApplications;
-    
+
+    /** 常時表示フィールド（Dock）用のショートカット（最大4個） */
+    private final List<Shortcut> dockShortcuts;
+
+    /** 常時表示フィールドの最大アイテム数 */
+    public static final int MAX_DOCK_SHORTCUTS = 4;
+
     /** 一意のページID生成用静的カウンター */
     private static int nextPageId = 1;
     
@@ -81,6 +87,7 @@ public class HomePage {
         this.pageId = (pageType == PageType.APP_LIBRARY) ? "app_library" : "page_" + (nextPageId++);
         this.scrollOffset = 0;
         this.allApplications = new ArrayList<>();
+        this.dockShortcuts = new ArrayList<>();
         
         if (pageType == PageType.NORMAL) {
             this.grid = new Shortcut[GRID_COLS][GRID_ROWS];
@@ -584,7 +591,179 @@ public class HomePage {
         if (itemIndex >= 0 && itemIndex < allApplications.size()) {
             return allApplications.get(itemIndex);
         }
-        
+
         return null;
+    }
+
+    // ===========================================
+    // 常時表示フィールド（Dock）専用メソッド
+    // ===========================================
+
+    /**
+     * 常時表示フィールドのショートカットリストを取得する。
+     *
+     * @return 常時表示フィールドのショートカットリスト
+     */
+    public List<Shortcut> getDockShortcuts() {
+        return new ArrayList<>(dockShortcuts);
+    }
+
+    /**
+     * 常時表示フィールドにショートカットを追加する。
+     *
+     * @param shortcut 追加するショートカット
+     * @return 追加に成功した場合true、満杯の場合false
+     */
+    public boolean addDockShortcut(Shortcut shortcut) {
+        if (shortcut == null || dockShortcuts.size() >= MAX_DOCK_SHORTCUTS) {
+            return false;
+        }
+
+        // 通常のグリッドから削除（もし存在する場合）
+        removeShortcut(shortcut);
+
+        // Dockに追加
+        dockShortcuts.add(shortcut);
+        shortcut.setDockPosition(dockShortcuts.size() - 1);
+
+        System.out.println("HomePage: Added shortcut " + shortcut.getDisplayName() +
+                          " to dock position " + (dockShortcuts.size() - 1));
+        return true;
+    }
+
+    /**
+     * 常時表示フィールドにアプリケーションのショートカットを追加する。
+     *
+     * @param application 追加するアプリケーション
+     * @return 追加に成功した場合true、満杯の場合false
+     */
+    public boolean addDockShortcut(IApplication application) {
+        if (application == null) {
+            return false;
+        }
+        Shortcut shortcut = new Shortcut(application);
+        return addDockShortcut(shortcut);
+    }
+
+    /**
+     * 常時表示フィールドからショートカットを削除する。
+     *
+     * @param shortcut 削除するショートカット
+     * @return 削除に成功した場合true
+     */
+    public boolean removeDockShortcut(Shortcut shortcut) {
+        if (shortcut == null || !dockShortcuts.contains(shortcut)) {
+            return false;
+        }
+
+        dockShortcuts.remove(shortcut);
+
+        // 残りのショートカットの位置を再調整
+        for (int i = 0; i < dockShortcuts.size(); i++) {
+            dockShortcuts.get(i).setDockPosition(i);
+        }
+
+        System.out.println("HomePage: Removed shortcut " + shortcut.getDisplayName() +
+                          " from dock");
+        return true;
+    }
+
+    /**
+     * 常時表示フィールド内でショートカットを移動する。
+     *
+     * @param shortcut 移動するショートカット
+     * @param newPosition 新しい位置（0-3）
+     * @return 移動に成功した場合true
+     */
+    public boolean moveDockShortcut(Shortcut shortcut, int newPosition) {
+        if (shortcut == null || !dockShortcuts.contains(shortcut) ||
+            newPosition < 0 || newPosition >= dockShortcuts.size()) {
+            return false;
+        }
+
+        int oldPosition = dockShortcuts.indexOf(shortcut);
+        if (oldPosition == newPosition) {
+            return true; // 位置変更なし
+        }
+
+        // ショートカットを移動
+        dockShortcuts.remove(oldPosition);
+        dockShortcuts.add(newPosition, shortcut);
+
+        // 位置を再調整
+        for (int i = 0; i < dockShortcuts.size(); i++) {
+            dockShortcuts.get(i).setDockPosition(i);
+        }
+
+        System.out.println("HomePage: Moved dock shortcut " + shortcut.getDisplayName() +
+                          " from position " + oldPosition + " to " + newPosition);
+        return true;
+    }
+
+    /**
+     * 常時表示フィールドが満杯かどうかを確認する。
+     *
+     * @return 満杯の場合true
+     */
+    public boolean isDockFull() {
+        return dockShortcuts.size() >= MAX_DOCK_SHORTCUTS;
+    }
+
+    /**
+     * 常時表示フィールドが空かどうかを確認する。
+     *
+     * @return 空の場合true
+     */
+    public boolean isDockEmpty() {
+        return dockShortcuts.isEmpty();
+    }
+
+    /**
+     * 指定した位置の常時表示フィールドのショートカットを取得する。
+     *
+     * @param position 位置（0-3）
+     * @return ショートカット、存在しない場合null
+     */
+    public Shortcut getDockShortcutAt(int position) {
+        if (position < 0 || position >= dockShortcuts.size()) {
+            return null;
+        }
+        return dockShortcuts.get(position);
+    }
+
+    /**
+     * 通常のグリッドから常時表示フィールドにショートカットを移動する。
+     *
+     * @param shortcut 移動するショートカット
+     * @return 移動に成功した場合true
+     */
+    public boolean moveShortcutToDock(Shortcut shortcut) {
+        if (shortcut == null || !shortcuts.contains(shortcut) || isDockFull()) {
+            return false;
+        }
+
+        // 通常のグリッドから削除
+        removeShortcut(shortcut);
+
+        // Dockに追加
+        return addDockShortcut(shortcut);
+    }
+
+    /**
+     * 常時表示フィールドから通常のグリッドにショートカットを移動する。
+     *
+     * @param shortcut 移動するショートカット
+     * @return 移動に成功した場合true
+     */
+    public boolean moveShortcutFromDock(Shortcut shortcut) {
+        if (shortcut == null || !dockShortcuts.contains(shortcut) || isFull()) {
+            return false;
+        }
+
+        // Dockから削除
+        removeDockShortcut(shortcut);
+
+        // 通常のグリッドに追加
+        return addShortcut(shortcut);
     }
 }
