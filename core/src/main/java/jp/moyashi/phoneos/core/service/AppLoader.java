@@ -34,9 +34,15 @@ public class AppLoader {
     
     /** 正常に読み込まれたアプリケーションのリスト */
     private final List<IApplication> loadedApps;
-    
+
     /** アプリケーションがスキャンされたかどうかを示すフラグ */
     private boolean hasScannedApps;
+
+    /** 利用可能なMODアプリケーション候補のリスト（まだインストールされていない） */
+    private final List<IApplication> availableModApps;
+
+    /** インストール済みMODアプリケーションのリスト */
+    private final List<IApplication> installedModApps;
     
     /**
      * 新しいAppLoaderサービスインスタンスを構築する。
@@ -47,7 +53,9 @@ public class AppLoader {
         this.vfs = vfs;
         this.loadedApps = new ArrayList<>();
         this.hasScannedApps = false;
-        
+        this.availableModApps = new ArrayList<>();
+        this.installedModApps = new ArrayList<>();
+
         System.out.println("AppLoader: Application loader service initialized");
     }
     
@@ -343,10 +351,222 @@ public class AppLoader {
     
     /**
      * このAppLoaderが使用するVFSインスタンスを取得する。
-     * 
+     *
      * @return VFSインスタンス
      */
     public VFS getVFS() {
         return vfs;
+    }
+
+    // ========== MODアプリケーション管理機能 ==========
+
+    /**
+     * 利用可能なMODアプリケーション候補を登録します。
+     *
+     * このメソッドは主にForge環境で、PhoneAppRegistryEventを通じて
+     * 他のMODから登録されたアプリケーションを受け取る際に使用されます。
+     *
+     * 登録されたアプリケーションは「利用可能」状態となり、
+     * AppStoreでユーザーがインストールを選択できるようになります。
+     *
+     * @param application 登録するアプリケーション。nullは許可されません。
+     * @throws IllegalArgumentException applicationがnullの場合
+     * @return 正常に登録された場合true、既に登録済みの場合false
+     */
+    public boolean registerAvailableModApp(IApplication application) {
+        if (application == null) {
+            throw new IllegalArgumentException("Application cannot be null");
+        }
+
+        // 重複チェック（利用可能リスト内）
+        for (IApplication existingApp : availableModApps) {
+            if (existingApp.getApplicationId().equals(application.getApplicationId())) {
+                System.out.println("AppLoader: MOD app " + application.getApplicationId() +
+                                 " already registered as available, skipping");
+                return false;
+            }
+        }
+
+        // インストール済みリストでもチェック
+        for (IApplication installedApp : installedModApps) {
+            if (installedApp.getApplicationId().equals(application.getApplicationId())) {
+                System.out.println("AppLoader: MOD app " + application.getApplicationId() +
+                                 " already installed, skipping registration as available");
+                return false;
+            }
+        }
+
+        availableModApps.add(application);
+        System.out.println("AppLoader: Registered available MOD app: " +
+                          application.getApplicationName() + " (" + application.getApplicationId() + ")");
+        return true;
+    }
+
+    /**
+     * すべての利用可能なMODアプリケーション候補のリストを取得します。
+     *
+     * @return 利用可能なMODアプリケーションのリスト（読み取り専用）
+     */
+    public List<IApplication> getAvailableModApps() {
+        return Collections.unmodifiableList(availableModApps);
+    }
+
+    /**
+     * すべてのインストール済みMODアプリケーションのリストを取得します。
+     *
+     * @return インストール済みMODアプリケーションのリスト（読み取り専用）
+     */
+    public List<IApplication> getInstalledModApps() {
+        return Collections.unmodifiableList(installedModApps);
+    }
+
+    /**
+     * 指定されたアプリケーションIDの利用可能なMODアプリケーションを取得します。
+     *
+     * @param applicationId 検索するアプリケーションID
+     * @return 見つかったアプリケーション、存在しない場合はnull
+     */
+    public IApplication getAvailableModApp(String applicationId) {
+        if (applicationId == null) {
+            return null;
+        }
+
+        for (IApplication app : availableModApps) {
+            if (applicationId.equals(app.getApplicationId())) {
+                return app;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * MODアプリケーションをインストールします。
+     *
+     * 利用可能なアプリケーション候補からインストール済みリストに移動し、
+     * アプリケーションのonInstall()メソッドを呼び出します。
+     *
+     * @param applicationId インストールするアプリケーションのID
+     * @param kernel OSカーネルインスタンス（onInstall()メソッド用）
+     * @return インストールが成功した場合true
+     * @throws IllegalArgumentException applicationIdがnullまたは空の場合
+     */
+    public boolean installModApp(String applicationId, Object kernel) {
+        if (applicationId == null || applicationId.trim().isEmpty()) {
+            throw new IllegalArgumentException("Application ID cannot be null or empty");
+        }
+
+        // 利用可能なアプリケーション候補から検索
+        IApplication appToInstall = getAvailableModApp(applicationId);
+        if (appToInstall == null) {
+            System.err.println("AppLoader: Cannot install MOD app " + applicationId +
+                             " - not found in available apps");
+            return false;
+        }
+
+        // 既にインストール済みかチェック
+        for (IApplication installedApp : installedModApps) {
+            if (installedApp.getApplicationId().equals(applicationId)) {
+                System.out.println("AppLoader: MOD app " + applicationId + " already installed");
+                return false;
+            }
+        }
+
+        try {
+            // アプリケーションをインストール
+            System.out.println("AppLoader: Installing MOD app: " + appToInstall.getApplicationName());
+
+            // アプリケーションのonInstall()メソッドを呼び出し
+            if (kernel instanceof jp.moyashi.phoneos.core.Kernel) {
+                appToInstall.onInstall((jp.moyashi.phoneos.core.Kernel) kernel);
+            }
+
+            // 利用可能リストから削除してインストール済みリストに追加
+            availableModApps.remove(appToInstall);
+            installedModApps.add(appToInstall);
+
+            // 通常のアプリケーションリストにも追加（ランチャーで表示されるように）
+            loadedApps.add(appToInstall);
+
+            System.out.println("AppLoader: Successfully installed MOD app: " +
+                             appToInstall.getApplicationName());
+            return true;
+
+        } catch (Exception e) {
+            System.err.println("AppLoader: Failed to install MOD app " + applicationId +
+                             ": " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * MODアプリケーションがインストール済みかどうかを確認します。
+     *
+     * @param applicationId 確認するアプリケーションのID
+     * @return インストール済みの場合true
+     */
+    public boolean isModAppInstalled(String applicationId) {
+        if (applicationId == null) {
+            return false;
+        }
+
+        for (IApplication app : installedModApps) {
+            if (applicationId.equals(app.getApplicationId())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 利用可能なMODアプリケーション候補の数を取得します。
+     *
+     * @return 利用可能なMODアプリケーション数
+     */
+    public int getAvailableModAppsCount() {
+        return availableModApps.size();
+    }
+
+    /**
+     * インストール済みMODアプリケーションの数を取得します。
+     *
+     * @return インストール済みMODアプリケーション数
+     */
+    public int getInstalledModAppsCount() {
+        return installedModApps.size();
+    }
+
+    /**
+     * Forge環境のModAppRegistryから利用可能なアプリケーションを一括で同期します。
+     *
+     * このメソッドは、Forgeモジュールが利用可能な場合にのみ動作します。
+     * スタンドアロン環境では何も実行されません。
+     */
+    public void syncWithModRegistry() {
+        try {
+            // リフレクションを使ってForgeモジュールの存在を確認
+            Class<?> modRegistryClass = Class.forName("jp.moyashi.phoneos.forge.event.ModAppRegistry");
+            Object registryInstance = modRegistryClass.getMethod("getInstance").invoke(null);
+
+            @SuppressWarnings("unchecked")
+            List<IApplication> forgeApps = (List<IApplication>) modRegistryClass
+                .getMethod("getAvailableApps").invoke(registryInstance);
+
+            System.out.println("AppLoader: Syncing with Forge ModAppRegistry - found " +
+                             forgeApps.size() + " apps");
+
+            for (IApplication app : forgeApps) {
+                registerAvailableModApp(app);
+            }
+
+            System.out.println("AppLoader: Sync complete - " + availableModApps.size() +
+                             " MOD apps now available");
+
+        } catch (ClassNotFoundException e) {
+            // Forgeモジュールが存在しない（スタンドアロン環境）
+            System.out.println("AppLoader: Forge module not found - running in standalone mode");
+        } catch (Exception e) {
+            System.err.println("AppLoader: Error syncing with ModAppRegistry: " + e.getMessage());
+        }
     }
 }

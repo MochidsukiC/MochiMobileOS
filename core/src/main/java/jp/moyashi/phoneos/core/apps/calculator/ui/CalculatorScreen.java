@@ -3,6 +3,8 @@ package jp.moyashi.phoneos.core.apps.calculator.ui;
 import jp.moyashi.phoneos.core.Kernel;
 import jp.moyashi.phoneos.core.ui.Screen;
 import processing.core.PApplet;
+import processing.core.PGraphics;
+import processing.core.PConstants;
 
 /**
  * Main screen for the Calculator application.
@@ -31,29 +33,56 @@ CalculatorScreen implements Screen {
     public void setup(processing.core.PApplet p) {
         System.out.println("CalculatorScreen: Calculator initialized");
     }
+
+    public void setup(PGraphics g) {
+        System.out.println("CalculatorScreen: Calculator initialized (PGraphics)");
+    }
     
     @Override
     public void draw(PApplet p) {
         // Background
         p.background(30);
-        
+
         // Display
         p.fill(50);
         p.rect(20, 20, 360, 80, 8);
-        
+
         p.fill(255);
         p.textAlign(p.RIGHT, p.CENTER);
         p.textSize(32);
         p.text(display, 370, 60);
-        
+
         // Buttons
         drawButtons(p);
-        
+
         // Back button
         p.fill(150);
         p.textAlign(p.LEFT, p.TOP);
         p.textSize(14);
         p.text("< Back", 10, 10);
+    }
+
+    public void draw(PGraphics g) {
+        // Background
+        g.background(30);
+
+        // Display
+        g.fill(50);
+        g.rect(20, 20, 360, 80, 8);
+
+        g.fill(255);
+        g.textAlign(PConstants.RIGHT, PConstants.CENTER);
+        g.textSize(32);
+        g.text(display, 370, 60);
+
+        // Buttons
+        drawButtons(g);
+
+        // Back button
+        g.fill(150);
+        g.textAlign(PConstants.LEFT, PConstants.TOP);
+        g.textSize(14);
+        g.text("< Back", 10, 10);
     }
     
     private void drawButtons(PApplet p) {
@@ -64,20 +93,20 @@ CalculatorScreen implements Screen {
             {"1", "2", "3", "+"},
             {"0", ".", "=", ""}
         };
-        
+
         int buttonWidth = 80;
         int buttonHeight = 60;
         int padding = 10;
         int startX = 20;
         int startY = 120;
-        
+
         for (int row = 0; row < buttons.length; row++) {
             for (int col = 0; col < buttons[row].length; col++) {
                 if (buttons[row][col].isEmpty()) continue;
-                
+
                 int x = startX + col * (buttonWidth + padding);
                 int y = startY + row * (buttonHeight + padding);
-                
+
                 // Button color
                 if (isOperator(buttons[row][col])) {
                     p.fill(255, 159, 10); // Orange for operators
@@ -86,14 +115,56 @@ CalculatorScreen implements Screen {
                 } else {
                     p.fill(77, 77, 77); // Dark gray for numbers
                 }
-                
+
                 p.rect(x, y, buttonWidth, buttonHeight, 8);
-                
+
                 // Button text
                 p.fill(255);
                 p.textAlign(p.CENTER, p.CENTER);
                 p.textSize(24);
                 p.text(buttons[row][col], x + buttonWidth/2, y + buttonHeight/2);
+            }
+        }
+    }
+
+    private void drawButtons(PGraphics g) {
+        String[][] buttons = {
+            {"C", "±", "%", "÷"},
+            {"7", "8", "9", "×"},
+            {"4", "5", "6", "-"},
+            {"1", "2", "3", "+"},
+            {"0", ".", "=", ""}
+        };
+
+        int buttonWidth = 80;
+        int buttonHeight = 60;
+        int padding = 10;
+        int startX = 20;
+        int startY = 120;
+
+        for (int row = 0; row < buttons.length; row++) {
+            for (int col = 0; col < buttons[row].length; col++) {
+                if (buttons[row][col].isEmpty()) continue;
+
+                int x = startX + col * (buttonWidth + padding);
+                int y = startY + row * (buttonHeight + padding);
+
+                // Button color
+                if (isOperator(buttons[row][col])) {
+                    g.fill(255, 159, 10); // Orange for operators
+                } else if (buttons[row][col].equals("C")) {
+                    g.fill(165, 165, 165); // Gray for clear
+                } else {
+                    g.fill(77, 77, 77); // Dark gray for numbers
+                }
+
+                g.rect(x, y, buttonWidth, buttonHeight, 8);
+
+                // Button text
+                g.fill(255);
+                g.textAlign(PConstants.CENTER, PConstants.CENTER);
+                g.textSize(24);
+                g.text(buttons[row][col], x + buttonWidth/2, y + buttonHeight/2);
             }
         }
     }
@@ -263,8 +334,8 @@ CalculatorScreen implements Screen {
             // Try to get Calculator app icon for animation
             try {
                 processing.core.PImage calculatorIcon = null;
-                if (kernel.getClass().getSuperclass().getSimpleName().equals("PApplet")) {
-                    processing.core.PApplet pApplet = (processing.core.PApplet) kernel;
+                processing.core.PApplet pApplet = kernel.getParentApplet();
+                if (pApplet != null) {
                     
                     // Create a simple icon for animation
                     calculatorIcon = pApplet.createGraphics(64, 64);

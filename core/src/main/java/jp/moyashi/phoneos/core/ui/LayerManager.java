@@ -3,6 +3,7 @@ package jp.moyashi.phoneos.core.ui;
 import jp.moyashi.phoneos.core.input.GestureListener;
 import jp.moyashi.phoneos.core.input.GestureManager;
 import processing.core.PApplet;
+import processing.core.PGraphics;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -94,10 +95,10 @@ public class LayerManager {
     
     /**
      * すべてのレイヤーを更新し、描画する。
-     * 
-     * @param p 描画用PAppletインスタンス
+     *
+     * @param g 描画用PGraphicsインスタンス
      */
-    public void updateAndRender(PApplet p) {
+    public void updateAndRender(PGraphics g) {
         // 定期的なクリーンアップ
         long currentTime = System.currentTimeMillis();
         if (currentTime - lastCleanupTime > CLEANUP_INTERVAL) {
@@ -114,7 +115,13 @@ public class LayerManager {
         
         for (UILayer layer : renderList) {
             if (layer.isActive()) {
-                layer.update(p);
+                try {
+                    // PGraphics対応のレイヤー更新を実行
+                    layer.update(g);
+                } catch (Exception e) {
+                    System.err.println("LayerManager: Error updating layer '" + layer.getLayerId() + "': " + e.getMessage());
+                    e.printStackTrace();
+                }
             }
         }
     }

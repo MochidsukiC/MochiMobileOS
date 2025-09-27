@@ -1,6 +1,7 @@
 package jp.moyashi.phoneos.core.ui;
 
 import processing.core.PApplet;
+import processing.core.PGraphics;
 
 /**
  * スマートフォンOSのすべてのスクリーンのベースインターフェース。
@@ -23,10 +24,22 @@ public interface Screen {
     /**
      * スクリーンのコンテンツを描画するために継続的に呼び出される。
      * このメソッドはスクリーンのすべての視覚的レンダリングを処理する必要がある。
-     * 
+     *
      * @param p 描画操作用のPAppletインスタンス
      */
     void draw(PApplet p);
+
+    /**
+     * PGraphics対応のスクリーン描画メソッド。
+     * 新しいアーキテクチャでの描画処理に使用される。
+     *
+     * @param g 描画操作用のPGraphicsインスタンス
+     */
+    default void draw(PGraphics g) {
+        // デフォルト実装：サブクラスでの実装が必要であることを示す
+        System.out.println("Warning: " + this.getClass().getSimpleName() +
+                         " does not implement draw(PGraphics). Skipping draw.");
+    }
     
     /**
      * このスクリーンがアクティブな間にマウスプレスイベントが発生した時に呼び出される。

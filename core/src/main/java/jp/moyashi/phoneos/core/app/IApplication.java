@@ -3,6 +3,7 @@ package jp.moyashi.phoneos.core.app;
 import jp.moyashi.phoneos.core.Kernel;
 import jp.moyashi.phoneos.core.ui.Screen;
 import processing.core.PApplet;
+import processing.core.PGraphics;
 import processing.core.PImage;
 
 /**
@@ -32,15 +33,43 @@ public interface IApplication {
      * Gets the icon image for this application.
      * The icon is used throughout the OS interface to represent the application
      * visually in launchers, task switchers, and other system UI elements.
-     * 
+     *
      * The returned PImage should be square and appropriately sized for display.
      * If no custom icon is available, implementations should return a default
      * or generated icon.
-     * 
+     *
      * @param p The PApplet instance used for creating the icon image
      * @return A PImage representing the application's icon
      */
     PImage getIcon(PApplet p);
+
+    /**
+     * Gets the icon image for this application (PGraphics version).
+     * This method provides PGraphics-compatible icon generation for
+     * applications that need to work in PGraphics-based rendering environments.
+     *
+     * By default, this method delegates to the PApplet version. Applications
+     * can override this method to provide PGraphics-specific icon generation.
+     *
+     * @param g The PGraphics instance used for creating the icon image
+     * @return A PImage representing the application's icon
+     */
+    default PImage getIcon(PGraphics g) {
+        // Default implementation: try to use PApplet version if available
+        if (g.parent != null) {
+            return getIcon(g.parent);
+        } else {
+            // Fallback: create a simple default icon
+            // Since PGraphics doesn't have createImage, we'll create a minimal 64x64 PImage manually
+            // This is a fallback case that should rarely be used
+            System.out.println("Warning: Creating fallback icon for " + getName() + " without PApplet context");
+
+            // Create a simple colored rectangle as fallback
+            // We can't easily create a PImage without PApplet, so return null
+            // Applications should override this method or ensure g.parent is available
+            return null;
+        }
+    }
     
     /**
      * Gets the main entry screen for this application.
@@ -74,11 +103,31 @@ public interface IApplication {
      * Gets the version string of this application.
      * This version information can be used for update management,
      * compatibility checks, and user information display.
-     * 
+     *
      * @return The version string of the application (e.g., "1.0.0")
      */
     default String getVersion() {
         return "1.0.0";
+    }
+
+    /**
+     * Alias for getName() - returns the display name of this application.
+     * Provided for compatibility with existing code.
+     *
+     * @return The human-readable name of the application
+     */
+    default String getApplicationName() {
+        return getName();
+    }
+
+    /**
+     * Alias for getVersion() - returns the version string of this application.
+     * Provided for compatibility with existing code.
+     *
+     * @return The version string of the application (e.g., "1.0.0")
+     */
+    default String getApplicationVersion() {
+        return getVersion();
     }
     
     /**
@@ -112,5 +161,35 @@ public interface IApplication {
      */
     default void onDestroy() {
         System.out.println("Application " + getName() + " destroyed");
+    }
+
+    /**
+     * アプリケーションがOSに初めてインストールされる際に一度だけ呼び出される。
+     * VFS内にデータ保存用のディレクトリを作成するなどの初期設定処理を想定。
+     *
+     * このメソッドは、AppStoreでユーザーがアプリケーションをインストールした際、
+     * またはMODアプリケーションがシステムに登録された際に実行されます。
+     *
+     * 実装例：
+     * - VFS内にアプリケーション専用のデータディレクトリを作成
+     * - 初期設定ファイルの生成
+     * - 必要なリソースファイルの準備
+     * - データベースの初期化
+     *
+     * @param kernel OSカーネルインスタンス
+     */
+    default void onInstall(Kernel kernel) {
+        System.out.println("Application " + getName() + " installed");
+
+        // デフォルト実装：アプリケーション専用のデータディレクトリを作成
+        try {
+            String appDataPath = "appdata/" + getApplicationId();
+            if (kernel.getVFS() != null && !kernel.getVFS().directoryExists(appDataPath)) {
+                kernel.getVFS().createDirectory(appDataPath);
+                System.out.println("Created data directory for " + getName() + ": " + appDataPath);
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to create data directory for " + getName() + ": " + e.getMessage());
+        }
     }
 }

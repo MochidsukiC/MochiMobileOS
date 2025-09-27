@@ -1,6 +1,7 @@
 package jp.moyashi.phoneos.core.ui.popup;
 
 import processing.core.PApplet;
+import processing.core.PGraphics;
 import jp.moyashi.phoneos.core.input.GestureEvent;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -132,9 +133,29 @@ public class PopupManager {
     }
     
     /**
-     * ポップアップを描画する。
+     * ポップアップを描画する（PGraphics対応）。
      * この メソッドはKernelのdraw()から呼び出される必要がある。
-     * 
+     *
+     * @param g 描画用のPGraphicsインスタンス
+     */
+    public void draw(PGraphics g) {
+        // 自動クローズ処理
+        if (currentPopup != null && autoCloseTime > 0 && System.currentTimeMillis() > autoCloseTime) {
+            System.out.println("PopupManager: Auto-closing popup after timeout");
+            closeCurrentPopup();
+            return;
+        }
+
+        // ポップアップ描画
+        if (currentPopup != null) {
+            drawPopup(g, currentPopup);
+        }
+    }
+
+    /**
+     * ポップアップを描画する（PApplet互換性メソッド）。
+     * この メソッドはKernelのdraw()から呼び出される必要がある。
+     *
      * @param p 描画用のPAppletインスタンス
      */
     public void draw(PApplet p) {
@@ -144,7 +165,7 @@ public class PopupManager {
             closeCurrentPopup();
             return;
         }
-        
+
         // ポップアップ描画
         if (currentPopup != null) {
             drawPopup(p, currentPopup);
@@ -194,8 +215,75 @@ public class PopupManager {
     }
     
     /**
-     * ポップアップを描画する。
-     * 
+     * ポップアップを描画する（PGraphics版）。
+     *
+     * @param g 描画用のPGraphicsインスタンス
+     * @param popup 描画するポップアップ
+     */
+    private void drawPopup(PGraphics g, PopupMenu popup) {
+        // メニューの位置とサイズを計算
+        int[] bounds = calculateMenuBounds(popup, g.width, g.height);
+        int menuX = bounds[0];
+        int menuY = bounds[1];
+        int menuWidth = bounds[2];
+        int menuHeight = bounds[3];
+        int cornerRadius = popup.getCornerRadius();
+
+        // 半透明背景オーバーレイ
+        g.fill(0, 0, 0, 120);
+        g.noStroke();
+        g.rect(0, 0, g.width, g.height);
+
+        // ドロップシャドウ描画
+        g.fill(popup.getShadowColor());
+        g.noStroke();
+        g.rect(menuX + SHADOW_OFFSET, menuY + SHADOW_OFFSET, menuWidth, menuHeight, cornerRadius);
+
+        // メニュー背景
+        g.fill(popup.getBackgroundColor());
+        g.noStroke();
+        g.rect(menuX, menuY, menuWidth, menuHeight, cornerRadius);
+
+        // タイトル描画
+        int currentY = menuY + MENU_PADDING;
+        if (popup.getTitle() != null) {
+            g.fill(popup.getTextColor());
+            g.textAlign(PApplet.CENTER, PApplet.CENTER);
+            g.textSize(16);
+            g.text(popup.getTitle(), menuX + menuWidth / 2, currentY + ITEM_HEIGHT / 2);
+            currentY += ITEM_HEIGHT;
+
+            // タイトル区切り線
+            g.stroke(SEPARATOR_COLOR);
+            g.strokeWeight(1);
+            g.line(menuX + MENU_PADDING, currentY, menuX + menuWidth - MENU_PADDING, currentY);
+            currentY += 5;
+        }
+
+        // アイテム描画
+        g.textAlign(PApplet.CENTER, PApplet.CENTER);
+        g.textSize(14);
+
+        for (PopupItem item : popup.getItems()) {
+            if (item.getText().equals("---")) {
+                // セパレーター
+                g.stroke(SEPARATOR_COLOR);
+                g.strokeWeight(1);
+                g.line(menuX + MENU_PADDING, currentY + ITEM_HEIGHT / 2,
+                      menuX + menuWidth - MENU_PADDING, currentY + ITEM_HEIGHT / 2);
+            } else {
+                // 通常アイテム
+                g.fill(item.isEnabled() ? popup.getTextColor() : popup.getDisabledColor());
+                g.noStroke();
+                g.text(item.getText(), menuX + menuWidth / 2, currentY + ITEM_HEIGHT / 2);
+            }
+            currentY += ITEM_HEIGHT;
+        }
+    }
+
+    /**
+     * ポップアップを描画する（PApplet互換性メソッド）。
+     *
      * @param p 描画用のPAppletインスタンス
      * @param popup 描画するポップアップ
      */
