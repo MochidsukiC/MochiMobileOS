@@ -1,0 +1,40 @@
+modLoader="javafml"
+loaderVersion="[47,)"
+license="MIT"
+issueTrackerURL="https://github.com/MochidsukiC/MochiMobileOS/issues"
+
+[[mods]]
+modId="mochimobileos"
+version="${file.jarVersion}"
+displayName="MochiMobileOS Forge Integration"
+description='''
+MochiMobileOS Forge Integration MOD that provides smartphone-like OS functionality within Minecraft.
+This MOD enables other mods to register applications that can be used within the MochiMobileOS environment.
+
+Features:
+• Complete smartphone-like OS interface within Minecraft
+• App Store for installing MOD applications
+• Multi-page launcher with drag & drop support
+• Control Center with system toggles
+• Notification Center for system messages
+• Virtual File System for app data
+• Pattern lock security system
+• Settings and Calculator apps included
+'''
+authors="jp.moyashi"
+credits="Processing Framework, Minecraft Forge, JOGL"
+logoFile="mochimobileos.png"
+
+[[dependencies.mochimobileos]]
+modId="forge"
+mandatory=true
+versionRange="[47,)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.mochimobileos]]
+modId="minecraft"
+mandatory=true
+versionRange="[1.20.1,1.21)"
+ordering="NONE"
+side="BOTH"
