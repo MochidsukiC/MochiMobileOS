@@ -1,6 +1,5 @@
 plugins {
     id("java-library")
-    id("maven-publish")
 }
 
 repositories {
@@ -32,26 +31,4 @@ dependencies {
 tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
     options.forkOptions.jvmArgs?.addAll(listOf("-Dfile.encoding=UTF-8", "-Dsun.jnu.encoding=UTF-8"))
-}
-
-publishing {
-    publications {
-        create<MavenPublication>("maven") {
-            groupId = "jp.moyashi.phoneos"
-            artifactId = "core"
-            version = "1.0.1"
-
-            from(components["java"])
-        }
-    }
-    repositories {
-        maven {
-            name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/MochidsukiC/MochiMobileOS")
-            credentials {
-                username = "MochidsukiC"
-                password = ""
-            }
-        }
-    }
 }

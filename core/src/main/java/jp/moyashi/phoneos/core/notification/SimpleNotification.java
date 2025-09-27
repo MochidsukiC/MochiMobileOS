@@ -105,13 +105,7 @@ public class SimpleNotification implements INotification {
         p.pushStyle();
         
         // 日本語フォントを設定
-        if (p instanceof Kernel) {
-            Kernel kernel = (Kernel) p;
-            PFont japaneseFont = kernel.getJapaneseFont();
-            if (japaneseFont != null) {
-                p.textFont(japaneseFont);
-            }
-        }
+        // フォント設定は省略（基本フォントを使用）
         
         // 背景
         int bgAlpha = isRead ? 100 : 150;

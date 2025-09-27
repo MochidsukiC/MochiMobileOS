@@ -1,6 +1,7 @@
 package jp.moyashi.phoneos.core.ui;
 
 import processing.core.PApplet;
+import processing.core.PGraphics;
 
 /**
  * 動的UIレイヤーを表現するクラス。
@@ -39,14 +40,23 @@ public class UILayer {
     public interface LayerRenderer {
         /**
          * レイヤーの描画処理を実行する
-         * 
+         *
          * @param p 描画用PAppletインスタンス
          */
         void render(PApplet p);
-        
+
+        /**
+         * レイヤーの描画処理を実行する（PGraphics版）
+         *
+         * @param g 描画用PGraphicsインスタンス
+         */
+        default void render(PGraphics g) {
+            // デフォルト実装は空（PApplet版との互換性のため）
+        }
+
         /**
          * レイヤーが表示されているかどうかを確認する
-         * 
+         *
          * @return 表示中の場合true
          */
         boolean isVisible();
@@ -72,12 +82,12 @@ public class UILayer {
     
     /**
      * レイヤーを更新し、描画する。
-     * 
+     *
      * @param p 描画用PAppletインスタンス
      */
     public void update(PApplet p) {
         if (!isActive) return;
-        
+
         // 表示状態を更新
         boolean newVisibility = renderer.isVisible();
         if (newVisibility != isVisible) {
@@ -85,11 +95,38 @@ public class UILayer {
             lastUpdateTime = System.currentTimeMillis();
             System.out.println("UILayer '" + layerName + "' visibility changed to: " + isVisible);
         }
-        
+
         // 表示中の場合のみ描画
         if (isVisible) {
             try {
                 renderer.render(p);
+            } catch (Exception e) {
+                System.err.println("UILayer '" + layerName + "' render error: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+    }
+
+    /**
+     * レイヤーを更新し、描画する（PGraphics版）。
+     *
+     * @param g 描画用PGraphicsインスタンス
+     */
+    public void update(PGraphics g) {
+        if (!isActive) return;
+
+        // 表示状態を更新
+        boolean newVisibility = renderer.isVisible();
+        if (newVisibility != isVisible) {
+            isVisible = newVisibility;
+            lastUpdateTime = System.currentTimeMillis();
+            System.out.println("UILayer '" + layerName + "' visibility changed to: " + isVisible);
+        }
+
+        // 表示中の場合のみ描画
+        if (isVisible) {
+            try {
+                renderer.render(g);
             } catch (Exception e) {
                 System.err.println("UILayer '" + layerName + "' render error: " + e.getMessage());
                 e.printStackTrace();

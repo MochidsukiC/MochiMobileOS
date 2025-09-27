@@ -12,22 +12,37 @@ import jp.moyashi.phoneos.core.input.GestureType;
 import jp.moyashi.phoneos.core.apps.launcher.LauncherApp;
 import jp.moyashi.phoneos.core.apps.settings.SettingsApp;
 import jp.moyashi.phoneos.core.apps.calculator.CalculatorApp;
+import jp.moyashi.phoneos.core.apps.appstore.AppStoreApp;
 import jp.moyashi.phoneos.core.ui.LayerManager;
+import jp.moyashi.phoneos.core.ui.UILayer;
 import processing.core.PApplet;
+import processing.core.PGraphics;
 import processing.core.PFont;
 import processing.event.MouseEvent;
 
 /**
  * スマートフォンOSの中核となるメインカーネル。
- * ProcessingのグラフィックスAPIを利用するためPAppletを継承している。
+ * PGraphicsバッファに描画し、スタンドアロンとForgeの両方に対応。
  * すべてのシステムサービスとScreenManagerを通じたGUIを管理する。
  * コントロールセンター用のジェスチャー処理も担当する。
- * 
+ *
  * @author YourName
- * @version 1.0
+ * @version 2.0
  */
-public class Kernel extends PApplet implements GestureListener {
-    
+public class Kernel implements GestureListener {
+
+    /** 描画用のPGraphicsバッファ */
+    private PGraphics graphics;
+
+    /** PAppletインスタンス（フォントやリソース作成用） */
+    private PApplet parentApplet;
+
+    /** 画面の幅 */
+    private int screenWidth = 400;
+
+    /** 画面の高さ */
+    private int screenHeight = 600;
+
     /** UIと画面遷移を管理するスクリーンマネージャー */
     private ScreenManager screenManager;
     
@@ -78,13 +93,35 @@ public class Kernel extends PApplet implements GestureListener {
     private static final long LONG_PRESS_DURATION = 2000; // 2秒
     
     /**
-     * setup()が呼ばれる前にProcessingの設定を行う。
-     * ディスプレイサイズとレンダラーを設定する。
+     * Kernelを初期化する。PAppletインスタンスを受け取り、PGraphicsバッファを作成する。
+     *
+     * @param applet PAppletインスタンス（フォント作成やリソース管理用）
      */
-    @Override
-    public void settings() {
-        size(400, 600);  // スマートフォンに似たアスペクト比
-        System.out.println("📱 Kernel: Processing window configured (400x600)");
+    public void initialize(PApplet applet) {
+        this.parentApplet = applet;
+        this.graphics = applet.createGraphics(screenWidth, screenHeight);
+        System.out.println("📱 Kernel: PGraphics buffer created (" + screenWidth + "x" + screenHeight + ")");
+
+        // setup()の内容を呼び出し
+        setup();
+    }
+
+    /**
+     * Kernelを初期化する（Forge用：サイズ指定版）。
+     *
+     * @param applet PAppletインスタンス
+     * @param width 画面幅
+     * @param height 画面高さ
+     */
+    public void initialize(PApplet applet, int width, int height) {
+        this.parentApplet = applet;
+        this.screenWidth = width;
+        this.screenHeight = height;
+        this.graphics = applet.createGraphics(width, height);
+        System.out.println("📱 Kernel: PGraphics buffer created (" + width + "x" + height + ")");
+
+        // setup()の内容を呼び出し
+        setup();
     }
     
     /**
@@ -92,18 +129,15 @@ public class Kernel extends PApplet implements GestureListener {
      * このメソッドはプログラム開始時に一度だけ呼ばれる。
      * すべてのコアサービスとスクリーンマネージャーのインスタンスを作成する。
      */
-    @Override
-    public void setup() {
-        // 重要な修正: フレームレートを即座に設定
-        frameRate(60);
-        
+    private void setup() {
         // 日本語フォントの初期化
         System.out.println("=== MochiMobileOS カーネル初期化 ===");
         System.out.println("Kernel: 日本語フォントを設定中...");
         try {
-            japaneseFont = createFont("Meiryo", 16, true);
-            textFont(japaneseFont);
-            System.out.println("Kernel: Meiryoフォントを正常に読み込みました");
+            if (parentApplet != null) {
+                japaneseFont = parentApplet.createFont("Meiryo", 16, true);
+                System.out.println("Kernel: Meiryoフォントを正常に読み込みました");
+            }
         } catch (Exception e) {
             System.err.println("Kernel: Meiryoフォントの読み込みに失敗: " + e.getMessage());
             System.err.println("Kernel: デフォルトフォントを使用します");
@@ -152,7 +186,13 @@ public class Kernel extends PApplet implements GestureListener {
         
         System.out.println("  -> 動的レイヤー管理システム作成中...");
         layerManager = new LayerManager(gestureManager);
-        
+
+        // コントロールセンターをレイヤーマネージャーに登録
+        registerControlCenterAsLayer();
+
+        // 通知センターをレイヤーマネージャーに登録
+        registerNotificationCenterAsLayer();
+
         // コントロールセンターを最高優先度のジェスチャーリスナーとして登録
         gestureManager.addGestureListener(controlCenterManager);
         
@@ -176,7 +216,12 @@ public class Kernel extends PApplet implements GestureListener {
         System.out.println("  -> CalculatorAppを登録中...");
         CalculatorApp calculatorApp = new CalculatorApp();
         appLoader.registerApplication(calculatorApp);
-        
+
+        System.out.println("  -> AppStoreAppを登録中...");
+        AppStoreApp appStoreApp = new AppStoreApp();
+        appLoader.registerApplication(appStoreApp);
+        appStoreApp.onInitialize(this);
+
         System.out.println("Kernel: " + appLoader.getLoadedApps().size() + " 個のアプリケーションを登録");
         
         // スクリーンマネージャーを初期化してランチャーを初期画面に設定
@@ -216,13 +261,20 @@ public class Kernel extends PApplet implements GestureListener {
     }
     
     /**
-     * Processingによって継続的に呼ばれるメイン描画ループ。
+     * メイン描画ループ。PGraphicsバッファに描画する。
      * スクリーンマネージャーを通じて現在の画面に描画を委譲する。
      */
-    @Override
     public void draw() {
+        if (graphics == null) return;
+
+        // フレームカウントを更新
+        updateFrameCount();
+
+        // PGraphicsバッファでの描画開始
+        graphics.beginDraw();
+
         // 何かが見えるように明るい背景を強制表示
-        background(100, 200, 100); // 視認性確保のための明るい緑色
+        graphics.background(100, 200, 100); // 視認性確保のための明るい緑色
         
         // 詳細なデバッグログ出力
         /*
@@ -239,38 +291,39 @@ public class Kernel extends PApplet implements GestureListener {
          */
         
         // Kernel draw()が呼ばれていることを確認するため常にデバッグ情報を描画
-        fill(255, 255, 255);
-        textAlign(LEFT, TOP);
-        textSize(14);
-        text("Kernel Frame: " + frameCount, 10, 10);
-        text("ScreenManager: " + (screenManager != null), 10, 30);
-        
+        graphics.fill(255, 255, 255);
+        graphics.textAlign(graphics.LEFT, graphics.TOP);
+        graphics.textSize(14);
+        if (japaneseFont != null) graphics.textFont(japaneseFont);
+        graphics.text("Kernel Frame: " + getFrameCount(), 10, 10);
+        graphics.text("ScreenManager: " + (screenManager != null), 10, 30);
+
         if (screenManager != null) {
-            text("Has Screen: " + (screenManager.getCurrentScreen() != null), 10, 50);
+            graphics.text("Has Screen: " + (screenManager.getCurrentScreen() != null), 10, 50);
             try {
-                screenManager.draw(this);
+                screenManager.draw(graphics);
             } catch (Exception e) {
                 System.err.println("❌ ScreenManager draw error: " + e.getMessage());
                 e.printStackTrace();
                 // 大きなエラー表示
-                fill(255, 0, 0);
-                rect(50, height/2 - 50, width - 100, 100);
-                fill(255, 255, 255);
-                textAlign(CENTER, CENTER);
-                textSize(18);
-                text("画面エラー!", width/2, height/2 - 20);
-                textSize(12);
-                text("エラー: " + e.getMessage(), width/2, height/2);
-                text("詳細はコンソールを確認", width/2, height/2 + 20);
+                graphics.fill(255, 0, 0);
+                graphics.rect(50, screenHeight/2 - 50, screenWidth - 100, 100);
+                graphics.fill(255, 255, 255);
+                graphics.textAlign(graphics.CENTER, graphics.CENTER);
+                graphics.textSize(18);
+                graphics.text("画面エラー!", screenWidth/2, screenHeight/2 - 20);
+                graphics.textSize(12);
+                graphics.text("エラー: " + e.getMessage(), screenWidth/2, screenHeight/2);
+                graphics.text("詳細はコンソールを確認", screenWidth/2, screenHeight/2 + 20);
             }
         } else {
             // 大きな読み込み中インジケーター
-            fill(255, 255, 0);
-            rect(50, height/2 - 30, width - 100, 60);
-            fill(0);
-            textAlign(CENTER, CENTER);
-            textSize(18);
-            text("スクリーンマネージャーなし!", width/2, height/2);
+            graphics.fill(255, 255, 0);
+            graphics.rect(50, screenHeight/2 - 30, screenWidth - 100, 60);
+            graphics.fill(0);
+            graphics.textAlign(graphics.CENTER, graphics.CENTER);
+            graphics.textSize(18);
+            graphics.text("スクリーンマネージャーなし!", screenWidth/2, screenHeight/2);
         }
         
         // ジェスチャーマネージャーの更新（長押し検出など）
@@ -280,39 +333,331 @@ public class Kernel extends PApplet implements GestureListener {
         
         // レイヤー管理システムによる描画とジェスチャー優先度管理
         if (layerManager != null) {
-            layerManager.updateAndRender(this);
+            layerManager.updateAndRender(graphics);
         }
-        
+
+        // ポップアップを描画（通常の上位レイヤーとして）
+        if (popupManager != null && !isComponentManagedByLayer("popup")) {
+            if (parentApplet != null) {
+                popupManager.draw(parentApplet);
+            } else {
+                popupManager.draw(graphics);
+            }
+        }
+
         // 従来のシステム描画（レイヤー管理に移行するまでの互換性維持）
         // TODO: すべてのコンポーネントをレイヤー管理システムに移行後、以下のコードを削除
-        
+
         // 動的優先度を更新（描画順序に基づく）
         // DISABLED: ControlCenterManagerとNotificationManagerが独自に優先度を管理するため、
         // ここでの上書きを無効化。コントロールセンターが15000の高優先度を維持できるようになる。
         // updateDynamicPriorities();
-        
-        // 通知センターを描画（最初に、背景の一部として）
-        if (notificationManager != null && !isComponentManagedByLayer("notification_center")) {
-            notificationManager.draw(this);
+
+        // 通知センターとコントロールセンターを最上位に描画（すべてのUI要素の上に表示）
+        // これらは画面上のすべてのコンテンツの上に表示される必要がある
+
+        // 通知センターを描画（最上位オーバーレイとして）
+        boolean notificationManagedByLayer = isComponentManagedByLayer("notification_center");
+        System.out.println("Kernel: Notification center overlay check - manager=" + (notificationManager != null) +
+                         ", managedByLayer=" + notificationManagedByLayer +
+                         ", parentApplet=" + (parentApplet != null) +
+                         ", graphics=" + (graphics != null));
+        if (notificationManager != null && !notificationManagedByLayer) {
+            System.out.println("Kernel: Drawing notification center as top overlay (managedByLayer=" + notificationManagedByLayer + ")");
+            try {
+                if (parentApplet != null) {
+                    System.out.println("Kernel: Calling notificationManager.draw(PApplet)");
+                    notificationManager.draw(parentApplet);
+                } else {
+                    System.out.println("Kernel: Calling notificationManager.draw(PGraphics)");
+                    notificationManager.draw(graphics);
+                }
+                System.out.println("Kernel: Notification center draw completed");
+            } catch (Exception e) {
+                System.err.println("Kernel: Error drawing notification center: " + e.getMessage());
+                e.printStackTrace();
+            }
         }
-        
-        // コントロールセンターを描画（通知センターの上に）
-        if (controlCenterManager != null && !isComponentManagedByLayer("control_center")) {
-            controlCenterManager.draw(this);
+
+        // コントロールセンターを描画（最上位オーバーレイとして、通知センターの上に）
+        boolean controlCenterManagedByLayer = isComponentManagedByLayer("control_center");
+        System.out.println("Kernel: Control center overlay check - manager=" + (controlCenterManager != null) +
+                         ", managedByLayer=" + controlCenterManagedByLayer +
+                         ", parentApplet=" + (parentApplet != null) +
+                         ", graphics=" + (graphics != null));
+        if (controlCenterManager != null && !controlCenterManagedByLayer) {
+            System.out.println("Kernel: Drawing control center as top overlay (managedByLayer=" + controlCenterManagedByLayer + ")");
+            try {
+                if (parentApplet != null) {
+                    System.out.println("Kernel: Calling controlCenterManager.draw(PApplet)");
+                    controlCenterManager.draw(parentApplet);
+                } else {
+                    System.out.println("Kernel: Calling controlCenterManager.draw(PGraphics)");
+                    controlCenterManager.draw(graphics);
+                }
+                System.out.println("Kernel: Control center draw completed");
+            } catch (Exception e) {
+                System.err.println("Kernel: Error drawing control center: " + e.getMessage());
+                e.printStackTrace();
+            }
+        } else {
+            System.out.println("Kernel: Skipping control center overlay - manager=" + (controlCenterManager != null) +
+                             ", managedByLayer=" + controlCenterManagedByLayer);
         }
-        
-        // ポップアップを最上位に描画（すべての描画の最後）
-        if (popupManager != null && !isComponentManagedByLayer("popup")) {
-            popupManager.draw(this);
+
+        // PGraphicsバッファでの描画終了
+        graphics.endDraw();
+    }
+
+    /**
+     * PGraphicsバッファを取得する。
+     *
+     * @return 描画されたPGraphicsバッファ
+     */
+    public PGraphics getGraphics() {
+        return graphics;
+    }
+
+    /**
+     * PGraphicsバッファを取得する（別名メソッド）。
+     * Forgeモジュールとの互換性のため。
+     *
+     * @return PGraphicsバッファ
+     */
+    public PGraphics getGraphicsBuffer() {
+        return graphics;
+    }
+
+    /**
+     * 現在のピクセルデータを配列として取得する。
+     * Forgeモジュールでテクスチャ変換に使用される。
+     *
+     * @return ピクセルデータ配列
+     */
+    public int[] getPixels() {
+        if (graphics == null) {
+            return new int[screenWidth * screenHeight];
+        }
+
+        graphics.loadPixels();
+        return graphics.pixels.clone();
+    }
+
+    /**
+     * Kernelのクリーンアップ処理。
+     * リソースの解放を行う。
+     */
+    public void cleanup() {
+        System.out.println("📱 Kernel: クリーンアップ処理開始...");
+
+        if (layerManager != null) {
+            System.out.println("  -> LayerManager cleanup...");
+        }
+
+        if (screenManager != null) {
+            System.out.println("  -> ScreenManager cleanup...");
+        }
+
+        if (graphics != null) {
+            System.out.println("  -> PGraphics バッファ解放...");
+            graphics = null;
+        }
+
+        System.out.println("✅ Kernel: クリーンアップ完了");
+    }
+
+    /**
+     * フレームカウンターを取得する（ダミー実装）。
+     *
+     * @return フレーム数（parentAppletがある場合はそのframeCount、ない場合は0）
+     */
+    public int getFrameCount() {
+        return parentApplet != null ? parentApplet.frameCount : 0;
+    }
+
+    /**
+     * 親PAppletインスタンスを取得する。
+     * 新しいアーキテクチャでPAppletの機能が必要な場合に使用される。
+     *
+     * @return 親PAppletインスタンス（設定されていない場合はnull）
+     */
+    public PApplet getParentApplet() {
+        return parentApplet;
+    }
+
+    /**
+     * 画面サイズを取得する。
+     *
+     * @return 幅と高さの配列 [width, height]
+     */
+    public int[] getScreenSize() {
+        return new int[]{screenWidth, screenHeight};
+    }
+
+    /**
+     * 互換性のため、PAppletのような描画メソッドをKernelに追加。
+     * これらのメソッドはPGraphicsに描画を委譲する。
+     */
+    public void background(int rgb) {
+        if (graphics != null) {
+            graphics.background(rgb);
         }
     }
-    
+
+    public void background(int r, int g, int b) {
+        if (graphics != null) {
+            graphics.background(r, g, b);
+        }
+    }
+
+    public void fill(int rgb) {
+        if (graphics != null) {
+            graphics.fill(rgb);
+        }
+    }
+
+    public void fill(int r, int g, int b) {
+        if (graphics != null) {
+            graphics.fill(r, g, b);
+        }
+    }
+
+    public void fill(int r, int g, int b, int a) {
+        if (graphics != null) {
+            graphics.fill(r, g, b, a);
+        }
+    }
+
+    public void stroke(int rgb) {
+        if (graphics != null) {
+            graphics.stroke(rgb);
+        }
+    }
+
+    public void stroke(int r, int g, int b) {
+        if (graphics != null) {
+            graphics.stroke(r, g, b);
+        }
+    }
+
+    public void strokeWeight(float weight) {
+        if (graphics != null) {
+            graphics.strokeWeight(weight);
+        }
+    }
+
+    public void noStroke() {
+        if (graphics != null) {
+            graphics.noStroke();
+        }
+    }
+
+    public void rect(float x, float y, float w, float h) {
+        if (graphics != null) {
+            graphics.rect(x, y, w, h);
+        }
+    }
+
+    public void ellipse(float x, float y, float w, float h) {
+        if (graphics != null) {
+            graphics.ellipse(x, y, w, h);
+        }
+    }
+
+    public void line(float x1, float y1, float x2, float y2) {
+        if (graphics != null) {
+            graphics.line(x1, y1, x2, y2);
+        }
+    }
+
+    public void textAlign(int alignX) {
+        if (graphics != null) {
+            graphics.textAlign(alignX);
+        }
+    }
+
+    public void textAlign(int alignX, int alignY) {
+        if (graphics != null) {
+            graphics.textAlign(alignX, alignY);
+        }
+    }
+
+    public void textSize(float size) {
+        if (graphics != null) {
+            graphics.textSize(size);
+        }
+    }
+
+    public void textFont(processing.core.PFont font) {
+        if (graphics != null) {
+            graphics.textFont(font);
+        }
+    }
+
+    public void text(String str, float x, float y) {
+        if (graphics != null) {
+            graphics.text(str, x, y);
+        }
+    }
+
+    public float textWidth(String str) {
+        if (graphics != null) {
+            return graphics.textWidth(str);
+        }
+        return 0;
+    }
+
+    public void pushMatrix() {
+        if (graphics != null) {
+            graphics.pushMatrix();
+        }
+    }
+
+    public void popMatrix() {
+        if (graphics != null) {
+            graphics.popMatrix();
+        }
+    }
+
+    public void translate(float x, float y) {
+        if (graphics != null) {
+            graphics.translate(x, y);
+        }
+    }
+
+    public void scale(float s) {
+        if (graphics != null) {
+            graphics.scale(s);
+        }
+    }
+
+    public void scale(float x, float y) {
+        if (graphics != null) {
+            graphics.scale(x, y);
+        }
+    }
+
+    // 画面サイズプロパティ（互換性のため）
+    public int width = screenWidth;
+    public int height = screenHeight;
+
+    // フレームカウント（互換性のため）
+    public int frameCount = 0;
+
+    /**
+     * 描画時にフレームカウントを更新
+     */
+    private void updateFrameCount() {
+        frameCount++;
+        width = screenWidth;
+        height = screenHeight;
+    }
+
     /**
      * マウスプレスイベントを処理する。
      * スクリーンマネージャーを通じて現在の画面にイベント処理を委譲する。
      */
-    @Override
-    public void mousePressed() {
+    public void mousePressed(int mouseX, int mouseY) {
         System.out.println("========================================");
         System.out.println("Kernel: mousePressed at (" + mouseX + ", " + mouseY + ")");
         System.out.println("ControlCenter visible: " + (controlCenterManager != null ? controlCenterManager.isVisible() : "null"));
@@ -364,8 +709,7 @@ public class Kernel extends PApplet implements GestureListener {
      * マウスドラッグイベントを処理する。
      * スクリーンマネージャーを通じて現在の画面にイベント処理を委譲する。
      */
-    @Override
-    public void mouseDragged() {
+    public void mouseDragged(int mouseX, int mouseY) {
         System.out.println("Kernel: mouseDragged at (" + mouseX + ", " + mouseY + ")");
         
         // 1. ポップアップ表示中はドラッグイベントをブロック
@@ -393,8 +737,7 @@ public class Kernel extends PApplet implements GestureListener {
      * マウスリリースイベントを処理する。
      * スクリーンマネージャーを通じて現在の画面にイベント処理を委譲する。
      */
-    @Override
-    public void mouseReleased() {
+    public void mouseReleased(int mouseX, int mouseY) {
         System.out.println("Kernel: mouseReleased at (" + mouseX + ", " + mouseY + ")");
         
         // 1. ジェスチャーマネージャーでリリース処理（常に実行）
@@ -413,35 +756,18 @@ public class Kernel extends PApplet implements GestureListener {
     }
     
     /**
-     * Processingのmousewheel()メソッド（複数の実装を試す）
+     * マウスホイールイベントを処理する。
      */
-    public void mouseWheel() {
-        System.out.println("Kernel: mouseWheel() called (no args)!");
-        if (mouseEvent != null) {
-            float wheelRotation = mouseEvent.getCount();
-            System.out.println("Kernel: wheelRotation = " + wheelRotation);
-            handleMouseWheel((int)wheelRotation);
-        } else {
-            System.out.println("Kernel: mouseEvent is null!");
-        }
-    }
-    
-    /**
-     * Processing 4.x用のmouseWheelメソッド
-     */
-    @Override
-    public void mouseWheel(MouseEvent event) {
-        System.out.println("Kernel: mouseWheel(MouseEvent) called!");
-        float wheelRotation = event.getCount();
-        System.out.println("Kernel: wheelRotation = " + wheelRotation);
-        handleMouseWheel((int)wheelRotation);
+    public void mouseWheel(int wheelRotation, int mouseX, int mouseY) {
+        System.out.println("Kernel: mouseWheel called with rotation: " + wheelRotation);
+        handleMouseWheel(wheelRotation, mouseX, mouseY);
     }
     
     /**
      * マウスホイールイベント処理。
      * ホイールスクロールをドラッグジェスチャーに変換してスクロール機能を提供する。
      */
-    private void handleMouseWheel(int wheelRotation) {
+    private void handleMouseWheel(int wheelRotation, int mouseX, int mouseY) {
         System.out.println("==========================================");
         System.out.println("Kernel: handleMouseWheel - rotation: " + wheelRotation + " at (" + mouseX + ", " + mouseY + ")");
         System.out.println("GestureManager: " + (gestureManager != null ? "exists" : "null"));
@@ -469,8 +795,7 @@ public class Kernel extends PApplet implements GestureListener {
      * スペースキーでホーム画面に戻る機能を提供する。
      * ただし、ロック中はスペースキーを無効化する。
      */
-    @Override
-    public void keyPressed() {
+    public void keyPressed(char key, int keyCode, int mouseX, int mouseY) {
         System.out.println("========================================");
         System.out.println("Kernel: keyPressed - key: '" + key + "', keyCode: " + keyCode);
         System.out.println("========================================");
@@ -502,26 +827,26 @@ public class Kernel extends PApplet implements GestureListener {
         // Page Up/Down キーでマウスホイールをシミュレート (複数のキーコードを試す)
         if (keyCode == 33 || keyCode == 366) { // Page Up キー (WindowsとJavaで異なる場合)
             System.out.println("Kernel: Page Up pressed - simulating wheel up");
-            handleMouseWheel(-1); // 上向きスクロール
+            handleMouseWheel(-1, mouseX, mouseY); // 上向きスクロール
             return;
         }
-        
+
         if (keyCode == 34 || keyCode == 367) { // Page Down キー
             System.out.println("Kernel: Page Down pressed - simulating wheel down");
-            handleMouseWheel(1); // 下向きスクロール
+            handleMouseWheel(1, mouseX, mouseY); // 下向きスクロール
             return;
         }
-        
+
         // より簡単なテスト用キーを追加
         if (key == 'q' || key == 'Q') {
             System.out.println("Kernel: Q pressed - simulating wheel up");
-            handleMouseWheel(-1);
+            handleMouseWheel(-1, mouseX, mouseY);
             return;
         }
-        
+
         if (key == 'e' || key == 'E') {
             System.out.println("Kernel: E pressed - simulating wheel down");
-            handleMouseWheel(1);
+            handleMouseWheel(1, mouseX, mouseY);
             return;
         }
         
@@ -535,14 +860,12 @@ public class Kernel extends PApplet implements GestureListener {
      * キーリリースイベント処理。
      * ESCキーの長押し検出に使用される。
      */
-    @Override
-    public void keyReleased() {
+    public void keyReleased(char key, int keyCode) {
         System.out.println("Kernel: keyReleased - key: " + key + ", keyCode: " + keyCode);
         
         // ESCキーのリリース処理
         if (keyCode == 27) { // ESC key code
             handleEscKeyRelease();
-            key = 0; // ProcessingのデフォルトESC動作を無効化
         }
         
         // keyReleasedはScreenManagerでサポートされていないため、コメントアウト
@@ -620,18 +943,25 @@ public class Kernel extends PApplet implements GestureListener {
         System.out.println("Kernel: Initiating system shutdown...");
         
         // シャットダウンメッセージを表示
-        background(20, 25, 35);
-        fill(255, 255, 255);
-        textAlign(CENTER, CENTER);
-        textSize(24);
-        text("システムをシャットダウンしています...", width / 2, height / 2);
+        if (graphics != null) {
+            graphics.beginDraw();
+            graphics.background(20, 25, 35);
+            graphics.fill(255, 255, 255);
+            graphics.textAlign(graphics.CENTER, graphics.CENTER);
+            graphics.textSize(24);
+            if (japaneseFont != null) graphics.textFont(japaneseFont);
+            graphics.text("システムをシャットダウンしています...", screenWidth / 2, screenHeight / 2);
+            graphics.endDraw();
+        }
         
         // 少し遅延してから終了
         new Thread(() -> {
             try {
                 Thread.sleep(1500);
                 System.out.println("Kernel: Shutdown complete");
-                exit();
+                if (parentApplet != null) {
+                    parentApplet.exit();
+                }
             } catch (InterruptedException e) {
                 System.err.println("Kernel: Shutdown interrupted: " + e.getMessage());
             }
@@ -761,7 +1091,7 @@ public class Kernel extends PApplet implements GestureListener {
         // 画面上からのスワイプダウンで通知センターを表示
         if (event.getType() == GestureType.SWIPE_DOWN) {
             // 画面上部（高さの10%以下）からのスワイプダウンを検出
-            if (event.getStartY() <= height * 0.1f) {
+            if (event.getStartY() <= screenHeight * 0.1f) {
                 System.out.println("Kernel: Detected swipe down from top at y=" + event.getStartY() + 
                                  ", showing notification center");
                 if (notificationManager != null) {
@@ -774,16 +1104,34 @@ public class Kernel extends PApplet implements GestureListener {
         // 画面下からのスワイプアップでコントロールセンターを表示
         if (event.getType() == GestureType.SWIPE_UP) {
             // 画面下部（高さの90%以上）からのスワイプアップを検出
-            if (event.getStartY() >= height * 0.9f) {
-                System.out.println("Kernel: Detected swipe up from bottom at y=" + event.getStartY() + 
+            if (event.getStartY() >= screenHeight * 0.9f) {
+                System.out.println("Kernel: Detected swipe up from bottom at y=" + event.getStartY() +
                                  ", showing control center");
                 if (controlCenterManager != null) {
+                    System.out.println("Kernel: ControlCenterManager is not null, calling show()");
                     controlCenterManager.show();
+                    System.out.println("Kernel: ControlCenterManager.show() completed");
                     return true;
+                } else {
+                    System.out.println("Kernel: ERROR - ControlCenterManager is null!");
                 }
             }
         }
-        
+
+        // 現在のスクリーンにジェスチャーを委譲
+        if (screenManager != null && screenManager.getCurrentScreen() != null) {
+            Screen currentScreen = screenManager.getCurrentScreen();
+            System.out.println("Kernel: Current screen is " + currentScreen.getClass().getSimpleName());
+            if (currentScreen instanceof GestureListener) {
+                System.out.println("Kernel: Delegating gesture " + event.getType() + " to " + currentScreen.getClass().getSimpleName());
+                return ((GestureListener) currentScreen).onGesture(event);
+            } else {
+                System.out.println("Kernel: Current screen does not implement GestureListener");
+            }
+        } else {
+            System.out.println("Kernel: No current screen available for gesture delegation");
+        }
+
         return false;
     }
     
@@ -1020,12 +1368,119 @@ public class Kernel extends PApplet implements GestureListener {
     
     /**
      * 指定されたコンポーネントがレイヤー管理システムで管理されているかチェックする。
-     * 
+     * PGraphics環境では通知センターとコントロールセンターはLayerManagerの更新が無効化されているため、
+     * 直接描画を行う必要がある。
+     *
      * @param componentId コンポーネントID
      * @return レイヤー管理されている場合true
      */
+    /**
+     * 通知センターをレイヤーマネージャーに登録する。
+     */
+    private void registerNotificationCenterAsLayer() {
+        if (layerManager == null || notificationManager == null) {
+            System.err.println("Kernel: Cannot register notification center - layerManager or notificationManager is null");
+            return;
+        }
+
+        // 通知センター用のLayerRendererを作成
+        UILayer.LayerRenderer notificationCenterRenderer = new UILayer.LayerRenderer() {
+            @Override
+            public void render(PApplet p) {
+                if (notificationManager != null && notificationManager.isVisible()) {
+                    notificationManager.draw(p);
+                }
+            }
+
+            @Override
+            public void render(PGraphics g) {
+                if (notificationManager != null && notificationManager.isVisible()) {
+                    notificationManager.draw(g);
+                }
+            }
+
+            @Override
+            public boolean isVisible() {
+                return notificationManager != null && notificationManager.isVisible();
+            }
+        };
+
+        // 通知センターレイヤーを登録（コントロールセンターより低い優先度）
+        boolean registered = layerManager.requestLayerPermission(
+            "notification_center",
+            "Notification Center",
+            8500, // 通知センターはコントロールセンター(9000)より低い優先度
+            notificationCenterRenderer
+        );
+
+        if (registered) {
+            System.out.println("Kernel: Notification center successfully registered as layer with priority 8500");
+        } else {
+            System.err.println("Kernel: Failed to register notification center as layer");
+        }
+    }
+
+    /**
+     * コントロールセンターをレイヤーマネージャーに登録する。
+     */
+    private void registerControlCenterAsLayer() {
+        if (layerManager == null || controlCenterManager == null) {
+            System.err.println("Kernel: Cannot register control center - layerManager or controlCenterManager is null");
+            return;
+        }
+
+        // コントロールセンター用のLayerRendererを作成
+        UILayer.LayerRenderer controlCenterRenderer = new UILayer.LayerRenderer() {
+            @Override
+            public void render(PApplet p) {
+                if (controlCenterManager != null && controlCenterManager.isVisible()) {
+                    controlCenterManager.draw(p);
+                }
+            }
+
+            @Override
+            public void render(PGraphics g) {
+                if (controlCenterManager != null && controlCenterManager.isVisible()) {
+                    controlCenterManager.draw(g);
+                }
+            }
+
+            @Override
+            public boolean isVisible() {
+                return controlCenterManager != null && controlCenterManager.isVisible();
+            }
+        };
+
+        // コントロールセンターレイヤーを登録（最高優先度）
+        boolean registered = layerManager.requestLayerPermission(
+            "control_center",
+            "Control Center",
+            9000, // コントロールセンターは最高優先度
+            controlCenterRenderer
+        );
+
+        if (registered) {
+            System.out.println("Kernel: Control center successfully registered as layer with priority 9000");
+        } else {
+            System.err.println("Kernel: Failed to register control center as layer");
+        }
+    }
+
     private boolean isComponentManagedByLayer(String componentId) {
         if (layerManager == null) return false;
+
+        // コントロールセンターがレイヤーとして登録されているかどうかを確認
+        if ("control_center".equals(componentId)) {
+            return layerManager.isLayerVisible("control_center") ||
+                   layerManager.getLayerCount() > 0; // レイヤーが存在すればレイヤー管理されている
+        }
+
+        // 通知センターがレイヤーとして登録されているかどうかを確認
+        if ("notification_center".equals(componentId)) {
+            return layerManager.isLayerVisible("notification_center") ||
+                   layerManager.getLayerCount() > 0; // レイヤーが存在すればレイヤー管理されている
+        }
+
         return layerManager.isLayerVisible(componentId);
     }
 }

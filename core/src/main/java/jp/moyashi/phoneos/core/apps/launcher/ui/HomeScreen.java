@@ -11,6 +11,8 @@ import jp.moyashi.phoneos.core.input.GestureEvent;
 import jp.moyashi.phoneos.core.input.GestureType;
 import jp.moyashi.phoneos.core.ui.popup.PopupMenu;
 import processing.core.PApplet;
+import processing.core.PConstants;
+import processing.core.PGraphics;
 
 import java.net.URL;
 import java.util.ArrayList;
@@ -56,7 +58,6 @@ public class HomeScreen implements Screen, GestureListener {
     private static final int GRID_ROWS = 5;
     private static final int ICON_SIZE = 64;
     private static final int ICON_SPACING = 20;
-    private static final int ICON_TEXT_AREA_HEIGHT = 20;
     private static final int DOCK_HEIGHT = 90; // 常時表示フィールドの高さ
     private static final int DOCK_Y = 600 - DOCK_HEIGHT; // 常時表示フィールドのY座標
     private IApplication appToAdd = null;
@@ -129,6 +130,32 @@ public class HomeScreen implements Screen, GestureListener {
         }
     }
 
+    public void setup(PGraphics g) {
+        if (isInitialized) {
+            if (DEBUG) System.out.println("⚠️ HomeScreen: setup(PGraphics) called again - skipping duplicate initialization");
+            return;
+        }
+        isInitialized = true;
+        if (DEBUG) System.out.println("🚀 HomeScreen: Initializing multi-page launcher (PGraphics)...");
+
+        // Ensure all state variables are properly initialized
+        pageTransitionOffset = 0.0f;
+        isAnimating = false;
+        isDragging = false;
+        isEditing = false;
+        resetEdgeHoverState();
+
+        loadBackgroundImage();
+        initializeHomePages();
+        preloadIcons(g);
+        if (kernel != null && kernel.getGestureManager() != null) {
+            kernel.getGestureManager().addGestureListener(this);
+            if (DEBUG) System.out.println("HomeScreen: Registered gesture listener with GestureManager");
+        } else {
+            if (DEBUG) System.out.println("⚠️ HomeScreen: GestureManager is null - gesture handling may not work");
+        }
+    }
+
     @Override
     public void draw(PApplet p) {
         try {
@@ -157,6 +184,37 @@ public class HomeScreen implements Screen, GestureListener {
             p.textAlign(p.CENTER, p.CENTER);
             p.textSize(16);
             p.text("HomeScreen Error: " + e.getMessage(), p.width / 2, p.height / 2);
+        }
+    }
+
+    @Override
+    public void draw(PGraphics g) {
+        try {
+            if (backgroundImage != null) {
+                g.image(backgroundImage, 0, 0, 400, 600);
+            } else {
+                g.background(30, 30, 30);
+            }
+
+            // Check for edge timer expiration even when mouse is not moving
+            checkEdgeTimerExpiration();
+
+            updatePageAnimation();
+            drawStatusBar(g);
+            drawPagesWithTransition(g);
+            drawPageIndicators(g);
+            drawDock(g); // 常時表示フィールドを描画
+            if (appToAdd != null) {
+                drawAddToHomePopup(g);
+            }
+        } catch (Exception e) {
+            System.err.println("❌ HomeScreen: Draw error (PGraphics) - " + e.getMessage());
+            e.printStackTrace();
+            g.background(255, 0, 0);
+            g.fill(255);
+            g.textAlign(g.CENTER, g.CENTER);
+            g.textSize(16);
+            g.text("HomeScreen Error: " + e.getMessage(), g.width / 2, g.height / 2);
         }
     }
 
@@ -549,8 +607,8 @@ public class HomeScreen implements Screen, GestureListener {
 
     private void loadBackgroundImage() {
         try {
-            if (kernel instanceof processing.core.PApplet) {
-                processing.core.PApplet p = (processing.core.PApplet) kernel;
+            processing.core.PApplet p = kernel.getParentApplet();
+            if (p != null) {
                 URL wallpaperUrl = getClass().getResource("/data/wallpaper.jpg");
                 if (wallpaperUrl != null) {
                     if (DEBUG) System.out.println("HomeScreen: ✅ Background image resource found at: " + wallpaperUrl);
@@ -758,6 +816,48 @@ public class HomeScreen implements Screen, GestureListener {
         }
     }
 
+    private void drawStatusBar(PGraphics g) {
+        try {
+            g.fill(textColor, 180);
+            g.textAlign(PConstants.LEFT, PConstants.TOP);
+            g.textSize(12);
+            if (kernel != null && kernel.getSystemClock() != null) {
+                try {
+                    g.text(kernel.getSystemClock().getFormattedTime(), 15, 15);
+                } catch (Exception e) {
+                    g.text("--:--", 15, 15);
+                }
+            } else {
+                g.text("No Clock", 15, 15);
+            }
+            g.textAlign(PConstants.RIGHT, PConstants.TOP);
+            g.text("MochiOS", 385, 15);
+            if (!homePages.isEmpty() && currentPageIndex < homePages.size()) {
+                HomePage currentPage = homePages.get(currentPageIndex);
+                String pageName = currentPage.isAppLibraryPage() ? "App Library" :
+                        currentPage.getPageName() != null ? currentPage.getPageName() :
+                                "Page " + (currentPageIndex + 1);
+                g.fill(255, 255, 255, 150);
+                g.textAlign(PConstants.CENTER, PConstants.TOP);
+                g.textSize(11);
+                g.text(pageName, 200, 15);
+            }
+            if (isInitialized) {
+                g.fill(76, 175, 80);
+            } else {
+                g.fill(255, 152, 0);
+            }
+            g.noStroke();
+            g.ellipse(370, 20, 8, 8);
+        } catch (Exception e) {
+            System.err.println("Error in drawStatusBar: " + e.getMessage());
+            g.fill(255);
+            g.textAlign(PConstants.LEFT, PConstants.TOP);
+            g.textSize(12);
+            g.text("Status Error", 15, 15);
+        }
+    }
+
     private void updatePageAnimation() {
         if (!isAnimating) {
             return;
@@ -859,6 +959,46 @@ public class HomeScreen implements Screen, GestureListener {
         }
     }
 
+    private void drawPagesWithTransition(PGraphics g) {
+        if (homePages.isEmpty()) {
+            g.fill(255, 255, 255, 150);
+            g.textAlign(PConstants.CENTER, PConstants.CENTER);
+            g.textSize(16);
+            g.text("No apps installed", 200, 300);
+            g.textSize(12);
+            g.text("Swipe up to access app library", 200, 320);
+            return;
+        }
+        g.pushMatrix();
+        int basePageForOffset = isAnimating ? animationBasePageIndex : currentPageIndex;
+        float totalOffset = -basePageForOffset * 400 + pageTransitionOffset;
+        g.translate(totalOffset, 0);
+        if (DEBUG && isAnimating) {
+            System.out.println("🎨 Drawing with basePageIndex=" + basePageForOffset + ", pageTransitionOffset=" + pageTransitionOffset + ", totalOffset=" + totalOffset);
+        }
+        for (int i = 0; i < homePages.size(); i++) {
+            g.pushMatrix();
+            g.translate(i * 400, 0);
+            HomePage page = homePages.get(i);
+            if (page.isAppLibraryPage()) {
+                drawAppLibraryPage(g, page);
+            } else {
+                drawNormalPage(g, page);
+            }
+            g.popMatrix();
+        }
+        g.popMatrix();
+        if (isDragging && draggedShortcut != null) {
+            // Draw dragged shortcut with proper page offset consideration
+            drawDraggedShortcutWithOffset(g, draggedShortcut);
+
+            // Draw edge indicators during drag
+            if (isEditing && isHoveringAtEdge) {
+                drawEdgeIndicators(g);
+            }
+        }
+    }
+
     private int[] transformMouseCoordinates(int mouseX, int mouseY) {
         float totalOffset = -currentPageIndex * 400 + pageTransitionOffset;
         float transformedX = mouseX - totalOffset;
@@ -893,6 +1033,33 @@ public class HomeScreen implements Screen, GestureListener {
         }
         if (isDragging) {
             drawDropTargets(p, startX, startY);
+        }
+    }
+
+    private void drawNormalPage(PGraphics g, HomePage page) {
+        int startY = 80;
+        int gridWidth = GRID_COLS * (ICON_SIZE + ICON_SPACING) - ICON_SPACING;
+        int startX = (400 - gridWidth) / 2;
+        g.textAlign(PConstants.CENTER, PConstants.TOP);
+        g.textSize(10);
+
+        // Check if this is an empty temporary edit page
+        if (isEditing && isTemporaryEditPage(page) && page.isEmpty()) {
+            drawEmptyEditPageHint(g, startX, startY);
+        }
+
+        for (Shortcut shortcut : page.getShortcuts()) {
+            if (shortcut.isDragging()) continue;
+            int x = startX + shortcut.getGridX() * (ICON_SIZE + ICON_SPACING);
+            int y = startY + shortcut.getGridY() * (ICON_SIZE + ICON_SPACING + 20);
+            if (isEditing) {
+                x += (int) (Math.sin(System.currentTimeMillis() * 0.01 + shortcut.getShortcutId().hashCode()) * 2);
+                y += (int) (Math.cos(System.currentTimeMillis() * 0.012 + shortcut.getShortcutId().hashCode()) * 1.5);
+            }
+            drawShortcut(g, shortcut, x, y);
+        }
+        if (isDragging) {
+            drawDropTargets(g, startX, startY);
         }
     }
 
@@ -931,6 +1098,41 @@ public class HomeScreen implements Screen, GestureListener {
         }
     }
 
+    private void drawAppLibraryPage(PGraphics g, HomePage appLibraryPage) {
+        g.fill(20, 20, 20);
+        g.noStroke();
+        g.rect(0, 0, 400, 600);
+        g.fill(255);
+        g.textAlign(PConstants.CENTER, PConstants.TOP);
+        g.textSize(18);
+        g.text("App Library", 200, 70);
+        List<IApplication> apps = appLibraryPage.getAllApplications();
+        if (apps.isEmpty()) {
+            g.fill(255, 150);
+            g.textAlign(PConstants.CENTER, PConstants.CENTER);
+            g.textSize(14);
+            g.text("No apps available", 200, 300);
+            return;
+        }
+        int startY = 110;
+        int listHeight = 600 - startY - 20;
+        int itemHeight = 70;
+        int scrollOffset = appLibraryPage.getScrollOffset();
+        g.pushMatrix();
+        for (int i = 0; i < apps.size(); i++) {
+            IApplication app = apps.get(i);
+            int itemY = startY + i * itemHeight - scrollOffset;
+            if (itemY + itemHeight < startY || itemY > startY + listHeight) {
+                continue;
+            }
+            drawAppLibraryItem(g, app, 20, itemY, 360, itemHeight, i == apps.size() - 1);
+        }
+        g.popMatrix();
+        if (appLibraryPage.needsScrolling(listHeight, itemHeight)) {
+            drawScrollIndicator(g, appLibraryPage, startY, listHeight, itemHeight);
+        }
+    }
+
     private void drawAppLibraryItem(PApplet p, IApplication app, int x, int y, int width, int height, boolean isLast) {
         if (tappedAppLibraryItem == app && System.currentTimeMillis() - touchStartTime < TAP_FEEDBACK_DURATION) {
             p.fill(50, 50, 50, 150);
@@ -960,6 +1162,35 @@ public class HomeScreen implements Screen, GestureListener {
         }
     }
 
+    private void drawAppLibraryItem(PGraphics g, IApplication app, int x, int y, int width, int height, boolean isLast) {
+        if (tappedAppLibraryItem == app && System.currentTimeMillis() - touchStartTime < TAP_FEEDBACK_DURATION) {
+            g.fill(50, 50, 50, 150);
+        } else {
+            g.fill(58, 58, 58, 100);
+        }
+        g.noStroke();
+        g.rect(x, y, width, height, 8);
+        drawAppIcon(g, app, x + 35, y + 35, 40);
+        g.fill(255);
+        g.textAlign(PConstants.LEFT, PConstants.CENTER);
+        g.textSize(16);
+        g.text(app.getName(), x + 75, y + 25);
+        if (app.getDescription() != null && !app.getDescription().isEmpty()) {
+            g.fill(255, 150);
+            g.textSize(12);
+            String description = app.getDescription();
+            if (description.length() > 40) {
+                description = description.substring(0, 37) + "...";
+            }
+            g.text(description, x + 75, y + 45);
+        }
+        if (!isLast) {
+            g.stroke(80, 80, 80);
+            g.strokeWeight(1);
+            g.line(x + 10, y + height, x + width - 10, y + height);
+        }
+    }
+
     private void drawScrollIndicator(PApplet p, HomePage appLibraryPage, int listStartY, int listHeight, int itemHeight) {
         List<IApplication> apps = appLibraryPage.getAllApplications();
         int totalContentHeight = apps.size() * itemHeight;
@@ -969,6 +1200,17 @@ public class HomeScreen implements Screen, GestureListener {
         p.fill(255, 100);
         p.noStroke();
         p.rect(390, scrollbarY, 4, scrollbarHeight, 2);
+    }
+
+    private void drawScrollIndicator(PGraphics g, HomePage appLibraryPage, int listStartY, int listHeight, int itemHeight) {
+        List<IApplication> apps = appLibraryPage.getAllApplications();
+        int totalContentHeight = apps.size() * itemHeight;
+        int scrollOffset = appLibraryPage.getScrollOffset();
+        float scrollbarHeight = Math.max(20, (float) listHeight * listHeight / totalContentHeight);
+        float scrollbarY = listStartY + (float) scrollOffset * listHeight / totalContentHeight;
+        g.fill(255, 100);
+        g.noStroke();
+        g.rect(390, scrollbarY, 4, scrollbarHeight, 2);
     }
 
     private void drawDraggedShortcut(PApplet p, Shortcut shortcut) {
@@ -1309,12 +1551,12 @@ public class HomeScreen implements Screen, GestureListener {
                 Screen appScreen = app.getEntryScreen(kernel);
                 if (DEBUG) System.out.println("HomeScreen: Got app screen: " + appScreen.getScreenTitle());
                 processing.core.PImage appIcon = null;
-                if (kernel instanceof processing.core.PApplet) {
-                    processing.core.PApplet pApplet = (processing.core.PApplet) kernel;
+                processing.core.PApplet pApplet = kernel.getParentApplet();
+                if (pApplet != null) {
                     appIcon = getCachedIcon(app, pApplet);
                     if (DEBUG) System.out.println("HomeScreen: Got cached app icon: " + (appIcon != null ? appIcon.width + "x" + appIcon.height : "null"));
                 } else {
-                    if (DEBUG) System.out.println("HomeScreen: Kernel is not PApplet instance: " + kernel.getClass().getSimpleName());
+                    if (DEBUG) System.out.println("HomeScreen: No parent PApplet available for icon caching");
                 }
                 if (appIcon != null) {
                     if (DEBUG) System.out.println("HomeScreen: Calling pushScreenWithAnimation...");
@@ -1473,7 +1715,7 @@ public class HomeScreen implements Screen, GestureListener {
                 int dockWidth = GRID_COLS * (ICON_SIZE + ICON_SPACING) - ICON_SPACING;
                 int dockStartX = (400 - dockWidth) / 2;
                 float iconX = dockStartX + dockShortcut.getDockPosition() * (ICON_SIZE + ICON_SPACING) + ICON_SIZE / 2;
-                float iconY = DOCK_Y + (DOCK_HEIGHT - (ICON_SIZE + ICON_TEXT_AREA_HEIGHT)) / 2 + ICON_SIZE / 2;
+                float iconY = DOCK_Y + (DOCK_HEIGHT - ICON_SIZE) / 2 + ICON_SIZE / 2;
                 launchApplicationWithAnimation(dockShortcut.getApplication(), iconX, iconY, ICON_SIZE);
             }
             return true;
@@ -1591,8 +1833,9 @@ public class HomeScreen implements Screen, GestureListener {
         if (targetPage.addShortcut(app)) {
             if (DEBUG) System.out.println("HomeScreen: Added shortcut for " + app.getName() + " to page " + targetPage.getPageName());
             // Cache the icon for the newly added app
-            if (kernel instanceof processing.core.PApplet) {
-                cacheAppIcon(app, (processing.core.PApplet) kernel);
+            processing.core.PApplet pApplet = kernel.getParentApplet();
+            if (pApplet != null) {
+                cacheAppIcon(app, pApplet);
             }
             saveCurrentLayout();
         } else {
@@ -1863,6 +2106,42 @@ public class HomeScreen implements Screen, GestureListener {
         if (DEBUG) System.out.println("HomeScreen: Preloaded " + iconCache.size() + " app icons");
     }
 
+    private void preloadIcons(PGraphics g) {
+        if (iconsLoaded) return;
+
+        if (DEBUG) System.out.println("HomeScreen: Preloading app icons (PGraphics)...");
+
+        for (HomePage page : homePages) {
+            if (page.isAppLibraryPage()) {
+                // Load icons for all applications in app library
+                List<IApplication> allApps = page.getAllApplications();
+                for (IApplication app : allApps) {
+                    if (app != null && !iconCache.containsKey(app)) {
+                        processing.core.PImage icon = app.getIcon(g);
+                        if (icon != null) {
+                            iconCache.put(app, icon);
+                        }
+                    }
+                }
+            } else {
+                // Load icons for shortcuts on home pages
+                List<Shortcut> shortcuts = page.getShortcuts();
+                for (Shortcut shortcut : shortcuts) {
+                    IApplication app = shortcut.getApplication();
+                    if (app != null && !iconCache.containsKey(app)) {
+                        processing.core.PImage icon = app.getIcon(g);
+                        if (icon != null) {
+                            iconCache.put(app, icon);
+                        }
+                    }
+                }
+            }
+        }
+
+        iconsLoaded = true;
+        if (DEBUG) System.out.println("HomeScreen: Preloaded " + iconCache.size() + " app icons (PGraphics)");
+    }
+
     /**
      * Get cached icon for an application, or load it if not cached
      */
@@ -2093,7 +2372,7 @@ public class HomeScreen implements Screen, GestureListener {
         // グローバル常時表示フィールドのショートカットを描画
         int dockWidth = GRID_COLS * (ICON_SIZE + ICON_SPACING) - ICON_SPACING;
         int dockStartX = (400 - dockWidth) / 2;
-        int dockIconY = DOCK_Y + (DOCK_HEIGHT - (ICON_SIZE + ICON_TEXT_AREA_HEIGHT)) / 2;
+        int dockIconY = DOCK_Y + (DOCK_HEIGHT - ICON_SIZE) / 2;
 
         // 編集モード時の空のスロットを描画
         if (isEditing && isDragging) {
@@ -2189,11 +2468,10 @@ public class HomeScreen implements Screen, GestureListener {
 
         int dockWidth = GRID_COLS * (ICON_SIZE + ICON_SPACING) - ICON_SPACING;
         int dockStartX = (400 - dockWidth) / 2;
-        int iconY = DOCK_Y + (DOCK_HEIGHT - (ICON_SIZE + ICON_TEXT_AREA_HEIGHT)) / 2;
 
         for (int i = 0; i < globalDockShortcuts.size(); i++) {
             int x = dockStartX + i * (ICON_SIZE + ICON_SPACING);
-            int y = iconY;
+            int y = DOCK_Y + (DOCK_HEIGHT - ICON_SIZE) / 2;
 
             if (mouseX >= x && mouseX <= x + ICON_SIZE &&
                 mouseY >= y && mouseY <= y + ICON_SIZE) {
@@ -2219,7 +2497,7 @@ public class HomeScreen implements Screen, GestureListener {
         int dockWidth = GRID_COLS * (ICON_SIZE + ICON_SPACING) - ICON_SPACING;
         int dockStartX = (400 - dockWidth) / 2;
         int x = dockStartX + dockPosition * (ICON_SIZE + ICON_SPACING);
-        int y = DOCK_Y + (DOCK_HEIGHT - (ICON_SIZE + ICON_TEXT_AREA_HEIGHT)) / 2;
+        int y = DOCK_Y + (DOCK_HEIGHT - ICON_SIZE) / 2;
 
         int deleteX = x + ICON_SIZE - 8;
         int deleteY = y + 8;
@@ -2359,5 +2637,311 @@ public class HomeScreen implements Screen, GestureListener {
 
         // 現在のページに追加は呼び出し元で行う
         return true;
+    }
+
+    // ===========================================
+    // PGraphics overloads for drawing methods
+    // ===========================================
+
+    private void drawPageIndicators(PGraphics g) {
+        HomePage currentPage = getCurrentPage();
+        if (currentPage != null && currentPage.isAppLibraryPage()) {
+            return;
+        }
+
+        if (homePages.size() <= 1) return;
+
+        g.noStroke();
+        int indicatorSize = 8;
+        int spacing = 18;
+        int totalWidth = homePages.size() * spacing - spacing;
+        int startX = (400 - totalWidth) / 2;
+        int y = 580;
+
+        for (int i = 0; i < homePages.size(); i++) {
+            int x = startX + i * spacing;
+            if (i == currentPageIndex) {
+                g.fill(accentColor);
+                g.ellipse(x, y, indicatorSize, indicatorSize);
+            } else {
+                g.fill(100);
+                g.ellipse(x, y, indicatorSize - 2, indicatorSize - 2);
+            }
+        }
+    }
+
+    private void drawDock(PGraphics g) {
+        HomePage currentPage = getCurrentPage();
+
+        // AppLibraryページでは常時表示フィールドを表示しない
+        if (currentPage != null && currentPage.isAppLibraryPage()) {
+            return;
+        }
+
+        // 背景を描画
+        g.fill(0, 0, 0, 120);
+        g.noStroke();
+        g.rect(0, DOCK_Y, 400, DOCK_HEIGHT, 12, 12, 0, 0);
+
+        int dockWidth = GRID_COLS * (ICON_SIZE + ICON_SPACING) - ICON_SPACING;
+        int dockStartX = (400 - dockWidth) / 2;
+        int dockIconY = DOCK_Y + (DOCK_HEIGHT - ICON_SIZE) / 2;
+
+        // 編集モード時のドロップターゲット描画
+        if (isEditing && isDragging) {
+            drawDockDropTargets(g, dockStartX, dockIconY);
+        }
+
+        // ショートカットを描画
+        for (int i = 0; i < globalDockShortcuts.size(); i++) {
+            Shortcut shortcut = globalDockShortcuts.get(i);
+            if (shortcut != null && !shortcut.isDragging()) {
+                int x = dockStartX + i * (ICON_SIZE + ICON_SPACING);
+                int y = dockIconY;
+                drawDockShortcut(g, shortcut, x, y);
+            }
+        }
+    }
+
+    private void drawDockShortcut(PGraphics g, Shortcut shortcut, int x, int y) {
+        IApplication app = shortcut.getApplication();
+
+        // 背景を描画
+        g.fill(50, 100);
+        g.noStroke();
+        g.rect(x - 5, y - 5, ICON_SIZE + 10, ICON_SIZE + 10, 12);
+
+        drawAppIcon(g, app, x + ICON_SIZE / 2, y + ICON_SIZE / 2, ICON_SIZE);
+
+        // 編集モード時の削除ボタン
+        if (isEditing) {
+            g.fill(0xFF4444);
+            g.noStroke();
+            g.ellipse(x + ICON_SIZE - 8, y + 8, 16, 16);
+            g.fill(textColor);
+            g.strokeWeight(2);
+            g.stroke(textColor);
+            g.line(x + ICON_SIZE - 12, y + 4, x + ICON_SIZE - 4, y + 12);
+            g.line(x + ICON_SIZE - 12, y + 12, x + ICON_SIZE - 4, y + 4);
+        }
+
+        // 名前を描画
+        g.fill(0, 150);
+        g.textSize(11);
+        String displayName = shortcut.getDisplayName();
+        if (displayName.length() > 10) {
+            displayName = displayName.substring(0, 9) + "...";
+        }
+        g.textAlign(PConstants.CENTER, PConstants.TOP);
+        g.text(displayName, x + ICON_SIZE / 2, y + ICON_SIZE + 8);
+        g.fill(255);
+        g.text(displayName, x + ICON_SIZE / 2, y + ICON_SIZE + 7);
+    }
+
+    private void drawDockDropTargets(PGraphics g, int startX, int startY) {
+        g.stroke(accentColor, 150);
+        g.strokeWeight(2);
+        g.noFill();
+
+        // 空のスロットにドロップターゲットを描画
+        for (int i = 0; i < HomePage.MAX_DOCK_SHORTCUTS; i++) {
+            if (i >= globalDockShortcuts.size() || globalDockShortcuts.get(i) == null) {
+                int x = startX + i * (ICON_SIZE + ICON_SPACING);
+                int y = startY;
+                g.rect(x, y, ICON_SIZE, ICON_SIZE, 12);
+            }
+        }
+    }
+
+    private void drawAddToHomePopup(PGraphics g) {
+        if (appToAdd == null) return;
+
+        // Simple popup for adding app to home screen
+        g.fill(backgroundColor, 230);
+        g.noStroke();
+        g.rect(100, 250, 200, 100, 10);
+
+        g.fill(textColor);
+        g.textAlign(PConstants.CENTER, PConstants.CENTER);
+        g.textSize(14);
+        g.text("Add to Home Screen?", 200, 280);
+
+        // Yes button
+        g.fill(accentColor);
+        g.rect(120, 310, 60, 30, 5);
+        g.fill(255);
+        g.text("Yes", 150, 325);
+
+        // No button
+        g.fill(100);
+        g.rect(220, 310, 60, 30, 5);
+        g.fill(255);
+        g.text("No", 250, 325);
+    }
+
+    private void drawDraggedShortcutWithOffset(PGraphics g, Shortcut shortcut) {
+        if (!shortcut.isDragging()) return;
+
+        // Get the direct screen position (no coordinate transformation needed)
+        int screenX = (int)(shortcut.getDragX() - ICON_SIZE / 2);
+        int screenY = (int)(shortcut.getDragY() - ICON_SIZE / 2);
+
+        // Semi-transparent background
+        g.fill(backgroundColor, 200);
+        g.noStroke();
+        g.rect(screenX - 5, screenY - 5, ICON_SIZE + 10, ICON_SIZE + 10, 12);
+
+        // Draw the app icon
+        IApplication app = shortcut.getApplication();
+        if (app != null) {
+            drawAppIcon(g, app, screenX + ICON_SIZE / 2, screenY + ICON_SIZE / 2, ICON_SIZE);
+        }
+
+        // Draw text
+        g.fill(textColor, 180);
+        g.textAlign(PConstants.CENTER, PConstants.TOP);
+        g.textSize(10);
+        String displayName = shortcut.getDisplayName();
+        if (displayName.length() > 8) {
+            displayName = displayName.substring(0, 7) + "...";
+        }
+        g.text(displayName, screenX + ICON_SIZE / 2, screenY + ICON_SIZE + 5);
+    }
+
+    private void drawEdgeIndicators(PGraphics g) {
+        if (!isHoveringAtEdge) return;
+
+        long currentTime = System.currentTimeMillis();
+        long elapsed = currentTime - edgeHoverStartTime;
+        float progress = Math.min(1.0f, (float) elapsed / EDGE_HOVER_DURATION);
+
+        // Calculate pulsing opacity
+        float baseOpacity = 100 + (50 * progress);
+        float pulseOpacity = baseOpacity + (30 * (float) Math.sin(currentTime * 0.01));
+
+        g.noStroke();
+
+        if (canSwitchToLeft && currentPageIndex > 0) {
+            // Draw left edge indicator
+            g.fill(accentColor, (int) pulseOpacity);
+            // Draw triangular indicator pointing left
+            g.triangle(EDGE_THRESHOLD - 10, 300 - 20, EDGE_THRESHOLD - 10, 300 + 20, 10, 300);
+
+            // Draw progress bar
+            g.fill(255, (int) (150 * progress));
+        }
+
+        if (canSwitchToRight && currentPageIndex < homePages.size() - 1) {
+            // Draw right edge indicator
+            g.fill(accentColor, (int) pulseOpacity);
+            // Draw triangular indicator pointing right
+            g.triangle(400 - EDGE_THRESHOLD + 10, 300 - 20, 400 - EDGE_THRESHOLD + 10, 300 + 20, 390, 300);
+
+            // Draw progress bar
+            g.fill(255, (int) (150 * progress));
+        }
+    }
+
+    private void drawDropTargets(PGraphics g, int startX, int startY) {
+        HomePage currentPage = getCurrentPage();
+        if (currentPage == null) return;
+        g.stroke(accentColor, 150);
+        g.strokeWeight(2);
+        g.noFill();
+        for (int gridX = 0; gridX < GRID_COLS; gridX++) {
+            for (int gridY = 0; gridY < GRID_ROWS; gridY++) {
+                if (currentPage.isPositionEmpty(gridX, gridY)) {
+                    int x = startX + gridX * (ICON_SIZE + ICON_SPACING);
+                    int y = startY + gridY * (ICON_SIZE + ICON_SPACING + 20);
+                    g.rect(x, y, ICON_SIZE, ICON_SIZE, 12);
+                }
+            }
+        }
+    }
+
+    private void drawShortcut(PGraphics g, Shortcut shortcut, int x, int y) {
+        IApplication app = shortcut.getApplication();
+        if (shortcut.isDragging()) {
+            return;
+        }
+
+        // 背景を描画
+        g.fill(50, 100);
+        g.noStroke();
+        g.rect(x - 5, y - 5, ICON_SIZE + 10, ICON_SIZE + 10, 12);
+
+        // アイコンを描画
+        drawAppIcon(g, app, x + ICON_SIZE / 2, y + ICON_SIZE / 2, ICON_SIZE);
+        if (isEditing) {
+            g.fill(0xFF4444);
+            g.noStroke();
+            g.ellipse(x + ICON_SIZE - 8, y + 8, 16, 16);
+            g.fill(textColor);
+            g.strokeWeight(2);
+            g.stroke(textColor);
+            g.line(x + ICON_SIZE - 12, y + 4, x + ICON_SIZE - 4, y + 12);
+            g.line(x + ICON_SIZE - 12, y + 12, x + ICON_SIZE - 4, y + 4);
+        }
+
+        // 名前を描画
+        g.fill(0, 150);
+        g.textSize(11);
+        String displayName = shortcut.getDisplayName();
+        if (displayName.length() > 10) {
+            displayName = displayName.substring(0, 9) + "...";
+        }
+        g.textAlign(PConstants.CENTER, PConstants.TOP);
+        g.text(displayName, x + ICON_SIZE / 2, y + ICON_SIZE + 8);
+        g.fill(255);
+        g.text(displayName, x + ICON_SIZE / 2, y + ICON_SIZE + 7);
+    }
+
+    private void drawAppIcon(PGraphics g, IApplication app, int centerX, int centerY, float iconSize) {
+        if (app == null) {
+            return;
+        }
+        // Note: PGraphics version cannot access icon cache, so use simplified rendering
+        g.rectMode(PConstants.CENTER);
+        g.fill(accentColor);
+        g.noStroke();
+        g.rect(centerX, centerY, iconSize * 0.625f, iconSize * 0.625f, 8);
+        g.fill(textColor);
+        g.textAlign(PConstants.CENTER, PConstants.CENTER);
+        g.textSize(iconSize * 0.4f);
+        if (app.getName() != null && !app.getName().isEmpty()) {
+            String initial = app.getName().substring(0, 1).toUpperCase();
+            g.text(initial, centerX, centerY - 2);
+        } else {
+            g.text("?", centerX, centerY - 2);
+        }
+        g.rectMode(PConstants.CORNER);
+    }
+
+    private void drawEmptyEditPageHint(PGraphics g, int startX, int startY) {
+        // Draw a subtle hint for the empty page
+        int centerX = 200;
+        int centerY = 300;
+
+        g.fill(100, 80);
+        g.noStroke();
+        g.textAlign(PConstants.CENTER, PConstants.CENTER);
+        g.textSize(14);
+        g.text("Drag apps here", centerX, centerY);
+
+        // Draw dotted border
+        g.stroke(100, 60);
+        g.strokeWeight(2);
+        g.noFill();
+
+        // Draw dashed rectangle
+        for (int i = 0; i < 360; i += 20) {
+            if (i % 40 < 20) {
+                float x1 = centerX + 80 * PApplet.cos(PApplet.radians(i));
+                float y1 = centerY + 50 * PApplet.sin(PApplet.radians(i));
+                float x2 = centerX + 80 * PApplet.cos(PApplet.radians(i + 10));
+                float y2 = centerY + 50 * PApplet.sin(PApplet.radians(i + 10));
+                g.line(x1, y1, x2, y2);
+            }
+        }
     }
 }

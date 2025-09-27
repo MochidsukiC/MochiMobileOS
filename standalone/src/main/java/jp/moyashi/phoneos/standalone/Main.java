@@ -2,27 +2,135 @@ package jp.moyashi.phoneos.standalone;
 
 import jp.moyashi.phoneos.core.Kernel;
 import processing.core.PApplet;
+import processing.core.PGraphics;
 
 /**
  * Main launcher class for the MochiMobileOS standalone application.
  * This class serves as the entry point for running the OS on PC.
- * It initializes and launches the Kernel as a Processing application window.
- * 
+ * It initializes the Kernel and displays its PGraphics buffer.
+ *
  * @author YourName
- * @version 1.0
+ * @version 2.0
  */
-public class Main {
+public class Main extends PApplet {
+
+    /** MochiMobileOSのカーネルインスタンス */
+    private Kernel kernel;
+
+    /** コマンドライン引数で指定されたデバッグモード */
+    private static boolean debugMode = false;
+
+    /** コマンドライン引数で指定されたプレイヤーID */
+    private static String playerIdString = null;
     
     /**
+     * Processing window setup.
+     */
+    @Override
+    public void settings() {
+        size(400, 600);  // スマートフォンに似たアスペクト比
+        System.out.println("📱 Standalone: Processing window configured (400x600)");
+    }
+
+    /**
+     * Initialize the kernel and set up the standalone environment.
+     */
+    @Override
+    public void setup() {
+        frameRate(60);
+
+        System.out.println("=== MochiMobileOS Standalone Initialization ===");
+        if (debugMode) {
+            System.out.println("🐛 DEBUG MODE ENABLED");
+            if (playerIdString != null) {
+                System.out.println("Player ID: " + playerIdString);
+            }
+        }
+
+        // Initialize kernel
+        kernel = new Kernel();
+        kernel.initialize(this);
+
+        System.out.println("✅ MochiMobileOS standalone launched successfully!");
+    }
+
+    /**
+     * Main drawing loop - display the kernel's graphics buffer.
+     */
+    @Override
+    public void draw() {
+        background(50);  // デフォルト背景
+
+        if (kernel != null) {
+            // カーネルの描画処理を実行
+            kernel.draw();
+
+            // カーネルのPGraphicsバッファを取得して表示
+            PGraphics kernelGraphics = kernel.getGraphics();
+            if (kernelGraphics != null) {
+                image(kernelGraphics, 0, 0);
+            }
+        }
+    }
+
+    /**
+     * Mouse event forwarding to kernel.
+     */
+    @Override
+    public void mousePressed() {
+        if (kernel != null) {
+            kernel.mousePressed(mouseX, mouseY);
+        }
+    }
+
+    @Override
+    public void mouseDragged() {
+        if (kernel != null) {
+            kernel.mouseDragged(mouseX, mouseY);
+        }
+    }
+
+    @Override
+    public void mouseReleased() {
+        if (kernel != null) {
+            kernel.mouseReleased(mouseX, mouseY);
+        }
+    }
+
+    @Override
+    public void mouseWheel(processing.event.MouseEvent event) {
+        if (kernel != null) {
+            kernel.mouseWheel((int)event.getCount(), mouseX, mouseY);
+        }
+    }
+
+    /**
+     * Key event forwarding to kernel.
+     */
+    @Override
+    public void keyPressed() {
+        if (kernel != null) {
+            kernel.keyPressed(key, keyCode, mouseX, mouseY);
+        }
+    }
+
+    @Override
+    public void keyReleased() {
+        if (kernel != null) {
+            kernel.keyReleased(key, keyCode);
+        }
+    }
+
+    /**
      * The main entry point of the application.
-     * Creates and launches the OS kernel as a Processing sketch window.
-     * 
-     * @param args Command line arguments (currently unused)
+     * Parses command line arguments and launches the Processing sketch.
+     *
+     * @param args Command line arguments
      */
     public static void main(String[] args) {
         // Handle command line arguments
-        if (args.length > 0) {
-            switch (args[0]) {
+        for (String arg : args) {
+            switch (arg) {
                 case "--help":
                 case "-h":
                     displayHelp();
@@ -31,65 +139,47 @@ public class Main {
                 case "-v":
                     displayVersion();
                     return;
+                case "--debug":
+                    debugMode = true;
+                    break;
+                default:
+                    if (arg.startsWith("--player=")) {
+                        playerIdString = arg.substring("--player=".length());
+                    }
+                    break;
             }
         }
         
         System.out.println("MochiMobileOS Standalone Launcher");
         System.out.println("==================================");
-        System.out.println("Initializing phone OS...");
         System.out.println("Target Resolution: 400x600 (smartphone-like)");
         System.out.println("Processing Version: 4.4.4");
-        System.out.println();
-        
-        try {
-            // Create the kernel instance
-            System.out.println("[1/4] Creating OS Kernel...");
-            Kernel kernel = new Kernel();
-            
-            // Wait a moment for initialization
-            Thread.sleep(500);
-            
-            System.out.println("[2/4] Registering built-in applications...");
-            // Applications are registered in Kernel.setup()
-            
-            System.out.println("[3/4] Configuring Processing window...");
-            String[] sketchArgs = new String[]{
-                Kernel.class.getName()
-            };
-            
-            System.out.println("[4/4] Launching OS window...");
-            System.out.println("-> LauncherApp will start automatically");
-            System.out.println("-> Use mouse/touch to interact");
-            System.out.println("-> Long press for edit mode");
-            System.out.println("-> Swipe up for App Library");
-            System.out.println();
-            
-            PApplet.runSketch(sketchArgs, kernel);
-            
-            System.out.println("✅ MochiMobileOS launched successfully!");
-            System.out.println("   Window should be visible now.");
-            
-            // Add shutdown hook for cleanup
-            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                System.out.println("MochiMobileOS: Shutting down...");
-                // Perform any necessary cleanup here
-                System.out.println("MochiMobileOS: Shutdown complete.");
-            }));
-            
-        } catch (InterruptedException e) {
-            System.err.println("Initialization interrupted: " + e.getMessage());
-            Thread.currentThread().interrupt();
-            System.exit(1);
-        } catch (Exception e) {
-            System.err.println("❌ Failed to launch MochiMobileOS: " + e.getMessage());
-            System.err.println("\nTroubleshooting:");
-            System.err.println("1. Check if Processing 4.x is properly installed");
-            System.err.println("2. Verify Java version (requires Java 17+)");
-            System.err.println("3. Ensure JOGL libraries are available");
-            System.err.println("4. Try running with --help for usage information");
-            e.printStackTrace();
-            System.exit(1);
+        System.out.println("Architecture: PGraphics Buffer Based");
+
+        if (debugMode) {
+            System.out.println("🐛 DEBUG MODE ENABLED");
+            if (playerIdString != null) {
+                System.out.println("Player ID: " + playerIdString);
+            }
         }
+
+        System.out.println();
+        System.out.println("Launching MochiMobileOS...");
+
+        // Launch the Processing sketch
+        String windowTitle = "MochiMobileOS";
+        if (debugMode && playerIdString != null) {
+            windowTitle += " - Player: " + playerIdString.substring(0, Math.min(8, playerIdString.length()));
+        }
+
+        String[] sketchArgs = new String[]{windowTitle};
+        PApplet.runSketch(sketchArgs, new Main());
+
+        // Add shutdown hook for cleanup
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.out.println("MochiMobileOS: Shutting down...");
+            System.out.println("MochiMobileOS: Shutdown complete.");
+        }));
     }
     
     /**
