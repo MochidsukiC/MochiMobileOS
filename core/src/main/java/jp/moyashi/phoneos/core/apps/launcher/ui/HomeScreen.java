@@ -2537,12 +2537,10 @@ public class HomeScreen implements Screen, GestureListener {
             return false;
         }
 
-        // 通常のグリッドから削除（もし存在する場合）
-        for (HomePage page : homePages) {
-            if (page.getShortcuts().contains(shortcut)) {
-                page.removeShortcut(shortcut);
-                break;
-            }
+        // 既にDockに存在するかチェック
+        if (globalDockShortcuts.contains(shortcut)) {
+            if (DEBUG) System.out.println("HomeScreen: Shortcut already in dock");
+            return true;
         }
 
         // グローバルDockに追加
@@ -2609,19 +2607,37 @@ public class HomeScreen implements Screen, GestureListener {
      */
     private boolean moveShortcutToDock(Shortcut shortcut) {
         if (shortcut == null || globalDockShortcuts.size() >= HomePage.MAX_DOCK_SHORTCUTS) {
+            if (DEBUG) System.out.println("HomeScreen: Cannot move to dock - null shortcut or dock full");
             return false;
         }
 
+        // 既にDockにある場合は何もしない
+        if (shortcut.isInDock()) {
+            if (DEBUG) System.out.println("HomeScreen: Shortcut " + shortcut.getDisplayName() + " already in dock");
+            return true;
+        }
+
         // 通常のグリッドから削除
+        boolean removedFromGrid = false;
         for (HomePage page : homePages) {
             if (page.getShortcuts().contains(shortcut)) {
                 page.removeShortcut(shortcut);
+                removedFromGrid = true;
+                if (DEBUG) System.out.println("HomeScreen: Removed shortcut " + shortcut.getDisplayName() + " from grid");
                 break;
             }
         }
 
+        if (!removedFromGrid) {
+            if (DEBUG) System.out.println("HomeScreen: Warning - shortcut " + shortcut.getDisplayName() + " not found in any page");
+        }
+
         // グローバルDockに追加
-        return addDockShortcut(shortcut);
+        boolean addedToDock = addDockShortcut(shortcut);
+        if (addedToDock && DEBUG) {
+            System.out.println("HomeScreen: Successfully moved shortcut " + shortcut.getDisplayName() + " to dock");
+        }
+        return addedToDock;
     }
 
     /**

@@ -69,7 +69,9 @@
       "Read(//c/Users/dora2/AppData/Roaming//**)",
       "Bash(\"/c/Users/dora2/.jdks/temurin-17.0.8.1/bin/jar.exe\" -tf \"/c/Users/dora2/IdeaProjects/MochiMobileOS/forge/build/libs/mochimobileos-1.1-SNAPSHOT.jar\")",
       "Bash(powershell:*)",
-      "Read(//c/Users/dora2/.claude/projects/C--Users-dora2-IdeaProjects-MochiMobileOS/**)"
+      "Read(//c/Users/dora2/.claude/projects/C--Users-dora2-IdeaProjects-MochiMobileOS/**)",
+      "Bash(.\\gradlew.bat compileJava:*)",
+      "Bash(call:*)"
     ],
     "deny": [],
     "ask": [],
