@@ -103,11 +103,12 @@ public class GestureManager {
     
     /**
      * マウスプレスイベントを処理する。
-     * 
+     *
      * @param x X座標
      * @param y Y座標
+     * @return イベントが処理された場合true
      */
-    public void handleMousePressed(int x, int y) {
+    public boolean handleMousePressed(int x, int y) {
         System.out.println("GestureManager: Mouse pressed at (" + x + ", " + y + ")");
         
         startX = currentX = x;
@@ -116,6 +117,8 @@ public class GestureManager {
         isPressed = true;
         longPressDetected = false;
         isDragging = false;
+
+        return false; // デフォルトでfalseを返す（ジェスチャーはまだ完了していない）
     }
     
     /**

@@ -3,6 +3,7 @@ package jp.moyashi.phoneos.core.apps.launcher.ui;
 import jp.moyashi.phoneos.core.Kernel;
 import jp.moyashi.phoneos.core.ui.Screen;
 import processing.core.PApplet;
+import processing.core.PGraphics;
 
 /**
  * 表示問題をデバッグするためのHomeScreenの簡単なテストバージョン。
@@ -23,97 +24,158 @@ public class SimpleHomeScreen implements Screen {
     }
     
     @Override
-    public void setup(processing.core.PApplet p) {
+    public void setup(PGraphics g) {
         isInitialized = true;
         System.out.println("🚀 SimpleHomeScreen: Setup complete!");
     }
+
+    /**
+     * @deprecated Use {@link #setup(PGraphics)} instead
+     */
+    @Override
+    @Deprecated
+    public void setup(processing.core.PApplet p) {
+        PGraphics g = p.g;
+        setup(g);
+    }
     
     @Override
-    public void draw(PApplet p) {
+    public void draw(PGraphics g) {
         frameCount++;
-        
+
         // Log first few frames
         if (frameCount <= 5) {
             System.out.println("🎨 SimpleHomeScreen: Drawing frame " + frameCount);
         }
-        
+
         try {
-            // Let Kernel handle background - don't override it
-            // p.background(30, 30, 50); // Commented out to allow Kernel debug display
-            
             // Title
-            p.fill(255);
-            p.textAlign(p.CENTER, p.CENTER);
-            p.textSize(24);
-            p.text("MochiMobileOS", p.width/2, 50);
-            
+            g.fill(255);
+            g.textAlign(g.CENTER, g.CENTER);
+            g.textSize(24);
+            g.text("MochiMobileOS", g.width/2, 50);
+
             // Subtitle
-            p.textSize(16);
-            p.text("Simple Home Screen", p.width/2, 80);
-            
+            g.textSize(16);
+            g.text("Simple Home Screen", g.width/2, 80);
+
             // Status
-            p.textSize(12);
-            p.text("Initialized: " + isInitialized, p.width/2, 120);
-            p.text("Frame: " + frameCount, p.width/2, 140);
-            
+            g.textSize(12);
+            g.text("Initialized: " + isInitialized, g.width/2, 120);
+            g.text("Frame: " + frameCount, g.width/2, 140);
+
             // Simple rectangle as test
-            p.fill(100, 150, 200);
-            p.noStroke();
-            p.rect(p.width/2 - 50, 200, 100, 60, 10);
-            
+            g.fill(100, 150, 200);
+            g.noStroke();
+            g.rect(g.width/2 - 50, 200, 100, 60, 10);
+
             // Button text
-            p.fill(255);
-            p.textAlign(p.CENTER, p.CENTER);
-            p.textSize(14);
-            p.text("Test Button", p.width/2, 230);
-            
+            g.fill(255);
+            g.textAlign(g.CENTER, g.CENTER);
+            g.textSize(14);
+            g.text("Test Button", g.width/2, 230);
+
             // Instructions
-            p.textSize(12);
-            p.fill(200);
-            p.text("Click anywhere to test", p.width/2, 300);
-            
+            g.textSize(12);
+            g.fill(200);
+            g.text("Click anywhere to test", g.width/2, 300);
+
             // Show time if available
             if (kernel != null && kernel.getSystemClock() != null) {
-                p.text("Time: " + kernel.getSystemClock().getFormattedTime(), p.width/2, 400);
+                g.text("Time: " + kernel.getSystemClock().getFormattedTime(), g.width/2, 400);
             }
-            
+
             // App count if available
             if (kernel != null && kernel.getAppLoader() != null) {
                 int appCount = kernel.getAppLoader().getLoadedApps().size();
-                p.text("Apps loaded: " + appCount, p.width/2, 420);
+                g.text("Apps loaded: " + appCount, g.width/2, 420);
             }
-            
+
         } catch (Exception e) {
             System.err.println("❌ SimpleHomeScreen: Error in draw() - " + e.getMessage());
             e.printStackTrace();
-            
+
             // Emergency fallback
-            p.background(255, 100, 100); // Light red
-            p.fill(0);
-            p.textAlign(p.CENTER, p.CENTER);
-            p.textSize(16);
-            p.text("DRAW ERROR", p.width/2, p.height/2);
-            p.text(e.getMessage(), p.width/2, p.height/2 + 20);
+            g.background(255, 100, 100); // Light red
+            g.fill(0);
+            g.textAlign(g.CENTER, g.CENTER);
+            g.textSize(16);
+            g.text("DRAW ERROR", g.width/2, g.height/2);
+            g.text(e.getMessage(), g.width/2, g.height/2 + 20);
         }
+    }
+
+    /**
+     * @deprecated Use {@link #draw(PGraphics)} instead
+     */
+    @Override
+    @Deprecated
+    public void draw(PApplet p) {
+        PGraphics g = p.g;
+        draw(g);
     }
     
     @Override
-    public void mousePressed(processing.core.PApplet p, int mouseX, int mouseY) {
+    public void mousePressed(PGraphics g, int mouseX, int mouseY) {
         System.out.println("🖱️ SimpleHomeScreen: Mouse clicked at (" + mouseX + ", " + mouseY + ")");
-        
+
         // Test: change background color on click
         // This would require storing state, but for now just log
         System.out.println("   Frame: " + frameCount + ", Initialized: " + isInitialized);
     }
+
+    /**
+     * @deprecated Use {@link #mousePressed(PGraphics, int, int)} instead
+     */
+    @Override
+    @Deprecated
+    public void mousePressed(processing.core.PApplet p, int mouseX, int mouseY) {
+        PGraphics g = p.g;
+        mousePressed(g, mouseX, mouseY);
+    }
     
     @Override
-    public void cleanup(processing.core.PApplet p) {
+    public void cleanup(PGraphics g) {
         isInitialized = false;
         System.out.println("🧹 SimpleHomeScreen: Cleanup completed");
+    }
+
+    /**
+     * @deprecated Use {@link #cleanup(PGraphics)} instead
+     */
+    @Override
+    @Deprecated
+    public void cleanup(processing.core.PApplet p) {
+        PGraphics g = p.g;
+        cleanup(g);
     }
     
     @Override
     public String getScreenTitle() {
         return "Simple Home Screen (Debug)";
+    }
+
+    /**
+     * Adds mouseDragged support for PGraphics (empty implementation, can be overridden)
+     */
+    @Override
+    public void mouseDragged(PGraphics g, int mouseX, int mouseY) {
+        // Default implementation - subclasses can override
+    }
+
+    /**
+     * Adds mouseReleased support for PGraphics (empty implementation, can be overridden)
+     */
+    @Override
+    public void mouseReleased(PGraphics g, int mouseX, int mouseY) {
+        // Default implementation - subclasses can override
+    }
+
+    /**
+     * Adds keyPressed support for PGraphics (empty implementation, can be overridden)
+     */
+    @Override
+    public void keyPressed(PGraphics g, char key, int keyCode) {
+        // Default implementation - subclasses can override
     }
 }

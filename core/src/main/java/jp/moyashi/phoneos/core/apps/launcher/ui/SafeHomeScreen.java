@@ -6,6 +6,7 @@ import jp.moyashi.phoneos.core.app.IApplication;
 import jp.moyashi.phoneos.core.apps.launcher.model.HomePage;
 import jp.moyashi.phoneos.core.apps.launcher.model.Shortcut;
 import processing.core.PApplet;
+import processing.core.PGraphics;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -56,19 +57,19 @@ public class SafeHomeScreen implements Screen {
     }
     
     @Override
-    public void setup(processing.core.PApplet p) {
+    public void setup(PGraphics g) {
         try {
             isInitialized = true;
             System.out.println("🚀 SafeHomeScreen: セーフ初期化を開始...");
-            
+
             // ホームページの安全な初期化
             initializeHomePagesWithErrorHandling();
-            
+
             System.out.println("✅ SafeHomeScreen: セーフ初期化完了!");
             System.out.println("    • Pages: " + homePages.size());
-            System.out.println("    • Current page shortcuts: " + 
+            System.out.println("    • Current page shortcuts: " +
                 (homePages.isEmpty() ? 0 : homePages.get(0).getShortcutCount()));
-            
+
         } catch (Exception e) {
             System.err.println("❌ SafeHomeScreen setup error: " + e.getMessage());
             e.printStackTrace();
@@ -76,6 +77,16 @@ public class SafeHomeScreen implements Screen {
             homePages.clear();
             homePages.add(new HomePage("Emergency Page"));
         }
+    }
+
+    /**
+     * @deprecated Use {@link #setup(PGraphics)} instead
+     */
+    @Deprecated
+    @Override
+    public void setup(processing.core.PApplet p) {
+        PGraphics g = p.g;
+        setup(g);
     }
     
     private void initializeHomePagesWithErrorHandling() {
@@ -125,129 +136,133 @@ public class SafeHomeScreen implements Screen {
     }
     
     @Override
-    public void draw(PApplet p) {
+    public void draw(PGraphics g) {
         try {
             // Always draw background first
-            p.background(backgroundColor);
-            
-            // Debug info
-            if (p.frameCount <= 5) {
-                System.out.println("🎨 SafeHomeScreen: Drawing frame " + p.frameCount + 
-                    " - initialized: " + isInitialized + " - pages: " + homePages.size());
-            }
-            
+            g.background(backgroundColor);
+
             // Draw title
-            p.fill(textColor);
-            p.textAlign(p.CENTER, p.CENTER);
-            p.textSize(24);
-            p.text("Safe Home Screen", p.width/2, 50);
-            
+            g.fill(textColor);
+            g.textAlign(g.CENTER, g.CENTER);
+            g.textSize(24);
+            g.text("Safe Home Screen", g.width/2, 50);
+
             // Draw status
-            p.textSize(14);
-            p.text("Initialized: " + isInitialized, p.width/2, 80);
-            p.text("Pages: " + homePages.size() + " + App Library", p.width/2, 100);
-            
+            g.textSize(14);
+            g.text("Initialized: " + isInitialized, g.width/2, 80);
+            g.text("Pages: " + homePages.size() + " + App Library", g.width/2, 100);
+
             if (isShowingAppLibrary) {
                 // Draw App Library page
-                p.text("📚 App Library (" + allApps.size() + " apps)", p.width/2, 120);
-                drawAppLibraryPage(p);
+                g.text("📚 App Library (" + allApps.size() + " apps)", g.width/2, 120);
+                drawAppLibraryPage(g);
             } else if (!homePages.isEmpty()) {
                 HomePage currentPage = homePages.get(currentPageIndex);
-                p.text("📄 Page " + (currentPageIndex + 1) + " (" + currentPage.getShortcutCount() + " shortcuts)", p.width/2, 120);
-                
+                g.text("📄 Page " + (currentPageIndex + 1) + " (" + currentPage.getShortcutCount() + " shortcuts)", g.width/2, 120);
+
                 // Draw shortcuts
-                drawShortcuts(p, currentPage);
+                drawShortcuts(g, currentPage);
             } else {
-                p.fill(255, 100, 100);
-                p.text("No pages available", p.width/2, 150);
+                g.fill(255, 100, 100);
+                g.text("No pages available", g.width/2, 150);
             }
-            
+
             // Draw navigation instructions
-            p.fill(textColor, 150);
-            p.textSize(12);
+            g.fill(textColor, 150);
+            g.textSize(12);
             if (isDragging) {
                 int deltaX = dragCurrentX - dragStartX;
-                p.text("Dragging: " + deltaX + "px", p.width/2, p.height - 70);
+                g.text("Dragging: " + deltaX + "px", g.width/2, g.height - 70);
             }
-            
+
             if (isShowingAppLibrary) {
-                p.text("← Drag left to return to home pages", p.width/2, p.height - 50);
+                g.text("← Drag left to return to home pages", g.width/2, g.height - 50);
             } else {
-                p.text("Drag left/right to navigate • Drag right to App Library →", p.width/2, p.height - 50);
+                g.text("Drag left/right to navigate • Drag right to App Library →", g.width/2, g.height - 50);
             }
-            
+
             // Draw page indicators
-            drawPageIndicators(p);
-            
+            drawPageIndicators(g);
+
         } catch (Exception e) {
             System.err.println("❌ SafeHomeScreen draw error: " + e.getMessage());
             e.printStackTrace();
-            
+
             // Emergency fallback drawing
-            p.background(100, 50, 50); // Red background to indicate error
-            p.fill(255);
-            p.textAlign(p.CENTER, p.CENTER);
-            p.textSize(16);
-            p.text("DRAW ERROR", p.width/2, p.height/2);
-            p.textSize(12);
-            p.text("Error: " + e.getMessage(), p.width/2, p.height/2 + 20);
+            g.background(100, 50, 50); // Red background to indicate error
+            g.fill(255);
+            g.textAlign(g.CENTER, g.CENTER);
+            g.textSize(16);
+            g.text("DRAW ERROR", g.width/2, g.height/2);
+            g.textSize(12);
+            g.text("Error: " + e.getMessage(), g.width/2, g.height/2 + 20);
         }
     }
+
+    /**
+     * @deprecated Use {@link #draw(PGraphics)} instead
+     */
+    @Deprecated
+    @Override
+    public void draw(PApplet p) {
+        PGraphics g = p.g;
+        draw(g);
+    }
     
-    private void drawShortcuts(PApplet p, HomePage page) {
+    private void drawShortcuts(PGraphics g, HomePage page) {
         try {
             List<Shortcut> shortcuts = page.getShortcuts();
-            
+
             int startY = 150;
             int gridWidth = GRID_COLS * (ICON_SIZE + ICON_SPACING) - ICON_SPACING;
-            int startX = (p.width - gridWidth) / 2;
-            
+            int startX = (g.width - gridWidth) / 2;
+
             for (Shortcut shortcut : shortcuts) {
                 try {
                     int x = startX + shortcut.getGridX() * (ICON_SIZE + ICON_SPACING);
                     int y = startY + shortcut.getGridY() * (ICON_SIZE + ICON_SPACING + 15);
-                    
+
                     // Draw icon background
-                    p.fill(0x333333);
-                    p.stroke(0x555555);
-                    p.strokeWeight(1);
-                    p.rect(x, y, ICON_SIZE, ICON_SIZE, 8);
-                    
+                    g.fill(0x333333);
+                    g.stroke(0x555555);
+                    g.strokeWeight(1);
+                    g.rect(x, y, ICON_SIZE, ICON_SIZE, 8);
+
                     // Draw app icon placeholder
-                    p.fill(accentColor);
-                    p.noStroke();
-                    p.rect(x + 8, y + 8, ICON_SIZE - 16, ICON_SIZE - 16, 4);
-                    
+                    g.fill(accentColor);
+                    g.noStroke();
+                    g.rect(x + 8, y + 8, ICON_SIZE - 16, ICON_SIZE - 16, 4);
+
                     // Draw app initial
-                    p.fill(textColor);
-                    p.textAlign(p.CENTER, p.CENTER);
-                    p.textSize(18);
+                    g.fill(textColor);
+                    g.textAlign(g.CENTER, g.CENTER);
+                    g.textSize(18);
                     String initial = shortcut.getDisplayName().substring(0, 1).toUpperCase();
-                    p.text(initial, x + ICON_SIZE/2, y + ICON_SIZE/2);
-                    
+                    g.text(initial, x + ICON_SIZE/2, y + ICON_SIZE/2);
+
                     // Draw app name
-                    p.textSize(10);
-                    p.textAlign(p.CENTER, p.TOP);
+                    g.textSize(10);
+                    g.textAlign(g.CENTER, g.TOP);
                     String name = shortcut.getDisplayName();
                     if (name.length() > 8) {
                         name = name.substring(0, 7) + "...";
                     }
-                    p.text(name, x + ICON_SIZE/2, y + ICON_SIZE + 3);
-                    
+                    g.text(name, x + ICON_SIZE/2, y + ICON_SIZE + 3);
+
                 } catch (Exception shortcutError) {
                     System.err.println("Error drawing shortcut " + shortcut.getDisplayName() + ": " + shortcutError.getMessage());
                 }
             }
-            
+
         } catch (Exception e) {
             System.err.println("Error in drawShortcuts: " + e.getMessage());
         }
     }
     
     @Override
-    public void mousePressed(processing.core.PApplet p, int mouseX, int mouseY) {
+    public void mousePressed(PGraphics g, int mouseX, int mouseY) {
         System.out.println("🖱️ SafeHomeScreen: Mouse pressed at (" + mouseX + ", " + mouseY + ")");
-        
+
         try {
             // Start drag detection
             isDragging = false;
@@ -255,40 +270,61 @@ public class SafeHomeScreen implements Screen {
             dragStartY = mouseY;
             dragCurrentX = mouseX;
             dragCurrentY = mouseY;
-            
+
         } catch (Exception e) {
             System.err.println("Error in mousePressed: " + e.getMessage());
         }
     }
+
+    /**
+     * @deprecated Use {@link #mousePressed(PGraphics, int, int)} instead
+     */
+    @Deprecated
+    @Override
+    public void mousePressed(processing.core.PApplet p, int mouseX, int mouseY) {
+        PGraphics g = p.g;
+        mousePressed(g, mouseX, mouseY);
+    }
     
     /**
-     * Handles mouse drag events for page swiping
+     * Handles mouse drag events for page swiping (PGraphics version)
      */
-    public void mouseDragged(processing.core.PApplet p, int mouseX, int mouseY) {
+    @Override
+    public void mouseDragged(PGraphics g, int mouseX, int mouseY) {
         try {
             dragCurrentX = mouseX;
             dragCurrentY = mouseY;
-            
+
             int deltaX = dragCurrentX - dragStartX;
             int deltaY = Math.abs(dragCurrentY - dragStartY);
-            
+
             // Check if this is a valid horizontal swipe
             if (Math.abs(deltaX) > 10 && deltaY < SWIPE_VERTICAL_THRESHOLD) {
                 isDragging = true;
                 // Visual feedback could be added here (e.g., page preview)
             }
-            
+
         } catch (Exception e) {
             System.err.println("Error in mouseDragged: " + e.getMessage());
         }
     }
+
+    /**
+     * @deprecated Use {@link #mouseDragged(PGraphics, int, int)} instead
+     */
+    @Deprecated
+    public void mouseDragged(processing.core.PApplet p, int mouseX, int mouseY) {
+        PGraphics g = p.g;
+        mouseDragged(g, mouseX, mouseY);
+    }
     
     /**
-     * Handles mouse release events for completing swipe gestures or app clicks
+     * Handles mouse release events for completing swipe gestures or app clicks (PGraphics version)
      */
-    public void mouseReleased(processing.core.PApplet p, int mouseX, int mouseY) {
+    @Override
+    public void mouseReleased(PGraphics g, int mouseX, int mouseY) {
         System.out.println("🖱️ SafeHomeScreen: Mouse released at (" + mouseX + ", " + mouseY + ")");
-        
+
         try {
             if (isDragging) {
                 // Handle swipe gesture
@@ -297,17 +333,26 @@ public class SafeHomeScreen implements Screen {
                 // Handle app click (no significant drag occurred)
                 handleAppClick(mouseX, mouseY);
             }
-            
+
             // Reset drag state
             isDragging = false;
             dragStartX = 0;
             dragStartY = 0;
             dragCurrentX = 0;
             dragCurrentY = 0;
-            
+
         } catch (Exception e) {
             System.err.println("Error in mouseReleased: " + e.getMessage());
         }
+    }
+
+    /**
+     * @deprecated Use {@link #mouseReleased(PGraphics, int, int)} instead
+     */
+    @Deprecated
+    public void mouseReleased(processing.core.PApplet p, int mouseX, int mouseY) {
+        PGraphics g = p.g;
+        mouseReleased(g, mouseX, mouseY);
     }
     
     private boolean isClickOnShortcut(int mouseX, int mouseY, Shortcut shortcut) {
@@ -334,9 +379,19 @@ public class SafeHomeScreen implements Screen {
     }
     
     @Override
-    public void cleanup(PApplet p) {
+    public void cleanup(PGraphics g) {
         isInitialized = false;
         System.out.println("🧹 SafeHomeScreen: Cleanup completed");
+    }
+
+    /**
+     * @deprecated Use {@link #cleanup(PGraphics)} instead
+     */
+    @Deprecated
+    @Override
+    public void cleanup(PApplet p) {
+        PGraphics g = p.g;
+        cleanup(g);
     }
     
     @Override
@@ -347,12 +402,12 @@ public class SafeHomeScreen implements Screen {
     /**
      * Draws the app library page showing all available applications
      */
-    private void drawAppLibraryPage(PApplet p) {
+    private void drawAppLibraryPage(PGraphics g) {
         try {
             int startY = 150;
             int gridWidth = GRID_COLS * (ICON_SIZE + ICON_SPACING) - ICON_SPACING;
-            int startX = (p.width - gridWidth) / 2;
-            
+            int startX = (g.width - gridWidth) / 2;
+
             // Filter out launcher app for display
             List<IApplication> displayApps = new ArrayList<>();
             for (IApplication app : allApps) {
@@ -360,17 +415,17 @@ public class SafeHomeScreen implements Screen {
                     displayApps.add(app);
                 }
             }
-            
+
             for (int i = 0; i < displayApps.size() && i < (GRID_COLS * GRID_ROWS); i++) {
                 int col = i % GRID_COLS;
                 int row = i / GRID_COLS;
-                
+
                 int x = startX + col * (ICON_SIZE + ICON_SPACING);
                 int y = startY + row * (ICON_SIZE + ICON_SPACING + 15);
-                
-                drawAppLibraryIcon(p, displayApps.get(i), x, y);
+
+                drawAppLibraryIcon(g, displayApps.get(i), x, y);
             }
-            
+
         } catch (Exception e) {
             System.err.println("Error in drawAppLibraryPage: " + e.getMessage());
         }
@@ -379,36 +434,36 @@ public class SafeHomeScreen implements Screen {
     /**
      * Draws an app icon in the app library (with different styling)
      */
-    private void drawAppLibraryIcon(PApplet p, IApplication app, int x, int y) {
+    private void drawAppLibraryIcon(PGraphics g, IApplication app, int x, int y) {
         try {
             // Library icons have purple theme
-            p.fill(80, 80, 120); // Purple-gray background
-            p.stroke(150, 150, 200); // Light purple border
-            p.strokeWeight(2);
-            p.rect(x, y, ICON_SIZE, ICON_SIZE, 12);
-            
+            g.fill(80, 80, 120); // Purple-gray background
+            g.stroke(150, 150, 200); // Light purple border
+            g.strokeWeight(2);
+            g.rect(x, y, ICON_SIZE, ICON_SIZE, 12);
+
             // App icon placeholder (purple)
-            p.fill(120, 80, 180); // Purple
-            p.noStroke();
-            p.rect(x + 12, y + 12, ICON_SIZE - 24, ICON_SIZE - 24, 8);
-            
+            g.fill(120, 80, 180); // Purple
+            g.noStroke();
+            g.rect(x + 12, y + 12, ICON_SIZE - 24, ICON_SIZE - 24, 8);
+
             // App initial (white text)
-            p.fill(255, 255, 255);
-            p.textAlign(p.CENTER, p.CENTER);
-            p.textSize(18);
+            g.fill(255, 255, 255);
+            g.textAlign(g.CENTER, g.CENTER);
+            g.textSize(18);
             String initial = app.getName().substring(0, 1).toUpperCase();
-            p.text(initial, x + ICON_SIZE/2, y + ICON_SIZE/2 - 2);
-            
+            g.text(initial, x + ICON_SIZE/2, y + ICON_SIZE/2 - 2);
+
             // App name (white text)
-            p.fill(255, 255, 255);
-            p.textSize(10);
-            p.textAlign(p.CENTER, p.TOP);
+            g.fill(255, 255, 255);
+            g.textSize(10);
+            g.textAlign(g.CENTER, g.TOP);
             String name = app.getName();
             if (name.length() > 8) {
                 name = name.substring(0, 7) + "...";
             }
-            p.text(name, x + ICON_SIZE/2, y + ICON_SIZE + 3);
-            
+            g.text(name, x + ICON_SIZE/2, y + ICON_SIZE + 3);
+
         } catch (Exception e) {
             System.err.println("Error drawing app library icon for " + app.getName() + ": " + e.getMessage());
         }
@@ -417,38 +472,38 @@ public class SafeHomeScreen implements Screen {
     /**
      * Draws page indicators at the bottom
      */
-    private void drawPageIndicators(PApplet p) {
+    private void drawPageIndicators(PGraphics g) {
         try {
             int totalPages = homePages.size() + 1; // +1 for app library
             int dotSize = 8;
             int dotSpacing = 15;
             int totalWidth = totalPages * dotSpacing - dotSpacing + dotSize;
-            int startX = (p.width - totalWidth) / 2;
-            int y = p.height - 30;
-            
+            int startX = (g.width - totalWidth) / 2;
+            int y = g.height - 30;
+
             for (int i = 0; i < totalPages; i++) {
                 int x = startX + i * dotSpacing;
-                
+
                 if (i == totalPages - 1) {
                     // App library indicator
                     if (isShowingAppLibrary) {
-                        p.fill(120, 80, 180); // Purple (active)
+                        g.fill(120, 80, 180); // Purple (active)
                     } else {
-                        p.fill(80, 80, 120); // Dim purple
+                        g.fill(80, 80, 120); // Dim purple
                     }
                 } else {
                     // Regular page indicator
                     if (!isShowingAppLibrary && i == currentPageIndex) {
-                        p.fill(accentColor); // Blue (active)
+                        g.fill(accentColor); // Blue (active)
                     } else {
-                        p.fill(100, 100, 100); // Gray
+                        g.fill(100, 100, 100); // Gray
                     }
                 }
-                
-                p.noStroke();
-                p.ellipse(x, y, dotSize, dotSize);
+
+                g.noStroke();
+                g.ellipse(x, y, dotSize, dotSize);
             }
-            
+
         } catch (Exception e) {
             System.err.println("Error drawing page indicators: " + e.getMessage());
         }
@@ -583,5 +638,13 @@ public class SafeHomeScreen implements Screen {
             System.err.println("SafeHomeScreen: Error opening AppLibrary: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    /**
+     * Adds keyPressed support for PGraphics (empty implementation, can be overridden)
+     */
+    @Override
+    public void keyPressed(PGraphics g, char key, int keyCode) {
+        // Default implementation - subclasses can override
     }
 }

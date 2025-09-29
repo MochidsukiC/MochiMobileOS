@@ -6,6 +6,7 @@ import jp.moyashi.phoneos.core.app.IApplication;
 import jp.moyashi.phoneos.core.apps.launcher.model.HomePage;
 import jp.moyashi.phoneos.core.apps.launcher.model.Shortcut;
 import processing.core.PApplet;
+import processing.core.PGraphics;
 
 import java.util.List;
 
@@ -85,77 +86,98 @@ public class AppLibraryScreen_Complete implements Screen {
     }
     
     /**
-     * Initializes the app library screen when it becomes active.
+     * Initializes the app library screen when it becomes active (PGraphics version).
      * Loads the complete list of available applications.
      */
     @Override
-    public void setup(processing.core.PApplet p) {
+    public void setup(PGraphics g) {
         isInitialized = true;
         loadAllApps();
-        System.out.println("AppLibraryScreen: App library initialized with " + 
+        System.out.println("AppLibraryScreen: App library initialized with " +
                           (allApps != null ? allApps.size() : 0) + " applications");
     }
-    
+
     /**
-     * Draws the app library interface.
-     * Renders the header, scrollable app list, navigation elements, and context menu.
-     * 
-     * @param p The PApplet instance for drawing operations
+     * @deprecated Use {@link #setup(PGraphics)} instead
      */
+    @Deprecated
     @Override
-    public void draw(PApplet p) {
-        // Draw background
-        p.background(backgroundColor);
-        
-        // Draw header
-        drawHeader(p);
-        
-        // Draw app list
-        drawAppList(p);
-        
-        // Draw scroll indicator if needed
-        if (needsScrolling()) {
-            drawScrollIndicator(p);
-        }
-        
-        // Draw context menu if showing
-        if (showingContextMenu && longPressedApp != null) {
-            drawContextMenu(p);
-        }
-        
-        // Draw navigation hint
-        if (!showingContextMenu) {
-            drawNavigationHint(p);
-        }
+    public void setup(processing.core.PApplet p) {
+        PGraphics g = p.g;
+        setup(g);
     }
     
     /**
-     * Handles mouse press events on the app library screen.
+     * Draws the app library interface (PGraphics version).
+     * Renders the header, scrollable app list, navigation elements, and context menu.
+     *
+     * @param g The PGraphics instance for drawing operations
+     */
+    @Override
+    public void draw(PGraphics g) {
+        // Draw background
+        g.background(backgroundColor);
+
+        // Draw header
+        drawHeader(g);
+
+        // Draw app list
+        drawAppList(g);
+
+        // Draw scroll indicator if needed
+        if (needsScrolling()) {
+            drawScrollIndicator(g);
+        }
+
+        // Draw context menu if showing
+        if (showingContextMenu && longPressedApp != null) {
+            drawContextMenu(g);
+        }
+
+        // Draw navigation hint
+        if (!showingContextMenu) {
+            drawNavigationHint(g);
+        }
+    }
+
+    /**
+     * @deprecated Use {@link #draw(PGraphics)} instead
+     */
+    @Deprecated
+    @Override
+    public void draw(PApplet p) {
+        PGraphics g = p.g;
+        draw(g);
+    }
+    
+    /**
+     * Handles mouse press events on the app library screen (PGraphics version).
      * Processes app selection, navigation interactions, and context menu.
-     * 
+     *
+     * @param g The PGraphics instance
      * @param mouseX The x-coordinate of the mouse press
      * @param mouseY The y-coordinate of the mouse press
      */
     @Override
-    public void mousePressed(processing.core.PApplet p, int mouseX, int mouseY) {
+    public void mousePressed(PGraphics g, int mouseX, int mouseY) {
         System.out.println("AppLibraryScreen: Touch at (" + mouseX + ", " + mouseY + ")");
-        
+
         touchStartTime = System.currentTimeMillis();
-        
+
         // Handle context menu clicks
         if (showingContextMenu && longPressedApp != null) {
             if (handleContextMenuClick(mouseX, mouseY)) {
                 return;
             }
         }
-        
+
         // Check if click is in header area (back navigation)
         if (mouseY < LIST_START_Y) {
             hideContextMenu();
             goBack();
             return;
         }
-        
+
         // Check if click is on an app item
         IApplication clickedApp = getAppAtPosition(mouseX, mouseY);
         if (clickedApp != null) {
@@ -167,28 +189,58 @@ public class AppLibraryScreen_Complete implements Screen {
             hideContextMenu();
         }
     }
+
+    /**
+     * @deprecated Use {@link #mousePressed(PGraphics, int, int)} instead
+     */
+    @Deprecated
+    @Override
+    public void mousePressed(processing.core.PApplet p, int mouseX, int mouseY) {
+        PGraphics g = p.g;
+        mousePressed(g, mouseX, mouseY);
+    }
     
     /**
-     * Handles mouse release for long press detection.
+     * Handles mouse release for long press detection (PGraphics version).
      */
-    public void mouseReleased(processing.core.PApplet p, int mouseX, int mouseY) {
+    @Override
+    public void mouseReleased(PGraphics g, int mouseX, int mouseY) {
         long pressDuration = System.currentTimeMillis() - touchStartTime;
-        
+
         if (pressDuration >= LONG_PRESS_DURATION && longPressedApp != null && !showingContextMenu) {
             // Long press detected - show context menu
             showContextMenu(longPressedApp, mouseX, mouseY);
         }
     }
+
+    /**
+     * @deprecated Use {@link #mouseReleased(PGraphics, int, int)} instead
+     */
+    @Deprecated
+    public void mouseReleased(processing.core.PApplet p, int mouseX, int mouseY) {
+        PGraphics g = p.g;
+        mouseReleased(g, mouseX, mouseY);
+    }
     
     /**
-     * Cleans up resources when the screen is deactivated.
+     * Cleans up resources when the screen is deactivated (PGraphics version).
      */
     @Override
-    public void cleanup(processing.core.PApplet p) {
+    public void cleanup(PGraphics g) {
         isInitialized = false;
         allApps = null;
         hideContextMenu();
         System.out.println("AppLibraryScreen: App library screen cleaned up");
+    }
+
+    /**
+     * @deprecated Use {@link #cleanup(PGraphics)} instead
+     */
+    @Deprecated
+    @Override
+    public void cleanup(processing.core.PApplet p) {
+        PGraphics g = p.g;
+        cleanup(g);
     }
     
     /**
@@ -261,13 +313,29 @@ public class AppLibraryScreen_Complete implements Screen {
     }
     
     // Additional private methods would be implemented here...
-    private void drawHeader(PApplet p) { /* Implementation */ }
-    private void drawAppList(PApplet p) { /* Implementation */ }
-    private void drawContextMenu(PApplet p) { /* Implementation */ }
-    private void drawNavigationHint(PApplet p) { /* Implementation */ }
-    private void drawScrollIndicator(PApplet p) { /* Implementation */ }
+    private void drawHeader(PGraphics g) { /* Implementation */ }
+    private void drawAppList(PGraphics g) { /* Implementation */ }
+    private void drawContextMenu(PGraphics g) { /* Implementation */ }
+    private void drawNavigationHint(PGraphics g) { /* Implementation */ }
+    private void drawScrollIndicator(PGraphics g) { /* Implementation */ }
     private boolean needsScrolling() { return false; /* Implementation */ }
     private IApplication getAppAtPosition(int x, int y) { return null; /* Implementation */ }
     private void goBack() { /* Implementation */ }
     private void launchApplication(IApplication app) { /* Implementation */ }
+
+    /**
+     * Adds mouseDragged support for PGraphics (empty implementation, can be overridden)
+     */
+    @Override
+    public void mouseDragged(PGraphics g, int mouseX, int mouseY) {
+        // Default implementation - subclasses can override
+    }
+
+    /**
+     * Adds keyPressed support for PGraphics (empty implementation, can be overridden)
+     */
+    @Override
+    public void keyPressed(PGraphics g, char key, int keyCode) {
+        // Default implementation - subclasses can override
+    }
 }
