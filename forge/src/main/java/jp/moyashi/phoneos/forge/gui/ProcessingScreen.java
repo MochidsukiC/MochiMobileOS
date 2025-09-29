@@ -117,10 +117,12 @@ public class ProcessingScreen extends Screen {
 
                 // PGraphicsバッファが適切に初期化されているかチェック
                 try {
-                    if (playerKernel.getGraphicsBuffer() != null) {
-                        LOGGER.debug("[ProcessingScreen] PGraphics buffer is available: " +
-                                    playerKernel.getGraphicsBuffer().width + "x" + playerKernel.getGraphicsBuffer().height);
-                    }
+                    // TODO: PGraphics統一アーキテクチャに移行後、グラフィックバッファチェックを再実装
+                    // if (playerKernel.getGraphicsBuffer() != null) { // 古いAPI
+                    //     LOGGER.debug("[ProcessingScreen] PGraphics buffer is available: " +
+                    //                 playerKernel.getGraphicsBuffer().width + "x" + playerKernel.getGraphicsBuffer().height);
+                    // }
+                    LOGGER.debug("[ProcessingScreen] PGraphics buffer check temporarily disabled");
                 } catch (Exception e) {
                     LOGGER.debug("[ProcessingScreen] PGraphics buffer check skipped: " + e.getMessage());
                 }
@@ -527,7 +529,7 @@ public class ProcessingScreen extends Screen {
         if (graphicsEnabled && playerKernel != null) {
             try {
                 char key = (char) keyCode; // 簡易的な変換
-                playerKernel.keyPressed(key, keyCode, 0, 0);
+                playerKernel.keyPressed(key, keyCode);
             } catch (Exception e) {
                 System.err.println("[ProcessingScreen] Key press error: " + e.getMessage());
             }
@@ -575,8 +577,9 @@ public class ProcessingScreen extends Screen {
             if (playerKernel != null) {
                 LOGGER.info("[ProcessingScreen] Executing kernel draw() - frameCount: " + playerKernel.frameCount);
 
-                // 通常のProcessing描画サイクルを実行
-                playerKernel.draw();
+                // TODO: PGraphics統一アーキテクチャに移行後、描画サイクルを再実装
+                // playerKernel.draw(); // 古いAPI - 削除済み
+                LOGGER.info("[ProcessingScreen] Kernel drawing temporarily disabled");
 
                 LOGGER.info("[ProcessingScreen] Kernel draw() completed successfully");
             }

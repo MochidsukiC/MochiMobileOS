@@ -51,7 +51,7 @@ public class PhoneAppRegistryEvent extends Event {
         registeredAppsCount++;
 
         System.out.println("[PhoneAppRegistryEvent] Registered app: " +
-                          application.getApplicationName() + " (" +
+                          application.getName() + " (" +
                           application.getApplicationId() + ")");
     }
 

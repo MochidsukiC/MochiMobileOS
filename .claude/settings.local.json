@@ -71,7 +71,8 @@
       "Bash(powershell:*)",
       "Read(//c/Users/dora2/.claude/projects/C--Users-dora2-IdeaProjects-MochiMobileOS/**)",
       "Bash(.\\gradlew.bat compileJava:*)",
-      "Bash(call:*)"
+      "Bash(call:*)",
+      "Bash(del \"forge\\src\\main\\java\\jp\\moyashi\\phoneos\\forge\\processing\\MinecraftKernelWrapper (1).java\")"
     ],
     "deny": [],
     "ask": [],

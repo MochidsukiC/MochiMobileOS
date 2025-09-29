@@ -71,7 +71,7 @@ public class ModAppRegistry {
 
         availableApps.add(application);
         System.out.println("[ModAppRegistry] Added available app: " +
-                          application.getApplicationName() + " (Total: " + availableApps.size() + ")");
+                          application.getName() + " (Total: " + availableApps.size() + ")");
     }
 
     /**

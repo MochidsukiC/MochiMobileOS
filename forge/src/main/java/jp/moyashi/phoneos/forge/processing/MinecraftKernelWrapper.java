@@ -83,8 +83,8 @@ public class MinecraftKernelWrapper {
         }
 
         try {
-            // Kernelの描画ループを実行
-            kernel.draw();
+            // TODO: PGraphics統一アーキテクチャに移行後、描画ループを再実装
+            // kernel.draw(); // 古いAPI - 削除済み
 
         } catch (Exception e) {
             System.err.println("[MinecraftKernelWrapper] Draw error: " + e.getMessage());
@@ -144,7 +144,7 @@ public class MinecraftKernelWrapper {
 
         try {
             // キープレスイベントを実行（新しいAPI）
-            kernel.keyPressed(key, keyCode, 0, 0);
+            kernel.keyPressed(key, keyCode);
 
         } catch (Exception e) {
             System.err.println("[MinecraftKernelWrapper] Key press error: " + e.getMessage());
@@ -208,7 +208,8 @@ public class MinecraftKernelWrapper {
 
             if (kernel != null) {
                 // Kernelのクリーンアップ処理
-                kernel.cleanup();
+                // TODO: PGraphics統一アーキテクチャに移行後、クリーンアップを再実装
+                // kernel.cleanup(); // 古いAPI - 削除済み
                 kernel = null;
             }
 

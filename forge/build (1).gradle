@@ -1,0 +1,223 @@
+buildscript {
+    repositories {
+        // These repositories are only for Gradle plugins, put any other repositories in the repository block further below
+        maven { url = 'https://maven.minecraftforge.net' }
+        mavenCentral()
+    }
+    dependencies {
+        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '6.0.29', changing: true
+    }
+}
+
+// Only edit below this line, the above code adds and enables the necessary things for Forge to be setup.
+plugins {
+    id 'eclipse'
+    id 'maven-publish'
+    id 'java-library'
+}
+
+apply plugin: 'net.minecraftforge.gradle'
+
+// Version and group are inherited from root project
+// version = project.findProperty('mod_version') ?: '1.1-SNAPSHOT'
+// group = project.findProperty('mod_group_id') ?: 'jp.moyashi.phoneos'
+base {
+    archivesName = project.findProperty('mod_id') ?: 'mochimobileos'
+}
+
+// Force Java 17 compilation for ForgeGradle compatibility
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+
+println "Java: ${System.getProperty('java.version')}, JVM: ${System.getProperty('java.vm.version')} (${System.getProperty('java.vendor')}), Arch: ${System.getProperty('os.arch')}"
+
+configurations {
+    library
+    implementation.extendsFrom(library)
+}
+
+repositories {
+    // The order of entries in repositories matters!
+    // The repositories here will be used for your mod's dependencies.
+    maven {
+        name = 'MinecraftForge'
+        url = 'https://maven.minecraftforge.net/'
+    }
+    maven {
+        name = 'JOGAMP'
+        url = 'https://jogamp.org/deployment/maven/'
+    }
+    mavenCentral()
+}
+
+configurations {
+    runtimeLib
+}
+
+dependencies {
+    // Minecraft Forge for 1.20.1
+    minecraft 'net.minecraftforge:forge:1.20.1-47.3.12'
+
+    // Core module dependency - embed in jar
+    implementation project(':core')
+
+    // Processing dependencies for OS functionality
+    // Use compileOnly for compile-time and runtimeLib for JAR inclusion
+    compileOnly files('libs/core-4.4.4.jar')
+    runtimeLib files('libs/core-4.4.4.jar')
+
+    implementation 'com.google.code.gson:gson:2.10.1'
+
+    // Test dependencies
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.1'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+// Minecraft run configuration
+minecraft {
+    mappings channel: 'official', version: '1.20.1'
+
+    runs {
+        client {
+            workingDirectory project.file('run')
+            property 'forge.logging.markers', 'REGISTRIES'
+            property 'forge.logging.console.level', 'debug'
+
+            mods {
+                mochimobileos {
+                    source sourceSets.main
+                    source project(':core').sourceSets.main
+                }
+            }
+        }
+
+        server {
+            workingDirectory project.file('run')
+            property 'forge.logging.markers', 'REGISTRIES'
+            property 'forge.logging.console.level', 'debug'
+
+            mods {
+                mochimobileos {
+                    source sourceSets.main
+                    source project(':core').sourceSets.main
+                }
+            }
+        }
+    }
+}
+
+// Configure jar
+jar {
+    // Include core module classes in the jar
+    from(project(':core').sourceSets.main.output) {
+        include '**/*.class'
+    }
+
+    // Include Processing library for runtime
+    from {
+        configurations.runtimeLib.collect { zipTree(it) }
+    } {
+        exclude 'META-INF/'
+        exclude 'META-INF/**'
+        exclude '**/*.txt'
+        exclude '**/*.md'
+    }
+
+    manifest {
+        attributes([
+            'Specification-Title': 'MochiMobileOS Forge Integration',
+            'Specification-Vendor': 'jp.moyashi',
+            'Specification-Version': '1',
+            'Implementation-Title': project.name,
+            'Implementation-Version': "${version}",
+            'Implementation-Vendor': 'jp.moyashi',
+            'Implementation-Timestamp': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+        ])
+    }
+
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    finalizedBy 'reobfJar'
+}
+
+// Configure Java compilation
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+    options.release = 17
+}
+
+// Configure test task
+test {
+    useJUnitPlatform()
+    systemProperty 'file.encoding', 'UTF-8'
+}
+
+// Configure publishing for Forge module
+publishing {
+    publications {
+        maven(MavenPublication) {
+            groupId = project.group
+            artifactId = project.name
+            version = project.version
+
+            from components.java
+
+            pom {
+                name = "MochiMobileOS Forge Integration"
+                description = "MochiMobileOS Forge module - Minecraft Forge integration for virtual mobile OS"
+                url = "https://github.com/MochidsukiC/MochiMobileOS"
+
+                licenses {
+                    license {
+                        name = "MIT License"
+                        url = "https://opensource.org/licenses/MIT"
+                    }
+                }
+
+                developers {
+                    developer {
+                        id = "MochidsukiC"
+                        name = "MochidsukiC"
+                        email = "contact@moyashi.jp"
+                    }
+                }
+
+                scm {
+                    connection = "scm:git:git://github.com/MochidsukiC/MochiMobileOS.git"
+                    developerConnection = "scm:git:ssh://github.com/MochidsukiC/MochiMobileOS.git"
+                    url = "https://github.com/MochidsukiC/MochiMobileOS"
+                }
+            }
+        }
+    }
+
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/MochidsukiC/MochiMobileOS")
+            credentials {
+                username = project.findProperty("github.user") ?: System.getenv("GITHUB_ACTOR")
+                password = project.findProperty("github.token") ?: System.getenv("GITHUB_TOKEN")
+            }
+        }
+
+        // Optional: Local repository for testing
+        maven {
+            name = "Local"
+            url = uri("$buildDir/repo")
+        }
+    }
+}
+
+// Add a task to display the current configuration
+task showConfig {
+    doLast {
+        println '=== MochiMobileOS Forge Configuration ==='
+        println "Project: ${project.name}"
+        println "Version: ${version}"
+        println "Group: ${group}"
+        println "Archive Name: ${archivesBaseName}"
+        println "Java Version: ${java.toolchain.languageVersion.get()}"
+        println 'Minecraft Forge: 1.20.1-47.2.0'
+        println 'Mappings: official 1.20.1'
+        println '=========================================='
+    }
+}

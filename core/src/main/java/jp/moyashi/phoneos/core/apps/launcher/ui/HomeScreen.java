@@ -222,6 +222,9 @@ public class HomeScreen implements Screen, GestureListener {
             // Update page transition animation
             updatePageAnimation();
 
+            // Check edge auto-slide timer continuously during drag
+            updateEdgeAutoSlideTimer();
+
             // Draw status bar
             drawStatusBar(g);
 
@@ -513,31 +516,17 @@ public class HomeScreen implements Screen, GestureListener {
     private void handleShortcutDrop(int mouseX, int mouseY) {
         if (draggedShortcut == null) return;
 
-        // 編集モードで右端にドラッグした場合、次のページに移動させる
-        if (isEditing && mouseX > 350) { // Screen width is around 400, so 350 is near right edge
-            handleShortcutMoveToNextPage();
+        System.out.println("HomeScreen: [DROP] Handling shortcut drop at (" + mouseX + ", " + mouseY + ") on page " + currentPageIndex);
+
+        // アニメーション中の場合はドロップを遅延実行
+        if (isAnimating) {
+            System.out.println("HomeScreen: [DROP] Animation in progress, scheduling drop for later");
+            scheduleDelayedDrop(mouseX, mouseY);
             return;
         }
 
-        // Calculate target grid position
-        int[] gridPos = screenToGridPosition(mouseX, mouseY);
-        if (gridPos != null) {
-            HomePage currentPage = getCurrentPage();
-            if (currentPage != null) {
-                // Try to move to new position
-                if (currentPage.moveShortcut(draggedShortcut, gridPos[0], gridPos[1])) {
-                    System.out.println("HomeScreen: ショートカットを移動しました (" + gridPos[0] + ", " + gridPos[1] + ")");
-
-                    // レイアウトを自動保存
-                    saveCurrentLayout();
-                } else {
-                    System.out.println("HomeScreen: ショートカット移動失敗 - 位置が占有済みか無効");
-                }
-            }
-        }
-
-        // Reset drag state
-        resetDragState();
+        // 即座にドロップを実行
+        executeDrop(mouseX, mouseY, draggedShortcut);
     }
 
     /**
@@ -1052,6 +1041,9 @@ public class HomeScreen implements Screen, GestureListener {
         startOffset = 0.0f;
         
         System.out.println("🎬 Page transition completed to page " + currentPageIndex + ", offset reset to 0");
+
+        // アニメーション完了後に遅延されたドロップを実行
+        executePendingDrop();
     }
     
     /**
@@ -2291,11 +2283,19 @@ public class HomeScreen implements Screen, GestureListener {
         
         // アイコンドラッグが進行中の場合は、それを優先
         if (isDragging && draggedShortcut != null) {
-            draggedShortcut.setDragPosition(
-                event.getCurrentX() - dragOffsetX, 
-                event.getCurrentY() - dragOffsetY
-            );
-            System.out.println("HomeScreen: Updating icon drag position");
+            int dragX = event.getCurrentX() - dragOffsetX;
+            int dragY = event.getCurrentY() - dragOffsetY;
+
+            // ドラッグ座標の境界チェックと調整
+            dragX = constrainDragPosition(dragX, dragY)[0];
+            dragY = constrainDragPosition(dragX, dragY)[1];
+
+            draggedShortcut.setDragPosition(dragX, dragY);
+            System.out.println("HomeScreen: Updating icon drag position to (" + dragX + ", " + dragY + ")");
+
+            // 画面端での自動ページスライドを実装
+            handleEdgeAutoSlide(event.getCurrentX(), event.getCurrentY());
+
             return true; // アイコンドラッグが優先
         }
         
@@ -2356,6 +2356,10 @@ public class HomeScreen implements Screen, GestureListener {
         if (isDragging && draggedShortcut != null) {
             System.out.println("HomeScreen: Ending icon drag");
             handleShortcutDrop(event.getCurrentX(), event.getCurrentY());
+
+            // 画面端スライド状態をリセット
+            resetEdgeSlideState();
+
             return true;
         }
         
@@ -2454,12 +2458,468 @@ public class HomeScreen implements Screen, GestureListener {
     
     /**
      * AppLibraryページでのスクロール終了を処理する。
-     * 
+     *
      * @param event ジェスチャーイベント
      * @return 処理した場合true
      */
     private boolean handleAppLibraryScrollEnd(GestureEvent event) {
         System.out.println("HomeScreen: AppLibrary scroll ended");
         return true;
+    }
+
+    // Edge auto-slide functionality variables
+    private long edgeSlideTimer = 0;
+    private boolean isEdgeSliding = false;
+    private static final int EDGE_SLIDE_ZONE = 30; // ピクセル数での端検出ゾーン
+    private static final long EDGE_SLIDE_DELAY = 500; // ミリ秒での自動スライド遅延
+    private static final int SCREEN_WIDTH = 400; // 画面幅 (HomeScreenの標準幅)
+
+    /**
+     * ドラッグ中のショートカットが画面端にある場合、自動的にページスライドを実行する。
+     *
+     * @param currentX 現在のマウス/タッチのX座標
+     * @param currentY 現在のマウス/タッチのY座標
+     */
+    private void handleEdgeAutoSlide(int currentX, int currentY) {
+        if (isAnimating) {
+            return; // すでにアニメーション中の場合は何もしない
+        }
+
+        // 最後のドラッグ座標を記録（継続的なチェック用）
+        lastDragX = currentX;
+        lastDragY = currentY;
+
+        long currentTime = System.currentTimeMillis();
+        boolean inLeftEdge = currentX < EDGE_SLIDE_ZONE;
+        boolean inRightEdge = currentX > (SCREEN_WIDTH - EDGE_SLIDE_ZONE);
+
+        // 画面端に入ったかチェック
+        if (inLeftEdge || inRightEdge) {
+            if (!isEdgeSliding) {
+                // 初回の端検出
+                isEdgeSliding = true;
+                edgeSlideTimer = currentTime;
+                System.out.println("HomeScreen: [Move] Edge slide zone entered at X=" + currentX +
+                                 (inLeftEdge ? " (LEFT)" : " (RIGHT)") + " - Timer started");
+            } else {
+                // 既に端にいる場合は経過時間を表示
+                long elapsed = currentTime - edgeSlideTimer;
+                System.out.println("HomeScreen: [Move] Still in edge zone at X=" + currentX +
+                                 " - Elapsed: " + elapsed + "ms / " + EDGE_SLIDE_DELAY + "ms");
+
+                if (elapsed >= EDGE_SLIDE_DELAY) {
+                    // 十分な時間が経過したので自動スライドを実行
+                    if (inLeftEdge && currentPageIndex > 0) {
+                        // 左端なので前のページに移動
+                        System.out.println("HomeScreen: [Move] Auto-sliding to previous page (LEFT edge)");
+                        slideToPage(currentPageIndex - 1, true);
+                        resetEdgeSlideState();
+                    } else if (inRightEdge && currentPageIndex < homePages.size() - 1) {
+                        // 右端なので次のページに移動
+                        System.out.println("HomeScreen: [Move] Auto-sliding to next page (RIGHT edge)");
+                        slideToPage(currentPageIndex + 1, true);
+                        resetEdgeSlideState();
+                    } else {
+                        // 端ページの場合は何もしない
+                        System.out.println("HomeScreen: [Move] Already at edge page, no auto-slide");
+                        resetEdgeSlideState();
+                    }
+                }
+            }
+        } else {
+            // 画面端を離れたのでリセット
+            if (isEdgeSliding) {
+                System.out.println("HomeScreen: [Move] Left edge slide zone at X=" + currentX + " - Timer reset");
+                resetEdgeSlideState();
+            }
+        }
+    }
+
+    /**
+     * 画面端スライドの状態をリセットする。
+     */
+    private void resetEdgeSlideState() {
+        isEdgeSliding = false;
+        edgeSlideTimer = 0;
+    }
+
+    // 最後に記録したマウス/タッチ座標（継続的なエッジチェック用）
+    private int lastDragX = 0;
+    private int lastDragY = 0;
+
+    // 遅延ドロップ処理用の変数
+    private boolean hasPendingDrop = false;
+    private int pendingDropX = 0;
+    private int pendingDropY = 0;
+    private Shortcut pendingDropShortcut = null;
+
+    /**
+     * 描画ループ中にエッジ自動スライドのタイマーを継続的にチェックする。
+     * ドラッグ中で画面端に滞在している場合、時間経過で自動スライドを実行する。
+     */
+    private void updateEdgeAutoSlideTimer() {
+        // ドラッグ中かつエッジスライド中の場合のみチェック
+        if (!isDragging || !isEdgeSliding || draggedShortcut == null || isAnimating) {
+            return;
+        }
+
+        long currentTime = System.currentTimeMillis();
+        boolean inLeftEdge = lastDragX < EDGE_SLIDE_ZONE;
+        boolean inRightEdge = lastDragX > (SCREEN_WIDTH - EDGE_SLIDE_ZONE);
+
+        // 画面端に滞在している場合のみ継続チェック
+        if ((inLeftEdge || inRightEdge) && currentTime - edgeSlideTimer >= EDGE_SLIDE_DELAY) {
+            System.out.println("HomeScreen: [Timer] Edge auto-slide triggered at X=" + lastDragX +
+                             " after " + (currentTime - edgeSlideTimer) + "ms");
+
+            if (inLeftEdge && currentPageIndex > 0) {
+                // 左端なので前のページに移動
+                System.out.println("HomeScreen: [Timer] Auto-sliding to previous page (LEFT edge)");
+                slideToPage(currentPageIndex - 1, true);
+                resetEdgeSlideState();
+            } else if (inRightEdge && currentPageIndex < homePages.size() - 1) {
+                // 右端なので次のページに移動
+                System.out.println("HomeScreen: [Timer] Auto-sliding to next page (RIGHT edge)");
+                slideToPage(currentPageIndex + 1, true);
+                resetEdgeSlideState();
+            } else {
+                // 端ページの場合は何もしない
+                System.out.println("HomeScreen: [Timer] Already at edge page, no auto-slide");
+                resetEdgeSlideState();
+            }
+        }
+    }
+
+    /**
+     * 指定したページにスライドする。
+     * ドラッグ継続中でも呼び出せるようにする。
+     *
+     * @param pageIndex 移動先のページインデックス
+     * @param maintainDrag ドラッグ状態を維持するかどうか
+     */
+    private void slideToPage(int pageIndex, boolean maintainDrag) {
+        if (pageIndex < 0 || pageIndex >= homePages.size() || pageIndex == currentPageIndex) {
+            return;
+        }
+
+        // ドラッグ中のショートカットの情報を保存
+        Shortcut savedDraggedShortcut = null;
+        int savedDragOffsetX = 0, savedDragOffsetY = 0;
+        boolean wasDragging = isDragging && draggedShortcut != null;
+
+        if (wasDragging && maintainDrag) {
+            savedDraggedShortcut = draggedShortcut;
+            savedDragOffsetX = dragOffsetX;
+            savedDragOffsetY = dragOffsetY;
+            System.out.println("HomeScreen: Saving drag state for shortcut: " + savedDraggedShortcut.getDisplayName());
+        }
+
+        // ページ切り替えを実行
+        currentPageIndex = pageIndex;
+        targetPageIndex = pageIndex;
+        isAnimating = true;
+        animationStartTime = System.currentTimeMillis();
+        animationProgress = 0.0f;
+        pageTransitionOffset = 0.0f;
+        startOffset = 0.0f;
+        animationBasePageIndex = pageIndex;
+
+        System.out.println("HomeScreen: Sliding to page " + pageIndex + " (maintainDrag=" + maintainDrag + ")");
+
+        // ドラッグ状態を復元
+        if (wasDragging && maintainDrag && savedDraggedShortcut != null) {
+            draggedShortcut = savedDraggedShortcut;
+            dragOffsetX = savedDragOffsetX;
+            dragOffsetY = savedDragOffsetY;
+            isDragging = true;
+
+            // ページ切り替え後にドラッグ位置を画面内の安全な場所に調整
+            adjustDragPositionAfterSlide();
+
+            System.out.println("HomeScreen: Restored drag state for shortcut: " + draggedShortcut.getDisplayName());
+        }
+    }
+
+    /**
+     * ページスライド後のドラッグ位置を画面内の安全な場所に調整する。
+     * 画面端でスライドが発生した場合、ショートカットを画面内の適切な位置に配置する。
+     */
+    private void adjustDragPositionAfterSlide() {
+        if (draggedShortcut == null) {
+            return;
+        }
+
+        // 現在のドラッグ位置を取得
+        float currentDragX = draggedShortcut.getDragX();
+        float currentDragY = draggedShortcut.getDragY();
+
+        // 画面境界
+        final int MARGIN = 10; // 画面端からの安全マージン
+        final int MIN_X = MARGIN;
+        final int MAX_X = SCREEN_WIDTH - ICON_SIZE - MARGIN;
+        final int MIN_Y = 80; // ステータスバー下
+        final int MAX_Y = 600 - NAV_AREA_HEIGHT - ICON_SIZE - MARGIN; // ナビゲーションエリア上
+
+        float adjustedX = currentDragX;
+        float adjustedY = currentDragY;
+
+        // 左端からのスライドの場合、右側の安全な位置に移動
+        if (currentDragX < EDGE_SLIDE_ZONE) {
+            adjustedX = EDGE_SLIDE_ZONE + 20; // 端検出ゾーンから少し内側
+            System.out.println("HomeScreen: Adjusting drag X from " + currentDragX + " to " + adjustedX + " (left edge slide)");
+        }
+        // 右端からのスライドの場合、左側の安全な位置に移動
+        else if (currentDragX > (SCREEN_WIDTH - EDGE_SLIDE_ZONE)) {
+            adjustedX = SCREEN_WIDTH - EDGE_SLIDE_ZONE - 20; // 端検出ゾーンから少し内側
+            System.out.println("HomeScreen: Adjusting drag X from " + currentDragX + " to " + adjustedX + " (right edge slide)");
+        }
+
+        // Y座標の境界チェック
+        if (adjustedY < MIN_Y) {
+            adjustedY = MIN_Y;
+            System.out.println("HomeScreen: Adjusting drag Y from " + currentDragY + " to " + adjustedY + " (top boundary)");
+        } else if (adjustedY > MAX_Y) {
+            adjustedY = MAX_Y;
+            System.out.println("HomeScreen: Adjusting drag Y from " + currentDragY + " to " + adjustedY + " (bottom boundary)");
+        }
+
+        // X座標の最終境界チェック（念のため）
+        if (adjustedX < MIN_X) {
+            adjustedX = MIN_X;
+            System.out.println("HomeScreen: Final X adjustment from " + currentDragX + " to " + adjustedX + " (left boundary)");
+        } else if (adjustedX > MAX_X) {
+            adjustedX = MAX_X;
+            System.out.println("HomeScreen: Final X adjustment from " + currentDragX + " to " + adjustedX + " (right boundary)");
+        }
+
+        // 調整された座標を設定
+        draggedShortcut.setDragPosition((int)adjustedX, (int)adjustedY);
+
+        // lastDragX/Yも更新（継続的なエッジチェック用）
+        lastDragX = (int)adjustedX;
+        lastDragY = (int)adjustedY;
+
+        System.out.println("HomeScreen: Drag position adjusted to (" + (int)adjustedX + ", " + (int)adjustedY + ")");
+    }
+
+    /**
+     * ドラッグ座標を画面境界内に制限する。
+     *
+     * @param dragX 元のドラッグX座標
+     * @param dragY 元のドラッグY座標
+     * @return 制限後の座標 [adjustedX, adjustedY]
+     */
+    private int[] constrainDragPosition(int dragX, int dragY) {
+        // 画面境界（通常のドラッグ用）
+        final int MIN_X = -10; // 少し画面外まで許可（エッジ検出のため）
+        final int MAX_X = SCREEN_WIDTH + 10; // 少し画面外まで許可（エッジ検出のため）
+        final int MIN_Y = 80; // ステータスバー下
+        final int MAX_Y = 600 - NAV_AREA_HEIGHT - 10; // ナビゲーションエリア上
+
+        int adjustedX = Math.max(MIN_X, Math.min(MAX_X, dragX));
+        int adjustedY = Math.max(MIN_Y, Math.min(MAX_Y, dragY));
+
+        return new int[]{adjustedX, adjustedY};
+    }
+
+    /**
+     * 全ページからショートカットを削除する（ページ間移動時の重複防止）。
+     *
+     * @param shortcut 削除するショートカット
+     */
+    private void removeShortcutFromAllPages(Shortcut shortcut) {
+        if (shortcut == null) return;
+
+        System.out.println("HomeScreen: [REMOVE] Removing shortcut '" + shortcut.getDisplayName() + "' from all pages");
+
+        for (int i = 0; i < homePages.size(); i++) {
+            HomePage page = homePages.get(i);
+            boolean removed = page.removeShortcut(shortcut);
+            if (removed) {
+                System.out.println("HomeScreen: [REMOVE] Removed from page " + i);
+            }
+        }
+    }
+
+    /**
+     * アニメーション中にドロップが発生した場合、アニメーション完了後に実行するようスケジュールする。
+     *
+     * @param mouseX ドロップのX座標
+     * @param mouseY ドロップのY座標
+     */
+    private void scheduleDelayedDrop(int mouseX, int mouseY) {
+        hasPendingDrop = true;
+        pendingDropX = mouseX;
+        pendingDropY = mouseY;
+        pendingDropShortcut = draggedShortcut;
+
+        System.out.println("HomeScreen: [DROP] Scheduled delayed drop for shortcut '" +
+                          (pendingDropShortcut != null ? pendingDropShortcut.getDisplayName() : "null") +
+                          "' at (" + mouseX + ", " + mouseY + ")");
+
+        // ドラッグ状態をいったんクリア（ただし、遅延ドロップのためにショートカット情報は保持）
+        isDragging = false;
+    }
+
+    /**
+     * アニメーション完了後に遅延されたドロップを実行する。
+     */
+    private void executePendingDrop() {
+        if (hasPendingDrop && pendingDropShortcut != null) {
+            System.out.println("HomeScreen: [DROP] Executing pending drop for shortcut '" +
+                              pendingDropShortcut.getDisplayName() + "' at (" + pendingDropX + ", " + pendingDropY + ")");
+
+            // 遅延ドロップの実行
+            executeDrop(pendingDropX, pendingDropY, pendingDropShortcut);
+
+            // 遅延ドロップ状態をリセット
+            hasPendingDrop = false;
+            pendingDropX = 0;
+            pendingDropY = 0;
+            pendingDropShortcut = null;
+        }
+    }
+
+    /**
+     * 実際のドロップ処理を実行する（即座実行と遅延実行で共通）。
+     *
+     * @param mouseX ドロップのX座標
+     * @param mouseY ドロップのY座標
+     * @param shortcut ドロップするショートカット
+     */
+    private void executeDrop(int mouseX, int mouseY, Shortcut shortcut) {
+        if (shortcut == null) return;
+
+        System.out.println("HomeScreen: [EXECUTE] Executing drop for shortcut '" + shortcut.getDisplayName() +
+                          "' at (" + mouseX + ", " + mouseY + ") on page " + currentPageIndex);
+
+        // Calculate target grid position
+        int[] gridPos = screenToGridPosition(mouseX, mouseY);
+        if (gridPos != null) {
+            HomePage targetPage = getCurrentPage();
+            if (targetPage != null) {
+                System.out.println("HomeScreen: [EXECUTE] Target page: " + currentPageIndex + ", Grid position: (" + gridPos[0] + ", " + gridPos[1] + ")");
+
+                // 安全な配置処理：先に配置を試行し、成功した場合のみ他のページから削除
+                boolean placed = safelyPlaceShortcut(shortcut, targetPage, gridPos[0], gridPos[1]);
+
+                if (placed) {
+                    System.out.println("HomeScreen: [EXECUTE] ショートカット '" + shortcut.getDisplayName() +
+                                     "' をページ " + currentPageIndex + " の (" + gridPos[0] + ", " + gridPos[1] + ") に配置しました");
+                    saveCurrentLayout();
+                } else {
+                    System.out.println("HomeScreen: [EXECUTE] ショートカット配置失敗 - フォールバック処理を実行");
+
+                    // 配置失敗時は最初の空きスロットに配置
+                    int[] emptySlot = findFirstEmptySlot(targetPage);
+                    if (emptySlot != null && safelyPlaceShortcut(shortcut, targetPage, emptySlot[0], emptySlot[1])) {
+                        System.out.println("HomeScreen: [EXECUTE] フォールバック: 空きスロット (" + emptySlot[0] + ", " + emptySlot[1] + ") に配置しました");
+                        saveCurrentLayout();
+                    } else {
+                        System.out.println("HomeScreen: [EXECUTE] エラー: 配置可能な空きスロットがありません - ショートカットを元の場所に戻します");
+                        // 最悪の場合は元の場所に戻す（削除を防ぐ）
+                        restoreShortcutToSafePage(shortcut);
+                    }
+                }
+            }
+        }
+
+        // Reset drag state
+        resetDragState();
+    }
+
+    /**
+     * ショートカットを安全に配置する。
+     * 他のページから削除する前に、まず目標ページに配置できることを確認する。
+     *
+     * @param shortcut 配置するショートカット
+     * @param targetPage 目標ページ
+     * @param gridX 目標グリッドX座標
+     * @param gridY 目標グリッドY座標
+     * @return 配置に成功した場合true
+     */
+    private boolean safelyPlaceShortcut(Shortcut shortcut, HomePage targetPage, int gridX, int gridY) {
+        if (shortcut == null || targetPage == null) {
+            return false;
+        }
+
+        System.out.println("HomeScreen: [SAFE_PLACE] Attempting to place shortcut '" + shortcut.getDisplayName() +
+                          "' at (" + gridX + ", " + gridY + ") on page " + currentPageIndex);
+
+        // ショートカットが既にターゲットページにある場合は通常のmoveShortcutを使用
+        if (targetPage.getShortcuts().contains(shortcut)) {
+            System.out.println("HomeScreen: [SAFE_PLACE] Shortcut already on target page, using moveShortcut");
+            return targetPage.moveShortcut(shortcut, gridX, gridY);
+        }
+
+        // ショートカットが他のページにある場合
+        // 1. まず、目標位置が空いているかチェック
+        if (!targetPage.isPositionEmpty(gridX, gridY)) {
+            System.out.println("HomeScreen: [SAFE_PLACE] Target position is occupied");
+            return false;
+        }
+
+        // 2. 他のページから削除
+        HomePage sourcePageFound = null;
+        for (HomePage page : homePages) {
+            if (page.getShortcuts().contains(shortcut)) {
+                sourcePageFound = page;
+                break;
+            }
+        }
+
+        if (sourcePageFound != null) {
+            System.out.println("HomeScreen: [SAFE_PLACE] Removing shortcut from source page");
+            boolean removed = sourcePageFound.removeShortcut(shortcut);
+            if (!removed) {
+                System.out.println("HomeScreen: [SAFE_PLACE] Failed to remove from source page");
+                return false;
+            }
+        }
+
+        // 3. ターゲットページに追加
+        boolean added = targetPage.addShortcut(shortcut, gridX, gridY);
+        if (!added) {
+            System.out.println("HomeScreen: [SAFE_PLACE] Failed to add to target page - restoring to source page");
+            // 追加に失敗した場合は元のページに戻す
+            if (sourcePageFound != null) {
+                int[] emptySlot = findFirstEmptySlot(sourcePageFound);
+                if (emptySlot != null) {
+                    sourcePageFound.addShortcut(shortcut, emptySlot[0], emptySlot[1]);
+                    System.out.println("HomeScreen: [SAFE_PLACE] Restored shortcut to source page at (" + emptySlot[0] + ", " + emptySlot[1] + ")");
+                }
+            }
+            return false;
+        }
+
+        System.out.println("HomeScreen: [SAFE_PLACE] Successfully placed shortcut at (" + gridX + ", " + gridY + ")");
+        return true;
+    }
+
+    /**
+     * ショートカットを安全な場所に復元する（配置失敗時のフォールバック）。
+     *
+     * @param shortcut 復元するショートカット
+     */
+    private void restoreShortcutToSafePage(Shortcut shortcut) {
+        if (shortcut == null) return;
+
+        System.out.println("HomeScreen: [RESTORE] Restoring shortcut '" + shortcut.getDisplayName() + "' to safe page");
+
+        // 最初のページで空きスロットを探す
+        for (HomePage page : homePages) {
+            if (page.isAppLibraryPage()) continue; // AppLibraryページはスキップ
+
+            int[] emptySlot = findFirstEmptySlot(page);
+            if (emptySlot != null) {
+                boolean added = page.addShortcut(shortcut, emptySlot[0], emptySlot[1]);
+                if (added) {
+                    System.out.println("HomeScreen: [RESTORE] Restored shortcut to page at (" + emptySlot[0] + ", " + emptySlot[1] + ")");
+                    return;
+                }
+            }
+        }
+
+        System.out.println("HomeScreen: [RESTORE] Warning: Could not find safe page for shortcut");
     }
 }

@@ -157,8 +157,8 @@ public class MochiMobileOSMod {
 
             System.out.println("[MochiMobileOSMod] Apps available for installation:");
             registry.getAvailableApps().forEach(app -> {
-                System.out.println("  - " + app.getApplicationName() +
-                                 " (" + app.getApplicationId() + ") v" + app.getApplicationVersion());
+                System.out.println("  - " + app.getName() +
+                                 " (" + app.getApplicationId() + ") v" + app.getVersion());
             });
         } else {
             System.out.println("[MochiMobileOSMod] No apps were registered during initialization");
