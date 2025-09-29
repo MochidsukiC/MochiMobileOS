@@ -68,11 +68,14 @@ public class NotificationManager implements GestureListener {
     /** Kernelの参照（動的優先度変更時の再ソート用） */
     private jp.moyashi.phoneos.core.Kernel kernel;
 
-    /** アニメーション更新の重複を防ぐためのフラグ */
-    private boolean animationUpdatedThisFrame = false;
+    /** パネルの幅 */
+    private int panelWidth;
 
-    /** 前回のフレームカウント（重複チェック用） */
-    private int lastFrameCount = -1;
+    /** パネルの高さ */
+    private int panelHeight;
+
+    /** 最大表示可能通知数 */
+    private static final int maxVisibleNotifications = 5;
     
     /**
      * NotificationManagerを作成する。
@@ -110,28 +113,11 @@ public class NotificationManager implements GestureListener {
      * 通知センターを表示する。
      */
     public void show() {
-        System.out.println("NotificationManager.show() called - State check:");
-        System.out.println("  isVisible: " + isVisible);
-        System.out.println("  animationProgress: " + animationProgress);
-        System.out.println("  targetAnimationProgress: " + targetAnimationProgress);
-
         if (!isVisible) {
-            System.out.println("  -> Setting state for showing notification center");
             isVisible = true;
             targetAnimationProgress = 1.0f;
-
-            // CRITICAL FIX: アニメーション状態を強制リセットしてアニメーションを確実に開始
-            if (animationProgress >= 0.99f) {
-                System.out.println("  -> Force resetting animation from completed state (progress=" + animationProgress + ")");
-                animationProgress = 0.0f;
-                animationUpdatedThisFrame = false;
-            }
-
             setDynamicPriority(10000); // ロック画面(8000)より高い優先度でControlCenter(15000)より低い
             System.out.println("NotificationManager: Showing notification center with " + notifications.size() + " notifications");
-            System.out.println("  -> New state: isVisible=" + isVisible + ", target=" + targetAnimationProgress + ", progress=" + animationProgress);
-        } else {
-            System.out.println("  -> Already visible, ignoring show() call");
         }
     }
     
@@ -139,27 +125,12 @@ public class NotificationManager implements GestureListener {
      * 通知センターを非表示にする。
      */
     public void hide() {
-        System.out.println("NotificationManager.hide() called - State check:");
-        System.out.println("  isVisible: " + isVisible);
-        System.out.println("  animationProgress: " + animationProgress);
-        System.out.println("  targetAnimationProgress: " + targetAnimationProgress);
-
         if (isVisible) {
-            System.out.println("  -> Setting state for hiding notification center");
             isVisible = false;
             targetAnimationProgress = 0.0f;
-
-            // CRITICAL FIX: アニメーション状態をリセットしてスライドアウトアニメーションを確実に開始
-            // hide()時は1.0から0.0へのアニメーションが必要なので、progressは現在値を保持
-            System.out.println("  -> Ensuring slide-out animation - keeping progress=" + animationProgress);
-            animationUpdatedThisFrame = false;
-
             scrollOffset = 0; // スクロール位置をリセット
             setDynamicPriority(900); // 元の優先度に戻す
             System.out.println("NotificationManager: Hiding notification center");
-            System.out.println("  -> New state: isVisible=" + isVisible + ", target=" + targetAnimationProgress + ", progress=" + animationProgress);
-        } else {
-            System.out.println("  -> Already hidden, ignoring hide() call");
         }
     }
     
@@ -186,7 +157,8 @@ public class NotificationManager implements GestureListener {
     public String addNotification(String sender, String title, String content, int priority) {
         String id = "notification_" + System.currentTimeMillis() + "_" + notifications.size();
         SimpleNotification notification = new SimpleNotification(id, title, content, sender, priority);
-        
+        notification.setKernel(this.kernel); // Kernelの参照を設定
+
         // 優先度順でソート（高優先度が上に）
         notifications.add(notification);
         notifications.sort((n1, n2) -> Integer.compare(n2.getPriority(), n1.getPriority()));
@@ -306,8 +278,7 @@ public class NotificationManager implements GestureListener {
      * @return 表示中の場合true
      */
     public boolean isVisible() {
-        // CRITICAL FIX: アニメーション中は描画を継続するため、進行度が0より大きい場合はvisibleとして扱う
-        return isVisible || animationProgress > 0.01f;
+        return isVisible;
     }
     
     /**
@@ -323,14 +294,15 @@ public class NotificationManager implements GestureListener {
     }
     
     /**
-     * PGraphics対応の通知センター描画メソッド。
+     * 通知センターを描画する（PGraphics版）。
+     * PGraphics統一アーキテクチャで使用する。
      *
      * @param g Processing描画コンテキスト
      */
     public void draw(PGraphics g) {
-        // 画面サイズを更新
-        screenWidth = g.width;
-        screenHeight = g.height;
+        // 画面サイズを更新（仮定値を使用）
+        screenWidth = 400;
+        screenHeight = 600;
 
         // アニメーション進行度を更新
         updateAnimation();
@@ -340,180 +312,68 @@ public class NotificationManager implements GestureListener {
             return;
         }
 
-        // 通知センターを描画
-        drawNotificationCenter(g);
-    }
+        // バックアップ設定
+        int originalTextAlign = g.textAlign;
+        float originalTextSize = g.textSize;
 
-    /**
-     * PGraphics用の通知センター描画処理。
-     */
-    private void drawNotificationCenter(PGraphics g) {
-        g.pushMatrix();
-        g.pushStyle();
+        // 通知センターパネルの寸法と位置を計算
+        panelWidth = (int)screenWidth;
+        panelHeight = (int)(screenHeight * 0.5f);
 
-        try {
-            // 背景オーバーレイ描画
-            drawBackgroundOverlay(g);
+        // アニメーション進行度に基づいて位置を計算
+        float animatedY = -panelHeight + (panelHeight * animationProgress);
+        int panelY = (int)animatedY;
 
-            // 通知センターパネル描画
-            drawNotificationPanel(g);
-
-        } finally {
-            g.popStyle();
-            g.popMatrix();
-        }
-
-        updateScrollLimits();
-    }
-
-    /**
-     * 背景オーバーレイを描画する（画面全体を暗くする効果）- PGraphics版。
-     */
-    private void drawBackgroundOverlay(PGraphics g) {
-        int alpha = (int) (80 * animationProgress);
-        g.fill(0, 0, 0, alpha);
+        // パネル背景描画
+        g.fill(40, 45, 55, 240);
         g.noStroke();
-        g.rect(0, 0, screenWidth, screenHeight);
-    }
+        g.rect(0, panelY, panelWidth, panelHeight);
 
-    /**
-     * 通知センターパネルを描画する - PGraphics版。
-     */
-    private void drawNotificationPanel(PGraphics g) {
-        float panelHeight = screenHeight * NOTIFICATION_CENTER_HEIGHT_RATIO;
-        float panelY = -panelHeight + panelHeight * animationProgress;
-
-        // パネル背景
-        int backgroundAlpha = (int) (BACKGROUND_ALPHA * animationProgress);
-        g.fill(35, 35, 40, backgroundAlpha);
-        g.noStroke();
-        g.rect(0, panelY, screenWidth, panelHeight, 0, 0, 20, 20);
-
-        // パネル下部の取っ手
-        drawHandle(g, panelY + panelHeight - 20);
-
-        // ヘッダー描画
-        drawHeader(g, panelY);
-
-        // 通知描画
-        drawNotifications(g, panelY + 60, panelHeight - 80);
-    }
-
-    /**
-     * パネル下部の取っ手を描画する - PGraphics版。
-     */
-    private void drawHandle(PGraphics g, float y) {
-        float handleWidth = 40;
-        float handleHeight = 4;
-        float handleX = (screenWidth - handleWidth) / 2;
-
-        int handleAlpha = (int) (150 * animationProgress);
-        g.fill(255, 255, 255, handleAlpha);
-        g.noStroke();
-        g.rect(handleX, y, handleWidth, handleHeight, handleHeight / 2);
-    }
-
-    /**
-     * パネルヘッダーを描画する - PGraphics版。
-     */
-    private void drawHeader(PGraphics g, float panelY) {
-        int textAlpha = (int) (255 * animationProgress);
-
-        // タイトル
-        g.fill(255, 255, 255, textAlpha);
+        // タイトル領域
+        int titleY = panelY + 15;
+        g.fill(255, 255, 255);
         g.textAlign(PApplet.CENTER, PApplet.TOP);
         g.textSize(18);
-        g.text("\u901a\u77e5\u30bb\u30f3\u30bf\u30fc", screenWidth / 2, panelY + 15);
+        g.text("通知", screenWidth / 2, titleY);
 
-        // 通知数表示
-        g.fill(180, 180, 180, textAlpha);
-        g.textSize(12);
-        int unreadCount = getUnreadCount();
-        String countText = notifications.size() + " \u4ef6\u306e\u901a\u77e5";
-        if (unreadCount > 0) {
-            countText += " (" + unreadCount + " \u4ef6\u672a\u8aad)";
-        }
-        g.text(countText, screenWidth / 2, panelY + 38);
+        // 通知リスト描画
+        int startY = titleY + 40;
+        int notificationHeight = 60;
+        int margin = 10;
 
-        // クリアボタン（右上）
-        if (notifications.size() > 0) {
-            g.fill(100, 150, 200, textAlpha);
-            g.textAlign(PApplet.RIGHT, PApplet.TOP);
-            g.textSize(10);
-            g.text("\u3059\u3079\u3066\u30af\u30ea\u30a2", screenWidth - 12, panelY + 15);
-        }
-    }
-
-    /**
-     * 通知を描画する - PGraphics版。
-     */
-    private void drawNotifications(PGraphics g, float startY, float availableHeight) {
         if (notifications.isEmpty()) {
-            drawEmptyMessage(g, startY, availableHeight);
-            return;
+            g.fill(180, 185, 195);
+            g.textAlign(PApplet.CENTER, PApplet.CENTER);
+            g.textSize(14);
+            g.text("通知はありません", screenWidth / 2, startY + notificationHeight / 2);
+        } else {
+            int currentY = startY;
+            for (int i = Math.max(0, notifications.size() - maxVisibleNotifications); i < notifications.size(); i++) {
+                INotification notification = notifications.get(i);
+                if (notification instanceof SimpleNotification) {
+                    ((SimpleNotification) notification).draw(g, margin, currentY, panelWidth - (margin * 2), notificationHeight - margin);
+                }
+                currentY += notificationHeight;
+            }
         }
 
-        // クリッピングマスクを設定（スクロール領域）
-        g.pushMatrix();
+        // ハンドル描画
+        int handleWidth = 40;
+        int handleHeight = 4;
+        int handleX = (int)(screenWidth - handleWidth) / 2;
+        int handleY = panelY + panelHeight - 15;
 
-        float currentY = startY - scrollOffset + NOTIFICATION_MARGIN;
+        g.fill(160, 165, 175);
+        g.rect(handleX, handleY, handleWidth, handleHeight, 2);
 
-        for (INotification notification : notifications) {
-            if (!notification.isDismissible()) {
-                continue; // 削除された通知はスキップ
-            }
-
-            // 表示範囲外の通知はスキップ（パフォーマンス向上）
-            if (currentY + NOTIFICATION_HEIGHT < startY || currentY > startY + availableHeight) {
-                currentY += NOTIFICATION_HEIGHT + NOTIFICATION_MARGIN;
-                continue;
-            }
-
-            float notificationWidth = screenWidth - 2 * NOTIFICATION_MARGIN;
-
-            // 通知を描画
-            try {
-                // PGraphicsのみの場合は基本的な描画
-                drawBasicNotification(g, notification, NOTIFICATION_MARGIN, currentY, notificationWidth, NOTIFICATION_HEIGHT);
-            } catch (Exception e) {
-                System.err.println("NotificationManager: Error drawing notification '" + notification.getId() + "': " + e.getMessage());
-            }
-
-            currentY += NOTIFICATION_HEIGHT + NOTIFICATION_MARGIN;
-        }
-
-        g.popMatrix();
+        // 設定復元
+        g.textAlign(originalTextAlign, PApplet.BASELINE);
+        g.textSize(originalTextSize);
     }
 
     /**
-     * 基本的な通知描画（PGraphics用フォールバック）。
-     */
-    private void drawBasicNotification(PGraphics g, INotification notification, float x, float y, float w, float h) {
-        // 基本的な矩形と文字の描画
-        g.fill(60, 60, 65, 200);
-        g.noStroke();
-        g.rect(x, y, w, h, 8);
-
-        g.fill(255);
-        g.textAlign(PApplet.LEFT, PApplet.TOP);
-        g.textSize(14);
-        g.text(notification.getTitle(), x + 10, y + 10);
-        g.textSize(10);
-        g.text(notification.getContent(), x + 10, y + 30);
-    }
-
-    /**
-     * 通知がない場合のメッセージを描画する - PGraphics版。
-     */
-    private void drawEmptyMessage(PGraphics g, float startY, float availableHeight) {
-        g.fill(150, 150, 150, (int) (255 * animationProgress));
-        g.textAlign(PApplet.CENTER, PApplet.CENTER);
-        g.textSize(16);
-        g.text("\u901a\u77e5\u306f\u3042\u308a\u307e\u305b\u3093", screenWidth / 2, startY + availableHeight / 2);
-    }
-
-    /**
-     * 通知センターを描画する（PApplet互換性メソッド）。
+     * 通知センターを描画する（PApplet版）。
+     * 互換性のために残存。段階的にPGraphics版に移行予定。
      *
      * @param p Processing描画コンテキスト
      */
@@ -600,9 +460,14 @@ public class NotificationManager implements GestureListener {
      */
     private void drawHeader(PApplet p, float panelY) {
         int textAlpha = (int) (255 * animationProgress);
-
-        // 日本語フォントを設定（PApplet版）
-        // フォント設定は省略（基本フォントを使用）
+        
+        // 日本語フォントを設定
+        if (kernel != null) {
+            PFont japaneseFont = kernel.getJapaneseFont();
+            if (japaneseFont != null) {
+                p.textFont(japaneseFont);
+            }
+        }
         
         // タイトル
         p.fill(255, 255, 255, textAlpha);
@@ -673,8 +538,13 @@ public class NotificationManager implements GestureListener {
      * 通知がない場合のメッセージを描画する。
      */
     private void drawEmptyMessage(PApplet p, float startY, float availableHeight) {
-        // 日本語フォントを設定（PApplet版）
-        // フォント設定は省略（基本フォントを使用）
+        // 日本語フォントを設定
+        if (kernel != null) {
+            PFont japaneseFont = kernel.getJapaneseFont();
+            if (japaneseFont != null) {
+                p.textFont(japaneseFont);
+            }
+        }
         
         p.fill(150, 150, 150, (int) (255 * animationProgress));
         p.textAlign(PApplet.CENTER, PApplet.CENTER);
@@ -684,44 +554,13 @@ public class NotificationManager implements GestureListener {
     
     /**
      * アニメーション進行度を更新する。
-     * フレーム内での重複更新を防ぐ。
      */
     private void updateAnimation() {
-        // フレーム内での重複更新を防ぐ
-        int currentFrameCount = getCurrentFrameCount();
-        if (currentFrameCount == lastFrameCount && animationUpdatedThisFrame) {
-            return;
-        }
-
-        if (currentFrameCount != lastFrameCount) {
-            lastFrameCount = currentFrameCount;
-            animationUpdatedThisFrame = false;
-        }
-
-        float oldProgress = animationProgress;
-
         if (Math.abs(animationProgress - targetAnimationProgress) > 0.01f) {
             animationProgress += (targetAnimationProgress - animationProgress) * ANIMATION_SPEED;
         } else {
             animationProgress = targetAnimationProgress;
         }
-
-        animationUpdatedThisFrame = true;
-
-        // Debug logging to track animation progress
-        if (oldProgress != animationProgress) {
-            System.out.println("NotificationManager.updateAnimation(): " + oldProgress + " -> " + animationProgress +
-                             " (target=" + targetAnimationProgress + ", diff=" + Math.abs(animationProgress - targetAnimationProgress) +
-                             ", frameCount=" + currentFrameCount + ")");
-        }
-    }
-
-    /**
-     * 現在のフレームカウントを取得する。
-     */
-    private int getCurrentFrameCount() {
-        // システム時刻ベースのフレームカウントを計算
-        return (int) (System.currentTimeMillis() / 16); // 約60FPSベース
     }
     
     /**
@@ -731,18 +570,8 @@ public class NotificationManager implements GestureListener {
      * @return イベントを処理した場合true
      */
     public boolean onGesture(GestureEvent event) {
-        // 非表示の場合は、エッジジェスチャーによる表示開始を処理
+        // 非表示の場合は処理しない
         if (animationProgress <= 0.1f) {
-            // 画面上からのスワイプダウンで通知センターを表示
-            if (event.getType() == jp.moyashi.phoneos.core.input.GestureType.SWIPE_DOWN) {
-                // 画面上部（高さの10%以下）からのスワイプダウンを検出
-                if (event.getStartY() <= screenHeight * 0.1f) {
-                    System.out.println("NotificationManager: Detected swipe down from top at y=" + event.getStartY() +
-                                     ", showing notification center");
-                    show();
-                    return true;
-                }
-            }
             return false;
         }
         

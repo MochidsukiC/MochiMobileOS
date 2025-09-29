@@ -1,5 +1,7 @@
 package jp.moyashi.phoneos.core.ui;
 
+import jp.moyashi.phoneos.core.Kernel;
+import jp.moyashi.phoneos.core.Kernel.LayerType;
 import jp.moyashi.phoneos.core.apps.launcher.ui.SafeHomeScreen;
 import jp.moyashi.phoneos.core.apps.launcher.ui.AppLibraryScreen;
 import jp.moyashi.phoneos.core.apps.launcher.ui.HomeScreen;
@@ -27,15 +29,15 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
     
     /** 現在描画中のPAppletインスタンス */
     private PApplet currentPApplet;
-
-    /** 現在描画中のPGraphicsインスタンス */
-    private PGraphics currentGraphics;
     
     /** アニメーション中に新しくプッシュされたスクリーンの描画を抑制するフラグ */
     private Screen animatingScreen;
     
     /** setup()が呼ばれていないスクリーンを追跡するためのリスト */
     private java.util.Set<Screen> unsetupScreens;
+
+    /** Kernelインスタンスへの参照（レイヤー管理のため） */
+    private Kernel kernel;
     
     /**
      * 新しいScreenManagerインスタンスを構築する。
@@ -47,6 +49,16 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
         screenTransition.setAnimationCallback(this); // Set callback to handle animation completion
         unsetupScreens = new java.util.HashSet<>();
         System.out.println("ScreenManager: Screen manager initialized with animation support");
+    }
+
+    /**
+     * Kernelインスタンスを設定する。レイヤー管理との統合に必要。
+     *
+     * @param kernel Kernelインスタンス
+     */
+    public void setKernel(Kernel kernel) {
+        this.kernel = kernel;
+        System.out.println("ScreenManager: Kernel reference set for layer management integration");
     }
     
     /**
@@ -66,6 +78,17 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
                 unsetupScreens.add(screen);
                 System.out.println("ScreenManager: Screen " + screen.getScreenTitle() + " queued for setup (PApplet not available)");
             }
+
+            // アプリケーション画面の場合はKernelレイヤースタックにAPPLICATIONレイヤーを追加
+            boolean isLauncher = isLauncherScreen(screen);
+            System.out.println("ScreenManager: Screen analysis - Title: '" + screen.getScreenTitle() + "', ClassName: '" + screen.getClass().getSimpleName() + "', isLauncher: " + isLauncher);
+            if (kernel != null && !isLauncher) {
+                kernel.addLayer(LayerType.APPLICATION);
+                System.out.println("ScreenManager: Added APPLICATION layer to Kernel stack for screen: " + screen.getScreenTitle());
+            } else {
+                System.out.println("ScreenManager: Skipped APPLICATION layer addition - kernel=" + (kernel != null) + ", isLauncher=" + isLauncher);
+            }
+
             System.out.println("ScreenManager: Pushed screen - " + screen.getScreenTitle());
         }
     }
@@ -92,14 +115,24 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
             screen.setup(currentPApplet);
             unsetupScreens.remove(screen); // セットアップ完了なのでリストから削除
             animatingScreen = screen; // このスクリーンはアニメーション中
-            
+
+            // アプリケーション画面の場合はKernelレイヤースタックにAPPLICATIONレイヤーを追加
+            boolean isLauncher = isLauncherScreen(screen);
+            System.out.println("ScreenManager: Animated screen analysis - Title: '" + screen.getScreenTitle() + "', ClassName: '" + screen.getClass().getSimpleName() + "', isLauncher: " + isLauncher);
+            if (kernel != null && !isLauncher) {
+                kernel.addLayer(LayerType.APPLICATION);
+                System.out.println("ScreenManager: Added APPLICATION layer to Kernel stack for animated screen: " + screen.getScreenTitle());
+            } else {
+                System.out.println("ScreenManager: Skipped APPLICATION layer addition for animation - kernel=" + (kernel != null) + ", isLauncher=" + isLauncher);
+            }
+
             // アニメーションを開始
             System.out.println("ScreenManager: Setting target dimensions: " + currentPApplet.width + "x" + currentPApplet.height);
             screenTransition.setTargetDimensions(0, 0, currentPApplet.width, currentPApplet.height);
-            
+
             System.out.println("ScreenManager: Starting zoom-in animation...");
             screenTransition.startZoomIn(iconX, iconY, iconSize, iconImage);
-            
+
             System.out.println("ScreenManager: Animation setup complete for screen - " + screen.getScreenTitle());
         } else {
             System.out.println("ScreenManager: Cannot start animation - missing screen or PApplet");
@@ -121,6 +154,13 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
             }
             // 未セットアップリストからも削除
             unsetupScreens.remove(poppedScreen);
+
+            // アプリケーション画面の場合はKernelレイヤースタックからAPPLICATIONレイヤーを削除
+            if (kernel != null && !isLauncherScreen(poppedScreen)) {
+                kernel.removeLayer(LayerType.APPLICATION);
+                System.out.println("ScreenManager: Removed APPLICATION layer from Kernel stack for screen: " + poppedScreen.getScreenTitle());
+            }
+
             System.out.println("ScreenManager: Popped screen - " + poppedScreen.getScreenTitle());
             return poppedScreen;
         }
@@ -177,26 +217,58 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
     }
     
     /**
-     * PGraphics対応の描画メソッド。現在アクティブなスクリーンを描画する。
-     * アニメーション中の場合は、適切なトランジション効果を適用する。
+     * 現在アクティブなスクリーンを描画する（PGraphics版）。
+     * PGraphics統一アーキテクチャで使用する。
      *
      * @param g 描画操作用のPGraphicsインスタンス
      */
     public void draw(PGraphics g) {
-        draw(g, null);
+        // 初回draw()呼び出し時に、未初期化のスクリーンのsetup()を呼び出す
+        ensureCurrentScreenSetup();
+
+        // アニメーション更新（一時的にスキップ - ScreenTransitionのPGraphics対応が必要）
+        if (screenTransition != null && screenTransition.isAnimating()) {
+            screenTransition.update();
+
+            // アニメーション完了チェック
+            if (!screenTransition.isAnimating()) {
+                onAnimationComplete(ScreenTransition.AnimationState.NONE, null);
+            }
+        }
+
+        // 通常の画面描画（アニメーション中でも実行）
+        {
+            // 通常の画面描画
+            if (getCurrentScreen() != null) {
+                try {
+                    getCurrentScreen().draw(g);
+                } catch (Exception e) {
+                    System.err.println("ScreenManager: Error drawing current screen: " + e.getMessage());
+                    e.printStackTrace();
+
+                    // エラーメッセージを描画
+                    g.fill(255, 0, 0);
+                    g.rect(50, 200, 300, 100);
+                    g.fill(255, 255, 255);
+                    g.textAlign(PApplet.CENTER, PApplet.CENTER);
+                    g.textSize(18);
+                    g.text("画面描画エラー", 200, 230);
+                    g.textSize(12);
+                    g.text("Error: " + e.getMessage(), 200, 250);
+                }
+            }
+        }
     }
 
     /**
-     * PGraphics対応の描画メソッド（PApplet参照付き）。
+     * 現在アクティブなスクリーンを描画する（PApplet版）。
+     * 互換性のために残存。段階的にPGraphics版に移行予定。
      *
-     * @param g 描画操作用のPGraphicsインスタンス
-     * @param applet PAppletインスタンス（アニメーション等で必要）
+     * @param p 描画操作用のPAppletインスタンス
      */
-    public void draw(PGraphics g, PApplet applet) {
-        // PGraphicsインスタンスを保存
-        this.currentGraphics = g;
+    public void draw(PApplet p) {
         // PAppletインスタンスを保存
-        this.currentPApplet = applet;
+        this.currentPApplet = p;
         
         // 初回draw()呼び出し時に、未初期化のスクリーンのsetup()を呼び出す
         ensureCurrentScreenSetup();
@@ -213,10 +285,10 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
         if (!isAnimating) {
             Screen currentScreen = getCurrentScreen();
             if (currentScreen != null) {
-                currentScreen.draw(g);
+                currentScreen.draw(p);
             } else {
                 // Draw a default screen if no screens are active
-                drawEmptyScreen(g);
+                drawEmptyScreen(p);
             }
         } else {
             System.out.println("ScreenManager: Rendering animation - " + screenTransition.getCurrentState());
@@ -228,35 +300,29 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
                         // アニメーション対象スクリーンを除いた前のスクリーン
                         Screen backgroundScreen = screenStack.get(screenStack.size() - 2);
                         System.out.println("ScreenManager: Drawing background screen during zoom-in: " + backgroundScreen.getScreenTitle());
-                        backgroundScreen.draw(g);
+                        backgroundScreen.draw(p);
                     } else {
                         System.out.println("ScreenManager: Drawing empty screen during zoom-in");
-                        drawEmptyScreen(g);
+                        drawEmptyScreen(p);
                     }
                     System.out.println("ScreenManager: Drawing zoom-in animation overlay");
-                    if (currentPApplet != null) {
-                        screenTransition.draw(currentPApplet);
-                    }
+                    screenTransition.draw(p);
                     break;
                     
                 case ZOOM_OUT:
                     // ズームアウトアニメーション中は次のスクリーンを背景として描画
                     Screen currentScreen = getCurrentScreen();
                     if (currentScreen != null) {
-                        currentScreen.draw(g);
+                        currentScreen.draw(p);
                     } else {
-                        drawEmptyScreen(g);
+                        drawEmptyScreen(p);
                     }
-                    if (currentPApplet != null) {
-                        screenTransition.draw(currentPApplet);
-                    }
+                    screenTransition.draw(p);
                     break;
                     
                 default:
                     // その他のアニメーション
-                    if (currentPApplet != null) {
-                        screenTransition.draw(currentPApplet);
-                    }
+                    screenTransition.draw(p);
                     break;
             }
         }
@@ -327,7 +393,24 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
         if (screenTransition.isAnimating()) {
             return;
         }
-        
+
+        // スペースキー（ホームボタン）の処理
+        if (key == ' ' || keyCode == 32) {
+            Screen currentScreen = getCurrentScreen();
+
+            // ロック画面の場合は例外的にスペースキーを転送（解除フィールド表示のため）
+            if (currentScreen != null && currentScreen.getClass().getSimpleName().equals("LockScreen")) {
+                System.out.println("ScreenManager: Space key on lock screen - forwarding to screen");
+                currentScreen.keyPressed(currentPApplet, key, keyCode);
+                return;
+            }
+
+            // 通常のアプリケーション画面の場合はホーム画面に戻る
+            System.out.println("ScreenManager: Space key detected - returning to home screen");
+            navigateToHome();
+            return;
+        }
+
         Screen currentScreen = getCurrentScreen();
         if (currentScreen != null && currentPApplet != null) {
             currentScreen.keyPressed(currentPApplet, key, keyCode);
@@ -369,44 +452,15 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
      * PAppletが利用可能になった際の初回draw()で呼び出される。
      */
     private void ensureCurrentScreenSetup() {
-        if (!unsetupScreens.isEmpty()) {
+        if (currentPApplet != null && !unsetupScreens.isEmpty()) {
             // 未初期化スクリーンのセットアップを実行
             java.util.Iterator<Screen> iterator = unsetupScreens.iterator();
             while (iterator.hasNext()) {
                 Screen screen = iterator.next();
                 try {
                     System.out.println("ScreenManager: Delayed setup for screen - " + screen.getScreenTitle());
-
-                    // PAppletとPGraphicsの両方をサポート
-                    boolean setupCalled = false;
-
-                    // PGraphicsが利用可能な場合は、PGraphics版setup()を試す
-                    if (currentGraphics != null) {
-                        try {
-                            // リフレクションでsetup(PGraphics)メソッドを探す
-                            java.lang.reflect.Method setupMethod = screen.getClass().getMethod("setup", processing.core.PGraphics.class);
-                            setupMethod.invoke(screen, currentGraphics);
-                            System.out.println("ScreenManager: Called setup(PGraphics) for " + screen.getScreenTitle());
-                            setupCalled = true;
-                        } catch (NoSuchMethodException e) {
-                            // setup(PGraphics)メソッドが存在しない場合は何もしない
-                        } catch (Exception e) {
-                            System.err.println("ScreenManager: Error calling setup(PGraphics) for " + screen.getScreenTitle() + ": " + e.getMessage());
-                        }
-                    }
-
-                    // PAppletが利用可能で、まだsetupが呼ばれていない場合は、PApplet版setup()を試す
-                    if (!setupCalled && currentPApplet != null) {
-                        screen.setup(currentPApplet);
-                        System.out.println("ScreenManager: Called setup(PApplet) for " + screen.getScreenTitle());
-                        setupCalled = true;
-                    }
-
-                    if (setupCalled) {
-                        iterator.remove(); // セットアップ完了後にリストから削除
-                    } else {
-                        System.out.println("ScreenManager: No setup method available for " + screen.getScreenTitle() + " - keeping in queue");
-                    }
+                    screen.setup(currentPApplet);
+                    iterator.remove(); // セットアップ完了後にリストから削除
                 } catch (Exception e) {
                     System.err.println("ScreenManager: Error in delayed setup for " + screen.getScreenTitle() + ": " + e.getMessage());
                     e.printStackTrace();
@@ -418,15 +472,15 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
     
     /**
      * アクティブなスクリーンがない時にデフォルトの空のスクリーンを描画する。
-     *
-     * @param g 描画操作用のPGraphicsインスタンス
+     * 
+     * @param p 描画操作用のPAppletインスタンス
      */
-    private void drawEmptyScreen(PGraphics g) {
-        g.background(50); // Dark gray background
-        g.fill(255);      // White text
-        g.textAlign(g.CENTER, g.CENTER);
-        g.textSize(16);
-        g.text("No active screens", g.width / 2, g.height / 2);
+    private void drawEmptyScreen(PApplet p) {
+        p.background(50); // Dark gray background
+        p.fill(255);      // White text
+        p.textAlign(p.CENTER, p.CENTER);
+        p.textSize(16);
+        p.text("No active screens", p.width / 2, p.height / 2);
     }
     
     /**
@@ -459,5 +513,94 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
                 animatingScreen = null;
                 break;
         }
+    }
+
+    /**
+     * PAppletインスタンスを設定し、未初期化スクリーンのsetup()を実行する。
+     * PGraphics統一アーキテクチャ対応のため追加されたメソッド。
+     *
+     * @param pApplet PAppletインスタンス
+     */
+    public void setCurrentPApplet(PApplet pApplet) {
+        this.currentPApplet = pApplet;
+        System.out.println("ScreenManager: PAppletを設定 - " + (pApplet != null ? "成功" : "null"));
+
+        // 未初期化のスクリーンがある場合、setup()を実行
+        if (pApplet != null && !unsetupScreens.isEmpty()) {
+            System.out.println("ScreenManager: " + unsetupScreens.size() + "個の未初期化スクリーンのsetup()を実行中...");
+            for (Screen screen : unsetupScreens.toArray(new Screen[0])) {
+                try {
+                    screen.setup(pApplet);
+                    unsetupScreens.remove(screen);
+                    System.out.println("ScreenManager: " + screen.getScreenTitle() + "のsetup()完了");
+                } catch (Exception e) {
+                    System.err.println("ScreenManager: " + screen.getScreenTitle() +
+                                     "のsetup()でエラー: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+            System.out.println("ScreenManager: 全ての未初期化スクリーンのsetup()完了");
+        }
+    }
+
+    /**
+     * スクリーンがランチャー関連の画面かどうかを判定する。
+     * ランチャー関連の画面（HomeScreen、AppLibraryScreen、SafeHomeScreen等）には
+     * APPLICATIONレイヤーを追加しない。
+     *
+     * @param screen 判定するスクリーン
+     * @return ランチャー関連の画面の場合true
+     */
+    private boolean isLauncherScreen(Screen screen) {
+        if (screen == null) return false;
+
+        String className = screen.getClass().getSimpleName();
+        return className.equals("HomeScreen") ||
+               className.equals("AppLibraryScreen") ||
+               className.equals("SafeHomeScreen") ||
+               className.equals("SimpleHomeScreen") ||
+               className.equals("BasicHomeScreen") ||
+               className.equals("LockScreen");
+    }
+
+    /**
+     * ホーム画面に戻る処理を実行する。
+     * スペースキー（ホームボタン）が押された時に呼び出される。
+     * 現在の画面がホーム画面でない場合、スタックをクリアしてホーム画面に戻る。
+     */
+    private void navigateToHome() {
+        Screen currentScreen = getCurrentScreen();
+
+        // 現在の画面がホーム画面（ランチャー関連）の場合は何もしない
+        if (currentScreen != null && isLauncherScreen(currentScreen)) {
+            System.out.println("ScreenManager: Already on launcher screen (" + currentScreen.getClass().getSimpleName() + ") - no action needed");
+            return;
+        }
+
+        System.out.println("ScreenManager: Navigating to home screen from " +
+                         (currentScreen != null ? currentScreen.getClass().getSimpleName() : "null"));
+
+        // アプリケーション画面からホーム画面に戻る
+        // スタックをクリアしてホーム画面のみにする
+        while (!screenStack.isEmpty() && !isLauncherScreen(getCurrentScreen())) {
+            Screen poppedScreen = screenStack.pop();
+            System.out.println("ScreenManager: Popped screen during home navigation - " + poppedScreen.getClass().getSimpleName());
+
+            // APPLICATIONレイヤーを削除
+            if (kernel != null) {
+                kernel.removeLayer(LayerType.APPLICATION);
+                System.out.println("ScreenManager: Removed APPLICATION layer during home navigation");
+            }
+        }
+
+        // ホーム画面が見つからない場合やスタックが空の場合は、新しいホーム画面を作成
+        if (screenStack.isEmpty() || !isLauncherScreen(getCurrentScreen())) {
+            System.out.println("ScreenManager: No home screen found - this should not happen in normal operation");
+            // 通常の動作では、初期化時にホーム画面がプッシュされているはずなので、
+            // このケースは異常状態として扱う
+        }
+
+        System.out.println("ScreenManager: Home navigation completed - current screen: " +
+                         (getCurrentScreen() != null ? getCurrentScreen().getClass().getSimpleName() : "null"));
     }
 }

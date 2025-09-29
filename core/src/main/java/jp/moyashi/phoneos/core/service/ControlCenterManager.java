@@ -3,6 +3,7 @@ package jp.moyashi.phoneos.core.service;
 import jp.moyashi.phoneos.core.controls.IControlCenterItem;
 import jp.moyashi.phoneos.core.input.GestureEvent;
 import jp.moyashi.phoneos.core.input.GestureListener;
+import jp.moyashi.phoneos.core.coordinate.CoordinateTransform;
 import processing.core.PApplet;
 import processing.core.PGraphics;
 
@@ -50,7 +51,13 @@ public class ControlCenterManager implements GestureListener {
     
     /** 画面の高さ（描画時に取得） */
     private float screenHeight = 600;
-    
+
+    /** パネルの幅 */
+    private int panelWidth;
+
+    /** パネルの高さ */
+    private int panelHeight;
+
     /** 背景のアルファ値 */
     private static final int BACKGROUND_ALPHA = 220;
     
@@ -80,15 +87,12 @@ public class ControlCenterManager implements GestureListener {
     
     /** 動的優先度（表示状態に応じて変更される） */
     private int dynamicPriority = 0;
-
+    
     /** ジェスチャーマネージャーへの参照（優先度変更時の再ソート用） */
     private jp.moyashi.phoneos.core.input.GestureManager gestureManager;
 
-    /** アニメーション更新の重複を防ぐためのフラグ */
-    private boolean animationUpdatedThisFrame = false;
-
-    /** 前回のフレームカウント（重複チェック用） */
-    private int lastFrameCount = -1;
+    /** 統一座標変換システム */
+    private CoordinateTransform coordinateTransform;
     
     /**
      * ControlCenterManagerを作成する。
@@ -106,29 +110,15 @@ public class ControlCenterManager implements GestureListener {
      * コントロールセンターを表示する。
      */
     public void show() {
-        System.out.println("ControlCenterManager.show() called: isVisible=" + isVisible +
-                         ", animationProgress=" + animationProgress +
-                         ", targetAnimationProgress=" + targetAnimationProgress);
-
         if (!isVisible) {
             isVisible = true;
             targetAnimationProgress = 1.0f;
-
-            // CRITICAL FIX: アニメーション状態を強制リセットしてアニメーションを確実に開始
-            if (animationProgress >= 0.99f) {
-                System.out.println("ControlCenterManager: Force resetting animation from completed state (progress=" + animationProgress + ")");
-                animationProgress = 0.0f;
-                animationUpdatedThisFrame = false;
-            }
-
+            
             // コントロールセンターが表示される時は最高優先度に設定
             setDynamicPriority(15000); // ロック画面(8000)より高い優先度
-
+            
             System.out.println("ControlCenterManager: Showing control center with " + items.size() + " items");
             System.out.println("ControlCenterManager: Set priority to 15000 (highest)");
-            System.out.println("ControlCenterManager: Animation state after show() - progress=" + animationProgress + ", target=" + targetAnimationProgress);
-        } else {
-            System.out.println("ControlCenterManager: show() called but already visible");
         }
     }
     
@@ -136,33 +126,21 @@ public class ControlCenterManager implements GestureListener {
      * コントロールセンターを非表示にする。
      */
     public void hide() {
-        System.out.println("ControlCenterManager.hide() called: isVisible=" + isVisible +
-                         ", animationProgress=" + animationProgress +
-                         ", targetAnimationProgress=" + targetAnimationProgress);
-
         if (isVisible) {
             isVisible = false;
             targetAnimationProgress = 0.0f;
-
-            // CRITICAL FIX: アニメーション状態をリセットしてスライドアウトアニメーションを確実に開始
-            // hide()時は1.0から0.0へのアニメーションが必要なので、progressは現在値を保持
-            System.out.println("ControlCenterManager: Ensuring slide-out animation - keeping progress=" + animationProgress);
-            animationUpdatedThisFrame = false;
-
+            
             // コントロールセンターが非表示になる時は低い優先度に設定
             setDynamicPriority(0); // 低い優先度に戻す
-
+            
             // スクロール状態をリセット（次回表示時に先頭から表示される）
             scrollOffset = 0.0f;
             scrollVelocity = 0.0f;
             isDragScrolling = false;
             lastDragY = 0;
-
+            
             System.out.println("ControlCenterManager: Hiding control center");
             System.out.println("ControlCenterManager: Set priority to 0 (low)");
-            System.out.println("ControlCenterManager: Animation state after hide() - progress=" + animationProgress + ", target=" + targetAnimationProgress);
-        } else {
-            System.out.println("ControlCenterManager: hide() called but already hidden");
         }
     }
     
@@ -255,280 +233,109 @@ public class ControlCenterManager implements GestureListener {
      * @return 表示中の場合true
      */
     public boolean isVisible() {
-        // CRITICAL FIX: アニメーション中は描画を継続するため、進行度が0より大きい場合はvisibleとして扱う
-        return this.isVisible || animationProgress > 0.01f;
+        return this.isVisible;
     }
     
     /**
-     * PGraphics対応のコントロールセンター描画メソッド。
+     * コントロールセンターを描画する（PGraphics版）。
+     * PGraphics統一アーキテクチャで使用する。
      *
      * @param g Processing描画コンテキスト
      */
     public void draw(PGraphics g) {
-        // 画面サイズを更新
-        screenWidth = g.width;
-        screenHeight = g.height;
+        // 画面サイズを更新（coordinateTransformから取得、なければフォールバック）
+        if (coordinateTransform != null) {
+            screenWidth = coordinateTransform.getScreenWidth();
+            screenHeight = coordinateTransform.getScreenHeight();
+        } else {
+            screenWidth = 400;
+            screenHeight = 600;
+        }
 
         // アニメーション進行度を更新
         updateAnimation();
 
-        System.out.println("ControlCenterManager.draw(): visible=" + isVisible + ", animationProgress=" + animationProgress);
-
         // 完全に非表示の場合は描画をスキップ
         if (animationProgress <= 0.01f) {
-            System.out.println("ControlCenterManager.draw(): Skipping draw - animationProgress too low");
             return;
         }
 
-        // コントロールセンターを描画
-        drawControlCenter(g);
-    }
+        // バックアップ設定
+        int originalTextAlign = g.textAlign;
+        float originalTextSize = g.textSize;
 
-    /**
-     * PGraphics用のコントロールセンター描画処理。
-     */
-    private void drawControlCenter(PGraphics g) {
-        g.pushMatrix();
-        g.pushStyle();
-
-        try {
-            // 背景オーバーレイ描画
-            drawBackgroundOverlay(g);
-
-            // コントロールセンターパネル描画
-            drawControlPanel(g);
-
-        } finally {
-            g.popStyle();
-            g.popMatrix();
+        // 統一座標変換システムを使用してパネル座標を計算
+        CoordinateTransform.PanelCoordinates panelCoords = null;
+        if (coordinateTransform != null) {
+            panelCoords = coordinateTransform.calculateAnimatedPanel(CONTROL_CENTER_HEIGHT_RATIO, animationProgress);
+            System.out.println("🔧 ControlCenter: Using unified coordinate system - " + panelCoords.toString());
         }
-    }
 
-    /**
-     * 背景オーバーレイを描画する（画面全体を暗くする効果）- PGraphics版。
-     */
-    private void drawBackgroundOverlay(PGraphics g) {
-        int alpha = (int) (100 * animationProgress);
-        g.fill(0, 0, 0, alpha);
-        g.noStroke();
-        g.rect(0, 0, screenWidth, screenHeight);
-    }
-
-    /**
-     * コントロールセンターパネルを描画する - PGraphics版。
-     */
-    private void drawControlPanel(PGraphics g) {
-        float panelHeight = screenHeight * CONTROL_CENTER_HEIGHT_RATIO;
-        float panelY = screenHeight - panelHeight * animationProgress;
-
-        // クリッピングマスクを設定（下のレイヤーに影響しないように）
-        g.pushMatrix();
-        g.pushStyle();
-
-        try {
-            // パネル背景
-            int backgroundAlpha = (int) (BACKGROUND_ALPHA * animationProgress);
-            g.fill(40, 40, 45, backgroundAlpha);
-            g.noStroke();
-            g.rect(0, panelY, screenWidth, panelHeight, 20, 20, 0, 0);
-
-            // パネル上部の取っ手
-            drawHandle(g, panelY);
-
-            // ヘッダーテキスト
-            drawHeader(g, panelY);
-
-            // アイテム描画領域をクリップ（上部ヘッダー分の余白を確保）
-            drawItemsWithClipping(g, panelY + 70, panelHeight - 90);
-
-        } finally {
-            g.popStyle();
-            g.popMatrix();
+        // パネルの寸法と位置を設定（統一座標系がない場合は従来の計算）
+        panelWidth = (int)screenWidth;
+        if (panelCoords != null) {
+            panelHeight = (int)panelCoords.panelHeight;
+        } else {
+            panelHeight = (int)(screenHeight * 0.6f);
         }
-    }
 
-    /**
-     * パネル上部の取っ手を描画する - PGraphics版。
-     */
-    private void drawHandle(PGraphics g, float panelY) {
-        float handleWidth = 40;
-        float handleHeight = 4;
-        float handleX = (screenWidth - handleWidth) / 2;
-        float handleY = panelY + 10;
+        // Y座標を計算（統一座標系を優先、なければ従来の計算）
+        int panelY;
+        if (panelCoords != null) {
+            panelY = (int)panelCoords.panelY;
+        } else {
+            float animatedY = screenHeight - (panelHeight * animationProgress);
+            panelY = (int)animatedY;
+        }
 
-        int handleAlpha = (int) (150 * animationProgress);
-        g.fill(255, 255, 255, handleAlpha);
+        // パネル背景描画
+        g.fill(50, 55, 65, 240);
         g.noStroke();
-        g.rect(handleX, handleY, handleWidth, handleHeight, handleHeight / 2);
-    }
+        g.rect(0, panelY, panelWidth, panelHeight);
 
-    /**
-     * パネルヘッダーテキストを描画する - PGraphics版。
-     */
-    private void drawHeader(PGraphics g, float panelY) {
-        int textAlpha = (int) (255 * animationProgress);
-        g.fill(255, 255, 255, textAlpha);
+        // ハンドル描画
+        int handleWidth = 40;
+        int handleHeight = 4;
+        int handleX = (int)(screenWidth - handleWidth) / 2;
+        int handleY = panelY + 15;
+
+        g.fill(160, 165, 175);
+        g.rect(handleX, handleY, handleWidth, handleHeight, 2);
+
+        // タイトル領域
+        int titleY = panelY + 35;
+        g.fill(255, 255, 255);
         g.textAlign(PApplet.CENTER, PApplet.TOP);
-        g.textSize(16);
-        g.text("コントロールセンター", screenWidth / 2, panelY + 25);
+        g.textSize(18);
+        g.text("コントロールセンター", screenWidth / 2, titleY);
 
-        // 使い方のヒント（小さいテキスト）
-        g.fill(200, 200, 200, textAlpha);
-        g.textSize(10);
-        g.text("上をタップまたは下スワイプで閉じる", screenWidth / 2, panelY + 45);
-    }
+        // アイテムグリッド描画
+        int startY = titleY + 40;
+        int cols = 3;
+        int itemWidth = (panelWidth - 40) / cols;
+        int itemHeight = 80;
+        int margin = 10;
 
-    /**
-     * コントロールセンターアイテムをクリッピング付きで描画する - PGraphics版。
-     */
-    private void drawItemsWithClipping(PGraphics g, float startY, float availableHeight) {
-        if (items.isEmpty()) {
-            // アイテムがない場合のメッセージ
-            drawEmptyMessage(g, startY, availableHeight);
-            return;
+        for (int i = 0; i < items.size(); i++) {
+            int col = i % cols;
+            int row = i / cols;
+            int itemX = 20 + col * itemWidth;
+            int itemY = startY + row * (itemHeight + margin);
+
+            if (itemY + itemHeight > panelY + panelHeight - 20) break;
+
+            // アイテム描画
+            items.get(i).draw(g, itemX, itemY, itemWidth - margin, itemHeight);
         }
 
-        // スクロール可能な全体の高さを計算
-        float totalContentHeight = 0;
-        int visibleItemCount = 0;
-        for (IControlCenterItem item : items) {
-            if (item.isVisible()) {
-                visibleItemCount++;
-            }
-        }
-
-        if (visibleItemCount > 0) {
-            totalContentHeight = visibleItemCount * (ITEM_HEIGHT + ITEM_MARGIN) + ITEM_MARGIN;
-        }
-
-        // 最大スクロールオフセットを更新
-        maxScrollOffset = Math.max(0, totalContentHeight - availableHeight);
-
-        // スクロールオフセットを制限
-        scrollOffset = Math.max(0, Math.min(scrollOffset, maxScrollOffset));
-
-        g.pushMatrix();
-        g.pushStyle();
-
-        try {
-            // 描画開始位置をスクロールオフセットに応じて調整
-            float currentY = startY + ITEM_MARGIN - scrollOffset;
-            int itemIndex = 0;
-
-            for (IControlCenterItem item : items) {
-                if (!item.isVisible()) {
-                    continue;
-                }
-
-                // 表示領域内かどうかを厳密にチェック（下のレイヤーに影響しないように）
-                if (currentY + ITEM_HEIGHT >= startY && currentY < startY + availableHeight) {
-                    // アイテム描画
-                    float itemX = ITEM_MARGIN;
-                    float itemWidth = screenWidth - 2 * ITEM_MARGIN;
-
-                    // アイテムが表示領域内にある場合のみ描画
-                    if (currentY >= startY - ITEM_HEIGHT && currentY <= startY + availableHeight + ITEM_HEIGHT) {
-                        try {
-                            g.pushStyle();
-
-                            // アイテムの描画位置が適切な範囲内にある場合のみ描画
-                            if (currentY >= startY && currentY + ITEM_HEIGHT <= startY + availableHeight) {
-                                // PGraphicsのみの場合は基本的な描画
-                                drawBasicControlItem(g, item, itemX, currentY, itemWidth, ITEM_HEIGHT);
-                            }
-
-                            g.popStyle();
-                        } catch (Exception e) {
-                            System.err.println("ControlCenterManager: Error drawing item '" + item.getId() + "': " + e.getMessage());
-
-                            // エラー時のフォールバック描画（表示領域内のみ）
-                            if (currentY >= startY && currentY + ITEM_HEIGHT <= startY + availableHeight) {
-                                drawErrorItem(g, itemX, currentY, itemWidth, ITEM_HEIGHT, item.getDisplayName());
-                            }
-                        }
-                    }
-                }
-
-                currentY += ITEM_HEIGHT + ITEM_MARGIN;
-                itemIndex++;
-            }
-
-            // スクロールバーを描画（スクロール可能な場合のみ）
-            if (maxScrollOffset > 0) {
-                drawScrollbar(g, startY, availableHeight);
-            }
-
-        } finally {
-            g.popStyle();
-            g.popMatrix();
-        }
+        // 設定復元
+        g.textAlign(originalTextAlign, PApplet.BASELINE);
+        g.textSize(originalTextSize);
     }
 
     /**
-     * 基本的なコントロールアイテム描画（PGraphics用フォールバック）。
-     */
-    private void drawBasicControlItem(PGraphics g, IControlCenterItem item, float x, float y, float w, float h) {
-        // 基本的な矩形と文字の描画
-        g.fill(60, 60, 65, 200);
-        g.noStroke();
-        g.rect(x, y, w, h, 8);
-
-        g.fill(255);
-        g.textAlign(PApplet.LEFT, PApplet.CENTER);
-        g.textSize(14);
-        g.text(item.getDisplayName(), x + 10, y + h / 2);
-    }
-
-    /**
-     * アイテムがない場合のメッセージを描画する - PGraphics版。
-     */
-    private void drawEmptyMessage(PGraphics g, float startY, float availableHeight) {
-        g.fill(150, 150, 150, (int) (255 * animationProgress));
-        g.textAlign(PApplet.CENTER, PApplet.CENTER);
-        g.textSize(16);
-        g.text("コントロールセンターにアイテムがありません", screenWidth / 2, startY + availableHeight / 2);
-    }
-
-    /**
-     * エラー時のフォールバック描画を行う - PGraphics版。
-     */
-    private void drawErrorItem(PGraphics g, float x, float y, float w, float h, String itemName) {
-        g.fill(100, 50, 50, 150);
-        g.noStroke();
-        g.rect(x, y, w, h, 8);
-
-        g.fill(255, 100, 100);
-        g.textAlign(PApplet.LEFT, PApplet.CENTER);
-        g.textSize(12);
-        g.text("Error: " + itemName, x + 10, y + h / 2);
-    }
-
-    /**
-     * スクロールバーを描画する - PGraphics版。
-     */
-    private void drawScrollbar(PGraphics g, float startY, float availableHeight) {
-        if (maxScrollOffset <= 0) {
-            return;
-        }
-
-        // スクロールバーの位置とサイズを計算
-        float scrollbarWidth = 4;
-        float scrollbarX = screenWidth - scrollbarWidth - 2;
-
-        float scrollbarHeight = (availableHeight / (maxScrollOffset + availableHeight)) * availableHeight;
-        scrollbarHeight = Math.max(20, scrollbarHeight); // 最小サイズを設定
-
-        float scrollbarY = startY + (scrollOffset / maxScrollOffset) * (availableHeight - scrollbarHeight);
-
-        // スクロールバーを描画
-        int scrollbarAlpha = (int) (100 * animationProgress);
-        g.fill(255, 255, 255, scrollbarAlpha);
-        g.noStroke();
-        g.rect(scrollbarX, scrollbarY, scrollbarWidth, scrollbarHeight, scrollbarWidth / 2);
-    }
-
-    /**
-     * コントロールセンターを描画する（PApplet互換性メソッド）。
+     * コントロールセンターを描画する（PApplet版）。
+     * 互換性のために残存。段階的にPGraphics版に移行予定。
      *
      * @param p Processing描画コンテキスト
      */
@@ -819,51 +626,13 @@ public class ControlCenterManager implements GestureListener {
     
     /**
      * アニメーション進行度を更新する。
-     * フレーム内での重複更新を防ぐ。
      */
     private void updateAnimation() {
-        // フレーム内での重複更新を防ぐ
-        int currentFrameCount = getCurrentFrameCount();
-        if (currentFrameCount == lastFrameCount && animationUpdatedThisFrame) {
-            return;
-        }
-
-        if (currentFrameCount != lastFrameCount) {
-            lastFrameCount = currentFrameCount;
-            animationUpdatedThisFrame = false;
-        }
-
-        float oldProgress = animationProgress;
-        float diff = Math.abs(animationProgress - targetAnimationProgress);
-
-        if (diff > 0.01f) {
+        if (Math.abs(animationProgress - targetAnimationProgress) > 0.01f) {
             animationProgress += (targetAnimationProgress - animationProgress) * ANIMATION_SPEED;
         } else {
             animationProgress = targetAnimationProgress;
         }
-
-        animationUpdatedThisFrame = true;
-
-        // Debug logging to track animation progress (more verbose)
-        if (oldProgress != animationProgress || diff > 0.001f) {
-            System.out.println("ControlCenterManager.updateAnimation(): " + oldProgress + " -> " + animationProgress +
-                             " (target=" + targetAnimationProgress + ", diff=" + diff +
-                             ", isVisible=" + isVisible + ", frameCount=" + currentFrameCount + ")");
-        }
-
-        // 追加のデバッグ：アニメーション完了時
-        if (diff <= 0.01f && oldProgress != animationProgress) {
-            System.out.println("ControlCenterManager: Animation completed! progress=" + animationProgress +
-                             ", target=" + targetAnimationProgress + ", isVisible=" + isVisible);
-        }
-    }
-
-    /**
-     * 現在のフレームカウントを取得する。
-     */
-    private int getCurrentFrameCount() {
-        // システム時刻ベースのフレームカウントを計算
-        return (int) (System.currentTimeMillis() / 16); // 約60FPSベース
     }
     
     
@@ -900,18 +669,17 @@ public class ControlCenterManager implements GestureListener {
     
     /**
      * 動的優先度を設定する。
-     * 
+     *
      * @param priority 設定する優先度
      */
     public void setDynamicPriority(int priority) {
         int oldPriority = this.dynamicPriority;
         this.dynamicPriority = priority;
-        
+
         // 優先度が変更された場合、ジェスチャーマネージャーにリスナーの再ソートを要求
         if (oldPriority != priority && gestureManager != null) {
-            gestureManager.removeGestureListener(this);
-            gestureManager.addGestureListener(this);
-            System.out.println("ControlCenterManager: Priority changed from " + oldPriority + " to " + priority + ", re-sorted gesture listeners");
+            gestureManager.resortListeners();
+            System.out.println("ControlCenterManager: Priority changed from " + oldPriority + " to " + priority + ", triggered re-sort");
         }
     }
     
@@ -922,6 +690,15 @@ public class ControlCenterManager implements GestureListener {
      */
     public void setGestureManager(jp.moyashi.phoneos.core.input.GestureManager gestureManager) {
         this.gestureManager = gestureManager;
+    }
+
+    /**
+     * 統一座標変換システムを設定する。
+     *
+     * @param coordinateTransform 統一座標変換システム
+     */
+    public void setCoordinateTransform(CoordinateTransform coordinateTransform) {
+        this.coordinateTransform = coordinateTransform;
     }
     
     /**
@@ -934,18 +711,8 @@ public class ControlCenterManager implements GestureListener {
      */
     @Override
     public boolean onGesture(GestureEvent event) {
-        // コントロールセンターが表示されていない場合は、エッジジェスチャーによる表示開始を処理
+        // コントロールセンターが表示されていない場合は処理しない
         if (!isVisible || animationProgress <= 0.1f) {
-            // 画面下からのスワイプアップでコントロールセンターを表示
-            if (event.getType() == jp.moyashi.phoneos.core.input.GestureType.SWIPE_UP) {
-                // 画面下部（高さの90%以上）からのスワイプアップを検出
-                if (event.getStartY() >= screenHeight * 0.9f) {
-                    System.out.println("ControlCenterManager: Detected swipe up from bottom at y=" + event.getStartY() +
-                                     ", showing control center");
-                    show();
-                    return true;
-                }
-            }
             return false;
         }
         
@@ -989,38 +756,77 @@ public class ControlCenterManager implements GestureListener {
     
     /**
      * コントロールセンター内のクリックを処理する。
-     * 
+     *
      * @param x クリック座標X
      * @param y クリック座標Y
      */
     private void handleControlCenterClick(int x, int y) {
-        // 項目領域内のクリック判定とアクション実行
-        // パネルの実際の位置を計算（描画ロジックと一致させる）
-        float panelHeight = screenHeight * CONTROL_CENTER_HEIGHT_RATIO;
-        float panelY = screenHeight - panelHeight * animationProgress;
-        float startY = panelY + 70; // ヘッダー分の70pxオフセットを追加
-        float itemY = startY + ITEM_MARGIN - scrollOffset;
-        
-        System.out.println("ControlCenterManager: Click at (" + x + ", " + y + ")");
-        System.out.println("ControlCenterManager: startY=" + startY + ", scrollOffset=" + scrollOffset + ", itemY=" + itemY);
-        
-        for (IControlCenterItem item : items) {
+        // 統一座標変換システムを使用してパネル座標を計算
+        CoordinateTransform.PanelCoordinates panelCoords = null;
+        float panelHeight, panelY;
+
+        if (coordinateTransform != null) {
+            panelCoords = coordinateTransform.calculateAnimatedPanel(CONTROL_CENTER_HEIGHT_RATIO, animationProgress);
+            panelHeight = panelCoords.panelHeight;
+            panelY = panelCoords.panelY;
+            System.out.println("🔧 Click: Using unified coordinate system - " + panelCoords.toString());
+        } else {
+            // フォールバック：従来の計算
+            panelHeight = screenHeight * CONTROL_CENTER_HEIGHT_RATIO;
+            panelY = screenHeight - panelHeight * animationProgress;
+            System.out.println("⚠️ Click: Using fallback coordinate calculation");
+        }
+
+        System.out.println("🖱️ ControlCenterManager: Click at (" + x + ", " + y + ") in panel area (panelY=" + panelY + ")");
+
+        // 【重要】PGraphics版の描画ロジックに合わせた3列グリッドレイアウトでのクリック判定
+        // draw(PGraphics g)の座標計算と完全に一致させる
+        int panelWidth = (int) screenWidth;
+        int titleY = (int) (panelY + 20);
+        int startY = titleY + 40;
+        int cols = 3;
+        int itemWidth = (panelWidth - 40) / cols;
+        int itemHeight = 80;
+        int margin = 10;
+
+        System.out.println("🔧 Grid layout: panelWidth=" + panelWidth + ", cols=" + cols + ", itemWidth=" + itemWidth + ", itemHeight=" + itemHeight + ", margin=" + margin);
+
+        for (int i = 0; i < items.size(); i++) {
+            IControlCenterItem item = items.get(i);
+
             // 描画と同じように非表示アイテムをスキップ
             if (!item.isVisible()) {
                 System.out.println("ControlCenterManager: Skipping invisible item '" + item.getDisplayName() + "'");
                 continue;
             }
-            
-            System.out.println("ControlCenterManager: Checking item '" + item.getDisplayName() + "' at Y range [" + itemY + " - " + (itemY + ITEM_HEIGHT) + "]");
-            if (y >= itemY && y <= itemY + ITEM_HEIGHT) {
-                System.out.println("ControlCenterManager: Item clicked - " + item.getDisplayName());
-                // アイテムのジェスチャー処理を呼び出す
+
+            int col = i % cols;
+            int row = i / cols;
+            int itemX = 20 + col * itemWidth;
+            int itemY = startY + row * (itemHeight + margin);
+
+            // パネル境界チェック（描画と同じ条件）
+            if (itemY + itemHeight > panelY + panelHeight - 20) {
+                System.out.println("ControlCenterManager: Item '" + item.getDisplayName() + "' beyond panel boundary, stopping");
+                break;
+            }
+
+            // 実際の描画サイズに合わせたクリック判定（itemWidth - marginを使用）
+            int actualItemWidth = itemWidth - margin;
+
+            System.out.println("  Item[" + i + "] '" + item.getDisplayName() + "' at grid[" + col + "," + row + "] = (" +
+                itemX + "," + itemY + ") size(" + actualItemWidth + "x" + itemHeight + ")");
+
+            // 実際の描画領域でのクリック判定
+            if (x >= itemX && x <= itemX + actualItemWidth && y >= itemY && y <= itemY + itemHeight) {
+                System.out.println("🎯 ControlCenterManager: Grid item clicked - " + item.getDisplayName() + " at grid[" + col + "," + row + "]");
                 GestureEvent tapEvent = new GestureEvent(jp.moyashi.phoneos.core.input.GestureType.TAP, x, y, x, y, System.currentTimeMillis(), System.currentTimeMillis());
                 item.onGesture(tapEvent);
                 return;
             }
-            itemY += ITEM_HEIGHT + ITEM_MARGIN;
         }
+
+        System.out.println("ControlCenterManager: No grid item clicked at (" + x + "," + y + ")");
     }
     
     /**

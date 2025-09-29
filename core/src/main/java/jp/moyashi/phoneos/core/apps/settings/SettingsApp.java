@@ -104,6 +104,14 @@ public class SettingsApp implements IApplication {
             return null;
         }
     }
+
+    @Override
+    public PImage getIcon(processing.core.PGraphics g) {
+        // TODO: PGraphics統一アーキテクチャに対応したアイコン読み込み機能を実装
+        // 現在は暫定的にnullを返す
+        System.out.println("SettingsApp: PGraphics icon loading not yet implemented");
+        return null;
+    }
     
     /**
      * このアプリケーションのエントリースクリーンを取得する。

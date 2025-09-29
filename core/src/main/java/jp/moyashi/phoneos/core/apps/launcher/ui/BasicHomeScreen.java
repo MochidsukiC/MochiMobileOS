@@ -4,6 +4,7 @@ import jp.moyashi.phoneos.core.Kernel;
 import jp.moyashi.phoneos.core.ui.Screen;
 import jp.moyashi.phoneos.core.app.IApplication;
 import processing.core.PApplet;
+import processing.core.PGraphics;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -40,183 +41,189 @@ public class BasicHomeScreen implements Screen {
     }
     
     @Override
-    public void setup(processing.core.PApplet p) {
+    public void setup(PGraphics g) {
         System.out.println("🚀 BasicHomeScreen: Starting setup...");
         isInitialized = true;
         loadApps();
         System.out.println("🚀 BasicHomeScreen: Setup complete with " + apps.size() + " apps");
         System.out.println("   isInitialized: " + isInitialized);
     }
+
+    /**
+     * @deprecated Use {@link #setup(PGraphics)} instead
+     */
+    @Deprecated
+    @Override
+    public void setup(processing.core.PApplet p) {
+        PGraphics g = p.g;
+        setup(g);
+    }
     
     @Override
-    public void draw(PApplet p) {
-        // Debug: Log first few draw calls
-        if (p.frameCount <= 3) {
-            System.out.println("🎨 BasicHomeScreen: Drawing frame " + p.frameCount + " - initialized: " + isInitialized);
-            System.out.println("   Apps available: " + apps.size());
-        }
-        
+    public void draw(PGraphics g) {
         try {
-            // Let Kernel handle background for debugging
-            // p.background(backgroundColor); // Commented out to allow Kernel debug display
-            
             // Always draw something to verify this method is called
-            p.fill(255, 255, 0); // Bright yellow
-            p.textAlign(p.LEFT, p.TOP);
-            p.textSize(12);
-            p.text("BasicHomeScreen Active", 10, 70);
-            p.text("Apps: " + apps.size(), 10, 85);
-            p.text("Initialized: " + isInitialized, 10, 100);
-            
+            g.fill(255, 255, 0); // Bright yellow
+            g.textAlign(g.LEFT, g.TOP);
+            g.textSize(12);
+            g.text("BasicHomeScreen Active", 10, 70);
+            g.text("Apps: " + apps.size(), 10, 85);
+            g.text("Initialized: " + isInitialized, 10, 100);
+
             // Status bar
-            drawStatusBar(p);
-            
+            drawStatusBar(g);
+
             // App grid
-            drawAppGrid(p);
-            
+            drawAppGrid(g);
+
             // Navigation area
-            drawNavigationArea(p);
-            
+            drawNavigationArea(g);
+
         } catch (Exception e) {
             System.err.println("❌ BasicHomeScreen draw error: " + e.getMessage());
             e.printStackTrace();
             // Fallback
-            p.background(255, 100, 100); // Red background for error
-            p.fill(255);
-            p.textAlign(p.CENTER, p.CENTER);
-            p.textSize(16);
-            p.text("BasicHomeScreen Error", p.width/2, p.height/2);
-            p.textSize(12);
-            p.text(e.getMessage(), p.width/2, p.height/2 + 20);
+            g.background(255, 100, 100); // Red background for error
+            g.fill(255);
+            g.textAlign(g.CENTER, g.CENTER);
+            g.textSize(16);
+            g.text("BasicHomeScreen Error", g.width/2, g.height/2);
+            g.textSize(12);
+            g.text(e.getMessage(), g.width/2, g.height/2 + 20);
         }
     }
+
+    /**
+     * @deprecated Use {@link #draw(PGraphics)} instead
+     */
+    @Deprecated
+    @Override
+    public void draw(PApplet p) {
+        PGraphics g = p.g;
+        draw(g);
+    }
     
-    private void drawStatusBar(PApplet p) {
+    private void drawStatusBar(PGraphics g) {
         // Status bar background
-        p.fill(0x2A2A2A);
-        p.noStroke();
-        p.rect(0, 0, p.width, 40);
-        
+        g.fill(0x2A2A2A);
+        g.noStroke();
+        g.rect(0, 0, g.width, 40);
+
         // Time
-        p.fill(textColor);
-        p.textAlign(p.LEFT, p.CENTER);
-        p.textSize(12);
+        g.fill(textColor);
+        g.textAlign(g.LEFT, g.CENTER);
+        g.textSize(12);
         if (kernel != null && kernel.getSystemClock() != null) {
             try {
-                p.text(kernel.getSystemClock().getFormattedTime(), 15, 20);
+                g.text(kernel.getSystemClock().getFormattedTime(), 15, 20);
             } catch (Exception e) {
-                p.text("--:--", 15, 20);
+                g.text("--:--", 15, 20);
             }
         } else {
-            p.text("No Time", 15, 20);
+            g.text("No Time", 15, 20);
         }
-        
+
         // Title
-        p.textAlign(p.CENTER, p.CENTER);
-        p.textSize(14);
-        p.text("MochiMobileOS", p.width/2, 20);
-        
+        g.textAlign(g.CENTER, g.CENTER);
+        g.textSize(14);
+        g.text("MochiMobileOS", g.width/2, 20);
+
         // Status
-        p.textAlign(p.RIGHT, p.CENTER);
-        p.textSize(10);
-        p.text("Basic Home", p.width - 15, 20);
+        g.textAlign(g.RIGHT, g.CENTER);
+        g.textSize(10);
+        g.text("Basic Home", g.width - 15, 20);
     }
     
-    private void drawAppGrid(PApplet p) {
+    private void drawAppGrid(PGraphics g) {
         if (apps.isEmpty()) {
             // No apps message
-            p.fill(textColor, 150);
-            p.textAlign(p.CENTER, p.CENTER);
-            p.textSize(16);
-            p.text("No apps available", p.width/2, p.height/2);
-            p.textSize(12);
-            p.text("Apps will appear here when loaded", p.width/2, p.height/2 + 20);
+            g.fill(textColor, 150);
+            g.textAlign(g.CENTER, g.CENTER);
+            g.textSize(16);
+            g.text("No apps available", g.width/2, g.height/2);
+            g.textSize(12);
+            g.text("Apps will appear here when loaded", g.width/2, g.height/2 + 20);
             return;
         }
-        
+
         int startY = 60; // Below status bar
         int gridWidth = GRID_COLS * (ICON_SIZE + ICON_SPACING) - ICON_SPACING;
-        int startX = (p.width - gridWidth) / 2;
-        
+        int startX = (g.width - gridWidth) / 2;
+
         // Draw apps in grid
         for (int i = 0; i < apps.size() && i < (GRID_COLS * GRID_ROWS); i++) {
             int col = i % GRID_COLS;
             int row = i / GRID_COLS;
-            
+
             int x = startX + col * (ICON_SIZE + ICON_SPACING);
             int y = startY + row * (ICON_SIZE + ICON_SPACING + 15);
-            
-            drawAppIcon(p, apps.get(i), x, y);
+
+            drawAppIcon(g, apps.get(i), x, y);
         }
     }
     
-    private void drawAppIcon(PApplet p, IApplication app, int x, int y) {
-        // Debug: Log icon drawing
-        if (p.frameCount <= 5) {
-            System.out.println("🎨 Drawing icon for " + app.getName() + " at (" + x + ", " + y + ")");
-        }
-        
+    private void drawAppIcon(PGraphics g, IApplication app, int x, int y) {
         try {
             // Icon background (make more visible with bright colors for debugging)
-            p.fill(100, 100, 100); // Gray background
-            p.stroke(255, 255, 255); // White border
-            p.strokeWeight(2);
-            p.rect(x, y, ICON_SIZE, ICON_SIZE, 12);
-            
+            g.fill(100, 100, 100); // Gray background
+            g.stroke(255, 255, 255); // White border
+            g.strokeWeight(2);
+            g.rect(x, y, ICON_SIZE, ICON_SIZE, 12);
+
             // App icon placeholder (bright blue for visibility)
-            p.fill(0, 150, 255); // Bright blue
-            p.noStroke();
-            p.rect(x + 12, y + 12, ICON_SIZE - 24, ICON_SIZE - 24, 8);
-            
+            g.fill(0, 150, 255); // Bright blue
+            g.noStroke();
+            g.rect(x + 12, y + 12, ICON_SIZE - 24, ICON_SIZE - 24, 8);
+
             // App initial (white text)
-            p.fill(255, 255, 255); // White
-            p.textAlign(p.CENTER, p.CENTER);
-            p.textSize(18);
+            g.fill(255, 255, 255); // White
+            g.textAlign(g.CENTER, g.CENTER);
+            g.textSize(18);
             String initial = app.getName().substring(0, 1).toUpperCase();
-            p.text(initial, x + ICON_SIZE/2, y + ICON_SIZE/2 - 2);
-            
+            g.text(initial, x + ICON_SIZE/2, y + ICON_SIZE/2 - 2);
+
             // App name (white text)
-            p.fill(255, 255, 255); // White
-            p.textSize(10);
-            p.textAlign(p.CENTER, p.TOP);
+            g.fill(255, 255, 255); // White
+            g.textSize(10);
+            g.textAlign(g.CENTER, g.TOP);
             String name = app.getName();
             if (name.length() > 8) {
                 name = name.substring(0, 7) + "...";
             }
-            p.text(name, x + ICON_SIZE/2, y + ICON_SIZE + 3);
-            
+            g.text(name, x + ICON_SIZE/2, y + ICON_SIZE + 3);
+
             // Debug: Draw a bright rectangle around the entire icon area
-            p.stroke(255, 255, 0); // Yellow border
-            p.strokeWeight(1);
-            p.noFill();
-            p.rect(x - 2, y - 2, ICON_SIZE + 4, ICON_SIZE + 20);
-            
+            g.stroke(255, 255, 0); // Yellow border
+            g.strokeWeight(1);
+            g.noFill();
+            g.rect(x - 2, y - 2, ICON_SIZE + 4, ICON_SIZE + 20);
+
         } catch (Exception e) {
             System.err.println("❌ Error drawing icon for " + app.getName() + ": " + e.getMessage());
             // Emergency fallback - draw bright red square
-            p.fill(255, 0, 0);
-            p.noStroke();
-            p.rect(x, y, ICON_SIZE, ICON_SIZE);
+            g.fill(255, 0, 0);
+            g.noStroke();
+            g.rect(x, y, ICON_SIZE, ICON_SIZE);
         }
     }
     
-    private void drawNavigationArea(PApplet p) {
-        int navY = p.height - 80;
-        
+    private void drawNavigationArea(PGraphics g) {
+        int navY = g.height - 80;
+
         // Navigation background
-        p.fill(0x2A2A2A);
-        p.noStroke();
-        p.rect(0, navY, p.width, 80);
-        
+        g.fill(0x2A2A2A);
+        g.noStroke();
+        g.rect(0, navY, g.width, 80);
+
         // App Library hint
-        p.fill(textColor, 150);
-        p.textAlign(p.CENTER, p.CENTER);
-        p.textSize(12);
-        p.text("Tap here for App Library", p.width/2, navY + 25);
-        
+        g.fill(textColor, 150);
+        g.textAlign(g.CENTER, g.CENTER);
+        g.textSize(12);
+        g.text("Tap here for App Library", g.width/2, navY + 25);
+
         // Instructions
-        p.textSize(10);
-        p.text("Click app icons to launch • Basic launcher mode", p.width/2, navY + 50);
+        g.textSize(10);
+        g.text("Click app icons to launch • Basic launcher mode", g.width/2, navY + 50);
     }
     
     private void loadApps() {
@@ -257,22 +264,32 @@ public class BasicHomeScreen implements Screen {
     }
     
     @Override
-    public void mousePressed(processing.core.PApplet p, int mouseX, int mouseY) {
+    public void mousePressed(PGraphics g, int mouseX, int mouseY) {
         System.out.println("🖱️ BasicHomeScreen: Click at (" + mouseX + ", " + mouseY + ")");
-        
+
         // Check navigation area (App Library)
         if (mouseY > getHeight() - 80) {
             System.out.println("📚 Opening App Library...");
             openAppLibrary();
             return;
         }
-        
+
         // Check app icons
         IApplication clickedApp = getAppAtPosition(mouseX, mouseY);
         if (clickedApp != null) {
             System.out.println("🚀 Launching: " + clickedApp.getName());
             launchApplication(clickedApp);
         }
+    }
+
+    /**
+     * @deprecated Use {@link #mousePressed(PGraphics, int, int)} instead
+     */
+    @Deprecated
+    @Override
+    public void mousePressed(processing.core.PApplet p, int mouseX, int mouseY) {
+        PGraphics g = p.g;
+        mousePressed(g, mouseX, mouseY);
     }
     
     private IApplication getAppAtPosition(int mouseX, int mouseY) {
@@ -325,9 +342,19 @@ public class BasicHomeScreen implements Screen {
     }
     
     @Override
-    public void cleanup(processing.core.PApplet p) {
+    public void cleanup(PGraphics g) {
         isInitialized = false;
         System.out.println("🧹 BasicHomeScreen: Cleanup completed");
+    }
+
+    /**
+     * @deprecated Use {@link #cleanup(PGraphics)} instead
+     */
+    @Deprecated
+    @Override
+    public void cleanup(processing.core.PApplet p) {
+        PGraphics g = p.g;
+        cleanup(g);
     }
     
     @Override
@@ -340,5 +367,29 @@ public class BasicHomeScreen implements Screen {
      */
     public void refreshApps() {
         loadApps();
+    }
+
+    /**
+     * Adds mouseDragged support for PGraphics (empty implementation, can be overridden)
+     */
+    @Override
+    public void mouseDragged(PGraphics g, int mouseX, int mouseY) {
+        // Default implementation - subclasses can override
+    }
+
+    /**
+     * Adds mouseReleased support for PGraphics (empty implementation, can be overridden)
+     */
+    @Override
+    public void mouseReleased(PGraphics g, int mouseX, int mouseY) {
+        // Default implementation - subclasses can override
+    }
+
+    /**
+     * Adds keyPressed support for PGraphics (empty implementation, can be overridden)
+     */
+    @Override
+    public void keyPressed(PGraphics g, char key, int keyCode) {
+        // Default implementation - subclasses can override
     }
 }

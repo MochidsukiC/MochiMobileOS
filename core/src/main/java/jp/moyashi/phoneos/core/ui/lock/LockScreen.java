@@ -77,10 +77,6 @@ public class LockScreen implements Screen, GestureListener {
     
     /** ドラッグ中の軌跡点リスト */
     private List<int[]> dragPath;
-
-    /** スクリーンサイズ */
-    private int screenWidth = 400; // デフォルト値
-    private int screenHeight = 600; // デフォルト値
     
     /** 現在ドラッグ中かどうか */
     private boolean isDragging;
@@ -148,7 +144,8 @@ public class LockScreen implements Screen, GestureListener {
     
     /** 通知エリアでのドラッグが開始されているかどうか */
     private boolean isNotificationDragScrolling = false;
-    
+
+
     /**
      * 認証結果のフィードバック状態を表す列挙型
      */
@@ -179,39 +176,21 @@ public class LockScreen implements Screen, GestureListener {
         this.patternInputVisible = false;
         this.patternSlideProgress = 0.0f;
         this.patternAnimating = false;
-
-        // Kernelから画面サイズを取得してパターングリッド位置を設定
-        int[] screenSize = kernel.getScreenSize();
-        this.gridCenterX = screenSize[0] / 2; // 画面幅の中央
-        this.gridCenterY = screenSize[1] - 150; // 画面下部から150px上
-
-        System.out.println("LockScreen: ロック画面を初期化しました (screen=" + screenSize[0] + "x" + screenSize[1] +
-                          ", gridCenter=" + gridCenterX + "," + gridCenterY + ")");
+        
+        System.out.println("LockScreen: ロック画面を初期化しました");
     }
     
     /**
-     * ロック画面のセットアップを行う。
+     * ロック画面のセットアップを行う (PGraphics version)。
      * パターングリッドの位置を計算し、レイヤーシステムに登録する。
      */
     @Override
-    public void setup(processing.core.PApplet p) {
+    public void setup(PGraphics g) {
         System.out.println("LockScreen: ロック画面のセットアップ中...");
 
-        if (p == null) {
-            System.err.println("LockScreen: PApplet is null! Using default screen size 400x600");
-            // フォールバック：デフォルトサイズを使用
-            gridCenterX = 400 / 2; // 画面幅の中央
-            gridCenterY = 600 - 150; // 画面下部から150px上
-        } else {
-            // パターングリッドの中心位置を計算（画面中央下部）
-            screenWidth = p.width;
-            screenHeight = p.height;
-            gridCenterX = p.width / 2; // 画面幅の中央
-            gridCenterY = p.height - 150; // 画面下部から150px上
-            System.out.println("LockScreen: Screen size detected: " + p.width + "x" + p.height);
-        }
-
-        System.out.println("LockScreen: Pattern grid center: (" + gridCenterX + ", " + gridCenterY + ")");
+        // パターングリッドの中心位置を計算（画面中央下部）
+        gridCenterX = 400 / 2; // 画面幅の中央
+        gridCenterY = 600 - 200; // 画面下部から200px上
 
         // レイヤー管理システムに登録
         registerWithLayerManager();
@@ -223,36 +202,15 @@ public class LockScreen implements Screen, GestureListener {
     }
 
     /**
-     * PGraphics環境用のセットアップメソッド
+     * @deprecated Use {@link #setup(PGraphics)} instead
      */
-    public void setup(PGraphics g) {
-        System.out.println("LockScreen: ロック画面のセットアップ中 (PGraphics)...");
-
-        if (g == null) {
-            System.err.println("LockScreen: PGraphics is null! Using default screen size 400x600");
-            // フォールバック：デフォルトサイズを使用
-            gridCenterX = 400 / 2; // 画面幅の中央
-            gridCenterY = 600 - 150; // 画面下部から150px上
-        } else {
-            // パターングリッドの中心位置を計算（画面中央下部）
-            screenWidth = g.width;
-            screenHeight = g.height;
-            gridCenterX = g.width / 2; // 画面幅の中央
-            gridCenterY = g.height - 150; // 画面下部から150px上
-            System.out.println("LockScreen: Screen size detected: " + g.width + "x" + g.height);
-        }
-
-        System.out.println("LockScreen: Pattern grid center: (" + gridCenterX + ", " + gridCenterY + ")");
-
-        // レイヤー管理システムに登録
-        registerWithLayerManager();
-
-        // ジェスチャーマネージャーにこのスクリーンを登録
-        kernel.getGestureManager().addGestureListener(this);
-
-        System.out.println("LockScreen: セットアップ完了 (PGraphics)");
+    @Deprecated
+    @Override
+    public void setup(processing.core.PApplet p) {
+        PGraphics g = p.g;
+        setup(g);
     }
-
+    
     /**
      * ロック画面のコンテンツを描画する。
      * 時刻、通知、パターングリッド、ドラッグ軌跡、フィードバックを描画する。
@@ -279,36 +237,29 @@ public class LockScreen implements Screen, GestureListener {
             drawNotificationPreviews(p);
         }
         
-        // パターングリッドはパターン入力画面でのみ表示
-        if (patternInputVisible || patternSlideProgress > 0.0f) {
-            float gridAlpha = patternInputVisible || patternSlideProgress > 0.0f ? 1.0f : 0.3f;
-            drawPatternGridWithAlpha(p, gridAlpha);
-            drawDragPath(p);
-        }
-        drawAuthFeedback(p);
-
         // パターン入力画面を描画（アニメーション中または表示中）
         if (patternInputVisible || patternSlideProgress > 0.0f) {
             drawPatternInputScreen(p);
         }
-
+        
         // ホームボタンヒントを描画（パターン入力が非表示の時のみ）
         if (!patternInputVisible && patternSlideProgress < 0.1f) {
             drawHomeButtonHint(p);
         }
-        
+
+
         // デバッグ情報（開発時のみ）
         drawDebugInfo(p);
     }
 
     /**
-     * ロック画面のコンテンツを描画する（PGraphics版）。
-     * 時刻、通知、パターングリッド、ドラッグ軌跡、フィードバックを描画する。
+     * PGraphics統一アーキテクチャ用のdraw()メソッド。
+     * PApplet版のdraw()と同じ内容をPGraphicsで描画する。
      *
      * @param g 描画用のPGraphicsインスタンス
      */
     @Override
-    public void draw(PGraphics g) {
+    public void draw(processing.core.PGraphics g) {
         // アニメーション状態を更新
         updatePatternSlideAnimation();
 
@@ -327,14 +278,6 @@ public class LockScreen implements Screen, GestureListener {
             drawNotificationPreviews(g);
         }
 
-        // パターングリッドはパターン入力画面でのみ表示
-        if (patternInputVisible || patternSlideProgress > 0.0f) {
-            float gridAlpha = patternInputVisible || patternSlideProgress > 0.0f ? 1.0f : 0.3f;
-            drawPatternGridWithAlpha(g, gridAlpha);
-            drawDragPath(g);
-        }
-        drawAuthFeedback(g);
-
         // パターン入力画面を描画（アニメーション中または表示中）
         if (patternInputVisible || patternSlideProgress > 0.0f) {
             drawPatternInputScreen(g);
@@ -345,31 +288,32 @@ public class LockScreen implements Screen, GestureListener {
             drawHomeButtonHint(g);
         }
 
+
         // デバッグ情報（開発時のみ）
         drawDebugInfo(g);
     }
 
     /**
      * 現在時刻を画面上部に大きく表示する。
-     *
+     * 
      * @param p 描画用のPAppletインスタンス
      */
     private void drawCurrentTime(PApplet p) {
         if (systemClock == null) return;
-
+        
         LocalDateTime now = systemClock.getCurrentTime();
         DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("M月d日 (E)");
-
+        
         String timeStr = now.format(timeFormatter);
         String dateStr = now.format(dateFormatter);
-
+        
         // 時刻を大きく表示
         p.fill(255, 255, 255);
         p.textAlign(p.CENTER, p.CENTER);
         p.textSize(72);
         p.text(timeStr, p.width / 2, 120);
-
+        
         // 日付を中程度のサイズで表示
         p.textSize(24);
         p.fill(200, 200, 200);
@@ -381,7 +325,7 @@ public class LockScreen implements Screen, GestureListener {
      *
      * @param g 描画用のPGraphicsインスタンス
      */
-    private void drawCurrentTime(PGraphics g) {
+    private void drawCurrentTime(processing.core.PGraphics g) {
         if (systemClock == null) return;
 
         LocalDateTime now = systemClock.getCurrentTime();
@@ -391,9 +335,14 @@ public class LockScreen implements Screen, GestureListener {
         String timeStr = now.format(timeFormatter);
         String dateStr = now.format(dateFormatter);
 
+        // 日本語フォントを設定
+        if (kernel != null && kernel.getJapaneseFont() != null) {
+            g.textFont(kernel.getJapaneseFont());
+        }
+
         // 時刻を大きく表示
         g.fill(255, 255, 255);
-        g.textAlign(g.CENTER, g.CENTER);
+        g.textAlign(PApplet.CENTER, PApplet.CENTER);
         g.textSize(72);
         g.text(timeStr, g.width / 2, 120);
 
@@ -402,11 +351,11 @@ public class LockScreen implements Screen, GestureListener {
         g.fill(200, 200, 200);
         g.text(dateStr, g.width / 2, 170);
     }
-    
+
     /**
      * 最新の通知をiOSライクにスクロール可能で表示する。
      * 時刻の下、画面中央に配置し、スクロールで追加の通知を表示。
-     *
+     * 
      * @param p 描画用のPAppletインスタンス
      */
     private void drawNotificationPreviews(PApplet p) {
@@ -477,7 +426,7 @@ public class LockScreen implements Screen, GestureListener {
      *
      * @param g 描画用のPGraphicsインスタンス
      */
-    private void drawNotificationPreviews(PGraphics g) {
+    private void drawNotificationPreviews(processing.core.PGraphics g) {
         if (notificationManager == null) return;
 
         List<INotification> allNotifications = notificationManager.getRecentNotifications(10); // より多くの通知を取得
@@ -552,9 +501,14 @@ public class LockScreen implements Screen, GestureListener {
     /**
      * 通知がない場合のメッセージを表示する（PGraphics版）。
      */
-    private void drawNoNotificationsMessage(PGraphics g) {
+    private void drawNoNotificationsMessage(processing.core.PGraphics g) {
+        // 日本語フォントを設定
+        if (kernel != null && kernel.getJapaneseFont() != null) {
+            g.textFont(kernel.getJapaneseFont());
+        }
+
         g.fill(120, 120, 120);
-        g.textAlign(g.CENTER, g.CENTER);
+        g.textAlign(PApplet.CENTER, PApplet.CENTER);
         g.textSize(16);
         g.text("通知はありません", g.width / 2, 280);
     }
@@ -568,22 +522,22 @@ public class LockScreen implements Screen, GestureListener {
         p.stroke(70, 75, 85, 150);
         p.strokeWeight(1);
         p.rect(x, y, width, height, 12); // 丸角
-
+        
         // アプリアイコンエリア（模擬）
         p.fill(80, 140, 200);
         p.rect(x + 10, y + 10, 30, 30, 6);
-
+        
         // 通知タイトル
         p.fill(255, 255, 255);
         p.textAlign(p.LEFT, p.TOP);
         p.textSize(14);
         p.text(notification.getTitle(), x + 50, y + 10);
-
+        
         // 通知内容
         p.fill(200, 200, 200);
         p.textSize(12);
         p.text(notification.getContent(), x + 50, y + 30);
-
+        
         // 時刻表示（右上）
         p.fill(150, 150, 150);
         p.textAlign(p.RIGHT, p.TOP);
@@ -592,9 +546,9 @@ public class LockScreen implements Screen, GestureListener {
     }
 
     /**
-     * 個別の通知カードを描画する（PGraphics版、iOSライク）。
+     * 個別の通知カードを描画する（iOSライク）（PGraphics版）。
      */
-    private void drawNotificationCard(PGraphics g, INotification notification, int x, int y, int width, int height) {
+    private void drawNotificationCard(processing.core.PGraphics g, INotification notification, int x, int y, int width, int height) {
         // 通知カードの背景（iOSライクな丸角とぼかし効果）
         g.fill(45, 50, 60, 200);
         g.stroke(70, 75, 85, 150);
@@ -605,9 +559,14 @@ public class LockScreen implements Screen, GestureListener {
         g.fill(80, 140, 200);
         g.rect(x + 10, y + 10, 30, 30, 6);
 
+        // 日本語フォントを設定
+        if (kernel != null && kernel.getJapaneseFont() != null) {
+            g.textFont(kernel.getJapaneseFont());
+        }
+
         // 通知タイトル
         g.fill(255, 255, 255);
-        g.textAlign(g.LEFT, g.TOP);
+        g.textAlign(PApplet.LEFT, PApplet.TOP);
         g.textSize(14);
         g.text(notification.getTitle(), x + 50, y + 10);
 
@@ -618,7 +577,7 @@ public class LockScreen implements Screen, GestureListener {
 
         // 時刻表示（右上）
         g.fill(150, 150, 150);
-        g.textAlign(g.RIGHT, g.TOP);
+        g.textAlign(PApplet.RIGHT, PApplet.TOP);
         g.textSize(10);
         g.text("今", x + width - 10, y + 10);
     }
@@ -628,23 +587,23 @@ public class LockScreen implements Screen, GestureListener {
      */
     private void drawScrollIndicator(PApplet p, int areaTop, int areaHeight, float scrollOffset, int maxScroll) {
         if (maxScroll <= 0) return;
-
+        
         // スクロールバーの設定
         int barX = p.width - 8;
         int barWidth = 3;
         int barTop = areaTop + 10;
         int barBottom = areaTop + areaHeight - 10;
         int barHeight = barBottom - barTop;
-
+        
         // スクロール位置の割合
         float scrollRatio = scrollOffset / maxScroll;
         float indicatorHeight = Math.max(10, barHeight * 0.3f);
         float indicatorY = barTop + (barHeight - indicatorHeight) * scrollRatio;
-
+        
         // スクロールバー背景
         p.fill(50, 50, 50, 100);
         p.rect(barX, barTop, barWidth, barHeight, barWidth/2);
-
+        
         // スクロールインジケーター
         p.fill(150, 150, 150, 150);
         p.rect(barX, indicatorY, barWidth, indicatorHeight, barWidth/2);
@@ -653,7 +612,7 @@ public class LockScreen implements Screen, GestureListener {
     /**
      * スクロールインジケーターを描画する（PGraphics版）。
      */
-    private void drawScrollIndicator(PGraphics g, int areaTop, int areaHeight, float scrollOffset, int maxScroll) {
+    private void drawScrollIndicator(processing.core.PGraphics g, int areaTop, int areaHeight, float scrollOffset, int maxScroll) {
         if (maxScroll <= 0) return;
 
         // スクロールバーの設定
@@ -682,14 +641,14 @@ public class LockScreen implements Screen, GestureListener {
      */
     private void drawNotificationAreaFade(PApplet p, int areaTop, int areaBottom) {
         int fadeHeight = 15;
-
+        
         // 上端のフェード
         for (int i = 0; i < fadeHeight; i++) {
             float alpha = (float)i / fadeHeight;
             p.stroke(20, 25, 35, (int)(255 * (1 - alpha)));
             p.line(0, areaTop + i, p.width, areaTop + i);
         }
-
+        
         // 下端のフェード
         for (int i = 0; i < fadeHeight; i++) {
             float alpha = (float)i / fadeHeight;
@@ -701,7 +660,7 @@ public class LockScreen implements Screen, GestureListener {
     /**
      * 通知エリアの上下端にフェード効果を適用する（PGraphics版）。
      */
-    private void drawNotificationAreaFade(PGraphics g, int areaTop, int areaBottom) {
+    private void drawNotificationAreaFade(processing.core.PGraphics g, int areaTop, int areaBottom) {
         int fadeHeight = 15;
 
         // 上端のフェード
@@ -778,16 +737,16 @@ public class LockScreen implements Screen, GestureListener {
     
     /**
      * ドラッグ中の軌跡を描画する。
-     *
+     * 
      * @param p 描画用のPAppletインスタンス
      */
     private void drawDragPath(PApplet p) {
         if (dragPath.size() < 2) return;
-
+        
         p.stroke(100, 180, 255, 100);
         p.strokeWeight(3);
         p.noFill();
-
+        
         for (int i = 0; i < dragPath.size() - 1; i++) {
             int[] start = dragPath.get(i);
             int[] end = dragPath.get(i + 1);
@@ -800,7 +759,7 @@ public class LockScreen implements Screen, GestureListener {
      *
      * @param g 描画用のPGraphicsインスタンス
      */
-    private void drawDragPath(PGraphics g) {
+    private void drawDragPath(processing.core.PGraphics g) {
         if (dragPath.size() < 2) return;
 
         g.stroke(100, 180, 255, 100);
@@ -813,7 +772,7 @@ public class LockScreen implements Screen, GestureListener {
             g.line(start[0], start[1], end[0], end[1]);
         }
     }
-    
+
     /**
      * 認証成功/失敗のフィードバックを描画する。
      *
@@ -821,19 +780,19 @@ public class LockScreen implements Screen, GestureListener {
      */
     private void drawAuthFeedback(PApplet p) {
         if (authFeedback == AuthFeedback.NONE) return;
-
+        
         long elapsed = System.currentTimeMillis() - feedbackStartTime;
         if (elapsed > FEEDBACK_DURATION) {
             authFeedback = AuthFeedback.NONE;
             return;
         }
-
+        
         // フェードアウト効果
         float alpha = 1.0f - (float) elapsed / FEEDBACK_DURATION;
-
+        
         String message;
         int color;
-
+        
         if (authFeedback == AuthFeedback.SUCCESS) {
             message = "認証成功！";
             color = p.color(50, 255, 50, (int)(alpha * 255));
@@ -841,11 +800,11 @@ public class LockScreen implements Screen, GestureListener {
             message = "パターンが正しくありません";
             color = p.color(255, 50, 50, (int)(alpha * 255));
         }
-
+        
         // 背景ボックス
         p.fill(color);
         p.rect(50, 500, p.width - 100, 50, 10);
-
+        
         // テキスト
         p.fill(255, 255, 255, (int)(alpha * 255));
         p.textAlign(p.CENTER, p.CENTER);
@@ -858,7 +817,7 @@ public class LockScreen implements Screen, GestureListener {
      *
      * @param g 描画用のPGraphicsインスタンス
      */
-    private void drawAuthFeedback(PGraphics g) {
+    private void drawAuthFeedback(processing.core.PGraphics g) {
         if (authFeedback == AuthFeedback.NONE) return;
 
         long elapsed = System.currentTimeMillis() - feedbackStartTime;
@@ -875,23 +834,28 @@ public class LockScreen implements Screen, GestureListener {
 
         if (authFeedback == AuthFeedback.SUCCESS) {
             message = "認証成功！";
-            color = g.color(50, 255, 50, (int)(alpha * 255));
+            color = (50 << 16) | (255 << 8) | 50 | ((int)(alpha * 255) << 24); // RGB(50,255,50) with alpha
         } else {
             message = "パターンが正しくありません";
-            color = g.color(255, 50, 50, (int)(alpha * 255));
+            color = (255 << 16) | (50 << 8) | 50 | ((int)(alpha * 255) << 24); // RGB(255,50,50) with alpha
         }
 
         // 背景ボックス
         g.fill(color);
         g.rect(50, 500, g.width - 100, 50, 10);
 
+        // 日本語フォントを設定
+        if (kernel != null && kernel.getJapaneseFont() != null) {
+            g.textFont(kernel.getJapaneseFont());
+        }
+
         // テキスト
         g.fill(255, 255, 255, (int)(alpha * 255));
-        g.textAlign(g.CENTER, g.CENTER);
+        g.textAlign(PApplet.CENTER, PApplet.CENTER);
         g.textSize(18);
         g.text(message, g.width / 2, 525);
     }
-    
+
     /**
      * パターンヒントを表示する。
      *
@@ -906,13 +870,13 @@ public class LockScreen implements Screen, GestureListener {
      *
      * @param g 描画用のPGraphicsインスタンス
      */
-    private void drawPatternHint(PGraphics g) {
+    private void drawPatternHint(processing.core.PGraphics g) {
         // チュートリアル表示を削除 - よりクリーンなデザインのため
     }
     
     /**
      * 開発時のデバッグ情報を表示する。
-     *
+     * 
      * @param p 描画用のPAppletインスタンス
      */
     private void drawDebugInfo(PApplet p) {
@@ -920,7 +884,7 @@ public class LockScreen implements Screen, GestureListener {
         p.textAlign(p.LEFT, p.TOP);
         p.textSize(10);
         p.text("パターン: " + currentPattern + " | ドラッグ: " + isDragging, 10, p.height - 20);
-
+        
         // パターングリッド中心位置の表示
         p.text("グリッド中心: (" + gridCenterX + "," + gridCenterY + ")", 10, p.height - 35);
     }
@@ -930,27 +894,43 @@ public class LockScreen implements Screen, GestureListener {
      *
      * @param g 描画用のPGraphicsインスタンス
      */
-    private void drawDebugInfo(PGraphics g) {
+    private void drawDebugInfo(processing.core.PGraphics g) {
+        // 日本語フォントを設定
+        if (kernel != null && kernel.getJapaneseFont() != null) {
+            g.textFont(kernel.getJapaneseFont());
+        }
+
         g.fill(255, 255, 255, 100);
-        g.textAlign(g.LEFT, g.TOP);
+        g.textAlign(PApplet.LEFT, PApplet.TOP);
         g.textSize(10);
         g.text("パターン: " + currentPattern + " | ドラッグ: " + isDragging, 10, g.height - 20);
 
         // パターングリッド中心位置の表示
         g.text("グリッド中心: (" + gridCenterX + "," + gridCenterY + ")", 10, g.height - 35);
     }
-    
+
     /**
-     * マウスプレスイベント処理。
+     * マウスプレスイベント処理 (PGraphics version)。
      * 従来のマウスイベント用（後方互換性）。
-     * 
+     *
+     * @param g PGraphicsインスタンス
      * @param mouseX マウスX座標
      * @param mouseY マウスY座標
      */
     @Override
-    public void mousePressed(processing.core.PApplet p, int mouseX, int mouseY) {
+    public void mousePressed(PGraphics g, int mouseX, int mouseY) {
         // ジェスチャー処理に委譲
         System.out.println("LockScreen: mousePressed - delegating to gesture system");
+    }
+
+    /**
+     * @deprecated Use {@link #mousePressed(PGraphics, int, int)} instead
+     */
+    @Deprecated
+    @Override
+    public void mousePressed(processing.core.PApplet p, int mouseX, int mouseY) {
+        PGraphics g = p.g;
+        mousePressed(g, mouseX, mouseY);
     }
     
     /**
@@ -963,54 +943,38 @@ public class LockScreen implements Screen, GestureListener {
      */
     @Override
     public boolean onGesture(GestureEvent event) {
-        System.out.println("LockScreen: Gesture received - " + event.getType() +
+        System.out.println("LockScreen: Gesture received - " + event.getType() + 
                          " at (" + event.getStartX() + "," + event.getStartY() + ")");
-
-        // 最優先：エッジジェスチャーによるシステムUI表示を常に許可
-        if (event.getType() == GestureType.SWIPE_UP && event.getStartY() >= screenHeight * 0.9f) {
-            System.out.println("LockScreen: Edge SWIPE_UP from bottom (y=" + event.getStartY() +
-                             ", threshold=" + (screenHeight * 0.9f) + ") - allowing for control center");
-            return false; // コントロールセンター用SWIPE_UPは許可
-        }
-        if (event.getType() == GestureType.SWIPE_DOWN && event.getStartY() <= screenHeight * 0.1f) {
-            System.out.println("LockScreen: Edge SWIPE_DOWN from top (y=" + event.getStartY() +
-                             ", threshold=" + (screenHeight * 0.1f) + ") - allowing for notification center");
-            return false; // 通知センター用SWIPE_DOWNは許可
-        }
-
-        // パターン入力が表示されていない場合、システムジェスチャーと通知スクロール、パターンエリアドラッグを許可
+        
+        // パターン入力が表示されていない場合、システムジェスチャーと通知スクロールのみ許可
         if (!patternInputVisible && patternSlideProgress < 0.1f) {
-
+            if (event.getType() == GestureType.SWIPE_UP && event.getStartY() >= 600 * 0.9f) {
+                return false; // コントロールセンター用SWIPE_UPは許可
+            }
+            if (event.getType() == GestureType.SWIPE_DOWN && event.getStartY() <= 600 * 0.1f) {
+                return false; // 通知センター用SWIPE_DOWNは許可
+            }
             // 通知エリア内でのスワイプとドラッグは通知スクロール用に許可
             boolean inNotificationArea = false;
-            // パターンエリア内でのドラッグはパターン入力用に許可
-            boolean inPatternArea = false;
-
             if (event.getType() == GestureType.DRAG_START) {
                 inNotificationArea = isInNotificationArea(event.getStartX(), event.getStartY());
-                inPatternArea = isInPatternGridArea(event.getStartX(), event.getStartY());
             } else if (event.getType() == GestureType.DRAG_MOVE || event.getType() == GestureType.DRAG_END) {
                 // ドラッグ中は現在座標と開始座標の両方をチェック
                 inNotificationArea = isInNotificationArea(event.getCurrentX(), event.getCurrentY()) ||
                                    isInNotificationArea(event.getStartX(), event.getStartY());
-                inPatternArea = isInPatternGridArea(event.getCurrentX(), event.getCurrentY()) ||
-                               isInPatternGridArea(event.getStartX(), event.getStartY());
             } else {
                 inNotificationArea = isInNotificationArea(event.getStartX(), event.getStartY());
-                inPatternArea = isInPatternGridArea(event.getStartX(), event.getStartY());
             }
-
-            if ((event.getType() == GestureType.SWIPE_UP ||
+            
+            if ((event.getType() == GestureType.SWIPE_UP || 
                  event.getType() == GestureType.SWIPE_DOWN ||
                  event.getType() == GestureType.DRAG_START ||
                  event.getType() == GestureType.DRAG_MOVE ||
-                 event.getType() == GestureType.DRAG_END)
-                && (inNotificationArea || inPatternArea)) {
-                System.out.println("LockScreen: Allowing gesture - " + event.getType() +
-                                 " at (" + event.getCurrentX() + "," + event.getCurrentY() +
-                                 ") inNotificationArea=" + inNotificationArea +
-                                 " inPatternArea=" + inPatternArea);
-                // スクロール処理またはパターン処理は後続のswitch文で処理される
+                 event.getType() == GestureType.DRAG_END) 
+                && inNotificationArea) {
+                System.out.println("LockScreen: Allowing notification area gesture - " + event.getType() + 
+                                 " at (" + event.getCurrentX() + "," + event.getCurrentY() + ")");
+                // スクロール処理は後続のswitch文で処理されるため、ここではスキップ
             } else {
                 // その他のジェスチャーはブロック（パターン入力なし）
                 System.out.println("LockScreen: Blocking gesture in pattern-hidden mode - " + event.getType());
@@ -1020,10 +984,10 @@ public class LockScreen implements Screen, GestureListener {
         
         // 認証フィードバック中は最低限のジェスチャーのみ処理
         if (authFeedback != AuthFeedback.NONE) {
-            if (event.getType() == GestureType.SWIPE_UP && event.getStartY() >= screenHeight * 0.9f) {
+            if (event.getType() == GestureType.SWIPE_UP && event.getStartY() >= 600 * 0.9f) {
                 return false; // コントロールセンター用SWIPE_UPは許可
             }
-            if (event.getType() == GestureType.SWIPE_DOWN && event.getStartY() <= screenHeight * 0.1f) {
+            if (event.getType() == GestureType.SWIPE_DOWN && event.getStartY() <= 600 * 0.1f) {
                 return false; // 通知センター用SWIPE_DOWNは許可
             }
             return true; // その他はブロック
@@ -1043,26 +1007,40 @@ public class LockScreen implements Screen, GestureListener {
                 return true;
                 
             case SWIPE_UP:
-                // エッジジェスチャーは既にメソッド開始時に処理済み
-                // ここでは通知エリア内でのスクロールのみ処理
-                if (isInNotificationArea(event.getStartX(), event.getStartY()) && !patternInputVisible) {
+                // 画面下部からのスワイプアップはコントロールセンター用に許可
+                if (event.getStartY() >= 600 * 0.9f) {
+                    System.out.println("LockScreen: SWIPE_UP from bottom (y=" + event.getStartY() + 
+                                     ") - delegating to control center");
+                    return false; // イベントを他のリスナー（Kernel→コントロールセンター）に渡す
+                } else if (isInNotificationArea(event.getStartX(), event.getStartY()) && !patternInputVisible) {
+                    // 通知エリア内でのスワイプアップは通知スクロール（下向きスクロール）
                     System.out.println("LockScreen: SWIPE_UP in notification area - executing scroll");
                     handleNotificationScroll(event, false);
                     return true;
                 } else {
-                    System.out.println("LockScreen: SWIPE_UP not in notification area - blocked");
+                    boolean inNotificationArea = isInNotificationArea(event.getStartX(), event.getStartY());
+                    System.out.println("LockScreen: SWIPE_UP not from bottom (y=" + event.getStartY() + 
+                                     ") - inNotificationArea=" + inNotificationArea + 
+                                     ", patternInputVisible=" + patternInputVisible + " - blocked");
                     return true;
                 }
-
+                
             case SWIPE_DOWN:
-                // エッジジェスチャーは既にメソッド開始時に処理済み
-                // ここでは通知エリア内でのスクロールのみ処理
-                if (isInNotificationArea(event.getStartX(), event.getStartY()) && !patternInputVisible) {
+                // 画面上部からのスワイプダウンは通知センター用に許可
+                if (event.getStartY() <= 600 * 0.1f) {
+                    System.out.println("LockScreen: SWIPE_DOWN from top (y=" + event.getStartY() + 
+                                     ") - delegating to notification center");
+                    return false; // イベントを他のリスナー（Kernel→通知センター）に渡す
+                } else if (isInNotificationArea(event.getStartX(), event.getStartY()) && !patternInputVisible) {
+                    // 通知エリア内でのスワイプダウンは通知スクロール（上向きスクロール）
                     System.out.println("LockScreen: SWIPE_DOWN in notification area - executing scroll");
                     handleNotificationScroll(event, true);
                     return true;
                 } else {
-                    System.out.println("LockScreen: SWIPE_DOWN not in notification area - blocked");
+                    boolean inNotificationArea = isInNotificationArea(event.getStartX(), event.getStartY());
+                    System.out.println("LockScreen: SWIPE_DOWN not from top (y=" + event.getStartY() + 
+                                     ") - inNotificationArea=" + inNotificationArea + 
+                                     ", patternInputVisible=" + patternInputVisible + " - blocked");
                     return true;
                 }
                 
@@ -1090,10 +1068,10 @@ public class LockScreen implements Screen, GestureListener {
     private boolean handleDragStart(GestureEvent event) {
         int startX = event.getStartX();
         int startY = event.getStartY();
-
+        
         System.out.println("LockScreen: ドラッグ開始試行 at (" + startX + ", " + startY + ")");
-
-        // 通知エリア内でのドラッグの場合は通知スクロール処理（パターン入力が非表示の時のみ）
+        
+        // 通知エリア内でのドラッグの場合は通知スクロール処理
         if (isInNotificationArea(startX, startY) && !patternInputVisible) {
             System.out.println("LockScreen: 通知エリアドラッグ開始");
             isNotificationDragScrolling = true;
@@ -1101,16 +1079,13 @@ public class LockScreen implements Screen, GestureListener {
             notificationScrollVelocity = 0;
             return true;
         }
-
-        // パターン入力エリアでのドラッグまたはパターン入力が表示中の場合はパターン処理
-        System.out.println("LockScreen: パターンドラッグ開始 (patternInputVisible=" + patternInputVisible +
-                          ", inPatternArea=" + isInPatternGridArea(startX, startY) + ")");
-
+        
+        // パターン入力エリアでのドラッグの場合はパターン処理
         isDragging = true;
         currentPattern.clear();
         dragPath.clear();
         dragPath.add(new int[]{startX, startY});
-
+        
         // 最初に触れたドットを追加
         int dotIndex = getDotIndexAt(startX, startY);
         if (dotIndex >= 0) {
@@ -1119,8 +1094,8 @@ public class LockScreen implements Screen, GestureListener {
         } else {
             System.out.println("LockScreen: 初期ドット未検出 at (" + startX + ", " + startY + ")");
         }
-
-        System.out.println("LockScreen: ドラッグ開始 - isDragging=" + isDragging + ", パターン: " + currentPattern);
+        
+        System.out.println("LockScreen: ドラッグ開始 - パターン: " + currentPattern);
         return true;
     }
     
@@ -1215,22 +1190,13 @@ public class LockScreen implements Screen, GestureListener {
         int gridRight = gridCenterX + DOT_SPACING;
         int gridTop = gridCenterY - DOT_SPACING;
         int gridBottom = gridCenterY + DOT_SPACING;
-
-        boolean inArea = x >= gridLeft && x <= gridRight && y >= gridTop && y <= gridBottom;
-
-        // デバッグ出力
-        if (x < 200 && y < 200) { // 左上領域でのみデバッグ出力
-            System.out.println("LockScreen: isInPatternGridArea(" + x + "," + y + ") = " + inArea +
-                             " | gridCenter=(" + gridCenterX + "," + gridCenterY + ")" +
-                             " | area=[" + gridLeft + "-" + gridRight + ", " + gridTop + "-" + gridBottom + "]");
-        }
-
-        return inArea;
+        
+        return x >= gridLeft && x <= gridRight && y >= gridTop && y <= gridBottom;
     }
     
     /**
      * 指定座標にあるドットのインデックスを取得する。
-     *
+     * 
      * @param x X座標
      * @param y Y座標
      * @return ドットインデックス（0-8）、該当なしの場合-1
@@ -1239,11 +1205,13 @@ public class LockScreen implements Screen, GestureListener {
         for (int i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
             int[] dotPos = getDotPosition(i);
             int distance = (int) Math.sqrt(Math.pow(x - dotPos[0], 2) + Math.pow(y - dotPos[1], 2));
-
-            // デバッグ情報
-            System.out.println("LockScreen: Checking dot " + i + " at (" + dotPos[0] + "," + dotPos[1] +
-                             ") distance=" + distance + " from (" + x + "," + y + ")");
-
+            
+            // デバッグ情報（最初の数回のみ）
+            if (System.currentTimeMillis() % 1000 < 100) {
+                System.out.println("LockScreen: Checking dot " + i + " at (" + dotPos[0] + "," + dotPos[1] + 
+                                 ") distance=" + distance + " from (" + x + "," + y + ")");
+            }
+            
             if (distance <= DOT_DETECTION_RADIUS) {
                 System.out.println("LockScreen: Dot " + i + " detected at distance " + distance);
                 return i;
@@ -1251,7 +1219,6 @@ public class LockScreen implements Screen, GestureListener {
         }
         return -1;
     }
-
     
     /**
      * ドットインデックスから座標を取得する。
@@ -1328,28 +1295,38 @@ public class LockScreen implements Screen, GestureListener {
     
     
     /**
-     * ロック画面のクリーンアップ処理。
+     * ロック画面のクリーンアップ処理 (PGraphics version)。
      * レイヤー管理システムとジェスチャーリスナーの登録を解除する。
      */
     @Override
-    public void cleanup(PApplet p) {
+    public void cleanup(PGraphics g) {
         System.out.println("LockScreen: クリーンアップ実行中...");
-        
+
         // レイヤー管理システムから登録解除
         unregisterFromLayerManager();
-        
+
         // ジェスチャーマネージャーから登録解除
         if (kernel.getGestureManager() != null) {
             kernel.getGestureManager().removeGestureListener(this);
         }
-        
+
         // 状態をクリア
         currentPattern.clear();
         dragPath.clear();
         isDragging = false;
         authFeedback = AuthFeedback.NONE;
-        
+
         System.out.println("LockScreen: クリーンアップ完了");
+    }
+
+    /**
+     * @deprecated Use {@link #cleanup(PGraphics)} instead
+     */
+    @Deprecated
+    @Override
+    public void cleanup(PApplet p) {
+        PGraphics g = p.g;
+        cleanup(g);
     }
     
     /**
@@ -1578,36 +1555,41 @@ public class LockScreen implements Screen, GestureListener {
         float screenHeight = p.height;
         float inputScreenHeight = screenHeight * 0.6f; // 画面の60%を占める
         float slideOffset = inputScreenHeight * (1.0f - patternSlideProgress);
-
+        
         // パターン入力画面の背景
         p.fill(30, 35, 45, (int)(255 * patternSlideProgress * 0.9f));
         p.rect(0, screenHeight - inputScreenHeight + slideOffset, p.width, inputScreenHeight);
-
+        
         // 上部のハンドル（ドラッグ用）
         float handleY = screenHeight - inputScreenHeight + slideOffset + 10;
         p.fill(150, 150, 150, (int)(255 * patternSlideProgress));
         p.rect(p.width/2 - 30, handleY, 60, 4, 2);
-
+        
         // パターン入力のタイトル
         p.fill(255, 255, 255, (int)(255 * patternSlideProgress));
         p.textAlign(p.CENTER, p.CENTER);
         p.textSize(18);
         p.text("パターンでロックを解除", p.width / 2, handleY + 30);
-
+        
         // アニメーション進行度に応じてパターングリッドを描画
         if (patternSlideProgress > 0.3f) {
-            // パターングリッドは固定位置に描画（translateしない）
+            p.pushMatrix();
+            p.translate(0, slideOffset);
+            
+            // パターングリッドの透明度を調整
             drawPatternGridWithAlpha(p, patternSlideProgress);
             drawDragPath(p);
             drawAuthFeedback(p);
             drawPatternHint(p);
+            
+            p.popMatrix();
         }
     }
 
     /**
-     * パターン入力画面を描画する（PGraphics版、スライドアニメーション付き）。
+     * パターン入力画面を描画する（スライドアニメーション付き）（PGraphics版）。
      */
-    private void drawPatternInputScreen(PGraphics g) {
+    private void drawPatternInputScreen(processing.core.PGraphics g) {
         // スライド位置を計算（画面下から上にスライド）
         float screenHeight = g.height;
         float inputScreenHeight = screenHeight * 0.6f; // 画面の60%を占める
@@ -1622,19 +1604,29 @@ public class LockScreen implements Screen, GestureListener {
         g.fill(150, 150, 150, (int)(255 * patternSlideProgress));
         g.rect(g.width/2 - 30, handleY, 60, 4, 2);
 
+        // 日本語フォントを設定
+        if (kernel != null && kernel.getJapaneseFont() != null) {
+            g.textFont(kernel.getJapaneseFont());
+        }
+
         // パターン入力のタイトル
         g.fill(255, 255, 255, (int)(255 * patternSlideProgress));
-        g.textAlign(g.CENTER, g.CENTER);
+        g.textAlign(PApplet.CENTER, PApplet.CENTER);
         g.textSize(18);
         g.text("パターンでロックを解除", g.width / 2, handleY + 30);
 
         // アニメーション進行度に応じてパターングリッドを描画
         if (patternSlideProgress > 0.3f) {
-            // パターングリッドは固定位置に描画（translateしない）
+            g.pushMatrix();
+            g.translate(0, slideOffset);
+
+            // パターングリッドの透明度を調整
             drawPatternGridWithAlpha(g, patternSlideProgress);
             drawDragPath(g);
             drawAuthFeedback(g);
             drawPatternHint(g);
+
+            g.popMatrix();
         }
     }
     
@@ -1647,10 +1639,10 @@ public class LockScreen implements Screen, GestureListener {
             for (int col = 0; col < GRID_SIZE; col++) {
                 int dotIndex = row * GRID_SIZE + col;
                 int[] dotPos = getDotPosition(dotIndex);
-
+                
                 // ドットが現在のパターンに含まれているかチェック
                 boolean isSelected = currentPattern.contains(dotIndex);
-
+                
                 // 選択状態に応じて色を変更（透明度適用）
                 if (isSelected) {
                     p.fill(100, 180, 255, (int)(255 * alpha)); // 青色（選択済み）
@@ -1661,22 +1653,22 @@ public class LockScreen implements Screen, GestureListener {
                     p.stroke(100, 110, 120, (int)(255 * alpha));
                     p.strokeWeight(2);
                 }
-
+                
                 // ドットを描画
                 p.ellipse(dotPos[0], dotPos[1], DOT_RADIUS * 2, DOT_RADIUS * 2);
-
+                
                 // 中央の小さなドット
                 p.fill(200, 200, 200, (int)(255 * alpha));
                 p.noStroke();
                 p.ellipse(dotPos[0], dotPos[1], 6, 6);
             }
         }
-
+        
         // 選択されたドット間に線を描画
         if (currentPattern.size() > 1) {
             p.stroke(100, 180, 255, (int)(255 * alpha));
             p.strokeWeight(4);
-
+            
             for (int i = 0; i < currentPattern.size() - 1; i++) {
                 int[] start = getDotPosition(currentPattern.get(i));
                 int[] end = getDotPosition(currentPattern.get(i + 1));
@@ -1688,7 +1680,7 @@ public class LockScreen implements Screen, GestureListener {
     /**
      * 透明度を指定してパターングリッドを描画する（PGraphics版）。
      */
-    private void drawPatternGridWithAlpha(PGraphics g, float alpha) {
+    private void drawPatternGridWithAlpha(processing.core.PGraphics g, float alpha) {
         // グリッドの各ドットを描画
         for (int row = 0; row < GRID_SIZE; row++) {
             for (int col = 0; col < GRID_SIZE; col++) {
@@ -1731,7 +1723,7 @@ public class LockScreen implements Screen, GestureListener {
             }
         }
     }
-    
+
     /**
      * ホームボタンのヒントを表示する。
      */
@@ -1739,7 +1731,7 @@ public class LockScreen implements Screen, GestureListener {
         // ヒント背景
         p.fill(0, 0, 0, 100);
         p.rect(50, p.height - 100, p.width - 100, 60, 8);
-
+        
         // ヒントテキスト
         p.fill(200, 200, 200);
         p.textAlign(p.CENTER, p.CENTER);
@@ -1751,22 +1743,26 @@ public class LockScreen implements Screen, GestureListener {
     /**
      * ホームボタンのヒントを表示する（PGraphics版）。
      */
-    private void drawHomeButtonHint(PGraphics g) {
+    private void drawHomeButtonHint(processing.core.PGraphics g) {
         // ヒント背景
         g.fill(0, 0, 0, 100);
         g.rect(50, g.height - 100, g.width - 100, 60, 8);
 
+        // 日本語フォントを設定
+        if (kernel != null && kernel.getJapaneseFont() != null) {
+            g.textFont(kernel.getJapaneseFont());
+        }
+
         // ヒントテキスト
         g.fill(200, 200, 200);
-        g.textAlign(g.CENTER, g.CENTER);
+        g.textAlign(PApplet.CENTER, PApplet.CENTER);
         g.textSize(16);
         g.text("ホームボタン（スペース）を押してロックを解除", g.width / 2, g.height - 80);
-
     }
-    
+
     /**
      * 通知エリア内かどうかを判定する。
-     * 
+     *
      * @param x X座標
      * @param y Y座標
      * @return 通知エリア内の場合true
@@ -1881,5 +1877,73 @@ public class LockScreen implements Screen, GestureListener {
         } else {
             notificationScrollVelocity = 0;
         }
+    }
+
+    /**
+     * キー押下イベントを処理する (PGraphics version)。
+     * スペースキーでロック解除フィールドを展開/ロックを解除する。
+     *
+     * @param g PGraphicsインスタンス
+     * @param key 押されたキー文字
+     * @param keyCode キーコード
+     */
+    @Override
+    public void keyPressed(PGraphics g, char key, int keyCode) {
+        System.out.println("LockScreen: keyPressed - key: '" + key + "', keyCode: " + keyCode);
+
+        // スペースキーでパターン入力画面を展開/閉じる
+        if (key == ' ' || keyCode == 32) {
+            if (!patternInputVisible) {
+                System.out.println("LockScreen: スペースキーが押されました - パターン入力画面を展開");
+                showPatternInput();
+            } else {
+                System.out.println("LockScreen: スペースキーが押されました - パターン入力画面を閉じる");
+                hidePatternInput();
+            }
+            return;
+        }
+
+        // ESCキーでパターン入力画面を閉じる
+        if (keyCode == 27 && patternInputVisible) { // ESC key
+            System.out.println("LockScreen: ESCキーが押されました - パターン入力画面を閉じる");
+            hidePatternInput();
+            return;
+        }
+
+        // パターン入力画面が表示されていない場合、他のキー入力は無視
+        if (!patternInputVisible) {
+            System.out.println("LockScreen: パターン入力画面が非表示のため、キー入力を無視");
+        }
+    }
+
+    /**
+     * @deprecated Use {@link #keyPressed(PGraphics, char, int)} instead
+     */
+    @Deprecated
+    @Override
+    public void keyPressed(processing.core.PApplet p, char key, int keyCode) {
+        PGraphics g = p.g;
+        keyPressed(g, key, keyCode);
+    }
+
+
+
+
+
+
+    /**
+     * Adds mouseDragged support for PGraphics (empty implementation, can be overridden)
+     */
+    @Override
+    public void mouseDragged(PGraphics g, int mouseX, int mouseY) {
+        // Default implementation - subclasses can override
+    }
+
+    /**
+     * Adds mouseReleased support for PGraphics (empty implementation, can be overridden)
+     */
+    @Override
+    public void mouseReleased(PGraphics g, int mouseX, int mouseY) {
+        // Default implementation - subclasses can override
     }
 }

@@ -1,195 +1,236 @@
-### MochiMobileOS プロジェクト概要
+# MochiMobileOS 開発ドキュメント
 
-**MochiMobileOS**は、JavaとProcessingグラフィックスライブラリを基盤として開発された、独自のスマートフォンOSシミュレータです。当初はPC上で単体動作するアプリケーションとして開発が進められ、最終的には**Minecraft Forge MOD**としてゲーム内に実装し、プレイヤーがゲーム内で使える多機能なスマートフォンを提供することを目標としています。
+### 1. プロジェクト仕様書
 
----
-### 🏗️ アーキテクチャ設計
+**概要**: Java/ProcessingベースのスマートフォンOSシミュレータ。最終的にMinecraft Forge MODとしてゲーム内での利用を目指す。
 
-本OSは、**柔軟性・拡張性・移植性**を最重要視した、現代的なソフトウェア設計に基づいています。
+**アーキテクチャ**:
+*   **`core`**: OSの純粋なロジック (環境非依存)
+*   **`standalone`**: PCでの実行用ランチャー
+*   **`forge`**: Minecraftとの連携用ブリッジ (実装中)
+*   **カーネル**: サービス指向 (`VFS`, `AppLoader`, `GestureManager`等)
+*   **統合MODモデル**: 外部MODがMochiMobileOSアプリとして自己登録できるAPIを提供。
 
-#### **1. モジュール分離アーキテクチャ**
-プロジェクトは明確に分離された3つのモジュールで構成され、各環境への対応を容易にしています。
+**主要機能**:
+*   **システム**: ロック画面、コントロールセンター、通知センター
+*   **ランチャー**: マルチページホーム、編集モード、Appライブラリ、Dock
 
-* **`core`モジュール**: OSの心臓部。ProcessingとJavaのみに依存し、特定の環境（PC/Minecraft）を知らない純粋なOSロジックを実装します。これにより、OS本体の独立性が保たれます。
-* **`standalone`モジュール**: `core`モジュールをPC上で実行するための起動プログラム（ランチャー）です。
-* **`forge`モジュール (実装中)**: `core`モジュールとMinecraft Forge APIの「橋渡し」役。OSの描画をMinecraft GUIに変換したり、OSからの要求をForge APIに伝えたりする責務を負います。
+### 2. 現在の仕様
 
-#### **2. サービス指向カーネル**
-OSの中心には`Kernel`クラスが存在し、特定の機能は独立した「サービス」として実装・管理されています。
+**有効なサービス**:
+VFS, SettingsManager, SystemClock, AppLoader, LayoutManager, PopupManager, GestureManager, ControlCenterManager, NotificationManager, LockManager, LayerManager
 
-* **`VFS` (仮想ファイルシステム)**: `mochi_os_data`フォルダをルートとし、アプリのデータや設定を安全に管理します。
-* **`AppLoader`**: `/apps`ディレクトリや`/mods`フォルダをスキャンし、アプリケーションを動的に認識・読み込みます。
-* **`LayoutManager`**: ホーム画面のアイコン配置情報をJSON形式で永続化します。
-* **`GestureManager`**: マウス操作を`TAP`, `LONG_PRESS`, `SWIPE`などの高度なジェスチャーに変換し、優先度に基づいて各UIコンポーネントに伝達します。
+**組み込みアプリ**:
+LauncherApp, SettingsApp, CalculatorApp, AppStoreApp (UIのみ)
 
-#### **3. 統合MODモデル**
-Minecraftとの深い連携（アイテム追加など）が必要なアプリは、それ自体が**一個のForge MOD**として開発されます。このMODは、Forgeのシステムに自身を登録すると同時に、MochiMobileOSにも「私はアプリです」と自己紹介する仕組みを持ちます。これにより、開発の手間を最小限に抑えつつ、Forgeの機能を100%活用できます。
+**Forge連携**:
+*   MODとしての基本構造とスマートフォンアイテムが実装済み。
+*   他のMODがアプリを登録するためのAPI (`PhoneAppRegistryEvent`) が機能している。
 
-#### **4. IApplicationインターフェース仕様**
-外部アプリケーション開発のための統一インターフェース：
+### 3. 既知の現在の問題
 
-* **必須メソッド**：
-    * `String getApplicationId()`: アプリの一意識別子
-    * `String getApplicationName()`: 表示名
-    * `String getApplicationVersion()`: バージョン情報
-    * `PImage getIcon(PApplet p)`: PApplet環境でのアイコン取得
-    * `PImage getIcon(PGraphics g)`: PGraphics環境でのアイコン取得
-    * `Screen createMainScreen()`: メイン画面インスタンス作成
-    * `void initialize()`: アプリ初期化処理
-    * `void onInstall()`: アプリインストール時の処理
-    * `void terminate()`: アプリ終了処理
+1.  **Forge連携が不完全**: `core`モジュールと`forge`モジュール間のブリッジ(`KernelAdapter`等)が未実装で、両者が独立して動作している。
+2.  **設定アプリが機能しない**: `SettingsApp`のUIは存在するが、設定を実際に変更するバックエンドロジックが実装されていない。
+3.  **ランチャーの不具合**: ホーム画面のアイコンをDockに移動する機能が正しく動作しない。
+4.  **PGraphicsアーキテクチャ移行 (Phase 8 - ✅ 100%完了)**: `core`モジュールのPGraphics統一化が完了。
+    *   **完了済み**:
+        - **インターフェース**: IApplication, Screen (完全移行、@Deprecated ブリッジ付き)
+        - **画面クラス**: HomeScreen, CalculatorScreen, SettingsScreen, LockScreen, SimpleHomeScreen, AppLibraryScreen, BasicHomeScreen, SafeHomeScreen, AppLibraryScreen_Complete
+        - **アプリケーションクラス**: LauncherApp, SettingsApp, CalculatorApp
+        - **サービスクラス**: ControlCenterManager, NotificationManager (他は元々PApplet非依存)
+        - **統一座標システム**: CoordinateTransform クラス実装済み
+    *   **移行内容**: すべてのPAppletメソッドは@Deprecatedとしてマークされ、PGraphicsメソッドが新しいプライマリAPIとなっている
 
-* **互換性エイリアス**（旧バージョン対応）：
-    * `String getApplicationName()`: `getName()`のエイリアス
-    * `String getApplicationVersion()`: `getVersion()`のエイリアス
+### 5. ロック画面でのスペースキー無反応問題 ⚠️ → ✅ **解決済み** (2025年9月29日)
 
-#### **5. 外部アプリケーション統合システム**
-MochiMobileOSは、2つの形態での外部アプリケーション対応をサポートします：
+**問題**: ロック画面でスペースキーが押されても何も反応しない現象が発生していました。
 
-* **standalone環境**: `/apps`ディレクトリと`/mods`ディレクトリからの動的読み込み
-* **Forge環境**: `PhoneAppRegistryEvent`を通じたMODアプリケーション登録システム
+**根本原因**: Kernelのキー処理ロジックで、ロック画面が表示されている場合でもスペースキーを「閉じられないレイヤー」として扱い、ScreenManagerに転送していませんでした。
 
-##### **5.1 MODアプリケーション登録フロー**
-1. **MochiMobileOSMod**が初期化時に`PhoneAppRegistryEvent`を発行
-2. 他のMODが`@SubscribeEvent`でイベントをリスン
-3. `event.registerApp(application)`でアプリケーションを登録
-4. **ModAppRegistry**がアプリケーションを一元管理
-5. 登録されたアプリは「利用可能なアプリ候補」としてAppStoreに表示
+**解決方法**:
+- `Kernel.java`のkeyPressed()メソッドを修正
+- ロック画面が表示されている場合は、レイヤー管理を通さずに直接ScreenManagerにキー入力を転送
+- ロック画面のkeyPressed()メソッドが既に実装されており、スペースキーでパターン入力画面の展開/閉じる機能が動作
 
-##### **5.2 スレッドセーフなアプリケーション管理**
-`ModAppRegistry`は`CopyOnWriteArrayList`を使用し、複数のMODからの同時登録に対応しています。
+**修正されたコード**:
+```java
+// スペースキー（ホームボタン）の階層管理処理
+if (key == ' ' || keyCode == 32) {
+    System.out.println("Kernel: Space key pressed - checking lock screen status");
 
----
-### 🚀 主要機能
+    // ロック画面が表示されている場合は、ロック画面に処理を委譲
+    if (layerStack.contains(LayerType.LOCK_SCREEN)) {
+        System.out.println("Kernel: Lock screen is active - forwarding space key to screen manager");
+        if (screenManager != null) {
+            screenManager.keyPressed(key, keyCode);
+        }
+        return;
+    }
 
-本OSは、現代的なスマートフォンが持つ主要機能を網羅した、高度なシステムです。
+    // ロック画面が表示されていない場合は、通常のホームボタン処理
+    System.out.println("Kernel: Space key pressed - handling home button");
+    handleHomeButton();
+    return;
+}
+```
 
-* **セキュリティシステム**:
-    * **ロック画面**: パターン認証によるロック解除機能を搭載。時刻や通知プレビューも表示します。
-    * **`LockManager`**: OSのロック状態を管理し、パターンの照合・保存を行います。
+**結果**: ロック画面でスペースキーが正常に反応し、パターン入力画面の展開/閉じるトグル機能が動作するようになりました。
 
-* **ランチャーアプリ**:
-    * **マルチページホーム画面**: 左右のスワイプでページを切り替え可能。
-    * **編集モード**: アイコンの長押しで、アイコンが揺れる編集モードに移行。ドラッグ＆ドロップによる配置変更や、ショートカットの削除が可能です。
-    * **Appライブラリ**: インストール済みの全アプリを一覧表示。ここからホーム画面にアプリを追加できます。
-    * **Dock (常時表示領域)**: 画面下部に主要なアプリを固定配置できます。
+### 6. アプリケーション実行時のスペースキー無反応問題 ⚠️ → ✅ **解決済み** (2025年9月29日)
 
-* **システムUI**:
-    * **コントロールセンター**: 画面下からのスワイプアップで起動。Wi-FiやBluetoothなどのシステム設定を素早く切り替えられます。
-    * **通知センター**: 画面上からのスワイプダウンで起動。OSやアプリからのお知らせを時系列で確認できます。
-    * **ポップアップシステム**: アプリからの確認メッセージなどをモーダル表示します。
+**問題**: アプリケーションを開いている時にスペースキーを押してもホームスクリーンに戻らない現象が発生していました。
 
----
-### 🔧 技術仕様と互換性
+**根本原因**: ScreenManagerでアプリケーション画面をプッシュした際に、KernelのレイヤースタックにAPPLICATIONレイヤーが追加されていませんでした。そのため、Kernelのスペースキー処理で`getTopMostClosableLayer()`がAPPLICATIONレイヤーを見つけられず、ホームボタン処理が機能していませんでした。
 
-* **Minecraft Forge**: `1.20.1`
-* **Java**: `17`
-* **Processing**: `4.4.4`
-* **主要ライブラリ**:
-    * `Gson`: レイアウト情報のJSON永続化に使用。
-    * `Minim`: 音声処理ライブラリ（将来的な機能のため導入済み）。
-* **国際化**: UTF-8エンコーディングと日本語フォント（Meiryo）のロードに対応し、日本語表示をサポートしています。
+**解決方法**:
+1. **ScreenManagerにKernel参照を追加**: レイヤー管理との統合を可能にするため
+2. **pushScreen()メソッドの修正**: アプリケーション画面（ランチャー関連以外）をプッシュ時に`kernel.addLayer(LayerType.APPLICATION)`を呼び出す
+3. **popScreen()メソッドの修正**: アプリケーション画面をポップ時に`kernel.removeLayer(LayerType.APPLICATION)`を呼び出す
+4. **isLauncherScreen()ヘルパー追加**: HomeScreen、AppLibraryScreen等のランチャー関連画面を判定し、これらにはAPPLICATIONレイヤーを追加しない
 
----
-### 🔬 現状の実装
+**修正されたコード**:
+- **ScreenManager.java**: Kernel参照の追加、pushScreen/popScreenでのレイヤー管理統合
+- **Kernel.java**: ScreenManager初期化時にKernel参照を設定
 
-`Kernel.java`の初期化処理 (`setup`メソッド) および`forge`モジュールのコードを基に、現在の実装状況を以下に示します。
+**結果**: アプリケーション実行時にスペースキーを押すとAPPLICATIONレイヤーが検出され、正常にホーム画面に戻るようになりました。
 
-#### **有効化されているコアサービス**
+### 7. スペースキー（ホームボタン）によるホーム画面復帰機能の実装 ✅ **解決済み** (2025年9月29日)
 
-*   **VFS**: 仮想ファイルシステム
-*   **SettingsManager**: 設定管理
-*   **SystemClock**: システム時刻管理
-*   **AppLoader**: アプリケーションローダー
-*   **LayoutManager**: ホーム画面のレイアウト管理
-*   **PopupManager**: グローバルポップアップ表示
-*   **GestureManager**: タッチジェスチャー認識
-*   **ControlCenterManager**: コントロールセンター管理
-*   **NotificationManager**: 通知センター管理
-*   **LockManager**: 画面ロック管理
-*   **LayerManager**: UIレイヤー管理
+**問題**: アプリケーションを開いている時にスペースキーを押してもホームスクリーンに戻らない現象が発生していました。
 
-#### **組み込みアプリケーション**
+**根本原因分析**:
+- Kernelがスペースキー入力を受け取り、APPLICATIONレイヤーを検知してScreenManagerに転送することまでは正常に動作
+- しかし、ScreenManagerのkeyPressed()メソッドは単純に現在のスクリーンにキーイベントを転送するだけで、**ホームボタンとしての処理が実装されていなかった**
 
-*   **LauncherApp**: ホーム画面およびアプリランチャー
-*   **SettingsApp**: OSの基本設定アプリ
-*   **CalculatorApp**: 電卓アプリ
-*   **AppStoreApp**: アプリストア（UIのみ）
+**新しいアプローチ**:
+アプリケーション自体がホームボタンを検知する必要はなく、**ScreenManager**がスペースキー（ホームボタン）を受け取って直接ホーム画面に戻る処理を実行するアプローチを採用。
 
-#### **Forge連携 (MochiMobileOSMod)**
+**解決方法**:
+1. **ScreenManager.keyPressed()メソッドの修正**: スペースキー検知時に`navigateToHome()`メソッドを呼び出すロジックを追加
+2. **navigateToHome()メソッドの実装**:
+   - 現在の画面がホーム画面（ランチャー関連）の場合は何もしない
+   - アプリケーション画面の場合はスタックからポップしてホーム画面に戻る
+   - APPLICATIONレイヤーの適切な削除処理
 
-`forge`モジュールは本格実装段階にあり、以下の機能が実装されています。
+**修正されたコード**:
+- **ScreenManager.java**:
+  ```java
+  // keyPressed()メソッドにスペースキー処理を追加
+  if (key == ' ' || keyCode == 32) {
+      System.out.println("ScreenManager: Space key detected - returning to home screen");
+      navigateToHome();
+      return;
+  }
 
-*   **MODの基本構造**: `@Mod`アノテーションの付いた`MochiMobileOSMod.java`が存在し、MODとして認識される基本的な構造ができています。
-*   **アイテム登録**: スマートフォンを表現するアイテム (`ModItems`) がMinecraftに登録されます。
-*   **アプリケーション登録API**: 他のMODがMochiMobileOS用のアプリケーションとして自身を登録するためのイベントシステム (`PhoneAppRegistryEvent`) が実装されており、「統合MODモデル」の基盤が構築されています。
-*   **ModAppRegistry**: シングルトンパターンによるスレッドセーフなMODアプリケーション管理システム。`CopyOnWriteArrayList`を使用して複数MODからの同時登録に対応。
-*   **PhoneAppRegistryEvent**: `FMLCommonSetupEvent`時に発行される、MODアプリケーション登録のためのカスタムイベント。イベントのキャンセル不可で、結果を持たない安全なイベント設計。
-*   **初期化フェーズ管理**: 5段階の初期化プロセス（Registry準備→Kernel確認→アイテム初期化→イベント発行→アプリ処理）で確実な起動を保証。
+  // navigateToHome()メソッドの実装
+  private void navigateToHome() {
+      // 現在の画面がホーム画面の場合は何もしない
+      if (currentScreen != null && isLauncherScreen(currentScreen)) {
+          return;
+      }
 
----
-### 🐛 現在の問題とTODO
+      // アプリケーション画面からホーム画面に戻る処理
+      while (!screenStack.isEmpty() && !isLauncherScreen(getCurrentScreen())) {
+          Screen poppedScreen = screenStack.pop();
+          if (kernel != null) {
+              kernel.removeLayer(LayerType.APPLICATION);
+          }
+      }
+  }
+  ```
 
-プロジェクトのソースコードに残された`TODO`コメントに基づき、現在把握している問題点と今後のタスクを以下に示します。
+**結果**: アプリケーション実行時にスペースキーを押すとScreenManagerが直接ホーム画面復帰処理を実行し、正常にホーム画面に戻るようになりました。
 
-#### **1. Forge連携の実装**
-`forge`モジュールと`core`モジュールの連携が部分的に実装済みです。
+**追加考慮事項**: ロック画面では解除フィールド表示のためにスペースキーが必要なため、ロック画面の場合のみ例外的にスペースキーをスクリーンに転送する処理を追加しました。
 
-**実装済み部分**:
-*   **MODアプリケーション登録システム**: `PhoneAppRegistryEvent` + `ModAppRegistry`による完全なMODアプリ管理機能
-*   **イベント駆動型アーキテクチャ**: FMLイベントバスを活用したMOD間連携システム
-*   **スレッドセーフなアプリ管理**: 複数MODからの同時登録対応
+### 8. ホームスクリーン完全体化 ✅ **完了** (2025年9月29日)
 
-**残存課題**:
-*   **`Kernel`のブリッジ**: `core`の`Kernel`をMinecraft環境で利用するためのラッパーまたはブリッジクラス (`KernelAdapter`など) の実装が必要です。
-*   **`AppLoader`との連携**: Forge経由で登録されたMODアプリを、`core`の`AppLoader`に認識させる仕組み（`syncWithModRegistry()`メソッドの実装）が必要です。
-*   **実行環境統合**: 現在はスタンドアロン版とForge版が独立動作しているため、統一された動作環境の構築が必要です。
+**実装された機能**:
 
-#### **2. UIシステムの移行 ✅ 解決済み (2025-09-28)**
-通知センターとコントロールセンターの描画問題を修正し、LayerManagerベースのシステムに完全移行しました。
+**1. ページ編集機能 ✅**
+- **編集モード開始時の空ページ自動追加**: 編集モードに入ると、最後に空のページが自動的に追加される
+- **編集モード終了時の空ページ自動削除**: 編集モードを終了すると、末尾の空ページが自動的に削除される
+- **ページ間ドラッグ機能**: 編集モードでショートカットを右端（x > 350）にドラッグすると、自動的に次のページに移動
+  - 次のページが存在しない場合は新しいページを作成
+  - 次のページが満杯の場合はさらに新しいページを作成
+  - ドラッグ後は自動的に目標ページにスライド
 
-**修正済み項目**:
-*   **コントロールセンターのレイヤー統合**: `registerControlCenterAsLayer()`メソッドを実装し、優先度9000でレイヤーマネージャーに登録
-*   **通知センターのレイヤー統合**: `registerNotificationCenterAsLayer()`メソッドを実装し、優先度8500でレイヤーマネージャーに登録
-*   **UILayerのPGraphics対応**: `LayerRenderer`インターフェースに`render(PGraphics)`メソッドを追加し、PGraphics環境での描画を対応
-*   **LayerManagerのPGraphics対応**: `updateAndRender(PGraphics)`メソッドでレイヤー更新処理を有効化
-*   **重複描画の解決**: `isComponentManagedByLayer()`メソッドでレイヤー管理状態を正しく検出し、直接描画を無効化
+**2. ホームボタンオートスクロール ✅**
+- **既存実装の確認**: Kernel.javaで既に実装済み
+- スペースキー（ホームボタン）押下で自動的に最初のページにスライドする機能が動作している
 
-**技術詳細**:
-*   レイヤー優先度階層: コントロールセンター(9000) > 通知センター(8500) > ロック画面(8000)
-*   PAppletとPGraphicsの両環境で動作する統一レンダリングシステム
-*   ジェスチャー処理とレイヤー描画の適切な統合
-
-#### **2-2. アニメーション省略問題の修正 ✅ 解決済み (2025-09-28)**
-コントロールセンターと通知センターで「初回スライドインは正常だが、スライドアウトとその後のアニメーションが省略される」問題を完全解決しました。
-
-**問題の原因と解決策**:
-
-**第1層問題 - show()時のアニメーション状態管理**:
-* **原因**: アニメーション完了状態からの再表示時に、`animationProgress`と`targetAnimationProgress`が同値になりアニメーション更新がスキップされる
-* **解決**: show()メソッドで`animationProgress >= 0.99f`の場合に`animationProgress = 0.0f`に強制リセット
-
-**第2層問題 - hide()時のアニメーション状態設定**:
-* **原因**: hide()メソッドで不適切なアニメーション状態リセットロジック
-* **解決**: hide()時は`animationProgress`を現在値(1.0)に保持し、`targetAnimationProgress = 0.0f`でスライドアウト開始
-
-**第3層問題 - LayerManagerの描画停止**:
-* **原因**: hide()後に`isVisible = false`となり、LayerManagerが描画をスキップしてアニメーション更新が停止
-* **解決**: `isVisible()`メソッドを`return isVisible || animationProgress > 0.01f`に修正し、アニメーション中は描画継続
+**3. デザイン改善 ✅**
+- **アイコンサイズ縮小**: ICON_SIZE を 64px から 48px に変更
+- **グリッド間隔調整**: ICON_SPACING を 20px から 15px に変更
+- より密度の高い、モダンな外観を実現
 
 **修正されたファイル**:
-*   `ControlCenterManager.java`: show()/hide()/isVisible()メソッドの修正
-*   `NotificationManager.java`: show()/hide()/isVisible()メソッドの修正
+- `HomeScreen.java` (core/src/main/java/jp/moyashi/phoneos/core/apps/launcher/ui/HomeScreen.java):
+  - `toggleEditMode()`: 編集モード開始時の空ページ追加、終了時の空ページ削除機能
+  - `addEmptyPageIfNeeded()`: 編集モード用空ページ追加ヘルパー
+  - `removeEmptyPagesAtEnd()`: 編集モード終了時の空ページ削除ヘルパー
+  - `handleShortcutDrop()`: 右端ドラッグ時のページ間移動機能
+  - `handleShortcutMoveToNextPage()`: ページ間ショートカット移動の実装
+  - `findFirstEmptySlot()`: ページ内の最初の空きスロット検索
+  - アイコンサイズとスペーシングの調整
 
-**技術詳細**:
-*   アニメーション状態の3段階管理: 表示開始(0.0→1.0) / 表示完了(1.0) / 非表示開始(1.0→0.0)
-*   LayerManagerとアニメーションシステムの統合による継続的な描画更新
-*   フレームベースの重複更新防止システムと状態管理の両立
+**結果**: ホームスクリーンがより使いやすく、直感的な操作が可能になった。編集モードでの柔軟なページ管理とドラッグ操作によるページ間移動が実現され、ホームボタンでの迅速なナビゲーションも確保されている。
 
-#### **3. 設定アプリの機能実装**
-`SettingsApp`は現在UIのみで、実際の機能が伴っていません。
-*   **各種設定項目**: 「Wi-Fi」「Bluetooth」「機内モード」などのトグルスイッチが、実際のOSの状態を反映・変更するように実装する必要があります。
+### 9. 空ページ追加機能の修正 ✅ **完了** (2025年9月29日)
 
-#### **4. ランチャーの機能改善**
-ホーム画面 (`HomeScreen`) の一部機能が未実装または不完全です。
-*   **Dockへのショートカット移動**: ホーム画面のアイコンを長押ししてDockに移動させる機能 (`moveShortcutToDock`) が正しく動作していません。
+**問題**: 編集モード開始時に空のページが追加されない問題があった。
+
+**根本原因**: AppLibraryページが最後のページにある場合、元の実装では適切に空ページが追加されていなかった。また、ページの削除ロジックもAppLibraryページを考慮していなかった。
+
+**修正内容**:
+
+**1. `addEmptyPageIfNeeded()` メソッドの改善**:
+- AppLibraryページがある場合、その前に空ページを挿入するロジックに変更
+- AppLibraryページの前のページが空でない場合のみ空ページを追加
+- デバッグメッセージを追加して動作を追跡可能に
+
+**2. `removeEmptyPagesAtEnd()` メソッドの改善**:
+- AppLibraryページをスキップしつつ、空の通常ページを削除
+- ページインデックスの調整を適切に処理
+- デバッグメッセージを追加して削除プロセスを可視化
+
+**修正後の動作**:
+- 編集モード開始時: AppLibraryページがある場合はその前に、ない場合は最後に空ページを追加
+- 編集モード終了時: AppLibraryページを除いた空の通常ページを末尾から削除
+- 現在のページインデックスが削除の影響を受ける場合は適切に調整
+
+**テスト方法**:
+1. ホームスクリーン上で長押しして編集モードに入る
+2. コンソールに「Added empty page」メッセージが表示されることを確認
+3. 編集モードを終了する
+4. コンソールに空ページ削除メッセージが表示されることを確認
+
+### 10. 編集モードでのページスライド機能復活 ✅ **完了** (2025年9月29日)
+
+**問題**: 編集モードでページスライドジェスチャーが無効になっており、ページを切り替えられない。
+
+**根本原因**: 編集モードで全てのページスワイプが一律に無効化されていた。これにより、ユーザーは編集モード中にページを移動できず、特に空ページを追加した後にそのページにアクセスできない問題があった。
+
+**修正内容**:
+
+**1. 条件付きページスワイプ有効化**:
+- **従来**: 編集モード中は全てのページスワイプが無効
+- **修正後**: ショートカットドラッグ中のみページスワイプを無効、それ以外では有効
+
+**2. 修正したメソッド**:
+- `handleSwipeLeft()`: `isEditing && isDragging` 時のみ無効化
+- `handleSwipeRight()`: `isEditing && isDragging` 時のみ無効化
+- `handleDragMove()`: ショートカットドラッグ中のみページドラッグを無効化
+- `handleDragEnd()`: ショートカットドラッグ中のみページドラッグ終了を無効化
+
+**修正後の動作**:
+- **編集モードでページスライド可能**: 左右スワイプでページ間を移動できる
+- **ショートカットドラッグ中は無効**: アイコンをドラッグしている間はページスライドが無効になり、誤動作を防ぐ
+- **両機能の共存**: ページスライドとショートカットドラッグが適切に区別される
+
+**ユーザビリティの向上**:
+- 編集モード中に新しく追加された空ページにアクセス可能
+- ページ間でのショートカット移動がより柔軟に
+- 直感的な操作が可能
+
+### 11. TODO
