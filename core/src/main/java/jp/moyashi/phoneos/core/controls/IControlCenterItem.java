@@ -2,6 +2,7 @@ package jp.moyashi.phoneos.core.controls;
 
 import jp.moyashi.phoneos.core.input.GestureEvent;
 import processing.core.PApplet;
+import processing.core.PGraphics;
 
 /**
  * コントロールセンターに配置される全てのアイテム（トグル、スライダー等）が実装する基底インターフェース。
@@ -14,9 +15,24 @@ import processing.core.PApplet;
 public interface IControlCenterItem {
     
     /**
-     * コントロールセンターアイテムを描画する。
-     * 指定された領域内に自身のUI要素を描画する。
-     * 
+     * コントロールセンターアイテムを描画する（PGraphics版）。
+     * PGraphics統一アーキテクチャで使用する。
+     *
+     * @param g Processing描画コンテキスト
+     * @param x アイテム描画領域のX座標
+     * @param y アイテム描画領域のY座標
+     * @param w アイテム描画領域の幅
+     * @param h アイテム描画領域の高さ
+     */
+    default void draw(PGraphics g, float x, float y, float w, float h) {
+        // デフォルト実装：何もしない
+        // 各実装クラスでオーバーライドしてください
+    }
+
+    /**
+     * コントロールセンターアイテムを描画する（PApplet版）。
+     * 互換性のために残存。段階的にPGraphics版に移行予定。
+     *
      * @param p Processing描画コンテキスト
      * @param x アイテム描画領域のX座標
      * @param y アイテム描画領域のY座標

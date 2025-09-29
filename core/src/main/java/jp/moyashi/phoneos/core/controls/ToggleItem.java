@@ -88,6 +88,27 @@ public class ToggleItem implements IControlCenterItem {
         this(id, displayName, description, null, initialState, onStateChanged);
     }
     
+    /**
+     * アイテムを描画する（PGraphics版）。
+     * PGraphics統一アーキテクチャで使用する。
+     */
+    public void draw(PGraphics g, float x, float y, float w, float h) {
+        // アニメーション進行度を更新
+        updateAnimation();
+
+        // 背景描画
+        drawBackground(g, x, y, w, h);
+
+        // アイコン描画
+        drawIcon(g, x, y, w, h);
+
+        // ラベル描画
+        drawLabel(g, x, y, w, h);
+
+        // トグルスイッチ描画
+        drawToggleSwitch(g, x, y, w, h);
+    }
+
     @Override
     public void draw(PApplet p, float x, float y, float w, float h) {
         // アニメーション進行度を更新
@@ -116,7 +137,35 @@ public class ToggleItem implements IControlCenterItem {
     }
     
     /**
-     * 背景を描画する。
+     * 背景を描画する（PGraphics版）。
+     */
+    private void drawBackground(PGraphics g, float x, float y, float w, float h) {
+        // 状態に応じて背景色を設定
+        if (!enabled) {
+            g.fill(100, 100, 100, 100); // グレーアウト
+        } else if (isOn) {
+            // ONの場合は明るい背景色
+            int alpha = (int) (50 + 100 * animationProgress);
+            g.fill(100, 150, 255, alpha);
+        } else {
+            // OFFの場合はデフォルトの背景色
+            g.fill(200, 200, 200, 80);
+        }
+
+        g.noStroke();
+        g.rect(x, y, w, h, 12); // 角丸四角形
+
+        // 境界線
+        if (enabled) {
+            g.stroke(isOn ? 80 : 150);
+            g.strokeWeight(1);
+            g.noFill();
+            g.rect(x, y, w, h, 12);
+        }
+    }
+
+    /**
+     * 背景を描画する（PApplet版）。
      */
     private void drawBackground(PApplet p, float x, float y, float w, float h) {
         // 状態に応じて背景色を設定
@@ -146,7 +195,28 @@ public class ToggleItem implements IControlCenterItem {
     }
     
     /**
-     * アイコンを描画する。
+     * アイコンを描画する（PGraphics版）。
+     */
+    private void drawIcon(PGraphics g, float x, float y, float w, float h) {
+        float iconSize = Math.min(w * 0.4f, h * 0.4f);
+        float iconX = x + (w - iconSize) / 2;
+        float iconY = y + h * 0.25f;
+
+        if (icon != null) {
+            g.image(icon, iconX, iconY, iconSize, iconSize);
+        } else {
+            // デフォルトアイコン描画
+            g.fill(255, 255, 255, enabled ? 200 : 100);
+            g.rect(iconX, iconY, iconSize, iconSize, 4);
+            g.fill(isOn ? 100 : 150);
+            g.textAlign(PApplet.CENTER, PApplet.CENTER);
+            g.textSize(iconSize * 0.4f);
+            g.text(id.substring(0, 1).toUpperCase(), iconX + iconSize/2, iconY + iconSize/2);
+        }
+    }
+
+    /**
+     * アイコンを描画する（PApplet版）。
      */
     private void drawIcon(PApplet p, float x, float y, float w, float h) {
         float iconSize = Math.min(w, h) * 0.2f;
@@ -175,7 +245,19 @@ public class ToggleItem implements IControlCenterItem {
     }
     
     /**
-     * ラベルを描画する。
+     * ラベルを描画する（PGraphics版）。
+     */
+    private void drawLabel(PGraphics g, float x, float y, float w, float h) {
+        float labelY = y + h * 0.75f;
+
+        g.fill(255, 255, 255, enabled ? 255 : 150);
+        g.textAlign(PApplet.CENTER, PApplet.TOP);
+        g.textSize(11);
+        g.text(displayName, x + w/2, labelY);
+    }
+
+    /**
+     * ラベルを描画する（PApplet版）。
      */
     private void drawLabel(PApplet p, float x, float y, float w, float h) {
         // 表示名
@@ -199,7 +281,29 @@ public class ToggleItem implements IControlCenterItem {
     }
     
     /**
-     * トグルスイッチを描画する。
+     * トグルスイッチを描画する（PGraphics版）。
+     */
+    private void drawToggleSwitch(PGraphics g, float x, float y, float w, float h) {
+        float switchWidth = w * 0.4f;
+        float switchHeight = h * 0.15f;
+        float switchX = x + (w - switchWidth) / 2;
+        float switchY = y + h - switchHeight - 8;
+
+        // スイッチ背景
+        g.fill(isOn ? 100 : 80, isOn ? 200 : 100, isOn ? 255 : 120, enabled ? 200 : 100);
+        g.rect(switchX, switchY, switchWidth, switchHeight, switchHeight/2);
+
+        // スイッチノブ
+        float knobSize = switchHeight * 0.8f;
+        float knobX = isOn ? switchX + switchWidth - knobSize - 2 : switchX + 2;
+        float knobY = switchY + (switchHeight - knobSize) / 2;
+
+        g.fill(255, 255, 255, enabled ? 255 : 150);
+        g.ellipse(knobX + knobSize/2, knobY + knobSize/2, knobSize, knobSize);
+    }
+
+    /**
+     * トグルスイッチを描画する（PApplet版）。
      */
     private void drawToggleSwitch(PApplet p, float x, float y, float w, float h) {
         float switchWidth = 50;

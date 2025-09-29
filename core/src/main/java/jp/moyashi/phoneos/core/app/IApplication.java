@@ -38,38 +38,34 @@ public interface IApplication {
      * If no custom icon is available, implementations should return a default
      * or generated icon.
      *
+     * @deprecated Use {@link #getIcon(PGraphics)} instead. This method will be removed in a future version.
      * @param p The PApplet instance used for creating the icon image
      * @return A PImage representing the application's icon
      */
-    PImage getIcon(PApplet p);
+    @Deprecated
+    default PImage getIcon(PApplet p) {
+        // Default bridge implementation that tries to use PGraphics version
+        PGraphics g = p.createGraphics(64, 64);
+        g.beginDraw();
+        PImage result = getIcon(g);
+        g.endDraw();
+        return result != null ? result : createDefaultIcon(g);
+    }
 
     /**
-     * Gets the icon image for this application (PGraphics version).
-     * This method provides PGraphics-compatible icon generation for
-     * applications that need to work in PGraphics-based rendering environments.
+     * Gets the icon image for this application using PGraphics.
+     * This is the preferred method in the PGraphics unified architecture.
+     * The icon is used throughout the OS interface to represent the application
+     * visually in launchers, task switchers, and other system UI elements.
      *
-     * By default, this method delegates to the PApplet version. Applications
-     * can override this method to provide PGraphics-specific icon generation.
+     * The returned PImage should be square and appropriately sized for display.
+     * If no custom icon is available, implementations should return a default
+     * or generated icon.
      *
      * @param g The PGraphics instance used for creating the icon image
      * @return A PImage representing the application's icon
      */
-    default PImage getIcon(PGraphics g) {
-        // Default implementation: try to use PApplet version if available
-        if (g.parent != null) {
-            return getIcon(g.parent);
-        } else {
-            // Fallback: create a simple default icon
-            // Since PGraphics doesn't have createImage, we'll create a minimal 64x64 PImage manually
-            // This is a fallback case that should rarely be used
-            System.out.println("Warning: Creating fallback icon for " + getName() + " without PApplet context");
-
-            // Create a simple colored rectangle as fallback
-            // We can't easily create a PImage without PApplet, so return null
-            // Applications should override this method or ensure g.parent is available
-            return null;
-        }
-    }
+    PImage getIcon(PGraphics g);
     
     /**
      * Gets the main entry screen for this application.
@@ -103,31 +99,11 @@ public interface IApplication {
      * Gets the version string of this application.
      * This version information can be used for update management,
      * compatibility checks, and user information display.
-     *
+     * 
      * @return The version string of the application (e.g., "1.0.0")
      */
     default String getVersion() {
         return "1.0.0";
-    }
-
-    /**
-     * Alias for getName() - returns the display name of this application.
-     * Provided for compatibility with existing code.
-     *
-     * @return The human-readable name of the application
-     */
-    default String getApplicationName() {
-        return getName();
-    }
-
-    /**
-     * Alias for getVersion() - returns the version string of this application.
-     * Provided for compatibility with existing code.
-     *
-     * @return The version string of the application (e.g., "1.0.0")
-     */
-    default String getApplicationVersion() {
-        return getVersion();
     }
     
     /**
@@ -164,32 +140,25 @@ public interface IApplication {
     }
 
     /**
-     * アプリケーションがOSに初めてインストールされる際に一度だけ呼び出される。
-     * VFS内にデータ保存用のディレクトリを作成するなどの初期設定処理を想定。
+     * Creates a default icon for this application using PGraphics.
+     * This method is used as a fallback when the application doesn't provide a custom icon.
      *
-     * このメソッドは、AppStoreでユーザーがアプリケーションをインストールした際、
-     * またはMODアプリケーションがシステムに登録された際に実行されます。
-     *
-     * 実装例：
-     * - VFS内にアプリケーション専用のデータディレクトリを作成
-     * - 初期設定ファイルの生成
-     * - 必要なリソースファイルの準備
-     * - データベースの初期化
-     *
-     * @param kernel OSカーネルインスタンス
+     * @param g The PGraphics instance to use for icon creation
+     * @return A default PImage representing the application
      */
-    default void onInstall(Kernel kernel) {
-        System.out.println("Application " + getName() + " installed");
+    default PImage createDefaultIcon(PGraphics g) {
+        // Create a simple default icon with the first letter of the app name
+        String name = getName();
+        String initial = name.length() > 0 ? name.substring(0, 1).toUpperCase() : "A";
 
-        // デフォルト実装：アプリケーション専用のデータディレクトリを作成
-        try {
-            String appDataPath = "appdata/" + getApplicationId();
-            if (kernel.getVFS() != null && !kernel.getVFS().directoryExists(appDataPath)) {
-                kernel.getVFS().createDirectory(appDataPath);
-                System.out.println("Created data directory for " + getName() + ": " + appDataPath);
-            }
-        } catch (Exception e) {
-            System.err.println("Failed to create data directory for " + getName() + ": " + e.getMessage());
-        }
+        g.beginDraw();
+        g.background(100, 150, 200); // Light blue background
+        g.fill(255); // White text
+        g.textAlign(PGraphics.CENTER, PGraphics.CENTER);
+        g.textSize(24);
+        g.text(initial, g.width / 2, g.height / 2);
+        g.endDraw();
+
+        return g;
     }
 }

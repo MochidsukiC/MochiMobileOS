@@ -42,14 +42,14 @@ public class CalculatorApp implements IApplication {
         // Create a simple calculator icon using PGraphics
         PGraphics icon = p.createGraphics(64, 64);
         icon.beginDraw();
-        
+
         // Background
         icon.background(255, 159, 10); // Orange background
-        
+
         // Calculator display
         icon.fill(0);
         icon.rect(8, 8, 48, 16, 2);
-        
+
         // Buttons
         icon.fill(255);
         for (int row = 0; row < 3; row++) {
@@ -59,9 +59,17 @@ public class CalculatorApp implements IApplication {
                 icon.rect(x, y, 12, 8, 1);
             }
         }
-        
+
         icon.endDraw();
         return icon;
+    }
+
+    @Override
+    public PImage getIcon(PGraphics g) {
+        // TODO: PGraphics統一アーキテクチャに対応したアイコン作成機能を実装
+        // 現在は暫定的にnullを返す
+        System.out.println("CalculatorApp: PGraphics icon creation not yet implemented");
+        return null;
     }
     
     @Override

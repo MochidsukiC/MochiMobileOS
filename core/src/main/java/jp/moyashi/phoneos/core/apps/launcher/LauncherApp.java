@@ -54,32 +54,13 @@ public class LauncherApp implements IApplication {
     }
     
     /**
-     * Gets the application name.
-     *
+     * Gets the display name of the launcher application.
+     * 
      * @return The application name "Launcher"
      */
     @Override
-    public String getApplicationName() {
-        return APP_NAME;
-    }
-
-    /**
-     * Gets the application version.
-     *
-     * @return The application version
-     */
-    @Override
-    public String getApplicationVersion() {
-        return APP_VERSION;
-    }
-
-    /**
-     * Legacy method for compatibility.
-     *
-     * @return The application name "Launcher"
-     */
     public String getName() {
-        return getApplicationName();
+        return APP_NAME;
     }
     
     /**
@@ -120,54 +101,33 @@ public class LauncherApp implements IApplication {
         
         // End drawing
         icon.endDraw();
-        
+
         System.out.println("LauncherApp: Generated launcher icon");
         return icon;
     }
 
-    /**
-     * Gets the icon for the launcher application (PGraphics version).
-     * Creates a simple square icon with launcher-themed graphics.
-     *
-     * @param g The PGraphics instance for creating the icon
-     * @return A PImage representing the launcher icon
-     */
     @Override
-    public PImage getIcon(PGraphics g) {
-        // PGraphics doesn't have createGraphics method
-        // Use the parent PApplet if available
-        if (g.parent != null) {
-            return getIcon(g.parent);
-        }
-
-        System.out.println("LauncherApp: Warning - PGraphics has no parent, cannot create icon");
+    public PImage getIcon(processing.core.PGraphics g) {
+        // TODO: PGraphics統一アーキテクチャに対応したアイコン作成機能を実装
+        // 現在は暫定的にnullを返す
+        System.out.println("LauncherApp: PGraphics icon creation not yet implemented");
         return null;
     }
     
     /**
-     * Creates the main screen for the launcher application.
+     * Gets the main entry screen for the launcher application.
      * Returns the home screen that displays app shortcuts and provides
      * navigation to the app library.
-     *
+     * 
+     * @param kernel The OS kernel instance providing system services access
      * @return The HomeScreen instance for this launcher
      */
-    public Screen createMainScreen() {
-        return createMainScreen(null);
-    }
-
-    /**
-     * Creates the main screen for the launcher application with kernel.
-     * Returns the home screen that displays app shortcuts and provides
-     * navigation to the app library.
-     *
-     * @param kernel The kernel instance
-     * @return The HomeScreen instance for this launcher
-     */
-    public Screen createMainScreen(Kernel kernel) {
+    @Override
+    public Screen getEntryScreen(Kernel kernel) {
         if (homeScreen == null) {
             // Progressive feature testing: Simple -> Basic -> Safe -> Advanced
             String screenMode = "advanced"; // Options: "simple", "basic", "safe", "advanced"
-
+            
             switch (screenMode) {
                 case "simple":
                     System.out.println("🔧 LauncherApp: Creating SIMPLE home screen for debugging...");
@@ -194,17 +154,6 @@ public class LauncherApp implements IApplication {
         }
         return homeScreen;
     }
-
-    /**
-     * Legacy method for compatibility.
-     * Gets the main entry screen for the launcher application.
-     *
-     * @param kernel The OS kernel instance providing system services access
-     * @return The HomeScreen instance for this launcher
-     */
-    public Screen getEntryScreen(Kernel kernel) {
-        return createMainScreen(kernel);
-    }
     
     /**
      * Gets the unique identifier for the launcher application.
@@ -217,67 +166,48 @@ public class LauncherApp implements IApplication {
     }
     
     /**
-     * Legacy method for compatibility.
      * Gets the version of the launcher application.
-     *
+     * 
      * @return The application version string
      */
+    @Override
     public String getVersion() {
-        return getApplicationVersion();
+        return APP_VERSION;
     }
-
+    
     /**
-     * Initializes the launcher application.
+     * Gets the description of the launcher application.
+     * 
+     * @return The application description
+     */
+    @Override
+    public String getDescription() {
+        return APP_DESCRIPTION;
+    }
+    
+    /**
+     * Called when the launcher application is initialized.
      * Performs any necessary setup for the launcher functionality.
+     * 
+     * @param kernel The OS kernel instance
      */
     @Override
-    public void initialize() {
-        if (Kernel.getInstance() != null && Kernel.getInstance().getAppLoader() != null) {
-            System.out.println("LauncherApp: Initializing launcher with " +
-                    Kernel.getInstance().getAppLoader().getLoadedAppCount() + " available apps");
-        } else {
-            System.out.println("LauncherApp: Initializing launcher (Kernel/AppLoader not ready)");
-        }
+    public void onInitialize(Kernel kernel) {
+        System.out.println("LauncherApp: Initializing launcher with " + 
+                          kernel.getAppLoader().getLoadedAppCount() + " available apps");
     }
-
+    
     /**
-     * Called when the launcher application is installed.
-     * Performs initial setup tasks.
-     */
-    @Override
-    public void onInstall() {
-        System.out.println("LauncherApp: Launcher application installed");
-    }
-
-    /**
-     * Called when the launcher application is being terminated.
+     * Called when the launcher application is being destroyed.
      * Cleans up any resources used by the launcher.
      */
     @Override
-    public void terminate() {
+    public void onDestroy() {
         System.out.println("LauncherApp: Launcher application shutting down");
         if (homeScreen != null) {
-            homeScreen.cleanup(null); // LauncherApp terminate context - no PApplet available
+            homeScreen.cleanup((processing.core.PGraphics) null); // LauncherApp onDestroy context - no PGraphics available
             homeScreen = null;
         }
-    }
-
-    /**
-     * Legacy method for compatibility.
-     * Called when the launcher application is initialized.
-     *
-     * @param kernel The OS kernel instance
-     */
-    public void onInitialize(Kernel kernel) {
-        initialize();
-    }
-
-    /**
-     * Legacy method for compatibility.
-     * Called when the launcher application is being destroyed.
-     */
-    public void onDestroy() {
-        terminate();
     }
     
     /**
