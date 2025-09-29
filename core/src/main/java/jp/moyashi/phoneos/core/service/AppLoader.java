@@ -398,7 +398,7 @@ public class AppLoader {
 
         availableModApps.add(application);
         System.out.println("AppLoader: Registered available MOD app: " +
-                          application.getApplicationName() + " (" + application.getApplicationId() + ")");
+                          application.getName() + " (" + application.getApplicationId() + ")");
         return true;
     }
 
@@ -473,11 +473,11 @@ public class AppLoader {
 
         try {
             // アプリケーションをインストール
-            System.out.println("AppLoader: Installing MOD app: " + appToInstall.getApplicationName());
+            System.out.println("AppLoader: Installing MOD app: " + appToInstall.getName());
 
             // アプリケーションのonInstall()メソッドを呼び出し
             if (kernel instanceof jp.moyashi.phoneos.core.Kernel) {
-                appToInstall.onInstall((jp.moyashi.phoneos.core.Kernel) kernel);
+                appToInstall.onInitialize((jp.moyashi.phoneos.core.Kernel) kernel);
             }
 
             // 利用可能リストから削除してインストール済みリストに追加
@@ -488,7 +488,7 @@ public class AppLoader {
             loadedApps.add(appToInstall);
 
             System.out.println("AppLoader: Successfully installed MOD app: " +
-                             appToInstall.getApplicationName());
+                             appToInstall.getName());
             return true;
 
         } catch (Exception e) {

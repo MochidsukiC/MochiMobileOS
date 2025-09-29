@@ -183,9 +183,10 @@ public class SmartphoneBackgroundService {
                 throw new RuntimeException("Kernel graphics buffer is null");
             }
 
-            int[] size = kernel.getScreenSize();
-            int width = size[0];
-            int height = size[1];
+            // TODO: PGraphics統一アーキテクチャに移行後、スクリーンサイズ取得を再実装
+            // int[] size = kernel.getScreenSize(); // 古いAPI - 削除済み
+            int width = 390;  // 一時的な固定値
+            int height = 844; // iPhone 12相当
 
             // NativeImageを作成
             NativeImage nativeImage = new NativeImage(width, height, false);
@@ -214,8 +215,8 @@ public class SmartphoneBackgroundService {
         }
 
         try {
-            // カーネルの描画を実行
-            kernel.draw();
+            // TODO: PGraphics統一アーキテクチャに移行後、描画を再実装
+            // kernel.draw(); // 古いAPI - 削除済み
 
             PGraphics graphics = kernel.getGraphics();
             if (graphics == null) {
@@ -344,7 +345,7 @@ public class SmartphoneBackgroundService {
         try {
             switch (eventType) {
                 case "pressed":
-                    kernel.keyPressed(key, keyCode, mouseX, mouseY);
+                    kernel.keyPressed(key, keyCode);
                     break;
                 case "released":
                     kernel.keyReleased(key, keyCode);
