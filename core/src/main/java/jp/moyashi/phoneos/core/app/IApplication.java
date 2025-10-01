@@ -34,38 +34,23 @@ public interface IApplication {
      * The icon is used throughout the OS interface to represent the application
      * visually in launchers, task switchers, and other system UI elements.
      *
-     * The returned PImage should be square and appropriately sized for display.
-     * If no custom icon is available, implementations should return a default
-     * or generated icon.
+     * Applications should load their icon from their own resources using
+     * methods like getClass().getResourceAsStream() for JAR-packaged apps,
+     * or any other appropriate loading mechanism.
      *
-     * @deprecated Use {@link #getIcon(PGraphics)} instead. This method will be removed in a future version.
-     * @param p The PApplet instance used for creating the icon image
-     * @return A PImage representing the application's icon
+     * The icon image should be square (recommended 64x64 or larger) and in a
+     * supported format (PNG, JPG, etc.).
+     *
+     * If this method returns null, the system will generate a default white icon.
+     * Applications can override this method to provide a custom icon, or use the
+     * default implementation which returns null (resulting in a white default icon).
+     *
+     * @return The PImage icon for this application, or null for default white icon
      */
-    @Deprecated
-    default PImage getIcon(PApplet p) {
-        // Default bridge implementation that tries to use PGraphics version
-        PGraphics g = p.createGraphics(64, 64);
-        g.beginDraw();
-        PImage result = getIcon(g);
-        g.endDraw();
-        return result != null ? result : createDefaultIcon(g);
+    default PImage getIcon() {
+        // デフォルトではnullを返し、システムが白いアイコンを生成
+        return null;
     }
-
-    /**
-     * Gets the icon image for this application using PGraphics.
-     * This is the preferred method in the PGraphics unified architecture.
-     * The icon is used throughout the OS interface to represent the application
-     * visually in launchers, task switchers, and other system UI elements.
-     *
-     * The returned PImage should be square and appropriately sized for display.
-     * If no custom icon is available, implementations should return a default
-     * or generated icon.
-     *
-     * @param g The PGraphics instance used for creating the icon image
-     * @return A PImage representing the application's icon
-     */
-    PImage getIcon(PGraphics g);
     
     /**
      * Gets the main entry screen for this application.
@@ -139,26 +124,4 @@ public interface IApplication {
         System.out.println("Application " + getName() + " destroyed");
     }
 
-    /**
-     * Creates a default icon for this application using PGraphics.
-     * This method is used as a fallback when the application doesn't provide a custom icon.
-     *
-     * @param g The PGraphics instance to use for icon creation
-     * @return A default PImage representing the application
-     */
-    default PImage createDefaultIcon(PGraphics g) {
-        // Create a simple default icon with the first letter of the app name
-        String name = getName();
-        String initial = name.length() > 0 ? name.substring(0, 1).toUpperCase() : "A";
-
-        g.beginDraw();
-        g.background(100, 150, 200); // Light blue background
-        g.fill(255); // White text
-        g.textAlign(PGraphics.CENTER, PGraphics.CENTER);
-        g.textSize(24);
-        g.text(initial, g.width / 2, g.height / 2);
-        g.endDraw();
-
-        return g;
-    }
 }

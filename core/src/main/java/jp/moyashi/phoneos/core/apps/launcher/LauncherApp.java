@@ -63,56 +63,7 @@ public class LauncherApp implements IApplication {
         return APP_NAME;
     }
     
-    /**
-     * Gets the icon for the launcher application.
-     * Creates a simple square icon with launcher-themed graphics.
-     * 
-     * @param p The PApplet instance for creating the icon
-     * @return A PImage representing the launcher icon
-     */
-    @Override
-    public PImage getIcon(PApplet p) {
-        // Create a 64x64 icon for the launcher using PGraphics
-        PGraphics icon = p.createGraphics(64, 64);
-        
-        // Begin drawing to the icon
-        icon.beginDraw();
-        
-        // Clear background
-        icon.background(0x2E3440); // Dark blue-gray background
-        
-        // Draw launcher icon - a 3x3 grid representing app icons
-        icon.fill(0xFFFFFF); // White
-        icon.noStroke();
-        
-        // Draw 3x3 grid of small squares
-        int squareSize = 8;
-        int spacing = 4;
-        int startX = (64 - (3 * squareSize + 2 * spacing)) / 2;
-        int startY = (64 - (3 * squareSize + 2 * spacing)) / 2;
-        
-        for (int row = 0; row < 3; row++) {
-            for (int col = 0; col < 3; col++) {
-                int x = startX + col * (squareSize + spacing);
-                int y = startY + row * (squareSize + spacing);
-                icon.rect(x, y, squareSize, squareSize, 2); // Rounded corners
-            }
-        }
-        
-        // End drawing
-        icon.endDraw();
-
-        System.out.println("LauncherApp: Generated launcher icon");
-        return icon;
-    }
-
-    @Override
-    public PImage getIcon(processing.core.PGraphics g) {
-        // TODO: PGraphics統一アーキテクチャに対応したアイコン作成機能を実装
-        // 現在は暫定的にnullを返す
-        System.out.println("LauncherApp: PGraphics icon creation not yet implemented");
-        return null;
-    }
+    // getIcon()はデフォルト実装（null返却）を使用し、システムが白いアイコンを生成
     
     /**
      * Gets the main entry screen for the launcher application.

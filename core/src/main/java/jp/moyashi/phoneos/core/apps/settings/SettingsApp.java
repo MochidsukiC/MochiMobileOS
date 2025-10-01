@@ -75,43 +75,7 @@ public class SettingsApp implements IApplication {
         return APP_DESCRIPTION;
     }
     
-    /**
-     * このアプリケーションのアイコンを取得する。
-     * クラスパスからアイコンを読み込む。
-     * 
-     * @param p 描画操作用のPAppletインスタンス
-     * @return アプリケーションアイコンのPImage。読み込めない場合はnull。
-     */
-    @Override
-    public PImage getIcon(processing.core.PApplet p) {
-        try {
-            // Gradleの標準リソースパス (src/main/resources) から読み込む
-            URL iconUrl = getClass().getResource("/settings/icon.png");
-            if (iconUrl == null) {
-                System.err.println("SettingsApp: Failed to find icon resource '/settings/icon.png' in classpath. Make sure it's in 'core/src/main/resources/settings/'");
-                return null;
-            }
-            PImage icon = p.loadImage(iconUrl.toExternalForm());
-            if (icon == null) {
-                System.err.println("SettingsApp: Failed to load icon from URL: " + iconUrl.toExternalForm());
-                return null;
-            }
-            System.out.println("SettingsApp: Icon '" + iconUrl.toExternalForm() + "' loaded successfully.");
-            return icon;
-        } catch (Exception e) {
-            System.err.println("SettingsApp: Exception while loading icon: " + e.getMessage());
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    @Override
-    public PImage getIcon(processing.core.PGraphics g) {
-        // TODO: PGraphics統一アーキテクチャに対応したアイコン読み込み機能を実装
-        // 現在は暫定的にnullを返す
-        System.out.println("SettingsApp: PGraphics icon loading not yet implemented");
-        return null;
-    }
+    // getIcon()はデフォルト実装（null返却）を使用し、システムが白いアイコンを生成
     
     /**
      * このアプリケーションのエントリースクリーンを取得する。

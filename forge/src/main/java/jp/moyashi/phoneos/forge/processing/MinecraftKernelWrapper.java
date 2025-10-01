@@ -4,11 +4,10 @@ import jp.moyashi.phoneos.core.Kernel;
 import jp.moyashi.phoneos.forge.gui.ProcessingScreen;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import processing.core.PApplet;
 
 /**
  * Minecraft環境でMochiMobileOSのKernelを動作させるためのラッパークラス。
- * KernelがPAppletを継承しているため、Minecraft環境での動作をサポートする。
+ * PGraphics統一アーキテクチャに基づき、Kernel.initializeForMinecraft()を使用して初期化する。
  *
  * @author jp.moyashi
  * @version 1.0
@@ -50,21 +49,13 @@ public class MinecraftKernelWrapper {
         try {
             System.out.println("[MinecraftKernelWrapper] Initializing MochiMobileOS kernel...");
 
-            // PAppletインスタンスを作成してKernelを初期化
-            PApplet parentApplet = new PApplet();
+            // Minecraft環境用の初期化メソッドを使用
             kernel = new Kernel();
-            kernel.initialize(parentApplet, width, height);
-            System.out.println("[MinecraftKernelWrapper] Kernel instance created");
-
-            // Kernelのサイズ設定は初期化時に完了しているためスキップ
-            System.out.println("[MinecraftKernelWrapper] Kernel size set: " + width + "x" + height);
-
-            // Kernelの初期化は既にinitializeメソッドで完了
-            // setup()は内部で呼び出されるため不要
-            System.out.println("[MinecraftKernelWrapper] Kernel setup completed");
+            kernel.initializeForMinecraft(width, height);
+            System.out.println("[MinecraftKernelWrapper] Kernel instance created and initialized");
 
             initialized = true;
-            System.out.println("[MinecraftKernelWrapper] Kernel initialized successfully");
+            System.out.println("[MinecraftKernelWrapper] Kernel initialized successfully (size: " + width + "x" + height + ")");
 
         } catch (Exception e) {
             System.err.println("[MinecraftKernelWrapper] Failed to initialize kernel: " + e.getMessage());
@@ -76,6 +67,7 @@ public class MinecraftKernelWrapper {
 
     /**
      * カーネルの描画処理を実行。
+     * PGraphics統一アーキテクチャに基づき、update()とrender()を呼び出す。
      */
     public void draw() {
         if (!initialized || kernel == null) {
@@ -83,11 +75,15 @@ public class MinecraftKernelWrapper {
         }
 
         try {
-            // TODO: PGraphics統一アーキテクチャに移行後、描画ループを再実装
-            // kernel.draw(); // 古いAPI - 削除済み
+            // フレーム更新処理を実行
+            kernel.update();
+
+            // PGraphicsバッファに描画を実行
+            kernel.render();
 
         } catch (Exception e) {
             System.err.println("[MinecraftKernelWrapper] Draw error: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -220,5 +216,32 @@ public class MinecraftKernelWrapper {
             System.err.println("[MinecraftKernelWrapper] Cleanup error: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    // =========================================================================
+    // 静的ユーティリティメソッド（仮想ネットワーク用）
+    // =========================================================================
+
+    /**
+     * クライアント側のKernelインスタンスを取得します。
+     * SmartphoneBackgroundServiceから共有Kernelを取得します。
+     *
+     * @return クライアントのKernelインスタンス、存在しない場合はnull
+     */
+    public static Kernel getClientKernel() {
+        return jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService.getKernel();
+    }
+
+    /**
+     * 特定のプレイヤーのKernelインスタンスを取得します（サーバー側）。
+     * 現在はクライアント側のKernelを返します（将来的にサーバー側実装予定）。
+     *
+     * @param player プレイヤー
+     * @return プレイヤーのKernelインスタンス、存在しない場合はnull
+     */
+    public static Kernel getKernelForPlayer(net.minecraft.server.level.ServerPlayer player) {
+        // TODO: サーバー側でプレイヤーごとのKernel管理を実装
+        // 現在はクライアント側のKernelを返す
+        return getClientKernel();
     }
 }

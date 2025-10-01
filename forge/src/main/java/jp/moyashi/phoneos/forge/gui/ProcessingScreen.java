@@ -2,12 +2,15 @@ package jp.moyashi.phoneos.forge.gui;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
+import com.mojang.blaze3d.platform.NativeImage;
 import jp.moyashi.phoneos.core.Kernel;
 import jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.texture.DynamicTexture;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.chat.Component;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -30,12 +33,12 @@ public class ProcessingScreen extends Screen {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** スマートフォン画面のサイズ */
-    private static final int PHONE_WIDTH = 300;  // 400から300に縮小
-    private static final int PHONE_HEIGHT = 450; // 600から450に縮小
+    /** スマートフォン画面のサイズ（スタンドアロンと同じ） */
+    private static final int PHONE_WIDTH = 400;
+    private static final int PHONE_HEIGHT = 600;
 
-    /** 現在のプレイヤーのカーネル参照 */
-    private Kernel playerKernel;
+    /** 共有カーネル参照 */
+    private Kernel kernel;
 
     /** グラフィック描画フラグ */
     private boolean graphicsEnabled = false;
@@ -43,8 +46,19 @@ public class ProcessingScreen extends Screen {
     /** 描画オフセット */
     private int offsetX, offsetY;
 
+    /** 描画スケール係数 */
+    private float scale = 1.0f;
+
+    /** スケール後の描画サイズ */
+    private int scaledWidth, scaledHeight;
+
     /** フレームカウンター */
     private int frameCount = 0;
+
+    /** テクスチャ管理 */
+    private DynamicTexture dynamicTexture = null;
+    private ResourceLocation textureLocation = null;
+    private NativeImage nativeImage = null;
 
     /**
      * ProcessingScreenのコンストラクタ。
@@ -56,7 +70,7 @@ public class ProcessingScreen extends Screen {
 
     /**
      * 画面の初期化処理。
-     * バックグラウンドサービスからプレイヤーのカーネルを取得し、グラフィック描画を有効化する。
+     * バックグラウンドサービスから共有Kernelを取得し、グラフィック描画を有効化する。
      */
     @Override
     protected void init() {
@@ -65,34 +79,49 @@ public class ProcessingScreen extends Screen {
         try {
             LOGGER.info("[ProcessingScreen] Initializing MochiMobileOS display...");
 
-            // 画面中央にスマートフォンを配置（ただし最小値を保証）
-            this.offsetX = Math.max(10, Math.min(50, (this.width - PHONE_WIDTH) / 2));
-            this.offsetY = Math.max(10, Math.min(30, (this.height - PHONE_HEIGHT) / 2));
+            // スケール計算：画面サイズに対してスマートフォン全体が収まるように調整
+            // マージンを20ピクセル確保
+            int availableWidth = this.width - 40;
+            int availableHeight = this.height - 40;
+
+            float scaleX = (float) availableWidth / PHONE_WIDTH;
+            float scaleY = (float) availableHeight / PHONE_HEIGHT;
+
+            // 小さい方のスケールを採用（アスペクト比維持）
+            // 拡大・縮小の両方に対応
+            this.scale = Math.min(scaleX, scaleY);
+
+            // スケール後のサイズを計算
+            this.scaledWidth = (int) (PHONE_WIDTH * this.scale);
+            this.scaledHeight = (int) (PHONE_HEIGHT * this.scale);
+
+            // 画面中央に配置
+            this.offsetX = (this.width - this.scaledWidth) / 2;
+            this.offsetY = (this.height - this.scaledHeight) / 2;
 
             LOGGER.info("[ProcessingScreen] Screen size: " + this.width + "x" + this.height +
                 ", Phone size: " + PHONE_WIDTH + "x" + PHONE_HEIGHT +
+                ", Scale: " + this.scale +
+                ", Scaled size: " + this.scaledWidth + "x" + this.scaledHeight +
                 ", Offset: (" + offsetX + "," + offsetY + ")");
 
-            // サーバー参加時に起動済みのKernelを取得
-            if (Minecraft.getInstance().player != null) {
-                LOGGER.info("[ProcessingScreen] Getting existing kernel for player: " + Minecraft.getInstance().player.getUUID());
+            // MOD起動時に作成済みの共有Kernelを取得
+            this.kernel = SmartphoneBackgroundService.getKernel();
 
-                this.playerKernel = SmartphoneBackgroundService.getPlayerKernel(
-                    Minecraft.getInstance().player.getUUID()
-                );
+            if (this.kernel != null) {
+                LOGGER.info("[ProcessingScreen] Found shared kernel - frameCount: " + this.kernel.frameCount);
 
-                if (this.playerKernel != null) {
-                    LOGGER.info("[ProcessingScreen] Found existing kernel - frameCount: " + this.playerKernel.frameCount);
+                // ハードウェアAPIのプレイヤー情報を初回更新
+                SmartphoneBackgroundService.updateHardwareAPIs();
 
-                    // グラフィック描画を有効化
-                    enableGraphics();
-                    this.graphicsEnabled = true;
-                } else {
-                    LOGGER.warn("[ProcessingScreen] No kernel found - it should have been created at server join");
-                    this.graphicsEnabled = false;
-                }
+                // グラフィック描画を有効化
+                enableGraphics();
+                this.graphicsEnabled = true;
+
+                // テクスチャを初期化
+                initializeTexture();
             } else {
-                LOGGER.warn("[ProcessingScreen] No player instance available");
+                LOGGER.warn("[ProcessingScreen] No kernel found - it should have been created at MOD startup");
                 this.graphicsEnabled = false;
             }
 
@@ -110,17 +139,17 @@ public class ProcessingScreen extends Screen {
         try {
             LOGGER.info("[ProcessingScreen] Enabling graphics for kernel...");
 
-            if (playerKernel != null) {
+            if (kernel != null) {
                 // グラフィック関連の設定を復元
-                playerKernel.width = 300;
-                playerKernel.height = 450;
+                kernel.width = 300;
+                kernel.height = 450;
 
                 // PGraphicsバッファが適切に初期化されているかチェック
                 try {
                     // TODO: PGraphics統一アーキテクチャに移行後、グラフィックバッファチェックを再実装
-                    // if (playerKernel.getGraphicsBuffer() != null) { // 古いAPI
+                    // if (kernel.getGraphicsBuffer() != null) { // 古いAPI
                     //     LOGGER.debug("[ProcessingScreen] PGraphics buffer is available: " +
-                    //                 playerKernel.getGraphicsBuffer().width + "x" + playerKernel.getGraphicsBuffer().height);
+                    //                 kernel.getGraphicsBuffer().width + "x" + kernel.getGraphicsBuffer().height);
                     // }
                     LOGGER.debug("[ProcessingScreen] PGraphics buffer check temporarily disabled");
                 } catch (Exception e) {
@@ -144,11 +173,11 @@ public class ProcessingScreen extends Screen {
         // 背景を暗くする
         this.renderBackground(guiGraphics);
 
-        LOGGER.info("[ProcessingScreen] render() called - graphics: " + graphicsEnabled + ", kernel: " + (playerKernel != null) + ", frameCount: " + frameCount);
+        LOGGER.info("[ProcessingScreen] render() called - graphics: " + graphicsEnabled + ", kernel: " + (kernel != null) + ", frameCount: " + frameCount);
 
-        if (!graphicsEnabled || playerKernel == null) {
+        if (!graphicsEnabled || kernel == null) {
             // カーネル接続待ちまたはエラー状態の表示
-            LOGGER.info("[ProcessingScreen] Drawing connection message - graphics: " + graphicsEnabled + ", kernel null: " + (playerKernel == null));
+            LOGGER.info("[ProcessingScreen] Drawing connection message - graphics: " + graphicsEnabled + ", kernel null: " + (kernel == null));
             drawConnectionMessage(guiGraphics);
             return;
         }
@@ -157,6 +186,9 @@ public class ProcessingScreen extends Screen {
             // フレームカウンターを更新
             frameCount++;
             LOGGER.info("[ProcessingScreen] Starting kernel rendering, frameCount: " + frameCount);
+
+            // ハードウェアAPIのプレイヤー情報を更新
+            SmartphoneBackgroundService.updateHardwareAPIs();
 
             // MochiMobileOSのグラフィック描画を実行（オンデマンド）
             renderKernelGraphics();
@@ -181,7 +213,7 @@ public class ProcessingScreen extends Screen {
      */
     private void drawConnectionMessage(GuiGraphics guiGraphics) {
         String message;
-        if (playerKernel == null) {
+        if (kernel == null) {
             message = "Connecting to MochiMobileOS background service...";
         } else if (!graphicsEnabled) {
             message = "Enabling graphics for MochiMobileOS...";
@@ -205,17 +237,18 @@ public class ProcessingScreen extends Screen {
     }
 
     /**
-     * カーネルのグラフィック描画を実行（オンデマンド）。
-     * UIが表示されている間は特別な処理は不要（バックグラウンドで既に更新されている）。
+     * カーネルのグラフィック描画を実行（Minecraftのフレームレートに同期）。
+     * Minecraftのrender()呼び出しと同期してカーネルを更新する。
      */
     private void renderKernelGraphics() {
         try {
-            if (playerKernel != null && graphicsEnabled) {
-                // バックグラウンドでピクセルデータは既に更新されているため、
-                // 特別な描画処理は不要
-                LOGGER.debug("[ProcessingScreen] Using background-rendered pixels, frame: " + playerKernel.frameCount);
+            if (kernel != null && graphicsEnabled) {
+                // Minecraftのフレームレートに同期してカーネルを更新
+                kernel.update();
+                kernel.render();
+                LOGGER.debug("[ProcessingScreen] Kernel updated and rendered, frame: " + kernel.frameCount);
             } else {
-                LOGGER.debug("[ProcessingScreen] Skipping graphics - kernel: " + (playerKernel != null) + ", graphics: " + graphicsEnabled);
+                LOGGER.debug("[ProcessingScreen] Skipping graphics - kernel: " + (kernel != null) + ", graphics: " + graphicsEnabled);
             }
         } catch (Exception e) {
             LOGGER.error("[ProcessingScreen] Graphics rendering error: " + e.getMessage(), e);
@@ -233,7 +266,7 @@ public class ProcessingScreen extends Screen {
             // デバッグのため、スマートフォンの黒い背景を削除（コメントアウト）
             // guiGraphics.fill(offsetX, offsetY, offsetX + PHONE_WIDTH, offsetY + PHONE_HEIGHT, 0xFF000000);
 
-            if (playerKernel != null && graphicsEnabled) {
+            if (kernel != null && graphicsEnabled) {
                 // 既存の動作中Kernelから描画結果を取得・表示
                 renderKernelTexture(guiGraphics);
             } else {
@@ -259,14 +292,14 @@ public class ProcessingScreen extends Screen {
      */
     private int[] getKernelPixels() {
         try {
-            if (playerKernel != null) {
-                LOGGER.info("[ProcessingScreen] Getting pixels from kernel - frameCount: " + playerKernel.frameCount);
+            if (kernel != null) {
+                LOGGER.info("[ProcessingScreen] Getting pixels from kernel - frameCount: " + kernel.frameCount);
 
                 // loadPixels()を使わず、バックグラウンドサービスで直接設定されたピクセル配列を使用
                 LOGGER.info("[ProcessingScreen] Using pixels directly from background service (skipping loadPixels)");
 
                 // PGraphicsバッファからピクセル配列を取得
-                int[] pixels = playerKernel.getPixels();
+                int[] pixels = kernel.getPixels();
                 if (pixels != null && pixels.length > 0) {
                     LOGGER.info("[ProcessingScreen] Retrieved " + pixels.length + " pixels, first few pixels: " +
                         Integer.toHexString(pixels[0]) + " " +
@@ -425,7 +458,7 @@ public class ProcessingScreen extends Screen {
             guiGraphics.fill(offsetX + PHONE_WIDTH - 2, offsetY, offsetX + PHONE_WIDTH, offsetY + PHONE_HEIGHT, 0xFFFF0000); // 右
 
             // MochiMobileOSテキストを表示
-            String text = (playerKernel != null && graphicsEnabled) ?
+            String text = (kernel != null && graphicsEnabled) ?
                 "MochiMobileOS Running (Background)" : "MochiMobileOS Loading...";
             int textWidth = this.font.width(text);
             guiGraphics.drawString(this.font, text,
@@ -464,21 +497,21 @@ public class ProcessingScreen extends Screen {
      */
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (!graphicsEnabled || playerKernel == null) {
+        if (!graphicsEnabled || kernel == null) {
             return super.mouseClicked(mouseX, mouseY, button);
         }
 
-        // スマートフォン画面内のクリックかチェック
-        if (mouseX >= offsetX && mouseX <= offsetX + PHONE_WIDTH &&
-            mouseY >= offsetY && mouseY <= offsetY + PHONE_HEIGHT) {
+        // スマートフォン画面内のクリックかチェック（スケール後のサイズを使用）
+        if (mouseX >= offsetX && mouseX <= offsetX + scaledWidth &&
+            mouseY >= offsetY && mouseY <= offsetY + scaledHeight) {
 
             try {
-                // Minecraft座標をMochiMobileOS座標に変換
-                int mobileX = (int) (mouseX - offsetX);
-                int mobileY = (int) (mouseY - offsetY);
+                // Minecraft座標をMochiMobileOS座標に変換（スケールを考慮）
+                int mobileX = (int) ((mouseX - offsetX) / scale);
+                int mobileY = (int) ((mouseY - offsetY) / scale);
 
                 // MochiMobileOSのマウスイベントを送信
-                playerKernel.mousePressed(mobileX, mobileY);
+                kernel.mousePressed(mobileX, mobileY);
 
                 System.out.println("[ProcessingScreen] Mouse clicked at MochiMobileOS coords: (" +
                     mobileX + ", " + mobileY + ")");
@@ -498,19 +531,61 @@ public class ProcessingScreen extends Screen {
      */
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if (graphicsEnabled && playerKernel != null) {
-            try {
-                // Minecraft座標をMochiMobileOS座標に変換
-                int mobileX = (int) (mouseX - offsetX);
-                int mobileY = (int) (mouseY - offsetY);
+        if (!graphicsEnabled || kernel == null) {
+            return super.mouseReleased(mouseX, mouseY, button);
+        }
 
-                playerKernel.mouseReleased(mobileX, mobileY);
+        // スマートフォン画面内のリリースかチェック（スケール後のサイズを使用）
+        if (mouseX >= offsetX && mouseX <= offsetX + scaledWidth &&
+            mouseY >= offsetY && mouseY <= offsetY + scaledHeight) {
+
+            try {
+                // Minecraft座標をMochiMobileOS座標に変換（スケールを考慮）
+                int mobileX = (int) ((mouseX - offsetX) / scale);
+                int mobileY = (int) ((mouseY - offsetY) / scale);
+
+                // MochiMobileOSのマウスリリースイベントを送信
+                kernel.mouseReleased(mobileX, mobileY);
+
+                return true;
+
             } catch (Exception e) {
                 System.err.println("[ProcessingScreen] Mouse release error: " + e.getMessage());
             }
         }
 
         return super.mouseReleased(mouseX, mouseY, button);
+    }
+
+    /**
+     * マウスドラッグ処理（スワイプ操作）。
+     */
+    @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        if (!graphicsEnabled || kernel == null) {
+            return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+        }
+
+        // スマートフォン画面内のドラッグかチェック（スケール後のサイズを使用）
+        if (mouseX >= offsetX && mouseX <= offsetX + scaledWidth &&
+            mouseY >= offsetY && mouseY <= offsetY + scaledHeight) {
+
+            try {
+                // Minecraft座標をMochiMobileOS座標に変換（スケールを考慮）
+                int mobileX = (int) ((mouseX - offsetX) / scale);
+                int mobileY = (int) ((mouseY - offsetY) / scale);
+
+                // MochiMobileOSのドラッグイベントを送信
+                kernel.mouseDragged(mobileX, mobileY);
+
+                return true;
+
+            } catch (Exception e) {
+                System.err.println("[ProcessingScreen] Mouse drag error: " + e.getMessage());
+            }
+        }
+
+        return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
     }
 
     /**
@@ -526,10 +601,10 @@ public class ProcessingScreen extends Screen {
         }
 
         // その他のキーはMochiMobileOSに転送
-        if (graphicsEnabled && playerKernel != null) {
+        if (graphicsEnabled && kernel != null) {
             try {
                 char key = (char) keyCode; // 簡易的な変換
-                playerKernel.keyPressed(key, keyCode);
+                kernel.keyPressed(key, keyCode);
             } catch (Exception e) {
                 System.err.println("[ProcessingScreen] Key press error: " + e.getMessage());
             }
@@ -549,7 +624,7 @@ public class ProcessingScreen extends Screen {
 
             // グラフィック描画を無効化（バックグラウンド処理は継続）
             graphicsEnabled = false;
-            playerKernel = null;
+            kernel = null;
 
             System.out.println("[ProcessingScreen] MochiMobileOS display closed, background processing continues");
 
@@ -574,11 +649,11 @@ public class ProcessingScreen extends Screen {
      */
     private void executeKernelDrawing() {
         try {
-            if (playerKernel != null) {
-                LOGGER.info("[ProcessingScreen] Executing kernel draw() - frameCount: " + playerKernel.frameCount);
+            if (kernel != null) {
+                LOGGER.info("[ProcessingScreen] Executing kernel draw() - frameCount: " + kernel.frameCount);
 
                 // TODO: PGraphics統一アーキテクチャに移行後、描画サイクルを再実装
-                // playerKernel.draw(); // 古いAPI - 削除済み
+                // kernel.draw(); // 古いAPI - 削除済み
                 LOGGER.info("[ProcessingScreen] Kernel drawing temporarily disabled");
 
                 LOGGER.info("[ProcessingScreen] Kernel draw() completed successfully");
@@ -593,11 +668,11 @@ public class ProcessingScreen extends Screen {
      */
     private void renderKernelTexture(GuiGraphics guiGraphics) {
         try {
-            if (playerKernel != null) {
+            if (kernel != null) {
                 LOGGER.info("[ProcessingScreen] Rendering kernel texture");
 
                 // PGraphicsバッファから最新の描画結果を取得
-                int[] pixels = playerKernel.getPixels();
+                int[] pixels = kernel.getPixels();
 
                 if (pixels != null && pixels.length > 0) {
                     // テクスチャとして効率的に描画
@@ -614,26 +689,111 @@ public class ProcessingScreen extends Screen {
     }
 
     /**
+     * テクスチャを初期化する。
+     */
+    private void initializeTexture() {
+        try {
+            LOGGER.info("[ProcessingScreen] Initializing texture for " + PHONE_WIDTH + "x" + PHONE_HEIGHT);
+
+            // NativeImageを作成（RGBA形式）
+            nativeImage = new NativeImage(NativeImage.Format.RGBA, PHONE_WIDTH, PHONE_HEIGHT, false);
+
+            // DynamicTextureを作成
+            dynamicTexture = new DynamicTexture(nativeImage);
+
+            // ResourceLocationを登録
+            textureLocation = Minecraft.getInstance().getTextureManager()
+                .register("mochimobileos_screen", dynamicTexture);
+
+            LOGGER.info("[ProcessingScreen] Texture initialized successfully: " + textureLocation);
+        } catch (Exception e) {
+            LOGGER.error("[ProcessingScreen] Failed to initialize texture: " + e.getMessage(), e);
+        }
+    }
+
+    /**
      * ピクセル配列からテクスチャを効率的に描画する。
      */
     private void renderTextureFromPixels(GuiGraphics guiGraphics, int[] pixels) {
-        LOGGER.info("[ProcessingScreen] Rendering texture from " + pixels.length + " pixels");
-
-        // 効率的なブロック描画でテクスチャを再現
-        int blockSize = 5; // より細かいブロックで高品質な表示
-        for (int by = 0; by < PHONE_HEIGHT; by += blockSize) {
-            for (int bx = 0; bx < PHONE_WIDTH; bx += blockSize) {
-                int pixelIndex = by * PHONE_WIDTH + bx;
-                if (pixelIndex < pixels.length) {
-                    int color = 0xFF000000 | (pixels[pixelIndex] & 0x00FFFFFF);
-
-                    int endX = Math.min(bx + blockSize, PHONE_WIDTH);
-                    int endY = Math.min(by + blockSize, PHONE_HEIGHT);
-                    guiGraphics.fill(offsetX + bx, offsetY + by, offsetX + endX, offsetY + endY, color);
-                }
-            }
+        if (nativeImage == null || dynamicTexture == null || textureLocation == null) {
+            LOGGER.warn("[ProcessingScreen] Texture not initialized, falling back");
+            renderFallbackRectangle(guiGraphics);
+            return;
         }
 
-        LOGGER.info("[ProcessingScreen] Texture rendered with " + blockSize + "x" + blockSize + " blocks");
+        try {
+            // ピクセルデータをNativeImageに転送
+            for (int y = 0; y < PHONE_HEIGHT; y++) {
+                for (int x = 0; x < PHONE_WIDTH; x++) {
+                    int pixelIndex = y * PHONE_WIDTH + x;
+                    if (pixelIndex < pixels.length) {
+                        int processingColor = pixels[pixelIndex];
+
+                        // ProcessingのARGB形式からMinecraftのABGR形式に変換
+                        int a = (processingColor >> 24) & 0xFF;
+                        int r = (processingColor >> 16) & 0xFF;
+                        int g = (processingColor >> 8) & 0xFF;
+                        int b = processingColor & 0xFF;
+
+                        // NativeImageはABGR形式
+                        int abgrColor = (a << 24) | (b << 16) | (g << 8) | r;
+                        nativeImage.setPixelRGBA(x, y, abgrColor);
+                    }
+                }
+            }
+
+            // テクスチャを更新
+            dynamicTexture.upload();
+
+            // PoseStackを使ってスケーリング変換を適用
+            guiGraphics.pose().pushPose();
+
+            // 描画位置に移動
+            guiGraphics.pose().translate(offsetX, offsetY, 0);
+
+            // スケーリングを適用
+            guiGraphics.pose().scale(scale, scale, 1.0f);
+
+            // 元のサイズで描画（スケール変換が適用される）
+            guiGraphics.blit(textureLocation, 0, 0, 0, 0, PHONE_WIDTH, PHONE_HEIGHT, PHONE_WIDTH, PHONE_HEIGHT);
+
+            guiGraphics.pose().popPose();
+
+        } catch (Exception e) {
+            LOGGER.error("[ProcessingScreen] Failed to render texture: " + e.getMessage(), e);
+            renderFallbackRectangle(guiGraphics);
+        }
+    }
+
+    /**
+     * 画面を閉じる際のクリーンアップ。
+     */
+    @Override
+    public void removed() {
+        super.removed();
+        cleanupTexture();
+    }
+
+    /**
+     * テクスチャリソースをクリーンアップする。
+     */
+    private void cleanupTexture() {
+        try {
+            if (textureLocation != null) {
+                Minecraft.getInstance().getTextureManager().release(textureLocation);
+                textureLocation = null;
+            }
+            if (dynamicTexture != null) {
+                dynamicTexture.close();
+                dynamicTexture = null;
+            }
+            if (nativeImage != null) {
+                nativeImage.close();
+                nativeImage = null;
+            }
+            LOGGER.info("[ProcessingScreen] Texture cleaned up successfully");
+        } catch (Exception e) {
+            LOGGER.error("[ProcessingScreen] Failed to cleanup texture: " + e.getMessage(), e);
+        }
     }
 }

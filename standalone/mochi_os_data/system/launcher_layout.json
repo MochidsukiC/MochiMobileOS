@@ -6,27 +6,26 @@
       "pageType": "NORMAL",
       "shortcuts": [
         {
+          "applicationId": "jp.moyashi.phoneos.core.apps.settings",
+          "gridX": 0,
+          "gridY": 0
+        },
+        {
           "applicationId": "jp.moyashi.phoneos.calculator",
           "gridX": 1,
           "gridY": 0
         },
         {
-          "applicationId": "jp.moyashi.phoneos.core.apps.settings",
-          "gridX": 0,
-          "gridY": 1
+          "applicationId": "jp.moyashi.phoneos.core.apps.network",
+          "gridX": 2,
+          "gridY": 0
+        },
+        {
+          "applicationId": "jp.moyashi.phoneos.core.apps.hardware_test",
+          "gridX": 3,
+          "gridY": 0
         }
       ]
-    },
-    {
-      "pageIndex": 1,
-      "pageType": "NORMAL",
-      "shortcuts": []
-    },
-    {
-      "pageIndex": 2,
-      "pageName": "App Library",
-      "pageType": "APP_LIBRARY",
-      "shortcuts": []
     }
   ],
   "dockShortcuts": []

@@ -644,19 +644,23 @@ public class AppLibraryScreen implements Screen, GestureListener {
                 System.out.println("AppLibraryScreen: Got app screen: " + appScreen.getScreenTitle());
                 
                 // Get app icon for animation
-                processing.core.PImage appIcon = null;
-                if (kernel != null) {
-                    // Use PGraphics-based icon retrieval
+                processing.core.PImage appIcon = app.getIcon();
+
+                // If icon is null, create a white default icon
+                if (appIcon == null && kernel != null) {
                     processing.core.PGraphics graphics = kernel.getGraphics();
                     if (graphics != null) {
-                        appIcon = app.getIcon(graphics);
-                        System.out.println("AppLibraryScreen: Got app icon: " + (appIcon != null ? appIcon.width + "x" + appIcon.height : "null"));
-                    } else {
-                        System.out.println("AppLibraryScreen: Kernel graphics is null");
+                        appIcon = graphics.get(0, 0, 1, 1);
+                        appIcon.resize(64, 64);
+                        appIcon.loadPixels();
+                        for (int i = 0; i < appIcon.pixels.length; i++) {
+                            appIcon.pixels[i] = 0xFFFFFFFF; // White color
+                        }
+                        appIcon.updatePixels();
                     }
-                } else {
-                    System.out.println("AppLibraryScreen: Kernel is null");
                 }
+
+                System.out.println("AppLibraryScreen: Got app icon: " + (appIcon != null ? appIcon.width + "x" + appIcon.height : "null"));
                 
                 // Launch with animation
                 if (appIcon != null) {

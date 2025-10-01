@@ -9,7 +9,9 @@ MochiMobileOSは疑似仮想OSであり、外部プロジェクトから依存�
 - **Forge MODアプリケーション開発**: `PhoneAppRegistryEvent`を通じたMinecraft MODとしてのアプリケーション登録
 
 **最新の仕様**:
-- `IApplication`インターフェースの改良（PGraphics対応、メソッド名統一）
+- `IApplication`インターフェースの改良（ファイルベースアイコンシステムへの移行）
+- `getIcon()`メソッドは`PImage`を返すようになり、nullの場合はシステムが白いデフォルトアイコンを生成
+- アプリケーションはJAR内のリソースから独自にアイコンを読み込む責任を持つ
 - `ModAppRegistry`によるスレッドセーフなMODアプリケーション管理
 - Forge MOD統合システムの本格実装
 
@@ -99,37 +101,25 @@ public class YourApp implements IApplication {
     }
 
     @Override
-    public PImage getIcon(PApplet p) {
-        // 64x64ピクセルのアイコンを作成
-        PGraphics icon = p.createGraphics(64, 64);
-        icon.beginDraw();
+    public PImage getIcon() {
+        // アイコン画像をアプリケーションのリソースから読み込む
+        // JARファイル内のリソースにアクセスする場合は以下のようにする
+        try {
+            java.io.InputStream stream = getClass().getResourceAsStream("/icons/yourapp.png");
+            if (stream != null) {
+                // PImageに変換（Processing環境が必要）
+                // 注意: この例は簡略化されています。実際には適切な画像読み込み処理が必要です
+                byte[] bytes = stream.readAllBytes();
+                // ... PImageへの変換処理 ...
+                stream.close();
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to load icon: " + e.getMessage());
+        }
 
-        // アイコンのデザイン
-        icon.background(100, 150, 200);  // 背景色
-        icon.fill(255);
-        icon.textAlign(p.CENTER, p.CENTER);
-        icon.textSize(16);
-        icon.text("アプリ", 32, 32);
-
-        icon.endDraw();
-        return icon;
-    }
-
-    @Override
-    public PImage getIcon(PGraphics g) {
-        // PGraphics環境でのアイコン作成
-        PGraphics icon = g.createGraphics(64, 64);
-        icon.beginDraw();
-
-        // アイコンのデザイン（PApplet版と同様）
-        icon.background(100, 150, 200);
-        icon.fill(255);
-        icon.textAlign(g.CENTER, g.CENTER);
-        icon.textSize(16);
-        icon.text("アプリ", 32, 32);
-
-        icon.endDraw();
-        return icon;
+        // アイコンが読み込めない場合はnullを返す
+        // システムが自動的に白いデフォルトアイコンを生成します
+        return null;
     }
 
     @Override
@@ -387,6 +377,262 @@ kernel.getNotificationManager().addNotification(notification);
 long currentTime = kernel.getSystemClock().getCurrentTime();
 String timeString = kernel.getSystemClock().getFormattedTime("HH:mm:ss");
 ```
+
+### 5. ハードウェアバイパスAPI
+
+MochiMobileOSは、スマートフォンのハードウェア機能をエミュレートする**ハードウェアバイパスAPI**を提供しています。これらのAPIは、standalone環境では基本的な動作を提供し、Minecraft Forge環境ではゲーム内の実データに基づいた高度な機能を提供します。
+
+#### 利用可能なハードウェアAPI
+
+##### 5.1 モバイルデータ通信ソケット (MobileDataSocket)
+
+仮想インターネット通信の状態を取得します。
+
+```java
+import jp.moyashi.phoneos.core.service.hardware.MobileDataSocket;
+
+// モバイルデータ通信の状態を取得
+MobileDataSocket socket = kernel.getMobileDataSocket();
+
+// 利用可能かどうか
+boolean available = socket.isAvailable();
+
+// 電波強度（0-5）
+int signalStrength = socket.getSignalStrength();
+
+// サービス名（例: "MochiNet", "No Service"）
+String serviceName = socket.getServiceName();
+
+// 接続状態
+boolean connected = socket.isConnected();
+```
+
+**環境別の動作**:
+- **standalone**: 常に圏外（利用不可）
+- **forge**: Y座標に基づく電波強度、ディメンション別ネットワーク名
+
+##### 5.2 Bluetooth通信ソケット (BluetoothSocket)
+
+周囲のBluetoothデバイスを検出・接続します。
+
+```java
+import jp.moyashi.phoneos.core.service.hardware.BluetoothSocket;
+import java.util.List;
+
+// Bluetoothソケットを取得
+BluetoothSocket socket = kernel.getBluetoothSocket();
+
+// 周囲のデバイスをスキャン
+List<BluetoothSocket.BluetoothDevice> devices = socket.scanNearbyDevices();
+
+// デバイス情報を取得
+for (BluetoothSocket.BluetoothDevice device : devices) {
+    String name = device.name;        // デバイス名
+    String address = device.address;  // MACアドレス
+    double distance = device.distance; // 距離（メートル）
+}
+
+// デバイスに接続
+boolean connected = socket.connect(devices.get(0).address);
+
+// 接続済みデバイスのリスト
+List<BluetoothSocket.BluetoothDevice> connectedDevices = socket.getConnectedDevices();
+```
+
+**環境別の動作**:
+- **standalone**: 常にデバイスNOTFOUND
+- **forge**: 半径10m以内のプレイヤー/エンティティを検出
+
+##### 5.3 位置情報ソケット (LocationSocket)
+
+現在の位置情報を取得します。
+
+```java
+import jp.moyashi.phoneos.core.service.hardware.LocationSocket;
+
+// 位置情報ソケットを取得
+LocationSocket socket = kernel.getLocationSocket();
+
+// GPS有効化
+socket.setEnabled(true);
+
+// 位置情報を取得
+LocationSocket.LocationData location = socket.getLocation();
+double x = location.x;
+double y = location.y;
+double z = location.z;
+double accuracy = location.accuracy; // GPS精度（メートル）
+```
+
+**環境別の動作**:
+- **standalone**: (0, 0, 0) 固定
+- **forge**: プレイヤーの実際の座標
+
+##### 5.4 バッテリー情報 (BatteryInfo)
+
+バッテリー残量と状態を取得します。
+
+```java
+import jp.moyashi.phoneos.core.service.hardware.BatteryInfo;
+
+// バッテリー情報を取得
+BatteryInfo battery = kernel.getBatteryInfo();
+
+// バッテリー残量（0-100%）
+int level = battery.getBatteryLevel();
+
+// バッテリー寿命（0-100%）
+int health = battery.getBatteryHealth();
+
+// 充電中かどうか
+boolean charging = battery.isCharging();
+```
+
+**環境別の動作**:
+- **standalone**: 常に100%
+- **forge**: アイテムNBTから取得（消費・充電機能あり）
+
+##### 5.5 カメラソケット (CameraSocket)
+
+カメラ映像をキャプチャします。
+
+```java
+import jp.moyashi.phoneos.core.service.hardware.CameraSocket;
+import processing.core.PImage;
+
+// カメラソケットを取得
+CameraSocket socket = kernel.getCameraSocket();
+
+// カメラを有効化
+socket.setEnabled(true);
+
+// 現在のフレームを取得
+PImage frame = socket.getCurrentFrame();
+if (frame != null) {
+    // フレームを描画
+    g.image(frame, 0, 0, width, height);
+}
+```
+
+**環境別の動作**:
+- **standalone**: 常にnull（利用不可）
+- **forge**: 保留（実装未完了）
+
+##### 5.6 マイクソケット (MicrophoneSocket)
+
+音声入力を取得します。
+
+```java
+import jp.moyashi.phoneos.core.service.hardware.MicrophoneSocket;
+
+// マイクソケットを取得
+MicrophoneSocket socket = kernel.getMicrophoneSocket();
+
+// 利用可能かどうか
+if (socket.isAvailable()) {
+    // マイクを有効化
+    socket.setEnabled(true);
+
+    // 音声データを取得
+    byte[] audioData = socket.getAudioData();
+    if (audioData != null && audioData.length > 0) {
+        // 音声データを処理
+        processAudio(audioData);
+    }
+}
+```
+
+**環境別の動作**:
+- **standalone**: 常にnull（利用不可）
+- **forge**: Simple Voice Chat MOD連携（SVC導入時のみ有効）
+
+##### 5.7 スピーカーソケット (SpeakerSocket)
+
+音声を再生します。
+
+```java
+import jp.moyashi.phoneos.core.service.hardware.SpeakerSocket;
+
+// スピーカーソケットを取得
+SpeakerSocket socket = kernel.getSpeakerSocket();
+
+// 音量レベルを設定（OFF, LOW, MEDIUM, HIGH）
+socket.setVolumeLevel(SpeakerSocket.VolumeLevel.MEDIUM);
+
+// 音声データを再生
+byte[] audioData = loadAudioFile("sound.wav");
+socket.playAudio(audioData);
+```
+
+**環境別の動作**:
+- **standalone**: Java標準Audio APIで再生
+- **forge**: Simple Voice Chat MOD連携（音量に応じた範囲で放送）
+
+##### 5.8 IC通信ソケット (ICSocket)
+
+NFCのようなIC通信機能を提供します。
+
+```java
+import jp.moyashi.phoneos.core.service.hardware.ICSocket;
+
+// IC通信ソケットを取得
+ICSocket socket = kernel.getICSocket();
+
+// IC通信を有効化
+socket.setEnabled(true);
+
+// IC読み取りデータをポーリング
+ICSocket.ICData data = socket.pollICData();
+
+if (data.type == ICSocket.ICDataType.BLOCK) {
+    // ブロック情報
+    System.out.println("Block: (" + data.blockX + ", " + data.blockY + ", " + data.blockZ + ")");
+} else if (data.type == ICSocket.ICDataType.ENTITY) {
+    // エンティティ情報
+    System.out.println("Entity UUID: " + data.entityUUID);
+}
+```
+
+**環境別の動作**:
+- **standalone**: 常にNONE（利用不可）
+- **forge**: しゃがみ右クリックでブロック座標/エンティティUUID取得
+
+##### 5.9 SIM情報 (SIMInfo)
+
+SIMカード情報を取得します。
+
+```java
+import jp.moyashi.phoneos.core.service.hardware.SIMInfo;
+
+// SIM情報を取得
+SIMInfo sim = kernel.getSIMInfo();
+
+// 利用可能かどうか
+boolean available = sim.isAvailable();
+
+// SIMが挿入されているかどうか
+boolean inserted = sim.isInserted();
+
+// 所有者名
+String ownerName = sim.getOwnerName();
+
+// 所有者UUID
+String ownerUUID = sim.getOwnerUUID();
+```
+
+**環境別の動作**:
+- **standalone**: "Dev" / "00000000-0000-0000-0000-000000000000"
+- **forge**: プレイヤーの表示名/UUID
+
+#### ハードウェアAPIの使用例
+
+完全な使用例として、`HardwareTestApp`を参照してください:
+- `core/src/main/java/jp/moyashi/phoneos/core/apps/hardware_test/HardwareTestApp.java`
+- `core/src/main/java/jp/moyashi/phoneos/core/apps/hardware_test/HardwareTestScreen.java`
+
+#### デバッグ方法
+
+詳細なデバッグ方法については、`HARDWARE_DEBUG_GUIDE.md`を参照してください。
 
 ## 画面遷移とライフサイクル
 

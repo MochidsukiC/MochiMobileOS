@@ -74,6 +74,39 @@ public class Kernel implements GestureListener {
     /** 統一座標変換システム */
     private CoordinateTransform coordinateTransform;
 
+    /** 仮想ネットワークルーターサービス */
+    private jp.moyashi.phoneos.core.service.network.VirtualRouter virtualRouter;
+
+    /** メッセージストレージサービス */
+    private MessageStorage messageStorage;
+
+    /** ハードウェアバイパスAPI - モバイルデータ通信ソケット */
+    private jp.moyashi.phoneos.core.service.hardware.MobileDataSocket mobileDataSocket;
+
+    /** ハードウェアバイパスAPI - Bluetooth通信ソケット */
+    private jp.moyashi.phoneos.core.service.hardware.BluetoothSocket bluetoothSocket;
+
+    /** ハードウェアバイパスAPI - 位置情報ソケット */
+    private jp.moyashi.phoneos.core.service.hardware.LocationSocket locationSocket;
+
+    /** ハードウェアバイパスAPI - バッテリー情報 */
+    private jp.moyashi.phoneos.core.service.hardware.BatteryInfo batteryInfo;
+
+    /** ハードウェアバイパスAPI - カメラソケット */
+    private jp.moyashi.phoneos.core.service.hardware.CameraSocket cameraSocket;
+
+    /** ハードウェアバイパスAPI - マイクソケット */
+    private jp.moyashi.phoneos.core.service.hardware.MicrophoneSocket microphoneSocket;
+
+    /** ハードウェアバイパスAPI - スピーカーソケット */
+    private jp.moyashi.phoneos.core.service.hardware.SpeakerSocket speakerSocket;
+
+    /** ハードウェアバイパスAPI - IC通信ソケット */
+    private jp.moyashi.phoneos.core.service.hardware.ICSocket icSocket;
+
+    /** ハードウェアバイパスAPI - SIM情報 */
+    private jp.moyashi.phoneos.core.service.hardware.SIMInfo simInfo;
+
     /** PGraphics描画バッファ（PGraphics統一アーキテクチャ） */
     private PGraphics graphics;
 
@@ -88,6 +121,12 @@ public class Kernel implements GestureListener {
 
     /** フレームカウント */
     public int frameCount = 0;
+
+    /** レンダリング同期用ロック */
+    private final Object renderLock = new Object();
+
+    /** ワールドID（データ分離用） */
+    private String worldId = null;
 
     /** 日本語フォント */
     private PFont japaneseFont;
@@ -144,15 +183,16 @@ public class Kernel implements GestureListener {
      * すべての描画処理をPGraphicsバッファに対して実行し、サブモジュールが結果を取得可能にする。
      */
     public void render() {
-        if (graphics == null) {
-            System.err.println("Kernel: PGraphicsバッファが初期化されていません");
-            return;
-        }
+        synchronized (renderLock) {
+            if (graphics == null) {
+                System.err.println("Kernel: PGraphicsバッファが初期化されていません");
+                return;
+            }
 
-        // PGraphicsバッファへの描画開始
-        graphics.beginDraw();
+            // PGraphicsバッファへの描画開始
+            graphics.beginDraw();
 
-        try {
+            try {
             // まず背景を描画（重要：Screenが背景を描画しない場合のために）
             graphics.background(0, 0, 0); // 黒背景
 
@@ -210,12 +250,13 @@ public class Kernel implements GestureListener {
                 }
             }
 
-        } catch (Exception e) {
-            System.err.println("Kernel: 描画処理中にエラーが発生: " + e.getMessage());
-            e.printStackTrace();
-        } finally {
-            // PGraphicsバッファへの描画終了
-            graphics.endDraw();
+            } catch (Exception e) {
+                System.err.println("Kernel: 描画処理中にエラーが発生: " + e.getMessage());
+                e.printStackTrace();
+            } finally {
+                // PGraphicsバッファへの描画終了
+                graphics.endDraw();
+            }
         }
     }
 
@@ -403,11 +444,13 @@ public class Kernel implements GestureListener {
      * @return ピクセル配列
      */
     public int[] getPixels() {
-        if (graphics == null) {
-            return new int[width * height];
+        synchronized (renderLock) {
+            if (graphics == null) {
+                return new int[width * height];
+            }
+            graphics.loadPixels();
+            return graphics.pixels.clone();
         }
-        graphics.loadPixels();
-        return graphics.pixels.clone();
     }
 
     // =========================================================================
@@ -439,22 +482,51 @@ public class Kernel implements GestureListener {
 
     /**
      * Minecraft環境用の初期化（forge用）。
-     * 最小限のPAppletインスタンスでPGraphicsバッファを作成する。
+     * PAppletのヘッドレスインスタンスを作成してPGraphicsバッファを作成する。
      *
      * @param screenWidth 画面幅
      * @param screenHeight 画面高さ
      */
     public void initializeForMinecraft(int screenWidth, int screenHeight) {
-        // 最小限のPAppletインスタンスを作成
-        this.parentApplet = new PApplet();
+        initializeForMinecraft(screenWidth, screenHeight, null);
+    }
+
+    /**
+     * Minecraft環境用の初期化（forge用）。ワールドID指定版。
+     * PAppletのヘッドレスインスタンスを作成してPGraphicsバッファを作成する。
+     *
+     * @param screenWidth 画面幅
+     * @param screenHeight 画面高さ
+     * @param worldId ワールドID（データ分離用）
+     */
+    public void initializeForMinecraft(int screenWidth, int screenHeight, String worldId) {
         this.width = screenWidth;
         this.height = screenHeight;
+        this.worldId = worldId;
 
         System.out.println("=== MochiMobileOS カーネル初期化 (Minecraft環境) ===");
-        System.out.println("📱 Kernel: PGraphics buffer created (" + width + "x" + height + ")");
+        System.out.println("📱 Kernel: Creating PGraphics buffer directly (" + width + "x" + height + ")");
 
-        // PGraphicsバッファを作成
-        this.graphics = parentApplet.createGraphics(width, height);
+        try {
+            // PAppletを使わず、PGraphicsを直接作成（リフレクション使用）
+            // Processing内部では "processing.awt.PGraphicsJava2D" が使用される
+            Class<?> pgClass = Class.forName("processing.awt.PGraphicsJava2D");
+            this.graphics = (PGraphics) pgClass.getDeclaredConstructor().newInstance();
+
+            // PGraphicsのサイズを設定
+            this.graphics.setSize(width, height);
+
+            // 親PAppletを設定（一部の描画メソッドで必要）
+            this.parentApplet = new PApplet();
+            this.graphics.setParent(parentApplet);
+
+            System.out.println("📱 Kernel: PGraphics buffer created successfully via reflection");
+
+        } catch (Exception e) {
+            System.err.println("Failed to create PGraphics directly: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to initialize PGraphics", e);
+        }
 
         // 内部初期化を実行
         setup();
@@ -466,6 +538,10 @@ public class Kernel implements GestureListener {
      */
     private void setup() {
         // 日本語フォントの初期化
+        // TEMPORARY FIX: Disable font creation as PApplet.createFont() causes issues in Forge environment
+        System.out.println("Kernel: 日本語フォント機能を一時的に無効化");
+        japaneseFont = null;
+        /*
         System.out.println("Kernel: 日本語フォントを設定中...");
         try {
             japaneseFont = parentApplet.createFont("Meiryo", 16, true);
@@ -474,6 +550,7 @@ public class Kernel implements GestureListener {
             System.err.println("Kernel: Meiryoフォントの読み込みに失敗: " + e.getMessage());
             System.err.println("Kernel: デフォルトフォントを使用します");
         }
+        */
         
         System.out.println("Kernel: OSサービスを初期化中...");
         System.out.println("Kernel: フレームレートを60FPSに設定");
@@ -489,7 +566,10 @@ public class Kernel implements GestureListener {
 
         // コアサービスの初期化
         System.out.println("  -> VFS（仮想ファイルシステム）作成中...");
-        vfs = new VFS();
+        if (worldId != null && !worldId.isEmpty()) {
+            System.out.println("     World ID: " + worldId);
+        }
+        vfs = new VFS(worldId);
         
         System.out.println("  -> 設定マネージャー作成中...");
         settingsManager = new SettingsManager();
@@ -528,7 +608,25 @@ public class Kernel implements GestureListener {
         
         System.out.println("  -> 動的レイヤー管理システム作成中...");
         layerManager = new LayerManager(gestureManager);
-        
+
+        System.out.println("  -> 仮想ネットワークルーター作成中...");
+        virtualRouter = new jp.moyashi.phoneos.core.service.network.VirtualRouter();
+
+        System.out.println("  -> メッセージストレージサービス作成中...");
+        messageStorage = new MessageStorage(vfs);
+
+        // ハードウェアバイパスAPIの初期化（デフォルト実装）
+        System.out.println("  -> ハードウェアバイパスAPI作成中...");
+        mobileDataSocket = new jp.moyashi.phoneos.core.service.hardware.DefaultMobileDataSocket();
+        bluetoothSocket = new jp.moyashi.phoneos.core.service.hardware.DefaultBluetoothSocket();
+        locationSocket = new jp.moyashi.phoneos.core.service.hardware.DefaultLocationSocket();
+        batteryInfo = new jp.moyashi.phoneos.core.service.hardware.DefaultBatteryInfo();
+        cameraSocket = new jp.moyashi.phoneos.core.service.hardware.DefaultCameraSocket();
+        microphoneSocket = new jp.moyashi.phoneos.core.service.hardware.DefaultMicrophoneSocket();
+        speakerSocket = new jp.moyashi.phoneos.core.service.hardware.DefaultSpeakerSocket();
+        icSocket = new jp.moyashi.phoneos.core.service.hardware.DefaultICSocket();
+        simInfo = new jp.moyashi.phoneos.core.service.hardware.DefaultSIMInfo();
+
         // コントロールセンターを最高優先度のジェスチャーリスナーとして登録
         gestureManager.addGestureListener(controlCenterManager);
         
@@ -538,22 +636,35 @@ public class Kernel implements GestureListener {
         // Kernelを最低優先度のジェスチャーリスナーとして登録
         gestureManager.addGestureListener(this);
         
-        // 組み込みアプリケーションを登録
-        System.out.println("  -> LauncherAppを登録中...");
+        // 組み込みアプリケーションを登録（まず全て登録してから初期化）
+        System.out.println("  -> 組み込みアプリケーションを登録中...");
         LauncherApp launcherApp = new LauncherApp();
         appLoader.registerApplication(launcherApp);
-        launcherApp.onInitialize(this);
-        
-        System.out.println("  -> SettingsAppを登録中...");
+
         SettingsApp settingsApp = new SettingsApp();
         appLoader.registerApplication(settingsApp);
-        settingsApp.onInitialize(this);
-        
-        System.out.println("  -> CalculatorAppを登録中...");
+
         CalculatorApp calculatorApp = new CalculatorApp();
         appLoader.registerApplication(calculatorApp);
-        
+
+        jp.moyashi.phoneos.core.apps.network.NetworkApp networkApp = new jp.moyashi.phoneos.core.apps.network.NetworkApp();
+        appLoader.registerApplication(networkApp);
+
+        jp.moyashi.phoneos.core.apps.hardware_test.HardwareTestApp hardwareTestApp = new jp.moyashi.phoneos.core.apps.hardware_test.HardwareTestApp();
+        appLoader.registerApplication(hardwareTestApp);
+
+        jp.moyashi.phoneos.core.apps.voicememo.VoiceMemoApp voiceMemoApp = new jp.moyashi.phoneos.core.apps.voicememo.VoiceMemoApp();
+        appLoader.registerApplication(voiceMemoApp);
+
         System.out.println("Kernel: " + appLoader.getLoadedApps().size() + " 個のアプリケーションを登録");
+
+        // すべてのアプリ登録後に初期化を実行
+        System.out.println("  -> アプリケーションを初期化中...");
+        launcherApp.onInitialize(this);
+        settingsApp.onInitialize(this);
+        calculatorApp.onInitialize(this);
+        networkApp.onInitialize(this);
+        hardwareTestApp.onInitialize(this);
         
         // スクリーンマネージャーを初期化してランチャーを初期画面に設定
         System.out.println("  -> スクリーンマネージャー作成中...");
@@ -852,16 +963,196 @@ public class Kernel implements GestureListener {
     
     /**
      * 動的レイヤー管理システムのインスタンスを取得する。
-     * 
+     *
      * @return レイヤーマネージャー
      */
     public LayerManager getLayerManager() {
         return layerManager;
     }
-    
+
+    /**
+     * 仮想ネットワークルーターサービスのインスタンスを取得する。
+     *
+     * @return 仮想ネットワークルーター
+     */
+    public jp.moyashi.phoneos.core.service.network.VirtualRouter getVirtualRouter() {
+        return virtualRouter;
+    }
+
+    /**
+     * メッセージストレージサービスのインスタンスを取得する。
+     *
+     * @return メッセージストレージ
+     */
+    public MessageStorage getMessageStorage() {
+        return messageStorage;
+    }
+
+    /**
+     * モバイルデータ通信ソケットのインスタンスを取得する。
+     *
+     * @return モバイルデータ通信ソケット
+     */
+    public jp.moyashi.phoneos.core.service.hardware.MobileDataSocket getMobileDataSocket() {
+        return mobileDataSocket;
+    }
+
+    /**
+     * Bluetooth通信ソケットのインスタンスを取得する。
+     *
+     * @return Bluetooth通信ソケット
+     */
+    public jp.moyashi.phoneos.core.service.hardware.BluetoothSocket getBluetoothSocket() {
+        return bluetoothSocket;
+    }
+
+    /**
+     * 位置情報ソケットのインスタンスを取得する。
+     *
+     * @return 位置情報ソケット
+     */
+    public jp.moyashi.phoneos.core.service.hardware.LocationSocket getLocationSocket() {
+        return locationSocket;
+    }
+
+    /**
+     * バッテリー情報のインスタンスを取得する。
+     *
+     * @return バッテリー情報
+     */
+    public jp.moyashi.phoneos.core.service.hardware.BatteryInfo getBatteryInfo() {
+        return batteryInfo;
+    }
+
+    /**
+     * カメラソケットのインスタンスを取得する。
+     *
+     * @return カメラソケット
+     */
+    public jp.moyashi.phoneos.core.service.hardware.CameraSocket getCameraSocket() {
+        return cameraSocket;
+    }
+
+    /**
+     * マイクソケットのインスタンスを取得する。
+     *
+     * @return マイクソケット
+     */
+    public jp.moyashi.phoneos.core.service.hardware.MicrophoneSocket getMicrophoneSocket() {
+        return microphoneSocket;
+    }
+
+    /**
+     * スピーカーソケットのインスタンスを取得する。
+     *
+     * @return スピーカーソケット
+     */
+    public jp.moyashi.phoneos.core.service.hardware.SpeakerSocket getSpeakerSocket() {
+        return speakerSocket;
+    }
+
+    /**
+     * IC通信ソケットのインスタンスを取得する。
+     *
+     * @return IC通信ソケット
+     */
+    public jp.moyashi.phoneos.core.service.hardware.ICSocket getICSocket() {
+        return icSocket;
+    }
+
+    /**
+     * SIM情報のインスタンスを取得する。
+     *
+     * @return SIM情報
+     */
+    public jp.moyashi.phoneos.core.service.hardware.SIMInfo getSIMInfo() {
+        return simInfo;
+    }
+
+    /**
+     * モバイルデータ通信ソケットを設定する（forge-mod用）。
+     *
+     * @param socket モバイルデータ通信ソケット
+     */
+    public void setMobileDataSocket(jp.moyashi.phoneos.core.service.hardware.MobileDataSocket socket) {
+        this.mobileDataSocket = socket;
+    }
+
+    /**
+     * Bluetooth通信ソケットを設定する（forge-mod用）。
+     *
+     * @param socket Bluetooth通信ソケット
+     */
+    public void setBluetoothSocket(jp.moyashi.phoneos.core.service.hardware.BluetoothSocket socket) {
+        this.bluetoothSocket = socket;
+    }
+
+    /**
+     * 位置情報ソケットを設定する（forge-mod用）。
+     *
+     * @param socket 位置情報ソケット
+     */
+    public void setLocationSocket(jp.moyashi.phoneos.core.service.hardware.LocationSocket socket) {
+        this.locationSocket = socket;
+    }
+
+    /**
+     * バッテリー情報を設定する（forge-mod用）。
+     *
+     * @param info バッテリー情報
+     */
+    public void setBatteryInfo(jp.moyashi.phoneos.core.service.hardware.BatteryInfo info) {
+        this.batteryInfo = info;
+    }
+
+    /**
+     * カメラソケットを設定する（forge-mod用）。
+     *
+     * @param socket カメラソケット
+     */
+    public void setCameraSocket(jp.moyashi.phoneos.core.service.hardware.CameraSocket socket) {
+        this.cameraSocket = socket;
+    }
+
+    /**
+     * マイクソケットを設定する（forge-mod用）。
+     *
+     * @param socket マイクソケット
+     */
+    public void setMicrophoneSocket(jp.moyashi.phoneos.core.service.hardware.MicrophoneSocket socket) {
+        this.microphoneSocket = socket;
+    }
+
+    /**
+     * スピーカーソケットを設定する（forge-mod用）。
+     *
+     * @param socket スピーカーソケット
+     */
+    public void setSpeakerSocket(jp.moyashi.phoneos.core.service.hardware.SpeakerSocket socket) {
+        this.speakerSocket = socket;
+    }
+
+    /**
+     * IC通信ソケットを設定する（forge-mod用）。
+     *
+     * @param socket IC通信ソケット
+     */
+    public void setICSocket(jp.moyashi.phoneos.core.service.hardware.ICSocket socket) {
+        this.icSocket = socket;
+    }
+
+    /**
+     * SIM情報を設定する（forge-mod用）。
+     *
+     * @param info SIM情報
+     */
+    public void setSIMInfo(jp.moyashi.phoneos.core.service.hardware.SIMInfo info) {
+        this.simInfo = info;
+    }
+
     /**
      * 日本語対応フォントを取得する。
-     * 
+     *
      * @return 日本語フォント、初期化されていない場合はnull
      */
     public PFont getJapaneseFont() {
