@@ -21,18 +21,49 @@
 VFS, SettingsManager, SystemClock, AppLoader, LayoutManager, PopupManager, GestureManager, ControlCenterManager, NotificationManager, LockManager, LayerManager
 
 **組み込みアプリ**:
-LauncherApp, SettingsApp, CalculatorApp, AppStoreApp (UIのみ)
+LauncherApp, SettingsApp, CalculatorApp, AppStoreApp (UIのみ), NetworkApp (メッセージ&ネットワークテスト), HardwareTestApp (ハードウェアAPIデバッグ), VoiceMemoApp (音声録音・再生)
 
-**Forge連携**:
+**仮想インターネット通信システム**:
+*   **IPvMアドレス**: TCP/IPベースの仮想アドレスシステム。形式: `[種類]-UUID`
+    - `0-{Player_UUID}`: プレイヤー
+    - `1-{Entity_UUID}`: デバイス(エンティティ) ※現在未使用
+    - `2-{登録式識別ID}`: サーバー(外部Mod)
+    - `3-{登録式識別ID}`: システム(本Mod)
+*   **仮想ルーター**: 本プログラムがルーター機能を提供し、送信先に応じた適切なルーティングを実行
+*   **通信方式**:
+    - プレイヤー向け: IPからPlayerUUIDを抽出し、Minecraftパケットとして送信
+    - サーバー(外部Mod)向け: レジストリに登録されたMod APIを叩いて通信
+    - システム向け: 本Mod内部で直接処理
+*   **ユースケース**:
+    1. アプリケーションインストール要求 (クライアント→システム)
+    2. 電子マネー処理 (クライアント→外部Modサーバー→クライアント)
+    3. メッセージ送信 (クライアント→クライアント)
+
+**Forge連携** (✅ 完了):
 *   MODとしての基本構造とスマートフォンアイテムが実装済み。
 *   他のMODがアプリを登録するためのAPI (`PhoneAppRegistryEvent`) が機能している。
+*   **PGraphics→Minecraft GUI変換システム**: KernelのPGraphicsバッファからMinecraftのNativeImageへの高速ピクセル変換を実装
+*   **Kernel統合**: `Kernel.initializeForMinecraft()`による最適化された初期化処理
+*   **入力システム**: Minecraftのマウス・キーボードイベントをKernel APIにバイパス（ProcessingScreen経由）
+*   **Kernelインスタンス管理**: ワールドごとにKernelインスタンスを管理、MinecraftのフレームレートでV-Sync動作
+*   **画面表示システム**:
+    - 動的スケーリング：画面サイズに応じてスマートフォン表示を自動拡大縮小（縦横比維持）
+    - 中央配置：常に画面中央に表示、20pxマージン確保
+    - 画面サイズ：スタンドアロンと同じ400x600ピクセルに統一
+    - PoseStack変換を使用した高品質なスケーリング
+*   **ワールド別データ分離** (✅ 実装完了、テスト待ち):
+    - ワールドロード時に`LevelEvent.Load`を監視
+    - シングルプレイヤー：`./mochi_os_data/{world_name}/mochi_os_data/`
+    - マルチプレイヤー：`./mochi_os_data/{server_address}/mochi_os_data/`
+    - ワールド切り替え時に自動的に新しいKernelインスタンスを作成
+    - VFS、Kernel、SmartphoneBackgroundServiceで完全サポート
+    - **注意**: core自体の動作は変更なし（`VFS()`は`mochi_os_data/`を使用）、forgeでのみ分離
 
 ### 3. 既知の現在の問題
 
-1.  **Forge連携が不完全**: `core`モジュールと`forge`モジュール間のブリッジ(`KernelAdapter`等)が未実装で、両者が独立して動作している。
-2.  **設定アプリが機能しない**: `SettingsApp`のUIは存在するが、設定を実際に変更するバックエンドロジックが実装されていない。
-3.  **ランチャーの不具合**: ホーム画面のアイコンをDockに移動する機能が正しく動作しない。
-4.  **PGraphicsアーキテクチャ移行 (Phase 8 - ✅ 100%完了)**: `core`モジュールのPGraphics統一化が完了。
+1.  **設定アプリが機能しない**: `SettingsApp`のUIは存在するが、設定を実際に変更するバックエンドロジックが実装されていない。
+2.  **ランチャーの不具合**: ホーム画面のアイコンをDockに移動する機能が正しく動作しない。
+3.  **PGraphicsアーキテクチャ移行 (Phase 8 - ✅ 100%完了)**: `core`モジュールのPGraphics統一化が完了。
     *   **完了済み**:
         - **インターフェース**: IApplication, Screen (完全移行、@Deprecated ブリッジ付き)
         - **画面クラス**: HomeScreen, CalculatorScreen, SettingsScreen, LockScreen, SimpleHomeScreen, AppLibraryScreen, BasicHomeScreen, SafeHomeScreen, AppLibraryScreen_Complete
@@ -41,328 +72,162 @@ LauncherApp, SettingsApp, CalculatorApp, AppStoreApp (UIのみ)
         - **統一座標システム**: CoordinateTransform クラス実装済み
     *   **移行内容**: すべてのPAppletメソッドは@Deprecatedとしてマークされ、PGraphicsメソッドが新しいプライマリAPIとなっている
 
-### 5. ロック画面でのスペースキー無反応問題 ⚠️ → ✅ **解決済み** (2025年9月29日)
-
-**問題**: ロック画面でスペースキーが押されても何も反応しない現象が発生していました。
-
-**根本原因**: Kernelのキー処理ロジックで、ロック画面が表示されている場合でもスペースキーを「閉じられないレイヤー」として扱い、ScreenManagerに転送していませんでした。
-
-**解決方法**:
-- `Kernel.java`のkeyPressed()メソッドを修正
-- ロック画面が表示されている場合は、レイヤー管理を通さずに直接ScreenManagerにキー入力を転送
-- ロック画面のkeyPressed()メソッドが既に実装されており、スペースキーでパターン入力画面の展開/閉じる機能が動作
-
-**修正されたコード**:
-```java
-// スペースキー（ホームボタン）の階層管理処理
-if (key == ' ' || keyCode == 32) {
-    System.out.println("Kernel: Space key pressed - checking lock screen status");
-
-    // ロック画面が表示されている場合は、ロック画面に処理を委譲
-    if (layerStack.contains(LayerType.LOCK_SCREEN)) {
-        System.out.println("Kernel: Lock screen is active - forwarding space key to screen manager");
-        if (screenManager != null) {
-            screenManager.keyPressed(key, keyCode);
-        }
-        return;
-    }
-
-    // ロック画面が表示されていない場合は、通常のホームボタン処理
-    System.out.println("Kernel: Space key pressed - handling home button");
-    handleHomeButton();
-    return;
-}
-```
-
-**結果**: ロック画面でスペースキーが正常に反応し、パターン入力画面の展開/閉じるトグル機能が動作するようになりました。
-
-### 6. アプリケーション実行時のスペースキー無反応問題 ⚠️ → ✅ **解決済み** (2025年9月29日)
-
-**問題**: アプリケーションを開いている時にスペースキーを押してもホームスクリーンに戻らない現象が発生していました。
-
-**根本原因**: ScreenManagerでアプリケーション画面をプッシュした際に、KernelのレイヤースタックにAPPLICATIONレイヤーが追加されていませんでした。そのため、Kernelのスペースキー処理で`getTopMostClosableLayer()`がAPPLICATIONレイヤーを見つけられず、ホームボタン処理が機能していませんでした。
-
-**解決方法**:
-1. **ScreenManagerにKernel参照を追加**: レイヤー管理との統合を可能にするため
-2. **pushScreen()メソッドの修正**: アプリケーション画面（ランチャー関連以外）をプッシュ時に`kernel.addLayer(LayerType.APPLICATION)`を呼び出す
-3. **popScreen()メソッドの修正**: アプリケーション画面をポップ時に`kernel.removeLayer(LayerType.APPLICATION)`を呼び出す
-4. **isLauncherScreen()ヘルパー追加**: HomeScreen、AppLibraryScreen等のランチャー関連画面を判定し、これらにはAPPLICATIONレイヤーを追加しない
-
-**修正されたコード**:
-- **ScreenManager.java**: Kernel参照の追加、pushScreen/popScreenでのレイヤー管理統合
-- **Kernel.java**: ScreenManager初期化時にKernel参照を設定
-
-**結果**: アプリケーション実行時にスペースキーを押すとAPPLICATIONレイヤーが検出され、正常にホーム画面に戻るようになりました。
-
-### 7. スペースキー（ホームボタン）によるホーム画面復帰機能の実装 ✅ **解決済み** (2025年9月29日)
-
-**問題**: アプリケーションを開いている時にスペースキーを押してもホームスクリーンに戻らない現象が発生していました。
-
-**根本原因分析**:
-- Kernelがスペースキー入力を受け取り、APPLICATIONレイヤーを検知してScreenManagerに転送することまでは正常に動作
-- しかし、ScreenManagerのkeyPressed()メソッドは単純に現在のスクリーンにキーイベントを転送するだけで、**ホームボタンとしての処理が実装されていなかった**
-
-**新しいアプローチ**:
-アプリケーション自体がホームボタンを検知する必要はなく、**ScreenManager**がスペースキー（ホームボタン）を受け取って直接ホーム画面に戻る処理を実行するアプローチを採用。
-
-**解決方法**:
-1. **ScreenManager.keyPressed()メソッドの修正**: スペースキー検知時に`navigateToHome()`メソッドを呼び出すロジックを追加
-2. **navigateToHome()メソッドの実装**:
-   - 現在の画面がホーム画面（ランチャー関連）の場合は何もしない
-   - アプリケーション画面の場合はスタックからポップしてホーム画面に戻る
-   - APPLICATIONレイヤーの適切な削除処理
-
-**修正されたコード**:
-- **ScreenManager.java**:
-  ```java
-  // keyPressed()メソッドにスペースキー処理を追加
-  if (key == ' ' || keyCode == 32) {
-      System.out.println("ScreenManager: Space key detected - returning to home screen");
-      navigateToHome();
-      return;
-  }
-
-  // navigateToHome()メソッドの実装
-  private void navigateToHome() {
-      // 現在の画面がホーム画面の場合は何もしない
-      if (currentScreen != null && isLauncherScreen(currentScreen)) {
-          return;
-      }
-
-      // アプリケーション画面からホーム画面に戻る処理
-      while (!screenStack.isEmpty() && !isLauncherScreen(getCurrentScreen())) {
-          Screen poppedScreen = screenStack.pop();
-          if (kernel != null) {
-              kernel.removeLayer(LayerType.APPLICATION);
-          }
-      }
-  }
-  ```
-
-**結果**: アプリケーション実行時にスペースキーを押すとScreenManagerが直接ホーム画面復帰処理を実行し、正常にホーム画面に戻るようになりました。
-
-**追加考慮事項**: ロック画面では解除フィールド表示のためにスペースキーが必要なため、ロック画面の場合のみ例外的にスペースキーをスクリーンに転送する処理を追加しました。
-
-### 8. ホームスクリーン完全体化 ✅ **完了** (2025年9月29日)
-
-**実装された機能**:
-
-**1. ページ編集機能 ✅**
-- **編集モード開始時の空ページ自動追加**: 編集モードに入ると、最後に空のページが自動的に追加される
-- **編集モード終了時の空ページ自動削除**: 編集モードを終了すると、末尾の空ページが自動的に削除される
-- **ページ間ドラッグ機能**: 編集モードでショートカットを右端（x > 350）にドラッグすると、自動的に次のページに移動
-  - 次のページが存在しない場合は新しいページを作成
-  - 次のページが満杯の場合はさらに新しいページを作成
-  - ドラッグ後は自動的に目標ページにスライド
-
-**2. ホームボタンオートスクロール ✅**
-- **既存実装の確認**: Kernel.javaで既に実装済み
-- スペースキー（ホームボタン）押下で自動的に最初のページにスライドする機能が動作している
-
-**3. デザイン改善 ✅**
-- **アイコンサイズ縮小**: ICON_SIZE を 64px から 48px に変更
-- **グリッド間隔調整**: ICON_SPACING を 20px から 15px に変更
-- より密度の高い、モダンな外観を実現
-
-**修正されたファイル**:
-- `HomeScreen.java` (core/src/main/java/jp/moyashi/phoneos/core/apps/launcher/ui/HomeScreen.java):
-  - `toggleEditMode()`: 編集モード開始時の空ページ追加、終了時の空ページ削除機能
-  - `addEmptyPageIfNeeded()`: 編集モード用空ページ追加ヘルパー
-  - `removeEmptyPagesAtEnd()`: 編集モード終了時の空ページ削除ヘルパー
-  - `handleShortcutDrop()`: 右端ドラッグ時のページ間移動機能
-  - `handleShortcutMoveToNextPage()`: ページ間ショートカット移動の実装
-  - `findFirstEmptySlot()`: ページ内の最初の空きスロット検索
-  - アイコンサイズとスペーシングの調整
-
-**結果**: ホームスクリーンがより使いやすく、直感的な操作が可能になった。編集モードでの柔軟なページ管理とドラッグ操作によるページ間移動が実現され、ホームボタンでの迅速なナビゲーションも確保されている。
-
-### 9. 空ページ追加機能の修正 ✅ **完了** (2025年9月29日)
-
-**問題**: 編集モード開始時に空のページが追加されない問題があった。
-
-**根本原因**: AppLibraryページが最後のページにある場合、元の実装では適切に空ページが追加されていなかった。また、ページの削除ロジックもAppLibraryページを考慮していなかった。
-
-**修正内容**:
-
-**1. `addEmptyPageIfNeeded()` メソッドの改善**:
-- AppLibraryページがある場合、その前に空ページを挿入するロジックに変更
-- AppLibraryページの前のページが空でない場合のみ空ページを追加
-- デバッグメッセージを追加して動作を追跡可能に
-
-**2. `removeEmptyPagesAtEnd()` メソッドの改善**:
-- AppLibraryページをスキップしつつ、空の通常ページを削除
-- ページインデックスの調整を適切に処理
-- デバッグメッセージを追加して削除プロセスを可視化
-
-**修正後の動作**:
-- 編集モード開始時: AppLibraryページがある場合はその前に、ない場合は最後に空ページを追加
-- 編集モード終了時: AppLibraryページを除いた空の通常ページを末尾から削除
-- 現在のページインデックスが削除の影響を受ける場合は適切に調整
-
-**テスト方法**:
-1. ホームスクリーン上で長押しして編集モードに入る
-2. コンソールに「Added empty page」メッセージが表示されることを確認
-3. 編集モードを終了する
-4. コンソールに空ページ削除メッセージが表示されることを確認
-
-### 10. 編集モードでのページスライド機能復活 ✅ **完了** (2025年9月29日)
-
-**問題**: 編集モードでページスライドジェスチャーが無効になっており、ページを切り替えられない。
-
-**根本原因**: 編集モードで全てのページスワイプが一律に無効化されていた。これにより、ユーザーは編集モード中にページを移動できず、特に空ページを追加した後にそのページにアクセスできない問題があった。
-
-**修正内容**:
-
-**1. 条件付きページスワイプ有効化**:
-- **従来**: 編集モード中は全てのページスワイプが無効
-- **修正後**: ショートカットドラッグ中のみページスワイプを無効、それ以外では有効
-
-**2. 修正したメソッド**:
-- `handleSwipeLeft()`: `isEditing && isDragging` 時のみ無効化
-- `handleSwipeRight()`: `isEditing && isDragging` 時のみ無効化
-- `handleDragMove()`: ショートカットドラッグ中のみページドラッグを無効化
-- `handleDragEnd()`: ショートカットドラッグ中のみページドラッグ終了を無効化
-
-**修正後の動作**:
-- **編集モードでページスライド可能**: 左右スワイプでページ間を移動できる
-- **ショートカットドラッグ中は無効**: アイコンをドラッグしている間はページスライドが無効になり、誤動作を防ぐ
-- **両機能の共存**: ページスライドとショートカットドラッグが適切に区別される
-
-**ユーザビリティの向上**:
-- 編集モード中に新しく追加された空ページにアクセス可能
-- ページ間でのショートカット移動がより柔軟に
-- 直感的な操作が可能
-
-### 12. PGraphics統一アーキテクチャ後のコンパイルエラー修正 ✅ **解決済み** (2025年9月29日)
-
-**問題**: PGraphics統一アーキテクチャ移行後、core・forgeモジュールで複数のコンパイルエラーが発生していました。
-
-**発生していたエラー**:
-1. **IApplicationインターフェース**: `getApplicationName()` → `getName()` メソッドが存在しない
-2. **IApplicationインターフェース**: `onInstall()` → `onInitialize()` メソッドが存在しない
-3. **IApplicationインターフェース**: `getApplicationVersion()` → `getVersion()` メソッドが存在しない
-4. **Kernelクラス**: `keyPressed()` メソッドの引数数が不一致（4つ→2つ）
-5. **Kernelクラス**: 旧APIメソッドが存在しない（`draw()`, `cleanup()`, `getGraphicsBuffer()`, `getScreenSize()`）
-6. **重複ファイル**: `MinecraftKernelWrapper (1).java` が存在してクラス定義が競合
-
-**修正内容**:
-
-**1. IApplicationメソッド名の修正**:
-- `AppLoader.java` (core/src/main/java/jp/moyashi/phoneos/core/service/)
-- `ModAppRegistry.java` (forge/src/main/java/jp/moyashi/phoneos/forge/event/)
-- `PhoneAppRegistryEvent.java` (forge/src/main/java/jp/moyashi/phoneos/forge/event/)
-- `MochiMobileOSMod.java` (forge/src/main/java/jp/moyashi/phoneos/forge/)
-
-**2. keyPressedメソッド引数の修正**:
-- `SmartphoneBackgroundService.java:347`: `keyPressed(key, keyCode, mouseX, mouseY)` → `keyPressed(key, keyCode)`
-- `MinecraftKernelWrapper.java:147`: `keyPressed(key, keyCode, 0, 0)` → `keyPressed(key, keyCode)`
-- `ProcessingScreen.java:530`: `keyPressed(key, keyCode, 0, 0)` → `keyPressed(key, keyCode)`
-
-**3. 旧APIメソッドの一時的無効化**:
-- `MinecraftKernelWrapper.java`: `kernel.draw()`, `kernel.cleanup()` をコメントアウト
-- `ProcessingScreen.java`: `getGraphicsBuffer()` チェック、`draw()` をコメントアウト
-- `SmartphoneBackgroundService.java`: `getScreenSize()`, `draw()` をコメントアウト
-  - 画面サイズは一時的に固定値（390x844）を使用
-
-**4. 重複ファイルの削除**:
-- `MinecraftKernelWrapper (1).java` を削除
-
-**結果**:
-- ✅ **BUILD SUCCESSFUL** - 全モジュール（core、forge、standalone）のビルドが正常に完了
-- ⚠️ **警告のみ残存**: `FMLJavaModLoadingContext.get()` の非推奨警告（3件）- 動作に影響なし
-- 🔄 **TODO**: forge連携の完全実装（KernelAdapter等）は今後のフェーズで対応予定
-
-**次のステップ**: コンパイルエラーは解決されたため、Forge連携の完全実装（既知の問題1番）やランチャーの不具合修正（既知の問題3番）に進むことが可能になりました。
-
-### 13. ショートカットドラッグ時の画面端自動スライド機能 ✅ **実装完了** (2025年9月29日)
-
-**機能**: ホームスクリーン編集モード中に、ショートカットを画面端にドラッグした際に自動的にページがスライドする機能を実装しました。
-
-**実装された機能**:
-
-**1. 画面端検出システム**:
-- **検出ゾーン**: 画面左端・右端30px以内でドラッグを検知
-- **遅延実行**: 端に500ms滞在すると自動スライドを実行
-- **方向制御**: 左端で前のページ、右端で次のページに移動
-
-**2. ドラッグ状態維持**:
-- **状態保存**: ページ切り替え時にドラッグ中のショートカット情報を保持
-- **継続ドラッグ**: ページ移動後も同じショートカットのドラッグを継続
-- **オフセット維持**: ドラッグオフセット（マウス位置とアイコン位置の差）を保持
-
-**3. アニメーション統合**:
-- **既存システム**: 現在のページ遷移アニメーションと統合
-- **スムーズ切り替え**: アニメーション中は重複実行を防止
-- **状態管理**: ドラッグ終了時に自動スライド状態をリセット
-
-**実装されたメソッド**:
-- `handleEdgeAutoSlide(int currentX, int currentY)`: 画面端検出とスライド実行
-- `slideToPage(int pageIndex, boolean maintainDrag)`: ドラッグ継続対応のページスライド
-- `resetEdgeSlideState()`: 自動スライド状態のリセット
-
-**修正されたファイル**:
-- `HomeScreen.java` (core/src/main/java/jp/moyashi/phoneos/core/apps/launcher/ui/):
-  - `handleDragMove()`: 画面端自動スライド呼び出しを追加
-  - `handleDragEnd()`: 状態リセット処理を追加
-  - 新規メソッド追加（3つ）
-  - 状態管理用フィールド追加
-
-**技術的特徴**:
-- **非侵入的設計**: 既存のドラッグ・アニメーションシステムと競合しない
-- **リアルタイム検出**: ドラッグ中の座標を常時監視
-- **エッジケース対応**: 最初/最後のページでの無効化
-- **デバッグ支援**: 詳細なコンソールログ出力
-
-**ユーザビリティ向上**:
-- **直感的操作**: モバイルOSの標準的な操作感を再現
-- **効率的編集**: 複数ページ間での素早いショートカット移動が可能
-- **操作継続性**: 長押し状態を維持したままページ移動
-
-**テスト結果**: ✅ コンパイル成功、実装完了
-
-### 14. 画面端自動スライド機能の不具合修正 ✅ **解決済み** (2025年9月30日)
-
-**問題1**: 画面端での滞在後、微妙に動かさないと次のページに進まない
-- **根本原因**: タイマーチェックがmouseMoved()内でのみ実行されていた
-- **解決方法**: `updateEdgeAutoSlideTimer()` メソッドをdraw()ループに追加し、継続的なタイマー監視を実現
-
-**問題2**: ショートカットが画面外に飛んでいく
-- **根本原因**: ページ切り替え時の座標境界チェックが不十分
-- **解決方法**: `adjustDragPositionAfterSlide()` と `constrainDragPosition()` メソッドを実装し、ドラッグ座標を画面境界内に制限
-
-**問題3**: 配置しようとすると元のページに戻ってしまう
-- **根本原因**: アニメーション実行中にドロップ処理が干渉していた
-- **解決方法**: 遅延ドロップシステム (`scheduleDelayedDrop()`, `executePendingDrop()`) を実装し、アニメーション完了後にドロップを実行
-
-**問題4**: ドロップを終えるとショートカットが削除される
-- **根本原因**: `removeShortcutFromAllPages()` が成功確認前に呼び出されていた
-- **解決方法**: `safelyPlaceShortcut()` メソッドを実装し、原子操作でのショートカット移動を実現
-
-**実装された安全配置システム**:
-```java
-private boolean safelyPlaceShortcut(Shortcut shortcut, HomePage targetPage, int gridX, int gridY) {
-    // ショートカットが既にターゲットページにある場合
-    if (targetPage.getShortcuts().contains(shortcut)) {
-        return targetPage.moveShortcut(shortcut, gridX, gridY);
-    }
-
-    // ターゲット位置が空いているか確認してから移動
-    if (!targetPage.isPositionEmpty(gridX, gridY)) {
-        return false;
-    }
-
-    // ソースページから削除してターゲットページに追加（原子操作）
-    // 失敗時のロールバック機能付き
-}
-```
-
-**技術的改善**:
-- **継続監視システム**: draw()ループでのタイマーチェック
-- **座標制約システム**: 画面境界での座標クランプ
-- **遅延実行システム**: アニメーション競合回避
-- **原子操作システム**: データ整合性保証
-- **フォールバック機能**: 配置失敗時の自動代替配置
-
-**結果**: 画面端自動スライド機能が完全に安定化し、すべての操作パターンで正常動作するようになりました。
-
-### 11. TODO
+### 4. TODO
+
+#### ハードウェアバイパスAPIの実装 (✅ 完了)
+
+Kernelに以下のハードウェアバイパスAPIを実装完了:
+
+1. **モバイルデータ通信ソケット**:
+   - プロパティ: 通信強度、サービス名
+   - standalone: 圏外を返す
+   - forge-mod: 仮想インターネット通信をバイパス
+
+2. **Bluetooth通信ソケット**:
+   - プロパティ: 周囲のデバイスリスト、接続済みデバイス
+   - standalone: NOTFOUND
+   - forge-mod: 半径10m以内のBluetoothデバイス検出
+
+3. **位置情報ソケット**:
+   - プロパティ: x, y, z座標、電波精度
+   - standalone: 0,0,0固定
+   - forge-mod: プレイヤー位置
+
+4. **バッテリー情報**:
+   - プロパティ: バッテリー残量、バッテリー寿命
+   - standalone: 100%固定
+   - forge-mod: アイテムNBTから取得
+
+5. **カメラ**:
+   - プロパティ: オンオフ
+   - standalone: null
+   - forge-mod: ❌ 保留（フレームバッファキャプチャが複雑なため）
+
+6. **マイク**:
+   - プロパティ: オンオフ、ストリーム形式音声
+   - standalone: null
+   - forge-mod: ✅ SVCソフト依存（SVC導入時のみ有効）
+
+7. **スピーカー**:
+   - プロパティ: 音量4段階（OFF/LOW/MEDIUM/HIGH）
+   - standalone: アプリケーション音声再生
+   - forge-mod: ✅ SVCソフト依存（SVC導入時のみ有効）
+
+8. **IC通信**:
+   - プロパティ: オンオフ
+   - standalone: null
+   - forge-mod: ✅ 右クリックでブロック座標/エンティティUUID取得（IC有効時はGUIを開かない）
+
+9. **SIM情報**:
+   - プロパティ: 名前、UUID
+   - standalone: Dev/0000-0000-0000-0000
+   - forge-mod: 所持者の表示名/UUID
+
+**実装内容**:
+- 各ハードウェアAPIのインターフェース定義（`core/src/main/java/jp/moyashi/phoneos/core/service/hardware/`）
+- デフォルト実装（standalone用、`Default*`クラス）
+- Kernelへの統合（フィールド、getter、setter）
+- forge-modでの実装差し替えが可能な設計
+- デバッグ用テストアプリ（`HardwareTestApp`）
+
+**Forge実装** (✅ 完了):
+- `ForgeSIMInfo`: プレイヤーの表示名とUUIDを提供 ✅ テスト済み
+- `ForgeBatteryInfo`: アイテムNBTからバッテリー情報を管理 ✅ テスト済み
+- `ForgeLocationSocket`: プレイヤー座標とGPS精度を提供 ✅ テスト済み
+- `ForgeMobileDataSocket`: Y座標ベースの通信強度、ディメンション別ネットワーク名 ✅ テスト済み
+- `ForgeBluetoothSocket`: 半径10m以内のプレイヤー/エンティティを検出 ✅ テスト済み
+- `ForgeICSocket`: 右クリックでブロック/エンティティをスキャン ✅ 実装完了
+  - `SmartphoneItem.useOn()`: ブロック右クリック時のICスキャン
+  - `SmartphoneItem.interactLivingEntity()`: エンティティ右クリック時のICスキャン
+  - IC有効時はGUIを開かず、無効時は通常動作
+- `ForgeCameraSocket`: 基本構造のみ（保留: フレームバッファキャプチャが複雑なため）
+- `ForgeMicrophoneSocket`: SVCソフト依存実装 ✅ 完了
+  - `SVCDetector`: Simple Voice Chat MODの自動検知
+  - SVC導入時のみ`isAvailable()`が`true`を返す
+  - **注意**: SVCは開発環境（runClient）では動作しない。本番環境でのみテスト可能
+- `ForgeSpeakerSocket`: SVCソフト依存実装 ✅ 完了
+  - SVC導入時のみ`isAvailable()`が`true`を返す
+  - 音量レベル管理（OFF/LOW/MEDIUM/HIGH）
+  - **注意**: SVCは開発環境（runClient）では動作しない。本番環境でのみテスト可能
+- `SmartphoneBackgroundService`で初期化時とフレームごとに自動更新 ✅ テスト済み
+
+**デバッグ方法**:
+- `HARDWARE_DEBUG_GUIDE.md`に詳細なデバッグ方法を記載
+- Hardware Test App（🔧アイコン）で全APIの動作確認が可能
+- standalone環境とforge環境での動作を比較可能
+- スクロール機能：マウスドラッグ、矢印キー、Page Up/Down、Home/End
+
+#### Minecraft Forge連携システム (✅ 完了)
+
+以下のタスクが完了しました：
+
+1. **Gradle構成の修正** (✅ 完了):
+   - `forge/build.gradle`でProcessing coreを`implementation`に変更
+   - Java 17を使用するための`run_with_java17.bat`スクリプトを作成
+   - runClientが正常にビルドできることを確認
+
+2. **PGraphics→Minecraft GUI変換システムの実装** (✅ 完了):
+   - `SmartphoneBackgroundService.updateTextureFromKernel()`で`kernel.update()`と`kernel.render()`を呼び出し
+   - PGraphicsのARGB形式からMinecraftのABGR形式への正確なピクセル変換を実装
+   - `ProcessingScreen`でブロック単位の効率的な描画を実装
+
+3. **入力バイパスシステムの実装** (✅ 完了):
+   - `ProcessingScreen`でマウスイベント（clicked, released）をKernelに転送
+   - キーボードイベント（keyPressed）をKernelに転送
+   - Minecraft座標からMochiMobileOS座標への変換を実装
+
+#### 次のステップ
+
+- **仮想インターネット通信システムの実装** (✅ 100%完了):
+  1. **coreモジュール**:
+     - `IPvMAddress`: アドレス表現クラス (✅)
+     - `VirtualPacket`: パケットデータクラス (✅)
+     - `VirtualRouter`: ルーティングサービス（Kernelサービスとして登録） (✅)
+     - `MessageStorage`: メッセージ永続化サービス (✅)
+  2. **forgeモジュール**:
+     - Minecraftパケット通信（プレイヤー間通信） (✅)
+     - 外部Mod登録API (`VirtualNetworkRegistry`) (✅)
+     - システム通信ハンドラー（`SystemPacketHandler`） (✅)
+     - メッセージ処理の完全実装 (✅)
+  3. **統合**:
+     - `NetworkHandler`: ForgeのSimpleChannelを使ったパケット送受信 (✅)
+     - `MochiMobileOSMod`: ネットワーク初期化 (✅)
+     - `SmartphoneBackgroundService`: VirtualRouter初期化 (✅)
+  4. **アプリケーション**:
+     - `NetworkApp`: メッセージ送受信とネットワークテスト機能 (✅)
+     - メッセージ一覧表示、テスト送信、システムパケット送信 (✅)
+  5. **ドキュメント**:
+     - `VIRTUAL_NETWORK_API.md`: 外部Mod連携APIドキュメント (✅)
+     - 完全なサンプルコード（電子マネーサービス）を含む (✅)
+
+- **仮想インターネット通信システムのテスト** (✅ 完了):
+  - NetworkAppの「Send Test Message」ボタンでメッセージ送信テストを実施
+  - マルチプレイヤー環境（LAN公開）でテスト完了
+  - 全プレイヤーがメッセージを受信できることを確認
+  - メッセージ通知機能が正常に動作することを確認
+  - **注意**: 現在の実装では、`NetworkScreen.sendTestMessage()`は自分自身（UUID: `00000000-0000-0000-0000-000000000000`）宛てにメッセージを送信している。統合サーバー環境では全クライアントにブロードキャストされるため問題なく動作するが、将来的には適切なプレイヤーUUIDを使用する必要がある
+
+- **ワールド別データ分離のテスト**: `./run_with_java17.bat forge:runClient`でMinecraftを起動し、以下をテスト:
+  1. ワールドを作成/ロードして、`mochi_os_data/{ワールド名}/mochi_os_data/`ディレクトリが作成されることを確認
+  2. そのワールドでスマートフォンを使用して変更を加える（アプリ配置など）
+  3. 別のワールドをロードして、`mochi_os_data/{別のワールド名}/mochi_os_data/`が作成され、データが分離されていることを確認
+  4. ログで`[SmartphoneBackgroundService] World loaded: {ワールド名}`が出力されることを確認
+
+- **ボイスメモアプリの実装** (✅ 完了):
+  - `VoiceMemoApp`: マイク・スピーカーAPIを使用した音声録音・再生アプリ
+  - 機能:
+    - 録音: マイクから音声を録音（マイクAPI使用）
+    - 再生: 録音した音声をスピーカーで再生（スピーカーAPI使用）
+    - 保存: VFSに音声データをBase64エンコードして保存
+    - 一覧: 保存されたメモの一覧表示
+    - 削除: メモの削除
+    - 音量調整: スピーカー音量の4段階調整（OFF/LOW/MEDIUM/HIGH）
+  - ハードウェア状態表示: マイク・スピーカーの利用可否をリアルタイム表示
+  - **注意**: SVCが導入されていない環境では、マイク・スピーカーが利用不可と表示される
+
+- **外部アプリ開発ドキュメントの更新** (✅ 完了):
+  - `EXTERNAL_APP_DEVELOPMENT_GUIDE.md`にハードウェアバイパスAPIのセクションを追加
+  - 全9種類のハードウェアAPI（モバイルデータ、Bluetooth、位置情報、バッテリー、カメラ、マイク、スピーカー、IC通信、SIM情報）の使用方法を記載
+  - 各APIの詳細なコード例とstandalone/forge環境での動作の違いを説明
+  - `HardwareTestApp`への参照とデバッグガイドへのリンクを追加
+  - 外部開発者がハードウェアAPIを利用可能であることを明確化

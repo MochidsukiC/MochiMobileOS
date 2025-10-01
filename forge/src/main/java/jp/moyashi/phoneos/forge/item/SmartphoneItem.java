@@ -1,13 +1,19 @@
 package jp.moyashi.phoneos.forge.item;
 
 import com.mojang.logging.LogUtils;
+import jp.moyashi.phoneos.core.Kernel;
 import jp.moyashi.phoneos.forge.gui.ProcessingScreen;
+import jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -35,8 +41,81 @@ public class SmartphoneItem extends Item {
     }
 
     /**
-     * アイテムが右クリックされた時の処理。
-     * クライアントサイドでスマートフォンのGUIを開く。
+     * ブロックに対して右クリックした時の処理。
+     * IC通信が有効な場合、ブロックをスキャンしてGUIを開かない。
+     *
+     * @param context 使用コンテキスト
+     * @return 結果
+     */
+    @Override
+    public InteractionResult useOn(UseOnContext context) {
+        Level level = context.getLevel();
+        Player player = context.getPlayer();
+        BlockPos blockPos = context.getClickedPos();
+
+        if (level.isClientSide && player != null) {
+            // Kernelを取得してIC通信が有効か確認
+            Kernel kernel = SmartphoneBackgroundService.getKernel();
+            if (kernel != null && kernel.getICSocket() != null) {
+                if (kernel.getICSocket().isEnabled()) {
+                    // IC通信が有効：ブロックをスキャン
+                    LOGGER.info("[SmartphoneItem] IC scan on block at " + blockPos);
+
+                    if (kernel.getICSocket() instanceof jp.moyashi.phoneos.forge.hardware.ForgeICSocket) {
+                        ((jp.moyashi.phoneos.forge.hardware.ForgeICSocket) kernel.getICSocket())
+                            .onBlockScanned(blockPos);
+                    }
+
+                    // GUIを開かずに終了
+                    return InteractionResult.SUCCESS;
+                }
+            }
+        }
+
+        // IC通信が無効な場合はブロックに対する通常の処理（何もしない）
+        return InteractionResult.PASS;
+    }
+
+    /**
+     * エンティティに対して右クリックした時の処理。
+     * IC通信が有効な場合、エンティティをスキャンしてGUIを開かない。
+     *
+     * @param stack アイテムスタック
+     * @param player プレイヤー
+     * @param entity 対象エンティティ
+     * @param hand 使用した手
+     * @return 結果
+     */
+    @Override
+    public InteractionResult interactLivingEntity(ItemStack stack, Player player, net.minecraft.world.entity.LivingEntity entity, InteractionHand hand) {
+        Level level = player.level();
+
+        if (level.isClientSide) {
+            // Kernelを取得してIC通信が有効か確認
+            Kernel kernel = SmartphoneBackgroundService.getKernel();
+            if (kernel != null && kernel.getICSocket() != null) {
+                if (kernel.getICSocket().isEnabled()) {
+                    // IC通信が有効：エンティティをスキャン
+                    LOGGER.info("[SmartphoneItem] IC scan on entity " + entity.getUUID());
+
+                    if (kernel.getICSocket() instanceof jp.moyashi.phoneos.forge.hardware.ForgeICSocket) {
+                        ((jp.moyashi.phoneos.forge.hardware.ForgeICSocket) kernel.getICSocket())
+                            .onEntityScanned(entity);
+                    }
+
+                    // GUIを開かずに終了
+                    return InteractionResult.SUCCESS;
+                }
+            }
+        }
+
+        // IC通信が無効な場合は通常の処理
+        return InteractionResult.PASS;
+    }
+
+    /**
+     * アイテムが右クリックされた時の処理（空中での右クリック）。
+     * IC通信が無効な場合のみGUIを開く。
      *
      * @param level ワールド
      * @param player プレイヤー

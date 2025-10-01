@@ -60,9 +60,11 @@ dependencies {
     // Core module dependency - embed in jar
     implementation project(':core')
 
-    // Processing dependencies for OS functionality
-    // Use compileOnly for compile-time and runtimeLib for JAR inclusion
-    compileOnly files('libs/core-4.4.4.jar')
+    // Processing dependencies - explicitly declare for Forge environment
+    // This ensures Processing classes are available at runtime
+    implementation 'org.processing:core:4.4.4'
+
+    // Also keep runtimeLib for JAR packaging
     runtimeLib files('libs/core-4.4.4.jar')
 
     implementation 'com.google.code.gson:gson:2.10.1'
@@ -70,6 +72,27 @@ dependencies {
     // Test dependencies
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.1'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+// Task to extract Processing core classes into build output for development
+task extractProcessingCore(type: Copy) {
+    from zipTree('libs/core-4.4.4.jar')
+    into 'build/classes/java/main'
+    exclude 'META-INF/**'
+    exclude '*.jnilib'
+    exclude '*.dll'
+    exclude '*.so'
+    exclude '*.dylib'
+}
+
+// Make compileJava depend on extractProcessingCore
+tasks.named('compileJava').configure {
+    finalizedBy extractProcessingCore
+}
+
+// Make sure classes task also triggers extraction
+tasks.named('classes').configure {
+    dependsOn extractProcessingCore
 }
 
 // Minecraft run configuration
@@ -81,6 +104,7 @@ minecraft {
             workingDirectory project.file('run')
             property 'forge.logging.markers', 'REGISTRIES'
             property 'forge.logging.console.level', 'debug'
+            property 'fml.earlyprogresswindow', 'false'
 
             mods {
                 mochimobileos {

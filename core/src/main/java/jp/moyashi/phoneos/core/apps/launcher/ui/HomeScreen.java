@@ -148,38 +148,52 @@ public class HomeScreen implements Screen, GestureListener {
             System.out.println("⚠️ HomeScreen: setup() called again - skipping duplicate initialization");
             return;
         }
-        
-        isInitialized = true;
-        System.out.println("🚀 HomeScreen: Initializing multi-page launcher...");
-        
-        // 背景画像を読み込み
-        loadBackgroundImage();
-        
-        initializeHomePages();
-        
-        // Count total shortcuts
-        int totalShortcuts = 0;
-        for (HomePage page : homePages) {
-            totalShortcuts += page.getShortcutCount();
-        }
-        
-        System.out.println("✅ HomeScreen: Initialization complete!");
-        System.out.println("    • Pages created: " + homePages.size());
-        System.out.println("    • Total shortcuts: " + totalShortcuts);
-        System.out.println("    • Grid size: " + GRID_COLS + "x" + GRID_ROWS + " per page");
-        System.out.println("    • Ready for user interaction!");
-        System.out.println();
-        System.out.println("🎮 HOW TO USE:");
-        System.out.println("    • Tap icons to launch apps");
-        System.out.println("    • Long press for edit mode");
-        System.out.println("    • Drag icons to rearrange");
-        System.out.println("    • Swipe left/right for pages");
-        System.out.println("    • Swipe up for App Library");
-        
-        // Register gesture listener
-        if (kernel != null && kernel.getGestureManager() != null) {
-            kernel.getGestureManager().addGestureListener(this);
-            System.out.println("HomeScreen: Registered gesture listener");
+
+        try {
+            isInitialized = true;
+            System.out.println("🚀 HomeScreen: Initializing multi-page launcher...");
+
+            // 背景画像を読み込み
+            try {
+                loadBackgroundImage();
+            } catch (Exception e) {
+                System.err.println("❌ HomeScreen: Failed to load background image: " + e.getMessage());
+                e.printStackTrace();
+            }
+
+            initializeHomePages();
+
+            // Count total shortcuts
+            int totalShortcuts = 0;
+            for (HomePage page : homePages) {
+                totalShortcuts += page.getShortcutCount();
+            }
+
+            System.out.println("✅ HomeScreen: Initialization complete!");
+            System.out.println("    • Pages created: " + homePages.size());
+            System.out.println("    • Total shortcuts: " + totalShortcuts);
+            System.out.println("    • Grid size: " + GRID_COLS + "x" + GRID_ROWS + " per page");
+            System.out.println("    • Ready for user interaction!");
+            System.out.println();
+            System.out.println("🎮 HOW TO USE:");
+            System.out.println("    • Tap icons to launch apps");
+            System.out.println("    • Long press for edit mode");
+            System.out.println("    • Drag icons to rearrange");
+            System.out.println("    • Swipe left/right for pages");
+            System.out.println("    • Swipe up for App Library");
+
+            // Register gesture listener
+            if (kernel != null && kernel.getGestureManager() != null) {
+                kernel.getGestureManager().addGestureListener(this);
+                System.out.println("HomeScreen: Registered gesture listener");
+            }
+        } catch (Exception e) {
+            System.err.println("❌ HomeScreen: Critical error during setup: " + e.getMessage());
+            e.printStackTrace();
+            // 緊急時は少なくとも1つの空ページを確保
+            if (homePages.isEmpty()) {
+                homePages.add(new HomePage("Emergency"));
+            }
         }
     }
     
@@ -204,6 +218,17 @@ public class HomeScreen implements Screen, GestureListener {
      */
     public void draw(PGraphics g) {
         try {
+            // DEBUG: Log state on first few frames
+            if (kernel.frameCount <= 5) {
+                System.out.println("[HomeScreen.draw()] Frame " + kernel.frameCount +
+                    ": homePages.size=" + homePages.size() +
+                    ", currentPageIndex=" + currentPageIndex);
+                if (!homePages.isEmpty()) {
+                    HomePage page = homePages.get(currentPageIndex);
+                    System.out.println("  Current page shortcuts: " + page.getShortcutCount());
+                }
+            }
+
             // ページタイプに応じた背景処理
             HomePage currentPage = getCurrentPage();
             if (currentPage != null && currentPage.isAppLibraryPage()) {
@@ -774,13 +799,15 @@ public class HomeScreen implements Screen, GestureListener {
     private void initializeHomePages() {
         try {
             homePages.clear();
-            
-            // 保存されたレイアウトを読み込む試行
+
+            // 保存されたレイアウトを読み込む試行（一時的に無効化）
             boolean layoutLoaded = false;
+            // TEMPORARY FIX: Skip saved layout loading to avoid potential issues
+            /*
             if (kernel != null && kernel.getLayoutManager() != null) {
                 System.out.println("HomeScreen: 保存されたレイアウトを読み込み中...");
                 List<HomePage> savedLayout = kernel.getLayoutManager().loadLayout();
-                
+
                 if (savedLayout != null && !savedLayout.isEmpty()) {
                     homePages.addAll(savedLayout);
                     layoutLoaded = true;
@@ -789,8 +816,10 @@ public class HomeScreen implements Screen, GestureListener {
                     System.out.println("HomeScreen: 保存されたレイアウトが見つかりません、デフォルトレイアウトを作成");
                 }
             }
+            */
+            System.out.println("HomeScreen: デフォルトレイアウトを作成中...");
 
-            
+
             // 保存されたレイアウトがない場合はデフォルトレイアウトを作成
             if (!layoutLoaded) {
                 createDefaultLayout();
@@ -1466,14 +1495,46 @@ public class HomeScreen implements Screen, GestureListener {
             return;
         }
 
-        processing.core.PImage icon = app.getIcon(g);
+        processing.core.PImage icon = app.getIcon();
+
+        // If icon is null, create a white default icon
+        if (icon == null) {
+            icon = g.get(0, 0, 1, 1); // Get a 1x1 pixel to create a base PImage
+            icon.resize(64, 64);
+            icon.loadPixels();
+            // Fill all pixels with white
+            for (int i = 0; i < icon.pixels.length; i++) {
+                icon.pixels[i] = 0xFFFFFFFF; // White color
+            }
+            icon.updatePixels();
+        }
 
         if (icon != null) {
+            // SECURITY FIX: Force crop/resize any icon to 64x64 to prevent oversized icons from covering the screen
+            // Don't trust app-provided icon sizes - always enforce our size constraints
+            final int MAX_ICON_SIZE = 64;
+            processing.core.PImage safeIcon = icon;
+
+            // If icon is larger than our max size, crop it from center
+            if (icon.width > MAX_ICON_SIZE || icon.height > MAX_ICON_SIZE) {
+                System.out.println("[HomeScreen] Cropping oversized icon for " + app.getName() +
+                    " from " + icon.width + "x" + icon.height + " to " + MAX_ICON_SIZE + "x" + MAX_ICON_SIZE);
+
+                // Calculate center crop coordinates
+                int cropX = Math.max(0, (icon.width - MAX_ICON_SIZE) / 2);
+                int cropY = Math.max(0, (icon.height - MAX_ICON_SIZE) / 2);
+                int cropWidth = Math.min(MAX_ICON_SIZE, icon.width);
+                int cropHeight = Math.min(MAX_ICON_SIZE, icon.height);
+
+                // Create cropped icon
+                safeIcon = icon.get(cropX, cropY, cropWidth, cropHeight);
+            }
+
             g.imageMode(PGraphics.CENTER);
             // Draw the icon, ensuring it fits within the icon size with some padding
             float padding = 8;
             float drawableSize = ICON_SIZE - padding * 2;
-            g.image(icon, centerX, centerY, drawableSize, drawableSize);
+            g.image(safeIcon, centerX, centerY, drawableSize, drawableSize);
             g.imageMode(PGraphics.CORNER); // Reset image mode to default
         } else {
             // Fallback to placeholder if icon is null
@@ -1481,7 +1542,7 @@ public class HomeScreen implements Screen, GestureListener {
             g.fill(accentColor);
             g.noStroke();
             g.rect(centerX, centerY, 40, 40, 8);
-            
+
             // Draw app initial
             g.fill(textColor);
             g.textAlign(g.CENTER, g.CENTER);
@@ -1742,19 +1803,23 @@ public class HomeScreen implements Screen, GestureListener {
                 System.out.println("HomeScreen: Got app screen: " + appScreen.getScreenTitle());
                 
                 // Get app icon for animation
-                processing.core.PImage appIcon = null;
-                if (kernel != null) {
-                    // Use PGraphics-based icon retrieval
+                processing.core.PImage appIcon = app.getIcon();
+
+                // If icon is null, create a white default icon
+                if (appIcon == null && kernel != null) {
                     processing.core.PGraphics graphics = kernel.getGraphics();
                     if (graphics != null) {
-                        appIcon = app.getIcon(graphics);
-                        System.out.println("HomeScreen: Got app icon: " + (appIcon != null ? appIcon.width + "x" + appIcon.height : "null"));
-                    } else {
-                        System.out.println("HomeScreen: Kernel graphics is null");
+                        appIcon = graphics.get(0, 0, 1, 1);
+                        appIcon.resize(64, 64);
+                        appIcon.loadPixels();
+                        for (int i = 0; i < appIcon.pixels.length; i++) {
+                            appIcon.pixels[i] = 0xFFFFFFFF; // White color
+                        }
+                        appIcon.updatePixels();
                     }
-                } else {
-                    System.out.println("HomeScreen: Kernel is null");
                 }
+
+                System.out.println("HomeScreen: Got app icon: " + (appIcon != null ? appIcon.width + "x" + appIcon.height : "null"));
                 
                 // Launch with animation
                 if (appIcon != null) {

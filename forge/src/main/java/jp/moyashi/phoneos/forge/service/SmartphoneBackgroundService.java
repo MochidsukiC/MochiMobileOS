@@ -2,32 +2,23 @@ package jp.moyashi.phoneos.forge.service;
 
 import jp.moyashi.phoneos.core.Kernel;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
-import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.common.Mod;
-import processing.core.PApplet;
+import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+import net.minecraftforge.event.level.LevelEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 import processing.core.PGraphics;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import com.mojang.blaze3d.platform.NativeImage;
-import net.minecraft.client.renderer.texture.DynamicTexture;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 /**
- * スマートフォンのバックグラウンド処理を管理するサービス。
- * プレイヤーのサーバー参加時にスマートフォンを初期化し、
- * PGraphicsバッファからMinecraftテクスチャに変換する新アーキテクチャ。
+ * スマートフォンのKernelインスタンスを管理するサービス。
+ * ワールドロード時にKernelを作成し、ワールドごとに異なるデータを管理する。
+ * 描画更新はProcessingScreenのrender()でMinecraftのフレームレートに同期して行われる。
  *
  * @author jp.moyashi
- * @version 2.0
+ * @version 4.0
  * @since 1.0
  */
 @Mod.EventBusSubscriber(modid = "mochimobileos", value = Dist.CLIENT)
@@ -35,324 +26,207 @@ public class SmartphoneBackgroundService {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
-    /** プレイヤーごとのスマートフォンカーネル */
-    private static final Map<UUID, Kernel> playerKernels = new HashMap<>();
+    /** 共有カーネルインスタンス（常に稼働） */
+    private static Kernel sharedKernel = null;
 
-    /** プレイヤーごとのMinecraftテクスチャ */
-    private static final Map<UUID, DynamicTexture> playerTextures = new HashMap<>();
-
-    /** バックグラウンド処理用エグゼキューター */
-    private static final ScheduledExecutorService backgroundExecutor =
-        Executors.newScheduledThreadPool(2);
-
-    /** バックグラウンド処理の実行間隔（ミリ秒） */
-    private static final long BACKGROUND_TICK_INTERVAL = 100; // 10fps相当
-
-    /** PAppletインスタンス（リソース作成用） */
-    private static PApplet resourceApplet;
+    /** 現在のワールドID */
+    private static String currentWorldId = null;
 
     /**
-     * プレイヤーがサーバーに参加した際の処理（クライアントサイド）。
-     * スマートフォンカーネルを初期化し、バックグラウンド処理を開始する。
+     * ワールドロード時の処理。
+     * ワールドIDを取得してKernelを再作成する。
      */
     @SubscribeEvent
-    public static void onPlayerLogin(ClientPlayerNetworkEvent.LoggingIn event) {
-        LocalPlayer player = event.getPlayer();
-        if (player == null) {
-            return;
-        }
+    public static void onWorldLoad(LevelEvent.Load event) {
+        // クライアント側のみ処理
+        if (event.getLevel().isClientSide()) {
+            try {
+                ClientLevel level = (ClientLevel) event.getLevel();
 
-        UUID playerId = player.getUUID();
-        LOGGER.info("[SmartphoneBackgroundService] Player joined: {}, initializing smartphone", player.getName().getString());
+                // ワールド名を取得（シングルプレイヤー/マルチプレイヤー対応）
+                Minecraft mc = Minecraft.getInstance();
+                String worldName = "unknown";
 
-        try {
-            // リソース用PAppletを初期化（初回のみ）
-            if (resourceApplet == null) {
-                initializeResourceApplet();
+                if (mc.getSingleplayerServer() != null) {
+                    // シングルプレイヤー：ワールド名を使用
+                    worldName = mc.getSingleplayerServer().getWorldData().getLevelName();
+                } else if (mc.getCurrentServer() != null) {
+                    // マルチプレイヤー：サーバー名を使用
+                    worldName = mc.getCurrentServer().name.replace(" ", "_");
+                }
+
+                LOGGER.info("[SmartphoneBackgroundService] World loaded: " + worldName);
+
+                // ワールドIDが変わった場合、または初回ロード時
+                if (!worldName.equals(currentWorldId)) {
+                    currentWorldId = worldName;
+
+                    // 既存のKernelをシャットダウン
+                    if (sharedKernel != null) {
+                        LOGGER.info("[SmartphoneBackgroundService] Shutting down previous kernel...");
+                    }
+
+                    // 新しいワールドID用のKernelを作成
+                    sharedKernel = createKernel(currentWorldId);
+                    LOGGER.info("[SmartphoneBackgroundService] Kernel created for world: " + currentWorldId);
+                }
+
+            } catch (Exception e) {
+                LOGGER.error("[SmartphoneBackgroundService] Failed to handle world load", e);
             }
-
-            // プレイヤー用のスマートフォンカーネルを作成
-            Kernel kernel = createBackgroundKernel(playerId);
-            playerKernels.put(playerId, kernel);
-
-            // Minecraftテクスチャを作成
-            DynamicTexture texture = createSmartphoneTexture(kernel);
-            playerTextures.put(playerId, texture);
-
-            // バックグラウンド処理を開始
-            startBackgroundProcessing(playerId, kernel);
-
-            LOGGER.info("[SmartphoneBackgroundService] Smartphone initialized for player: {}", player.getName().getString());
-
-        } catch (Exception e) {
-            LOGGER.error("[SmartphoneBackgroundService] Failed to initialize smartphone for player: {}",
-                player.getName().getString(), e);
-        }
-    }
-
-    /**
-     * プレイヤーがサーバーから退出した際の処理（クライアントサイド）。
-     * スマートフォンカーネルをクリーンアップする。
-     */
-    @SubscribeEvent
-    public static void onPlayerLogout(ClientPlayerNetworkEvent.LoggingOut event) {
-        LocalPlayer player = event.getPlayer();
-        if (player == null) {
-            return;
-        }
-
-        UUID playerId = player.getUUID();
-        LOGGER.info("[SmartphoneBackgroundService] Player left: {}, cleaning up smartphone", player.getName().getString());
-
-        try {
-            Kernel kernel = playerKernels.remove(playerId);
-            DynamicTexture texture = playerTextures.remove(playerId);
-
-            if (kernel != null) {
-                cleanupKernel(kernel);
-                LOGGER.info("[SmartphoneBackgroundService] Smartphone cleaned up for player: {}", player.getName().getString());
-            }
-
-            if (texture != null) {
-                texture.close();
-                LOGGER.info("[SmartphoneBackgroundService] Texture cleaned up for player: {}", player.getName().getString());
-            }
-        } catch (Exception e) {
-            LOGGER.error("[SmartphoneBackgroundService] Failed to cleanup smartphone for player: {}",
-                player.getName().getString(), e);
         }
     }
 
     /**
-     * リソース用のPAppletを初期化する。
+     * 共有カーネルを作成する（PGraphics統一アーキテクチャ）。
+     *
+     * @param worldId ワールドID（データ分離用）
      */
-    private static void initializeResourceApplet() {
-        LOGGER.info("[SmartphoneBackgroundService] Initializing resource PApplet");
-        resourceApplet = new PApplet() {
-            @Override
-            public void settings() {
-                size(1, 1); // 最小サイズ
-            }
-
-            @Override
-            public void setup() {
-                // 何もしない
-            }
-
-            @Override
-            public void draw() {
-                // 何もしない
-            }
-        };
-
-        // ヘッドレスモードで初期化（直接setupとdrawを呼び出し）
-        resourceApplet.settings();
-        resourceApplet.setup();
-        LOGGER.info("[SmartphoneBackgroundService] Resource PApplet initialized");
-    }
-
-    /**
-     * カーネルを作成する（新しいPGraphicsベースアーキテクチャ）。
-     */
-    private static Kernel createBackgroundKernel(UUID playerId) {
-        LOGGER.info("[SmartphoneBackgroundService] Creating kernel for player: {}", playerId);
+    private static Kernel createKernel(String worldId) {
+        LOGGER.info("[SmartphoneBackgroundService] Creating shared kernel for world: " + worldId);
 
         try {
-            // Kernelインスタンスを作成（新しいAPI）
+            // Kernelインスタンスを作成
             Kernel kernel = new Kernel();
 
-            // Kernelを初期化（サイズ指定版）
-            kernel.initialize(resourceApplet, 400, 600);
+            // Minecraft環境用の初期化メソッドを使用（サイズは400x600: スタンドアロンと同じ）
+            // ワールドIDを渡してデータを分離
+            kernel.initializeForMinecraft(400, 600, worldId);
 
-            LOGGER.info("[SmartphoneBackgroundService] Kernel created successfully for player: {}", playerId);
+            // 仮想ネットワークルーターの初期化
+            LOGGER.info("[SmartphoneBackgroundService] Initializing virtual network router...");
+            jp.moyashi.phoneos.forge.network.NetworkHandler.setupVirtualRouter(kernel);
+            jp.moyashi.phoneos.forge.network.SystemPacketHandler.registerHandlers(kernel);
+            LOGGER.info("[SmartphoneBackgroundService] Virtual network router initialized");
+
+            // ハードウェアバイパスAPIの初期化（Forge実装に置き換え）
+            LOGGER.info("[SmartphoneBackgroundService] Initializing hardware bypass APIs...");
+            initializeHardwareAPIs(kernel);
+            LOGGER.info("[SmartphoneBackgroundService] Hardware bypass APIs initialized");
+
+            LOGGER.info("[SmartphoneBackgroundService] Shared kernel created successfully for world: " + worldId);
             return kernel;
 
         } catch (Exception e) {
-            LOGGER.error("[SmartphoneBackgroundService] Failed to create kernel for player: {}", playerId, e);
+            LOGGER.error("[SmartphoneBackgroundService] Failed to create shared kernel", e);
             throw new RuntimeException("Failed to create smartphone kernel", e);
         }
     }
 
     /**
-     * PGraphicsからMinecraftテクスチャを作成する。
+     * ハードウェアバイパスAPIを初期化する。
+     * デフォルト実装をForge実装に置き換える。
+     *
+     * @param kernel Kernelインスタンス
      */
-    private static DynamicTexture createSmartphoneTexture(Kernel kernel) {
+    private static void initializeHardwareAPIs(Kernel kernel) {
         try {
-            PGraphics graphics = kernel.getGraphics();
-            if (graphics == null) {
-                throw new RuntimeException("Kernel graphics buffer is null");
+            Minecraft mc = Minecraft.getInstance();
+            net.minecraft.world.entity.player.Player player = mc.player;
+
+            LOGGER.info("[SmartphoneBackgroundService] Initializing hardware APIs - Player: " + (player != null ? player.getName().getString() : "null"));
+
+            // プレイヤーがいない場合でもForge実装を作成（後で更新される）
+            if (player == null) {
+                LOGGER.warn("[SmartphoneBackgroundService] Player not available yet, creating Forge implementations without player");
             }
 
-            // TODO: PGraphics統一アーキテクチャに移行後、スクリーンサイズ取得を再実装
-            // int[] size = kernel.getScreenSize(); // 古いAPI - 削除済み
-            int width = 390;  // 一時的な固定値
-            int height = 844; // iPhone 12相当
+            // 各ハードウェアAPIをForge実装に置き換え（playerがnullでも作成）
+            kernel.setMobileDataSocket(new jp.moyashi.phoneos.forge.hardware.ForgeMobileDataSocket(player));
+            LOGGER.info("[SmartphoneBackgroundService] - MobileDataSocket set");
 
-            // NativeImageを作成
-            NativeImage nativeImage = new NativeImage(width, height, false);
+            kernel.setBluetoothSocket(new jp.moyashi.phoneos.forge.hardware.ForgeBluetoothSocket(player));
+            LOGGER.info("[SmartphoneBackgroundService] - BluetoothSocket set");
 
-            // DynamicTextureを作成
-            DynamicTexture texture = new DynamicTexture(nativeImage);
+            kernel.setLocationSocket(new jp.moyashi.phoneos.forge.hardware.ForgeLocationSocket(player));
+            LOGGER.info("[SmartphoneBackgroundService] - LocationSocket set");
 
-            LOGGER.info("[SmartphoneBackgroundService] Created texture {}x{} for smartphone", width, height);
-            return texture;
+            kernel.setBatteryInfo(new jp.moyashi.phoneos.forge.hardware.ForgeBatteryInfo(null));
+            LOGGER.info("[SmartphoneBackgroundService] - BatteryInfo set");
+
+            kernel.setCameraSocket(new jp.moyashi.phoneos.forge.hardware.ForgeCameraSocket());
+            LOGGER.info("[SmartphoneBackgroundService] - CameraSocket set");
+
+            kernel.setMicrophoneSocket(new jp.moyashi.phoneos.forge.hardware.ForgeMicrophoneSocket());
+            LOGGER.info("[SmartphoneBackgroundService] - MicrophoneSocket set");
+
+            kernel.setSpeakerSocket(new jp.moyashi.phoneos.forge.hardware.ForgeSpeakerSocket());
+            LOGGER.info("[SmartphoneBackgroundService] - SpeakerSocket set");
+
+            kernel.setICSocket(new jp.moyashi.phoneos.forge.hardware.ForgeICSocket());
+            LOGGER.info("[SmartphoneBackgroundService] - ICSocket set");
+
+            kernel.setSIMInfo(new jp.moyashi.phoneos.forge.hardware.ForgeSIMInfo(player));
+            LOGGER.info("[SmartphoneBackgroundService] - SIMInfo set");
+
+            LOGGER.info("[SmartphoneBackgroundService] All hardware APIs initialized with Forge implementations");
 
         } catch (Exception e) {
-            LOGGER.error("[SmartphoneBackgroundService] Failed to create smartphone texture", e);
-            throw new RuntimeException("Failed to create smartphone texture", e);
+            LOGGER.error("[SmartphoneBackgroundService] Failed to initialize hardware APIs", e);
+            e.printStackTrace();
         }
     }
 
     /**
-     * PGraphicsのピクセルデータをMinecraftテクスチャに転送する。
+     * 共有カーネルを取得する。
+     * GUIから呼び出されて、描画とインタラクションに使用される。
+     *
+     * @return 共有Kernelインスタンス
      */
-    public static void updateTextureFromKernel(UUID playerId) {
-        Kernel kernel = playerKernels.get(playerId);
-        DynamicTexture texture = playerTextures.get(playerId);
+    public static Kernel getKernel() {
+        return sharedKernel;
+    }
 
-        if (kernel == null || texture == null) {
+    /**
+     * ハードウェアAPIのプレイヤー情報を更新する。
+     * ProcessingScreenから毎フレーム呼び出される。
+     */
+    public static void updateHardwareAPIs() {
+        if (sharedKernel == null) {
+            LOGGER.warn("[SmartphoneBackgroundService] updateHardwareAPIs: sharedKernel is null");
             return;
         }
 
         try {
-            // TODO: PGraphics統一アーキテクチャに移行後、描画を再実装
-            // kernel.draw(); // 古いAPI - 削除済み
+            Minecraft mc = Minecraft.getInstance();
+            net.minecraft.world.entity.player.Player player = mc.player;
 
-            PGraphics graphics = kernel.getGraphics();
-            if (graphics == null) {
+            if (player == null) {
+                LOGGER.warn("[SmartphoneBackgroundService] updateHardwareAPIs: player is null");
                 return;
             }
 
-            // ピクセルデータを取得
-            graphics.loadPixels();
-            int[] pixels = graphics.pixels;
+            // デバッグ: 各APIの型を確認
+            LOGGER.info("[SmartphoneBackgroundService] Updating hardware APIs for player: " + player.getName().getString());
+            LOGGER.info("[SmartphoneBackgroundService] - MobileDataSocket type: " + sharedKernel.getMobileDataSocket().getClass().getName());
+            LOGGER.info("[SmartphoneBackgroundService] - BluetoothSocket type: " + sharedKernel.getBluetoothSocket().getClass().getName());
+            LOGGER.info("[SmartphoneBackgroundService] - LocationSocket type: " + sharedKernel.getLocationSocket().getClass().getName());
+            LOGGER.info("[SmartphoneBackgroundService] - SIMInfo type: " + sharedKernel.getSIMInfo().getClass().getName());
 
-            if (pixels == null || pixels.length == 0) {
-                return;
+            // 各ハードウェアAPIのプレイヤー情報を更新
+            if (sharedKernel.getMobileDataSocket() instanceof jp.moyashi.phoneos.forge.hardware.ForgeMobileDataSocket) {
+                ((jp.moyashi.phoneos.forge.hardware.ForgeMobileDataSocket) sharedKernel.getMobileDataSocket()).updatePlayer(player);
+                LOGGER.info("[SmartphoneBackgroundService] - MobileDataSocket updated");
             }
 
-            // NativeImageにピクセルデータをコピー
-            NativeImage nativeImage = texture.getPixels();
-            if (nativeImage != null) {
-                int width = nativeImage.getWidth();
-                int height = nativeImage.getHeight();
+            if (sharedKernel.getBluetoothSocket() instanceof jp.moyashi.phoneos.forge.hardware.ForgeBluetoothSocket) {
+                ((jp.moyashi.phoneos.forge.hardware.ForgeBluetoothSocket) sharedKernel.getBluetoothSocket()).updatePlayer(player);
+                LOGGER.info("[SmartphoneBackgroundService] - BluetoothSocket updated");
+            }
 
-                for (int y = 0; y < height && y < graphics.height; y++) {
-                    for (int x = 0; x < width && x < graphics.width; x++) {
-                        int pixelIndex = y * graphics.width + x;
-                        if (pixelIndex < pixels.length) {
-                            int pixel = pixels[pixelIndex];
+            if (sharedKernel.getLocationSocket() instanceof jp.moyashi.phoneos.forge.hardware.ForgeLocationSocket) {
+                ((jp.moyashi.phoneos.forge.hardware.ForgeLocationSocket) sharedKernel.getLocationSocket()).updatePlayer(player);
+                LOGGER.info("[SmartphoneBackgroundService] - LocationSocket updated");
+            }
 
-                            // ProcessingのARGB形式からMinecraftのABGR形式に変換
-                            int a = (pixel >> 24) & 0xFF;
-                            int r = (pixel >> 16) & 0xFF;
-                            int g = (pixel >> 8) & 0xFF;
-                            int b = pixel & 0xFF;
-
-                            // ABGRフォーマットでセット
-                            int abgr = (a << 24) | (b << 16) | (g << 8) | r;
-                            nativeImage.setPixelRGBA(x, y, abgr);
-                        }
-                    }
-                }
-
-                // テクスチャを更新
-                texture.upload();
+            if (sharedKernel.getSIMInfo() instanceof jp.moyashi.phoneos.forge.hardware.ForgeSIMInfo) {
+                ((jp.moyashi.phoneos.forge.hardware.ForgeSIMInfo) sharedKernel.getSIMInfo()).updatePlayer(player);
+                LOGGER.info("[SmartphoneBackgroundService] - SIMInfo updated");
             }
 
         } catch (Exception e) {
-            LOGGER.error("[SmartphoneBackgroundService] Failed to update texture for player: {}", playerId, e);
-        }
-    }
-
-    /**
-     * プレイヤーのテクスチャを取得する。
-     */
-    public static DynamicTexture getPlayerTexture(UUID playerId) {
-        return playerTextures.get(playerId);
-    }
-
-    /**
-     * プレイヤーのカーネルを取得する。
-     */
-    public static Kernel getPlayerKernel(UUID playerId) {
-        return playerKernels.get(playerId);
-    }
-
-    /**
-     * バックグラウンド処理を開始する。
-     */
-    private static void startBackgroundProcessing(UUID playerId, Kernel kernel) {
-        LOGGER.info("[SmartphoneBackgroundService] Starting background processing for player: {}", playerId);
-
-        // 定期的にテクスチャを更新
-        backgroundExecutor.scheduleAtFixedRate(() -> {
-            try {
-                updateTextureFromKernel(playerId);
-            } catch (Exception e) {
-                LOGGER.error("[SmartphoneBackgroundService] Background processing error for player: {}", playerId, e);
-            }
-        }, 0, BACKGROUND_TICK_INTERVAL, TimeUnit.MILLISECONDS);
-    }
-
-    /**
-     * カーネルをクリーンアップする。
-     */
-    private static void cleanupKernel(Kernel kernel) {
-        try {
-            // 必要に応じてクリーンアップ処理を追加
-            LOGGER.info("[SmartphoneBackgroundService] Kernel cleanup completed");
-        } catch (Exception e) {
-            LOGGER.error("[SmartphoneBackgroundService] Error during kernel cleanup", e);
-        }
-    }
-
-    /**
-     * マウスイベントをカーネルに転送する。
-     */
-    public static void forwardMouseEvent(UUID playerId, String eventType, int mouseX, int mouseY) {
-        Kernel kernel = playerKernels.get(playerId);
-        if (kernel == null) {
-            return;
-        }
-
-        try {
-            switch (eventType) {
-                case "pressed":
-                    kernel.mousePressed(mouseX, mouseY);
-                    break;
-                case "dragged":
-                    kernel.mouseDragged(mouseX, mouseY);
-                    break;
-                case "released":
-                    kernel.mouseReleased(mouseX, mouseY);
-                    break;
-            }
-        } catch (Exception e) {
-            LOGGER.error("[SmartphoneBackgroundService] Error forwarding mouse event for player: {}", playerId, e);
-        }
-    }
-
-    /**
-     * キーイベントをカーネルに転送する。
-     */
-    public static void forwardKeyEvent(UUID playerId, String eventType, char key, int keyCode, int mouseX, int mouseY) {
-        Kernel kernel = playerKernels.get(playerId);
-        if (kernel == null) {
-            return;
-        }
-
-        try {
-            switch (eventType) {
-                case "pressed":
-                    kernel.keyPressed(key, keyCode);
-                    break;
-                case "released":
-                    kernel.keyReleased(key, keyCode);
-                    break;
-            }
-        } catch (Exception e) {
-            LOGGER.error("[SmartphoneBackgroundService] Error forwarding key event for player: {}", playerId, e);
+            LOGGER.error("[SmartphoneBackgroundService] Failed to update hardware APIs", e);
+            e.printStackTrace();
         }
     }
 
@@ -362,27 +236,8 @@ public class SmartphoneBackgroundService {
     public static void shutdown() {
         LOGGER.info("[SmartphoneBackgroundService] Shutting down service");
         try {
-            // 全てのテクスチャをクリーンアップ
-            for (DynamicTexture texture : playerTextures.values()) {
-                if (texture != null) {
-                    texture.close();
-                }
-            }
-            playerTextures.clear();
-
-            // 全てのカーネルをクリーンアップ
-            for (Kernel kernel : playerKernels.values()) {
-                if (kernel != null) {
-                    cleanupKernel(kernel);
-                }
-            }
-            playerKernels.clear();
-
-            // エグゼキューターを停止
-            backgroundExecutor.shutdown();
-            if (!backgroundExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
-                backgroundExecutor.shutdownNow();
-            }
+            // カーネルのクリーンアップ
+            sharedKernel = null;
 
         } catch (Exception e) {
             LOGGER.error("[SmartphoneBackgroundService] Error during shutdown", e);

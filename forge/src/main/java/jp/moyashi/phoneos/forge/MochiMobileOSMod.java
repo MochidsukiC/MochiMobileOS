@@ -75,11 +75,18 @@ public class MochiMobileOSMod {
     public void commonSetup(FMLCommonSetupEvent event) {
         System.out.println("[MochiMobileOSMod] Starting common setup...");
 
-        // 初期化フェーズ1: ModAppRegistryの準備
+        // 初期化フェーズ1: 仮想ネットワークの初期化
+        event.enqueueWork(() -> {
+            System.out.println("[MochiMobileOSMod] Registering virtual network packets...");
+            jp.moyashi.phoneos.forge.network.NetworkHandler.register();
+            System.out.println("[MochiMobileOSMod] Virtual network packets registered");
+        });
+
+        // 初期化フェーズ2: ModAppRegistryの準備
         ModAppRegistry registry = ModAppRegistry.getInstance();
         registry.markAsInitialized();
 
-        // 初期化フェーズ2: Kernelの準備チェック
+        // 初期化フェーズ3: Kernelの準備チェック
         // 注意: 現在はスタンドアロン版とは独立しているため、
         // Forge環境専用の軽量版Kernelか、アプリ管理のみのサービスを想定
         boolean kernelReady = checkKernelReadiness();
@@ -87,13 +94,13 @@ public class MochiMobileOSMod {
         if (kernelReady) {
             System.out.println("[MochiMobileOSMod] Kernel (or equivalent) is ready");
 
-            // 初期化フェーズ3: アイテム初期化
+            // 初期化フェーズ4: アイテム初期化
             ModItems.initialize();
 
-            // 初期化フェーズ4: PhoneAppRegistryEventの発行
+            // 初期化フェーズ5: PhoneAppRegistryEventの発行
             firePhoneAppRegistryEvent();
 
-            // 初期化フェーズ5: 登録されたアプリケーションの処理
+            // 初期化フェーズ6: 登録されたアプリケーションの処理
             processRegisteredApps();
 
             initialized = true;

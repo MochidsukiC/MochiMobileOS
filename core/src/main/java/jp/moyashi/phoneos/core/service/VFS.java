@@ -31,18 +31,35 @@ public class VFS {
      * 実行ディレクトリにmochi_os_dataフォルダを作成し、必要なサブディレクトリを初期化する。
      */
     public VFS() {
+        this(null);
+    }
+
+    /**
+     * ワールドIDを指定して新しいVFSインスタンスを構築する。
+     * ワールド毎にデータを分離する。
+     * Forge環境で使用され、./mochi_os_data/{worldId}/mochi_os_data/ にデータを保存する。
+     *
+     * @param worldId ワールドID（nullの場合は共通データ）
+     */
+    public VFS(String worldId) {
         try {
-            // ルートディレクトリパスを設定
-            this.rootPath = Paths.get("mochi_os_data");
+            // ルートディレクトリパスを設定（ワールドID毎に分離）
+            if (worldId != null && !worldId.isEmpty()) {
+                // Forge環境: mochi_os_data/{worldId}/mochi_os_data/
+                this.rootPath = Paths.get("mochi_os_data", worldId, "mochi_os_data");
+            } else {
+                // スタンドアロン環境: mochi_os_data/
+                this.rootPath = Paths.get("mochi_os_data");
+            }
             this.systemPath = rootPath.resolve("system");
-            
+
             // 必要なディレクトリを作成
             Files.createDirectories(rootPath);
             Files.createDirectories(systemPath);
-            
+
             System.out.println("VFS: 仮想ファイルシステムを初期化完了");
             System.out.println("VFS: ルートパス: " + rootPath.toAbsolutePath());
-            
+
         } catch (IOException e) {
             System.err.println("VFS: ディレクトリ初期化エラー: " + e.getMessage());
             throw new RuntimeException("VFSの初期化に失敗しました", e);
