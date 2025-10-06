@@ -64,6 +64,7 @@ public class SmartphoneBackgroundService {
                     // 既存のKernelをシャットダウン
                     if (sharedKernel != null) {
                         LOGGER.info("[SmartphoneBackgroundService] Shutting down previous kernel...");
+                        shutdownKernel();
                     }
 
                     // 新しいワールドID用のKernelを作成
@@ -73,6 +74,31 @@ public class SmartphoneBackgroundService {
 
             } catch (Exception e) {
                 LOGGER.error("[SmartphoneBackgroundService] Failed to handle world load", e);
+            }
+        }
+    }
+
+    /**
+     * ワールドアンロード時の処理。
+     * Kernelをクリーンアップする。
+     */
+    @SubscribeEvent
+    public static void onWorldUnload(LevelEvent.Unload event) {
+        // クライアント側のみ処理
+        if (event.getLevel().isClientSide()) {
+            try {
+                LOGGER.info("[SmartphoneBackgroundService] World unloading: " + currentWorldId);
+
+                // Kernelをシャットダウン
+                if (sharedKernel != null) {
+                    shutdownKernel();
+                    sharedKernel = null;
+                    currentWorldId = null;
+                    LOGGER.info("[SmartphoneBackgroundService] Kernel shut down successfully");
+                }
+
+            } catch (Exception e) {
+                LOGGER.error("[SmartphoneBackgroundService] Failed to handle world unload", e);
             }
         }
     }
@@ -196,32 +222,21 @@ public class SmartphoneBackgroundService {
                 return;
             }
 
-            // デバッグ: 各APIの型を確認
-            LOGGER.info("[SmartphoneBackgroundService] Updating hardware APIs for player: " + player.getName().getString());
-            LOGGER.info("[SmartphoneBackgroundService] - MobileDataSocket type: " + sharedKernel.getMobileDataSocket().getClass().getName());
-            LOGGER.info("[SmartphoneBackgroundService] - BluetoothSocket type: " + sharedKernel.getBluetoothSocket().getClass().getName());
-            LOGGER.info("[SmartphoneBackgroundService] - LocationSocket type: " + sharedKernel.getLocationSocket().getClass().getName());
-            LOGGER.info("[SmartphoneBackgroundService] - SIMInfo type: " + sharedKernel.getSIMInfo().getClass().getName());
-
             // 各ハードウェアAPIのプレイヤー情報を更新
             if (sharedKernel.getMobileDataSocket() instanceof jp.moyashi.phoneos.forge.hardware.ForgeMobileDataSocket) {
                 ((jp.moyashi.phoneos.forge.hardware.ForgeMobileDataSocket) sharedKernel.getMobileDataSocket()).updatePlayer(player);
-                LOGGER.info("[SmartphoneBackgroundService] - MobileDataSocket updated");
             }
 
             if (sharedKernel.getBluetoothSocket() instanceof jp.moyashi.phoneos.forge.hardware.ForgeBluetoothSocket) {
                 ((jp.moyashi.phoneos.forge.hardware.ForgeBluetoothSocket) sharedKernel.getBluetoothSocket()).updatePlayer(player);
-                LOGGER.info("[SmartphoneBackgroundService] - BluetoothSocket updated");
             }
 
             if (sharedKernel.getLocationSocket() instanceof jp.moyashi.phoneos.forge.hardware.ForgeLocationSocket) {
                 ((jp.moyashi.phoneos.forge.hardware.ForgeLocationSocket) sharedKernel.getLocationSocket()).updatePlayer(player);
-                LOGGER.info("[SmartphoneBackgroundService] - LocationSocket updated");
             }
 
             if (sharedKernel.getSIMInfo() instanceof jp.moyashi.phoneos.forge.hardware.ForgeSIMInfo) {
                 ((jp.moyashi.phoneos.forge.hardware.ForgeSIMInfo) sharedKernel.getSIMInfo()).updatePlayer(player);
-                LOGGER.info("[SmartphoneBackgroundService] - SIMInfo updated");
             }
 
         } catch (Exception e) {
@@ -231,13 +246,47 @@ public class SmartphoneBackgroundService {
     }
 
     /**
+     * Kernelをシャットダウンする。
+     */
+    private static void shutdownKernel() {
+        if (sharedKernel == null) {
+            return;
+        }
+
+        try {
+            LOGGER.info("[SmartphoneBackgroundService] Shutting down kernel...");
+
+            // マイクを停止
+            if (sharedKernel.getMicrophoneSocket() != null && sharedKernel.getMicrophoneSocket().isEnabled()) {
+                sharedKernel.getMicrophoneSocket().setEnabled(false);
+                LOGGER.info("[SmartphoneBackgroundService] Microphone stopped");
+            }
+
+            // スピーカーを停止
+            if (sharedKernel.getSpeakerSocket() != null) {
+                sharedKernel.getSpeakerSocket().stopAudio();
+                LOGGER.info("[SmartphoneBackgroundService] Speaker stopped");
+            }
+
+            // その他のリソースクリーンアップ
+            // TODO: 必要に応じて他のハードウェアAPIのクリーンアップを追加
+
+            LOGGER.info("[SmartphoneBackgroundService] Kernel shutdown complete");
+
+        } catch (Exception e) {
+            LOGGER.error("[SmartphoneBackgroundService] Error during kernel shutdown", e);
+        }
+    }
+
+    /**
      * サービスのシャットダウン処理。
      */
     public static void shutdown() {
         LOGGER.info("[SmartphoneBackgroundService] Shutting down service");
         try {
-            // カーネルのクリーンアップ
+            shutdownKernel();
             sharedKernel = null;
+            currentWorldId = null;
 
         } catch (Exception e) {
             LOGGER.error("[SmartphoneBackgroundService] Error during shutdown", e);

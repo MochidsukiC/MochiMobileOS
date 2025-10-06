@@ -18,7 +18,7 @@
 ### 2. 現在の仕様
 
 **有効なサービス**:
-VFS, SettingsManager, SystemClock, AppLoader, LayoutManager, PopupManager, GestureManager, ControlCenterManager, NotificationManager, LockManager, LayerManager
+VFS, SettingsManager, SystemClock, AppLoader, LayoutManager, PopupManager, GestureManager, ControlCenterManager, NotificationManager, LockManager, LayerManager, LoggerService
 
 **組み込みアプリ**:
 LauncherApp, SettingsApp, CalculatorApp, AppStoreApp (UIのみ), NetworkApp (メッセージ&ネットワークテスト), HardwareTestApp (ハードウェアAPIデバッグ), VoiceMemoApp (音声録音・再生)
@@ -45,7 +45,10 @@ LauncherApp, SettingsApp, CalculatorApp, AppStoreApp (UIのみ), NetworkApp (メ
 *   **PGraphics→Minecraft GUI変換システム**: KernelのPGraphicsバッファからMinecraftのNativeImageへの高速ピクセル変換を実装
 *   **Kernel統合**: `Kernel.initializeForMinecraft()`による最適化された初期化処理
 *   **入力システム**: Minecraftのマウス・キーボードイベントをKernel APIにバイパス（ProcessingScreen経由）
-*   **Kernelインスタンス管理**: ワールドごとにKernelインスタンスを管理、MinecraftのフレームレートでV-Sync動作
+*   **Kernelインスタンス管理**:
+    - ワールドロード時にKernelを起動 (`LevelEvent.Load`)
+    - ワールドアンロード時にKernelをシャットダウン (`LevelEvent.Unload`)
+    - ワールドごとにKernelインスタンスとデータを分離管理
 *   **画面表示システム**:
     - 動的スケーリング：画面サイズに応じてスマートフォン表示を自動拡大縮小（縦横比維持）
     - 中央配置：常に画面中央に表示、20pxマージン確保
@@ -63,7 +66,39 @@ LauncherApp, SettingsApp, CalculatorApp, AppStoreApp (UIのみ), NetworkApp (メ
 
 1.  **設定アプリが機能しない**: `SettingsApp`のUIは存在するが、設定を実際に変更するバックエンドロジックが実装されていない。
 2.  **ランチャーの不具合**: ホーム画面のアイコンをDockに移動する機能が正しく動作しない。
-3.  **PGraphicsアーキテクチャ移行 (Phase 8 - ✅ 100%完了)**: `core`モジュールのPGraphics統一化が完了。
+3.  **ボイスメモアプリの音声再生問題（✅ 解決済み）**:
+    - **症状**: 録音した音声が倍速再生され、音がブツ切りになる
+    - **原因**:
+      - 録音時のサンプリングレートが環境によって異なる（48kHz/44.1kHz/16kHz等）
+      - 再生時は常に48kHz固定を想定していたため、速度が不一致
+      - 例: 44.1kHzで録音→48kHzで再生 = 1.088倍速
+    - **解決策**:
+      - 録音時のサンプリングレートをメタデータとして保存（JSON形式）
+      - 再生時に線形補間を使用して48kHzにリサンプリング
+      - `JavaMicrophoneRecorder`、`AudioMixer`、`ForgeMicrophoneSocket`にサンプリングレート取得機能を追加
+4.  **Forge環境でボタンが反応しない問題（デバッグ中）**:
+    - **症状**: VoiceMemoAppのRecordボタンと、CalculatorAppのボタンが反応しない。ネットワークアプリでメッセージを送信しても、画面を開き直さないとリストが更新されない。
+    - **正常動作**: コントロールセンターの音量ボタン、NetworkAppのSend Test Messageボタンは機能する
+    - **調査結果**:
+      - `ProcessingScreen.render()`内で直接LWJGL/GLFWを使用したマウスイベント検出は機能している
+      - `kernel.mousePressed()`/`kernel.mouseReleased()`は正常に実行されている（例外なし）
+      - マウス座標も正しく変換されている（例: 座標(93, 174)はRecordボタン範囲(X:50-170, Y:150-190)内）
+      - しかし、画面上で何も変化が起きない
+    - **根本原因（判明）**:
+      - Minecraftのrender()は毎フレーム呼び出されるが、マウスイベント処理後に次のフレームが来るまで画面が更新されない
+      - つまり、**描画更新のタイミング問題**が原因
+    - **実施した修正**:
+      - `ProcessingScreen`でマウスイベント（mousePressed/mouseReleased）直後に即座に`kernel.update()`と`kernel.render()`を呼び出すように変更
+      - 60フレームごとに通常レンダリングのログを出力するように変更（ログ過剰防止）
+      - マウスイベント後の強制更新は必ずログに出力
+    - **OSロガーシステム実装** (✅ 完了):
+      - VFS内に保存されるOS専用ロガーシステムを実装
+      - `LoggerService`: ログレベル（DEBUG/INFO/WARN/ERROR）、ログローテーション（1MB超過時）、メモリバッファ（最新100件）
+      - ログ保存先: `system/logs/latest.log`、アーカイブ: `system/logs/archive.log`
+      - Kernel、ScreenManager、VoiceMemoScreenに統合済み
+      - **デバッグ方法**: VFSから直接ログを確認可能（例: `forge/run/mochi_os_data/{ワールド名}/mochi_os_data/system/logs/latest.log`）
+      - **次のステップ**: OSロガーを使用してボタンクリック時の詳細なデバッグログを収集し、問題箇所を特定
+5.  **PGraphicsアーキテクチャ移行 (Phase 8 - ✅ 100%完了)**: `core`モジュールのPGraphics統一化が完了。
     *   **完了済み**:
         - **インターフェース**: IApplication, Screen (完全移行、@Deprecated ブリッジ付き)
         - **画面クラス**: HomeScreen, CalculatorScreen, SettingsScreen, LockScreen, SimpleHomeScreen, AppLibraryScreen, BasicHomeScreen, SafeHomeScreen, AppLibraryScreen_Complete

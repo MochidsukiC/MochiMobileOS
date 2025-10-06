@@ -80,6 +80,9 @@ public class Kernel implements GestureListener {
     /** メッセージストレージサービス */
     private MessageStorage messageStorage;
 
+    /** OSロガーサービス */
+    private LoggerService logger;
+
     /** ハードウェアバイパスAPI - モバイルデータ通信ソケット */
     private jp.moyashi.phoneos.core.service.hardware.MobileDataSocket mobileDataSocket;
 
@@ -267,6 +270,9 @@ public class Kernel implements GestureListener {
      * @param y マウスY座標
      */
     public void mousePressed(int x, int y) {
+        if (logger != null) {
+            logger.debug("Kernel", "mousePressed at (" + x + ", " + y + ")");
+        }
         System.out.println("Kernel: mousePressed at (" + x + ", " + y + ")");
 
         try {
@@ -274,6 +280,9 @@ public class Kernel implements GestureListener {
             if (popupManager != null && popupManager.hasActivePopup()) {
                 boolean popupHandled = popupManager.handleMouseClick(x, y);
                 if (popupHandled) {
+                    if (logger != null) {
+                        logger.debug("Kernel", "Popup handled mousePressed, stopping propagation");
+                    }
                     System.out.println("Kernel: Popup handled mousePressed, stopping propagation");
                     return;
                 }
@@ -283,6 +292,9 @@ public class Kernel implements GestureListener {
             if (gestureManager != null) {
                 boolean gestureHandled = gestureManager.handleMousePressed(x, y);
                 if (gestureHandled) {
+                    if (logger != null) {
+                        logger.debug("Kernel", "Gesture handled mousePressed, stopping propagation");
+                    }
                     System.out.println("Kernel: Gesture handled mousePressed, stopping propagation");
                     return;
                 }
@@ -290,9 +302,15 @@ public class Kernel implements GestureListener {
 
             // スクリーンマネージャーでの処理
             if (screenManager != null) {
+                if (logger != null) {
+                    logger.debug("Kernel", "Forwarding mousePressed to ScreenManager");
+                }
                 screenManager.mousePressed(x, y);
             }
         } catch (Exception e) {
+            if (logger != null) {
+                logger.error("Kernel", "mousePressed処理エラー", e);
+            }
             System.err.println("Kernel: mousePressed処理エラー: " + e.getMessage());
             e.printStackTrace();
         }
@@ -305,6 +323,9 @@ public class Kernel implements GestureListener {
      * @param y マウスY座標
      */
     public void mouseReleased(int x, int y) {
+        if (logger != null) {
+            logger.debug("Kernel", "mouseReleased at (" + x + ", " + y + ")");
+        }
         System.out.println("Kernel: mouseReleased at (" + x + ", " + y + ")");
 
         try {
@@ -315,9 +336,15 @@ public class Kernel implements GestureListener {
 
             // スクリーンマネージャーでの処理
             if (screenManager != null) {
+                if (logger != null) {
+                    logger.debug("Kernel", "Forwarding mouseReleased to ScreenManager");
+                }
                 screenManager.mouseReleased(x, y);
             }
         } catch (Exception e) {
+            if (logger != null) {
+                logger.error("Kernel", "mouseReleased処理エラー", e);
+            }
             System.err.println("Kernel: mouseReleased処理エラー: " + e.getMessage());
             e.printStackTrace();
         }
@@ -570,7 +597,15 @@ public class Kernel implements GestureListener {
             System.out.println("     World ID: " + worldId);
         }
         vfs = new VFS(worldId);
-        
+
+        System.out.println("  -> OSロガーサービス作成中...");
+        logger = new LoggerService(vfs);
+        logger.info("Kernel", "=== MochiMobileOS カーネル初期化開始 ===");
+        logger.info("Kernel", "画面サイズ: " + width + "x" + height);
+        if (worldId != null && !worldId.isEmpty()) {
+            logger.info("Kernel", "World ID: " + worldId);
+        }
+
         System.out.println("  -> 設定マネージャー作成中...");
         settingsManager = new SettingsManager();
         
@@ -892,6 +927,15 @@ public class Kernel implements GestureListener {
      */
     public ScreenManager getScreenManager() {
         return screenManager;
+    }
+
+    /**
+     * OSロガーサービスを取得する。
+     *
+     * @return LoggerService
+     */
+    public LoggerService getLogger() {
+        return logger;
     }
     
     /**
