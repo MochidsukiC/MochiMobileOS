@@ -27,10 +27,18 @@ public class VoiceMemoScreen implements Screen {
     private boolean isRecording = false;
     private List<byte[]> recordingBuffer = new ArrayList<>();
     private long recordingStartTime = 0;
+    private float currentInputLevel = 0.0f; // 現在の入力レベル (0.0 - 1.0)
+    private int totalChunksReceived = 0;    // 受信したチャンク数
+    private float recordingSampleRate = 48000.0f; // 録音時のサンプリングレート
 
     // 再生状態
     private boolean isPlaying = false;
     private int playingIndex = -1;
+    private float currentOutputLevel = 0.0f; // 現在の出力レベル (0.0 - 1.0)
+    private byte[] playingAudioData = null;  // 再生中の音声データ
+    private int playingChunkIndex = 0;        // 現在の再生チャンクインデックス
+    private long playingStartTime = 0;        // 再生開始時刻
+    private static final int PLAYBACK_CHUNK_SIZE = 2048; // チャンクサイズ（約21ms @ 48kHz）
 
     // メモ一覧
     private List<VoiceMemo> memos = new ArrayList<>();
@@ -50,9 +58,36 @@ public class VoiceMemoScreen implements Screen {
         loadMemos();
     }
 
+    /**
+     * ロガーヘルパーメソッド。
+     */
+    private void log(String message) {
+        if (kernel != null && kernel.getLogger() != null) {
+            kernel.getLogger().debug("VoiceMemoScreen", message);
+        }
+        System.out.println("[VoiceMemoScreen] " + message);
+    }
+
+    private void logError(String message) {
+        if (kernel != null && kernel.getLogger() != null) {
+            kernel.getLogger().error("VoiceMemoScreen", message);
+        }
+        System.err.println("[VoiceMemoScreen] " + message);
+    }
+
+    private void logError(String message, Throwable throwable) {
+        if (kernel != null && kernel.getLogger() != null) {
+            kernel.getLogger().error("VoiceMemoScreen", message, throwable);
+        }
+        System.err.println("[VoiceMemoScreen] " + message);
+        if (throwable != null) {
+            throwable.printStackTrace();
+        }
+    }
+
     @Override
     public void setup(PGraphics g) {
-        System.out.println("[VoiceMemoScreen] Setup");
+        log("Setup");
     }
 
     @Override
@@ -118,6 +153,50 @@ public class VoiceMemoScreen implements Screen {
         if (speakerAvailable) {
             g.fill(200, 200, 200);
             g.text("Volume: " + speaker.getVolumeLevel().name(), 30, y + 30);
+        }
+
+        // 録音中の入力レベルメーター
+        if (isRecording) {
+            g.fill(200, 200, 200);
+            g.text("Input Level:", 30, y + 50);
+
+            // レベルメーターバー
+            g.noStroke();
+            g.fill(50, 50, 60);
+            g.rect(120, y + 50, 240, 12, 2);
+
+            // 現在のレベル（緑→黄色→赤）
+            if (currentInputLevel > 0) {
+                float barWidth = currentInputLevel * 240;
+                int r = (int) (currentInputLevel * 255);
+                int gr = (int) ((1.0f - currentInputLevel) * 255);
+                g.fill(r, gr, 0);
+                g.rect(120, y + 50, barWidth, 12, 2);
+            }
+
+            // チャンク受信数
+            g.fill(180, 180, 180);
+            g.textSize(10);
+            g.text("Chunks: " + totalChunksReceived, 30, y + 68);
+        }
+
+        // 再生中の出力レベルメーター
+        if (isPlaying) {
+            g.fill(200, 200, 200);
+            g.textSize(11);
+            g.text("Output Level:", 30, y + 50);
+
+            // レベルメーターバー
+            g.noStroke();
+            g.fill(50, 50, 60);
+            g.rect(120, y + 50, 240, 12, 2);
+
+            // 現在のレベル（青→シアン）
+            if (currentOutputLevel > 0) {
+                float barWidth = currentOutputLevel * 240;
+                g.fill(0, 150, 255);
+                g.rect(120, y + 50, barWidth, 12, 2);
+            }
         }
     }
 
@@ -246,8 +325,11 @@ public class VoiceMemoScreen implements Screen {
 
     @Override
     public void mousePressed(PGraphics g, int mouseX, int mouseY) {
+        log("mousePressed: (" + mouseX + ", " + mouseY + ")");
+
         // 録音ボタン
         if (isInside(mouseX, mouseY, 50, 150, 120, 40)) {
+            log("Record button clicked - mic.available=" + microphone.isAvailable() + ", isPlaying=" + isPlaying);
             if (microphone.isAvailable() && !isPlaying) {
                 if (isRecording) {
                     stopRecording();
@@ -330,8 +412,11 @@ public class VoiceMemoScreen implements Screen {
         isRecording = true;
         recordingBuffer.clear();
         recordingStartTime = System.currentTimeMillis();
+        currentInputLevel = 0.0f;
+        totalChunksReceived = 0;
+        recordingSampleRate = microphone.getSampleRate();
         showStatus("Recording started...");
-        System.out.println("[VoiceMemoScreen] Recording started");
+        log("Recording started - sample rate: " + recordingSampleRate + " Hz");
     }
 
     public void stopRecording() {
@@ -350,14 +435,21 @@ public class VoiceMemoScreen implements Screen {
             showStatus("No data recorded");
         }
 
-        System.out.println("[VoiceMemoScreen] Recording stopped");
+        log("Recording stopped");
     }
 
     private void updateRecording() {
-        // マイクからデータを取得
+        // マイクからデータを取得（バッファ内の全チャンクを連結して取得）
         byte[] audioData = microphone.getAudioData();
         if (audioData != null && audioData.length > 0) {
             recordingBuffer.add(audioData);
+            totalChunksReceived++;
+
+            // 音声レベルを計算（16-bit PCM）
+            currentInputLevel = calculateAudioLevel(audioData);
+        } else {
+            // データがない場合はレベルを徐々に下げる
+            currentInputLevel *= 0.8f;
         }
     }
 
@@ -376,16 +468,25 @@ public class VoiceMemoScreen implements Screen {
             offset += chunk.length;
         }
 
-        // Base64エンコードしてVFSに保存
+        // Base64エンコードしてメタデータと共にJSON形式で保存
         String encodedData = Base64.getEncoder().encodeToString(fullData);
-        vfs.writeFile("voice_memos/" + filename, encodedData);
+        long duration = (System.currentTimeMillis() - recordingStartTime) / 1000;
+
+        // JSON形式のメタデータ
+        String jsonData = String.format(
+            "{\"version\":\"1.0\",\"sampleRate\":%.1f,\"duration\":%d,\"audioData\":\"%s\"}",
+            recordingSampleRate,
+            duration,
+            encodedData
+        );
+
+        vfs.writeFile("voice_memos/" + filename, jsonData);
 
         // メモリストに追加
-        long duration = (System.currentTimeMillis() - recordingStartTime) / 1000;
-        VoiceMemo memo = new VoiceMemo(filename, new Date(), duration);
+        VoiceMemo memo = new VoiceMemo(filename, new Date(), duration, recordingSampleRate);
         memos.add(memo);
 
-        System.out.println("[VoiceMemoScreen] Saved memo: " + filename + " (" + totalSize + " bytes)");
+        log("Saved memo: " + filename + " (" + totalSize + " bytes, " + recordingSampleRate + " Hz)");
     }
 
     private void loadMemos() {
@@ -395,38 +496,74 @@ public class VoiceMemoScreen implements Screen {
         // 注: VFSはファイル一覧を取得するメソッドがないため、ここでは空リストとして開始
         // メモは保存時にリストに追加される
 
-        System.out.println("[VoiceMemoScreen] Loaded " + memos.size() + " memos");
+        log("Loaded " + memos.size() + " memos");
     }
 
     public void playMemo(int index) {
+        log("playMemo() called - index: " + index + ", memos.size: " + memos.size() + ", speaker.isAvailable: " + speaker.isAvailable());
+
         if (index < 0 || index >= memos.size() || !speaker.isAvailable()) {
+            log("playMemo() conditions not met - returning");
             return;
         }
 
         VoiceMemo memo = memos.get(index);
-        String encodedData = vfs.readFile("voice_memos/" + memo.getFilename());
+        String fileData = vfs.readFile("voice_memos/" + memo.getFilename());
 
-        if (encodedData == null || encodedData.isEmpty()) {
+        if (fileData == null || fileData.isEmpty()) {
             showStatus("Failed to load memo");
             return;
         }
 
-        // Base64デコード
+        // JSONデータをパースして音声データとサンプリングレートを取得
         byte[] audioData;
+        float sampleRate = memo.getSampleRate();
+
         try {
-            audioData = Base64.getDecoder().decode(encodedData);
-        } catch (IllegalArgumentException e) {
+            // JSON形式かどうかをチェック（バージョン1.0のフォーマット）
+            if (fileData.startsWith("{")) {
+                // JSON形式: メタデータを含む
+                int audioDataStart = fileData.indexOf("\"audioData\":\"") + 13;
+                int audioDataEnd = fileData.lastIndexOf("\"");
+                String encodedData = fileData.substring(audioDataStart, audioDataEnd);
+
+                // サンプリングレートを取得
+                int sampleRateStart = fileData.indexOf("\"sampleRate\":") + 13;
+                int sampleRateEnd = fileData.indexOf(",", sampleRateStart);
+                sampleRate = Float.parseFloat(fileData.substring(sampleRateStart, sampleRateEnd));
+
+                // Base64デコード
+                audioData = Base64.getDecoder().decode(encodedData);
+            } else {
+                // 旧形式: Base64のみ
+                audioData = Base64.getDecoder().decode(fileData);
+                sampleRate = 48000.0f; // デフォルト
+            }
+        } catch (Exception e) {
             showStatus("Failed to decode memo");
-            System.err.println("[VoiceMemoScreen] Failed to decode: " + e.getMessage());
+            logError("Failed to decode: " + e.getMessage(), e);
             return;
+        }
+
+        log("Original sample rate: " + sampleRate + " Hz");
+
+        // 48kHz以外の場合はリサンプリング
+        if (Math.abs(sampleRate - 48000.0f) > 0.1f) {
+            log("Resampling from " + sampleRate + " Hz to 48000 Hz...");
+            audioData = resampleAudio(audioData, sampleRate, 48000.0f);
+            log("Resampled to " + audioData.length + " bytes");
         }
 
         isPlaying = true;
         playingIndex = index;
+        playingAudioData = audioData;
+        playingChunkIndex = 0;
+        playingStartTime = System.currentTimeMillis();
+        currentOutputLevel = 0.0f;
         speaker.playAudio(audioData);
         showStatus("Playing: " + memo.getName());
 
-        System.out.println("[VoiceMemoScreen] Playing memo: " + memo.getFilename());
+        log("Playing memo: " + memo.getFilename() + " (" + audioData.length + " bytes)");
     }
 
     public void stopPlayback() {
@@ -436,16 +573,40 @@ public class VoiceMemoScreen implements Screen {
 
         isPlaying = false;
         playingIndex = -1;
+        playingAudioData = null;
+        playingChunkIndex = 0;
+        currentOutputLevel = 0.0f;
         speaker.stopAudio();
         showStatus("Playback stopped");
 
-        System.out.println("[VoiceMemoScreen] Playback stopped");
+        log("Playback stopped");
     }
 
     private void updatePlayback() {
-        // 再生が完了したかチェック（TODO: 実際の実装では再生時間を追跡）
-        // 現時点では3秒後に自動停止
-        // 実際のSVC連携時は、再生完了イベントをハンドリングする
+        if (!isPlaying || playingAudioData == null) {
+            return;
+        }
+
+        // 経過時間から現在の再生位置を計算
+        // 48kHz, 16-bit, mono = 96000 bytes/sec
+        long elapsedMs = System.currentTimeMillis() - playingStartTime;
+        int estimatedBytePosition = (int) (elapsedMs * 96); // 96 bytes/ms
+
+        // 現在位置のチャンクの音量レベルを計算
+        if (estimatedBytePosition < playingAudioData.length) {
+            int chunkStart = estimatedBytePosition;
+            int chunkEnd = Math.min(chunkStart + PLAYBACK_CHUNK_SIZE, playingAudioData.length);
+            int chunkSize = chunkEnd - chunkStart;
+
+            if (chunkSize > 0) {
+                byte[] chunk = new byte[chunkSize];
+                System.arraycopy(playingAudioData, chunkStart, chunk, 0, chunkSize);
+                currentOutputLevel = calculateAudioLevel(chunk);
+            }
+        } else {
+            // 再生完了
+            stopPlayback();
+        }
     }
 
     private void deleteMemo(int index) {
@@ -462,12 +623,99 @@ public class VoiceMemoScreen implements Screen {
         memos.remove(index);
 
         showStatus("Memo deleted");
-        System.out.println("[VoiceMemoScreen] Deleted memo: " + memo.getFilename());
+        log("Deleted memo: " + memo.getFilename());
     }
 
     private void showStatus(String message) {
         statusMessage = message;
         statusMessageTime = System.currentTimeMillis();
+    }
+
+    /**
+     * 音声データを指定したサンプリングレートにリサンプリングする。
+     * 線形補間を使用した単純なリサンプリング。
+     *
+     * @param audioData 元の音声データ（16-bit PCM）
+     * @param sourceSampleRate 元のサンプリングレート
+     * @param targetSampleRate 目標のサンプリングレート
+     * @return リサンプリングされた音声データ
+     */
+    private byte[] resampleAudio(byte[] audioData, float sourceSampleRate, float targetSampleRate) {
+        // サンプル数を計算（16-bit = 2 bytes per sample）
+        int sourceSampleCount = audioData.length / 2;
+        int targetSampleCount = (int) (sourceSampleCount * targetSampleRate / sourceSampleRate);
+
+        // リサンプリング比率
+        float ratio = sourceSampleRate / targetSampleRate;
+
+        // 出力バッファ
+        byte[] output = new byte[targetSampleCount * 2];
+
+        // 線形補間でリサンプリング
+        for (int i = 0; i < targetSampleCount; i++) {
+            // 元の音声データでの位置（浮動小数点）
+            float sourcePos = i * ratio;
+            int sourceIndex = (int) sourcePos;
+            float fraction = sourcePos - sourceIndex;
+
+            // 元の音声データから2つのサンプルを取得
+            short sample1 = 0, sample2 = 0;
+
+            if (sourceIndex * 2 + 1 < audioData.length) {
+                sample1 = (short) ((audioData[sourceIndex * 2 + 1] << 8) | (audioData[sourceIndex * 2] & 0xFF));
+            }
+
+            if ((sourceIndex + 1) * 2 + 1 < audioData.length) {
+                sample2 = (short) ((audioData[(sourceIndex + 1) * 2 + 1] << 8) | (audioData[(sourceIndex + 1) * 2] & 0xFF));
+            } else {
+                sample2 = sample1; // 最後のサンプルの場合
+            }
+
+            // 線形補間
+            short interpolated = (short) (sample1 + fraction * (sample2 - sample1));
+
+            // 出力バッファに書き込み
+            output[i * 2] = (byte) (interpolated & 0xFF);
+            output[i * 2 + 1] = (byte) ((interpolated >> 8) & 0xFF);
+        }
+
+        return output;
+    }
+
+    /**
+     * 音声データから音量レベルを計算する（RMS）。
+     * @param audioData 16-bit PCMの音声データ
+     * @return 0.0〜1.0の範囲のレベル
+     */
+    private float calculateAudioLevel(byte[] audioData) {
+        if (audioData == null || audioData.length < 2) {
+            return 0.0f;
+        }
+
+        // RMS (Root Mean Square) を計算
+        long sum = 0;
+        int sampleCount = audioData.length / 2; // 16-bit = 2 bytes per sample
+
+        for (int i = 0; i < audioData.length - 1; i += 2) {
+            // 16-bit PCMサンプルを読み取る（リトルエンディアン）
+            short sample = (short) ((audioData[i + 1] << 8) | (audioData[i] & 0xFF));
+            sum += sample * sample;
+        }
+
+        double rms = Math.sqrt((double) sum / sampleCount);
+
+        // 正規化（16-bit PCMの最大値は32767）
+        float normalized = (float) (rms / 32767.0);
+
+        // デシベルに変換して視覚的に見やすくする
+        // -60dB〜0dBの範囲を0.0〜1.0にマッピング
+        if (normalized > 0.001f) {
+            float db = (float) (20.0 * Math.log10(normalized));
+            float level = Math.max(0.0f, (db + 60.0f) / 60.0f);
+            return Math.min(1.0f, level);
+        }
+
+        return 0.0f;
     }
 
     /**
@@ -477,15 +725,21 @@ public class VoiceMemoScreen implements Screen {
         private String filename;
         private Date date;
         private long durationSeconds;
+        private float sampleRate;
 
-        public VoiceMemo(String filename, Date date, long durationSeconds) {
+        public VoiceMemo(String filename, Date date, long durationSeconds, float sampleRate) {
             this.filename = filename;
             this.date = date;
             this.durationSeconds = durationSeconds;
+            this.sampleRate = sampleRate;
         }
 
         public String getFilename() {
             return filename;
+        }
+
+        public float getSampleRate() {
+            return sampleRate;
         }
 
         public String getName() {

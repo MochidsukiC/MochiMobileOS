@@ -46,6 +46,10 @@ repositories {
         name = 'JOGAMP'
         url = 'https://jogamp.org/deployment/maven/'
     }
+    maven {
+        name = 'Maxhenkel Maven'
+        url = 'https://maven.maxhenkel.de/repository/public/'
+    }
     mavenCentral()
 }
 
@@ -68,6 +72,9 @@ dependencies {
     runtimeLib files('libs/core-4.4.4.jar')
 
     implementation 'com.google.code.gson:gson:2.10.1'
+
+    // Simple Voice Chat API - for audio recording integration
+    compileOnly 'de.maxhenkel.voicechat:voicechat-api:2.5.0'
 
     // Test dependencies
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.1'

@@ -24,6 +24,11 @@
           "applicationId": "jp.moyashi.phoneos.core.apps.hardware_test",
           "gridX": 3,
           "gridY": 0
+        },
+        {
+          "applicationId": "jp.moyashi.phoneos.core.apps.voicememo.voicememoapp",
+          "gridX": 0,
+          "gridY": 1
         }
       ]
     }

@@ -168,16 +168,79 @@ public class ProcessingScreen extends Screen {
      * 画面の描画処理。
      * バックグラウンドで動作するカーネルに対してグラフィック描画を実行し、結果をMinecraftのGUIに描画する。
      */
+    // マウスボタン状態追跡用
+    private boolean wasMouseButtonDown = false;
+
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         // 背景を暗くする
         this.renderBackground(guiGraphics);
 
-        LOGGER.info("[ProcessingScreen] render() called - graphics: " + graphicsEnabled + ", kernel: " + (kernel != null) + ", frameCount: " + frameCount);
+        // マウスボタンの状態をチェック（デバッグ用）
+        boolean isMouseButtonDown = org.lwjgl.glfw.GLFW.glfwGetMouseButton(
+            Minecraft.getInstance().getWindow().getWindow(),
+            org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_LEFT
+        ) == org.lwjgl.glfw.GLFW.GLFW_PRESS;
+
+        // マウスボタンが押された瞬間を検出
+        if (isMouseButtonDown && !wasMouseButtonDown) {
+            LOGGER.info("[ProcessingScreen] DIRECT MOUSE CLICK DETECTED at (" + mouseX + ", " + mouseY + ")");
+            // 直接kernel.mousePressedを呼び出す
+            if (graphicsEnabled && kernel != null) {
+                if (mouseX >= offsetX && mouseX <= offsetX + scaledWidth &&
+                    mouseY >= offsetY && mouseY <= offsetY + scaledHeight) {
+                    int mobileX = (int) ((mouseX - offsetX) / scale);
+                    int mobileY = (int) ((mouseY - offsetY) / scale);
+                    LOGGER.info("[ProcessingScreen] DIRECT: Calling kernel.mousePressed(" + mobileX + ", " + mobileY + ")");
+                    try {
+                        kernel.mousePressed(mobileX, mobileY);
+                        LOGGER.info("[ProcessingScreen] DIRECT: kernel.mousePressed() completed successfully");
+
+                        // マウスイベント後に即座に画面を更新
+                        LOGGER.info("[ProcessingScreen] DIRECT: Forcing kernel update and render after mousePressed");
+                        kernel.update();
+                        kernel.render();
+                        LOGGER.info("[ProcessingScreen] DIRECT: Forced update completed");
+                    } catch (Exception e) {
+                        LOGGER.error("[ProcessingScreen] DIRECT: kernel.mousePressed() threw exception: " + e.getMessage(), e);
+                    }
+                } else {
+                    LOGGER.info("[ProcessingScreen] DIRECT MOUSE CLICK outside phone area");
+                }
+            } else {
+                LOGGER.info("[ProcessingScreen] DIRECT MOUSE CLICK but graphics not enabled or kernel null");
+            }
+        }
+
+        // マウスボタンが離された瞬間を検出
+        if (!isMouseButtonDown && wasMouseButtonDown) {
+            LOGGER.info("[ProcessingScreen] DIRECT MOUSE RELEASE DETECTED at (" + mouseX + ", " + mouseY + ")");
+            if (graphicsEnabled && kernel != null) {
+                if (mouseX >= offsetX && mouseX <= offsetX + scaledWidth &&
+                    mouseY >= offsetY && mouseY <= offsetY + scaledHeight) {
+                    int mobileX = (int) ((mouseX - offsetX) / scale);
+                    int mobileY = (int) ((mouseY - offsetY) / scale);
+                    LOGGER.info("[ProcessingScreen] DIRECT: Calling kernel.mouseReleased(" + mobileX + ", " + mobileY + ")");
+                    try {
+                        kernel.mouseReleased(mobileX, mobileY);
+                        LOGGER.info("[ProcessingScreen] DIRECT: kernel.mouseReleased() completed successfully");
+
+                        // マウスイベント後に即座に画面を更新
+                        LOGGER.info("[ProcessingScreen] DIRECT: Forcing kernel update and render after mouseReleased");
+                        kernel.update();
+                        kernel.render();
+                        LOGGER.info("[ProcessingScreen] DIRECT: Forced update completed");
+                    } catch (Exception e) {
+                        LOGGER.error("[ProcessingScreen] DIRECT: kernel.mouseReleased() threw exception: " + e.getMessage(), e);
+                    }
+                }
+            }
+        }
+
+        wasMouseButtonDown = isMouseButtonDown;
 
         if (!graphicsEnabled || kernel == null) {
             // カーネル接続待ちまたはエラー状態の表示
-            LOGGER.info("[ProcessingScreen] Drawing connection message - graphics: " + graphicsEnabled + ", kernel null: " + (kernel == null));
             drawConnectionMessage(guiGraphics);
             return;
         }
@@ -185,7 +248,6 @@ public class ProcessingScreen extends Screen {
         try {
             // フレームカウンターを更新
             frameCount++;
-            LOGGER.info("[ProcessingScreen] Starting kernel rendering, frameCount: " + frameCount);
 
             // ハードウェアAPIのプレイヤー情報を更新
             SmartphoneBackgroundService.updateHardwareAPIs();
@@ -199,7 +261,6 @@ public class ProcessingScreen extends Screen {
             // デバッグのため、スマートフォンフレームを一時的に削除
             // drawSmartphoneFrame(guiGraphics);
 
-            LOGGER.info("[ProcessingScreen] Finished frame rendering");
         } catch (Exception e) {
             LOGGER.error("[ProcessingScreen] Render error: " + e.getMessage(), e);
             drawErrorMessage(guiGraphics, e.getMessage());
@@ -246,7 +307,10 @@ public class ProcessingScreen extends Screen {
                 // Minecraftのフレームレートに同期してカーネルを更新
                 kernel.update();
                 kernel.render();
-                LOGGER.debug("[ProcessingScreen] Kernel updated and rendered, frame: " + kernel.frameCount);
+                // デバッグ用: 毎フレームログ出力（頻度が高いので注意）
+                if (kernel.frameCount % 60 == 0) {  // 60フレームごとにログ出力
+                    LOGGER.info("[ProcessingScreen] Kernel updated and rendered, frame: " + kernel.frameCount);
+                }
             } else {
                 LOGGER.debug("[ProcessingScreen] Skipping graphics - kernel: " + (kernel != null) + ", graphics: " + graphicsEnabled);
             }
@@ -449,7 +513,7 @@ public class ProcessingScreen extends Screen {
 
             // 背景を描画
             guiGraphics.fill(offsetX, offsetY, offsetX + PHONE_WIDTH, offsetY + PHONE_HEIGHT, color);
-            System.out.println("[ProcessingScreen] Background filled with color: " + Integer.toHexString(color));
+            LOGGER.debug("[ProcessingScreen] Background filled with color: " + Integer.toHexString(color));
 
             // 境界線を描画（デバッグ用）
             guiGraphics.fill(offsetX, offsetY, offsetX + PHONE_WIDTH, offsetY + 2, 0xFFFF0000); // 上
@@ -471,10 +535,9 @@ public class ProcessingScreen extends Screen {
                 offsetX + (PHONE_WIDTH - subTextWidth) / 2,
                 offsetY + PHONE_HEIGHT / 2 + 10, 0xFFCCCCCC);
 
-            System.out.println("[ProcessingScreen] Fallback rendering completed");
+            LOGGER.debug("[ProcessingScreen] Fallback rendering completed");
         } catch (Exception e) {
-            System.err.println("[ProcessingScreen] Failed to render fallback: " + e.getMessage());
-            e.printStackTrace();
+            LOGGER.error("[ProcessingScreen] Failed to render fallback: " + e.getMessage(), e);
         }
     }
 
@@ -497,11 +560,14 @@ public class ProcessingScreen extends Screen {
      */
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        LOGGER.info("[ProcessingScreen] mouseClicked: (" + mouseX + ", " + mouseY + "), graphics=" + graphicsEnabled + ", kernel=" + (kernel != null));
+
         if (!graphicsEnabled || kernel == null) {
             return super.mouseClicked(mouseX, mouseY, button);
         }
 
         // スマートフォン画面内のクリックかチェック（スケール後のサイズを使用）
+        LOGGER.info("[ProcessingScreen] Checking bounds: offset=(" + offsetX + "," + offsetY + "), scaled size=" + scaledWidth + "x" + scaledHeight);
         if (mouseX >= offsetX && mouseX <= offsetX + scaledWidth &&
             mouseY >= offsetY && mouseY <= offsetY + scaledHeight) {
 
@@ -510,17 +576,18 @@ public class ProcessingScreen extends Screen {
                 int mobileX = (int) ((mouseX - offsetX) / scale);
                 int mobileY = (int) ((mouseY - offsetY) / scale);
 
+                LOGGER.info("[ProcessingScreen] Inside bounds, calling kernel.mousePressed(" + mobileX + ", " + mobileY + ")");
+
                 // MochiMobileOSのマウスイベントを送信
                 kernel.mousePressed(mobileX, mobileY);
-
-                System.out.println("[ProcessingScreen] Mouse clicked at MochiMobileOS coords: (" +
-                    mobileX + ", " + mobileY + ")");
 
                 return true;
 
             } catch (Exception e) {
-                System.err.println("[ProcessingScreen] Mouse click error: " + e.getMessage());
+                LOGGER.error("[ProcessingScreen] Mouse click error: " + e.getMessage(), e);
             }
+        } else {
+            LOGGER.info("[ProcessingScreen] Outside bounds, ignoring click");
         }
 
         return super.mouseClicked(mouseX, mouseY, button);
@@ -595,7 +662,7 @@ public class ProcessingScreen extends Screen {
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         // ESCキーで画面を閉じる
         if (keyCode == 256) { // ESC key
-            System.out.println("[ProcessingScreen] ESC pressed, closing screen");
+            LOGGER.info("[ProcessingScreen] ESC pressed, closing screen");
             this.onClose();
             return true;
         }
@@ -606,7 +673,7 @@ public class ProcessingScreen extends Screen {
                 char key = (char) keyCode; // 簡易的な変換
                 kernel.keyPressed(key, keyCode);
             } catch (Exception e) {
-                System.err.println("[ProcessingScreen] Key press error: " + e.getMessage());
+                LOGGER.error("[ProcessingScreen] Key press error: " + e.getMessage(), e);
             }
         }
 
@@ -620,16 +687,16 @@ public class ProcessingScreen extends Screen {
     @Override
     public void onClose() {
         try {
-            System.out.println("[ProcessingScreen] Closing MochiMobileOS display...");
+            LOGGER.info("[ProcessingScreen] Closing MochiMobileOS display...");
 
             // グラフィック描画を無効化（バックグラウンド処理は継続）
             graphicsEnabled = false;
             kernel = null;
 
-            System.out.println("[ProcessingScreen] MochiMobileOS display closed, background processing continues");
+            LOGGER.info("[ProcessingScreen] MochiMobileOS display closed, background processing continues");
 
         } catch (Exception e) {
-            System.err.println("[ProcessingScreen] Error during close: " + e.getMessage());
+            LOGGER.error("[ProcessingScreen] Error during close: " + e.getMessage(), e);
         }
 
         super.onClose();
@@ -641,6 +708,30 @@ public class ProcessingScreen extends Screen {
     @Override
     public boolean isPauseScreen() {
         return false;
+    }
+
+    /**
+     * 子要素のリストを返す（空のリストを返すことで、全てのマウスイベントが親Screenに届く）。
+     */
+    @Override
+    public java.util.List<? extends net.minecraft.client.gui.components.events.GuiEventListener> children() {
+        return java.util.Collections.emptyList();
+    }
+
+    /**
+     * 次の要素へのフォーカス移動を無効化。
+     */
+    @Override
+    public void setFocused(net.minecraft.client.gui.components.events.GuiEventListener listener) {
+        // フォーカス管理を無効化（何もしない）
+    }
+
+    /**
+     * 初期フォーカスを設定しない。
+     */
+    @Override
+    public net.minecraft.client.gui.components.events.GuiEventListener getFocused() {
+        return null;
     }
 
     /**
@@ -669,8 +760,6 @@ public class ProcessingScreen extends Screen {
     private void renderKernelTexture(GuiGraphics guiGraphics) {
         try {
             if (kernel != null) {
-                LOGGER.info("[ProcessingScreen] Rendering kernel texture");
-
                 // PGraphicsバッファから最新の描画結果を取得
                 int[] pixels = kernel.getPixels();
 

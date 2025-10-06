@@ -36,4 +36,13 @@ public interface MicrophoneSocket {
      * @return 音声データ、利用不可の場合null
      */
     byte[] getAudioData();
+
+    /**
+     * 現在のサンプリングレートを取得する。
+     *
+     * @return サンプリングレート（Hz）、デフォルトは48000
+     */
+    default float getSampleRate() {
+        return 48000.0f;
+    }
 }
