@@ -26,6 +26,13 @@ MochiMobileOSは疑似仮想OSであり、外部プロジェクトから依存�
   - `background()`: バックグラウンドサービスとして毎フレーム実行されるメソッド
   - `onForeground()`/`onBackground()`: フォアグラウンド/バックグラウンド遷移時のライフサイクルイベント
 - **PGraphicsベースAPI**: すべてのScreenメソッドは`PGraphics`を第一引数として受け取る（`PApplet`から移行）
+- **HTMLScreen統合システムの導入**:
+  - `HTMLScreen`基底クラス: HTML/CSS/JavaScriptで高度なUIを構築可能
+  - `WebViewManager`: JavaFX WebViewのライフサイクル管理とオフスクリーンレンダリング
+  - `JSBridge`: JavaScript↔Java通信ブリッジ（`MochiOS` API）
+  - Chrome Tab Discarding技術の適用: バックグラウンド時のGPU使用率を大幅削減
+  - 自動ライフサイクル管理: `onBackground()`/`onForeground()`でレンダリング制御
+  - セッション保持: バックグラウンド時もDOMとキャッシュを保持し、即座に復帰可能
 
 ## 開発環境構築
 
@@ -70,6 +77,14 @@ import jp.moyashi.phoneos.core.Kernel;
 import processing.core.PApplet;
 import processing.core.PGraphics;
 import processing.core.PImage;
+```
+
+**HTML/CSS/JavaScriptアプリ開発** (追加):
+```java
+import jp.moyashi.phoneos.core.ui.HTMLScreen;
+import jp.moyashi.phoneos.core.service.webview.WebViewManager;
+import jp.moyashi.phoneos.core.service.webview.WebViewWrapper;
+import jp.moyashi.phoneos.core.service.webview.HTMLWidget;
 ```
 
 **Forge MODアプリケーション開発** (追加):
@@ -374,6 +389,405 @@ public class YourBackgroundServiceScreen implements Screen {
 }
 ```
 
+### 3. HTMLScreen基底クラスの利用（HTML/CSS/JavaScriptアプリ開発）
+
+MochiMobileOSは、HTML/CSS/JavaScriptを使用したアプリケーション開発をサポートしています。`HTMLScreen`基底クラスを継承することで、WebView技術を使用した高度なUIを構築できます。
+
+#### 3.1 HTMLScreenの特徴
+
+**利点**:
+- **Web技術の活用**: HTML、CSS、JavaScriptで洗練されたUIを構築可能
+- **Chrome Tab Discarding技術**: バックグラウンド時にWebViewレンダリングを停止し、GPU使用率を大幅削減
+- **ライフサイクル管理**: OS側で強制的にレンダリングを制御し、パフォーマンスを最適化
+- **JavaScript↔Java通信**: `MochiOS` APIを通じてJavaScriptからKernelの機能にアクセス可能
+- **セッション保持**: バックグラウンド時もDOMとキャッシュを保持し、即座に復帰可能
+
+**制約事項**:
+- JavaFX WebViewに依存するため、起動時のオーバーヘッドがある
+- 複雑なHTMLアプリは初回読み込みに時間がかかる場合がある
+
+#### 3.2 基本的なHTMLアプリの実装
+
+```java
+package com.yourcompany.yourapp;
+
+import jp.moyashi.phoneos.core.ui.HTMLScreen;
+import jp.moyashi.phoneos.core.Kernel;
+
+public class YourHTMLAppScreen extends HTMLScreen {
+
+    public YourHTMLAppScreen(Kernel kernel) {
+        super(kernel);
+    }
+
+    @Override
+    protected String getHTMLContent() {
+        // VFSからHTMLを読み込む
+        return kernel.getVFS().readString("apps/yourapp/index.html");
+
+        // または、直接HTML文字列を返す
+        /*
+        return """
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <style>
+                    body {
+                        margin: 0;
+                        padding: 20px;
+                        font-family: Arial, sans-serif;
+                        background: #f5f5f5;
+                    }
+                    h1 {
+                        color: #333;
+                    }
+                    button {
+                        padding: 10px 20px;
+                        font-size: 16px;
+                        background: #007bff;
+                        color: white;
+                        border: none;
+                        border-radius: 5px;
+                        cursor: pointer;
+                    }
+                    button:hover {
+                        background: #0056b3;
+                    }
+                </style>
+            </head>
+            <body>
+                <h1>あなたのHTMLアプリ</h1>
+                <button onclick="handleClick()">クリック</button>
+
+                <script>
+                    function handleClick() {
+                        // MochiOS APIを使用して通知を表示
+                        MochiOS.showNotification("あなたのアプリ", "ボタンがクリックされました");
+                    }
+                </script>
+            </body>
+            </html>
+        """;
+        */
+    }
+
+    @Override
+    public String getScreenTitle() {
+        return "あなたのHTMLアプリ";
+    }
+}
+```
+
+#### 3.3 URLからHTMLを読み込む
+
+```java
+public class YourHTMLAppScreen extends HTMLScreen {
+
+    public YourHTMLAppScreen(Kernel kernel) {
+        super(kernel);
+    }
+
+    @Override
+    protected String getHTMLContent() {
+        // HTMLコンテンツを使用しない場合はnullを返す
+        return null;
+    }
+
+    @Override
+    protected String getHTMLURL() {
+        // 外部URLまたはローカルファイルパスを指定
+        return "https://example.com/yourapp.html";
+        // または: return "file:///path/to/local/file.html";
+    }
+
+    @Override
+    public String getScreenTitle() {
+        return "あなたのHTMLアプリ";
+    }
+}
+```
+
+**注意**: `getHTMLContent()`が値を返す場合、`getHTMLURL()`は無視されます。
+
+#### 3.4 MochiOS JavaScript APIの利用
+
+HTMLScreen内のJavaScriptコードから、`MochiOS`グローバルオブジェクトを通じてOS機能にアクセスできます。
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>MochiOS API 使用例</title>
+</head>
+<body>
+    <h1>MochiOS API デモ</h1>
+
+    <button onclick="showNotification()">通知を表示</button>
+    <button onclick="readFile()">ファイルを読み込む</button>
+    <button onclick="getBattery()">バッテリー情報</button>
+    <button onclick="getLocation()">位置情報</button>
+
+    <div id="output"></div>
+
+    <script>
+        function showNotification() {
+            MochiOS.showNotification("デモアプリ", "通知メッセージ");
+        }
+
+        function readFile() {
+            // VFSからファイルを読み込む
+            var content = MochiOS.vfs.readString("apps/yourapp/data.txt");
+            document.getElementById('output').textContent = content;
+        }
+
+        function getBattery() {
+            // バッテリー情報を取得
+            var batteryLevel = MochiOS.hardware.getBatteryLevel();
+            var charging = MochiOS.hardware.isCharging();
+
+            document.getElementById('output').textContent =
+                "バッテリー: " + batteryLevel + "% " + (charging ? "(充電中)" : "");
+        }
+
+        function getLocation() {
+            // 位置情報を取得
+            var location = MochiOS.hardware.getLocation();
+            document.getElementById('output').textContent =
+                "位置: (" + location.x + ", " + location.y + ", " + location.z + ")";
+        }
+    </script>
+</body>
+</html>
+```
+
+**利用可能なMochiOS API**:
+
+```javascript
+// 通知表示
+MochiOS.showNotification(title, message);
+
+// VFSアクセス
+var content = MochiOS.vfs.readString(path);
+MochiOS.vfs.writeString(path, content);
+var exists = MochiOS.vfs.exists(path);
+
+// ハードウェアAPI
+var batteryLevel = MochiOS.hardware.getBatteryLevel();
+var isCharging = MochiOS.hardware.isCharging();
+var location = MochiOS.hardware.getLocation(); // {x, y, z, accuracy}
+var signalStrength = MochiOS.hardware.getSignalStrength();
+
+// システム情報
+var time = MochiOS.system.getCurrentTime();
+var formattedTime = MochiOS.system.getFormattedTime("HH:mm:ss");
+```
+
+#### 3.5 HTMLScreenのライフサイクル管理
+
+`HTMLScreen`は自動的にライフサイクルを管理し、バックグラウンド時にWebViewのレンダリングを停止します。これにより、GPU使用率が大幅に削減されます。
+
+**自動的に処理されること**:
+- **バックグラウンド移行時**: `onBackground()`が呼び出され、WebViewのレンダリングパイプラインが停止
+- **フォアグラウンド復帰時**: `onForeground()`が呼び出され、WebViewのレンダリングが再開
+- **セッション保持**: DOMとキャッシュはバックグラウンド時も保持され、即座に復帰可能
+
+**追加のカスタマイズ**:
+
+```java
+public class YourHTMLAppScreen extends HTMLScreen {
+
+    public YourHTMLAppScreen(Kernel kernel) {
+        super(kernel);
+    }
+
+    @Override
+    protected String getHTMLContent() {
+        return kernel.getVFS().readString("apps/yourapp/index.html");
+    }
+
+    @Override
+    public void onForeground() {
+        // 親クラスの処理を実行（WebView再開）
+        super.onForeground();
+
+        // カスタム処理を追加
+        // 例: JavaScriptを実行してUIを更新
+        executeScript("refreshUI()");
+    }
+
+    @Override
+    public void onBackground() {
+        // 親クラスの処理を実行（WebView停止）
+        super.onBackground();
+
+        // カスタム処理を追加
+        // 例: 状態を保存
+        saveState();
+    }
+
+    @Override
+    public void tick() {
+        // バックグラウンドでも実行されるロジック
+        // 例: タイマー更新、ネットワーク処理など
+    }
+
+    private void saveState() {
+        // 状態保存処理
+    }
+
+    @Override
+    public String getScreenTitle() {
+        return "あなたのHTMLアプリ";
+    }
+}
+```
+
+#### 3.6 JavaScriptの実行と双方向通信
+
+```java
+public class YourHTMLAppScreen extends HTMLScreen {
+
+    private int counter = 0;
+
+    public YourHTMLAppScreen(Kernel kernel) {
+        super(kernel);
+    }
+
+    @Override
+    protected String getHTMLContent() {
+        return """
+            <!DOCTYPE html>
+            <html>
+            <body>
+                <h1>カウンター</h1>
+                <div id="counter">0</div>
+                <button onclick="increment()">+1</button>
+
+                <script>
+                    function increment() {
+                        // JavaScriptからJavaのメソッドを呼び出す
+                        // (現在はMochiOS APIのみサポート)
+                        MochiOS.showNotification("カウンター", "インクリメントされました");
+                    }
+
+                    function updateCounter(value) {
+                        document.getElementById('counter').textContent = value;
+                    }
+                </script>
+            </body>
+            </html>
+        """;
+    }
+
+    @Override
+    public void tick() {
+        // 1秒ごとにカウンターを更新
+        if (frameCount % 60 == 0) {
+            counter++;
+            // JavaScriptの関数を呼び出してUIを更新
+            executeScript("updateCounter(" + counter + ")");
+        }
+    }
+
+    @Override
+    public String getScreenTitle() {
+        return "カウンターアプリ";
+    }
+}
+```
+
+#### 3.7 HTMLウィジェットの埋め込み
+
+JavaFX UI内にHTMLウィジェットを埋め込むこともできます（高度な使用例）。
+
+```java
+import jp.moyashi.phoneos.core.service.webview.HTMLWidget;
+
+public class YourMixedScreen implements Screen {
+
+    private HTMLWidget htmlWidget;
+    private Kernel kernel;
+
+    public YourMixedScreen(Kernel kernel) {
+        this.kernel = kernel;
+    }
+
+    @Override
+    public void setup(PGraphics pg) {
+        // HTMLウィジェットを作成
+        htmlWidget = kernel.getWebViewManager().createWidget(300, 200);
+        htmlWidget.loadContent("<h1>HTMLウィジェット</h1>");
+    }
+
+    @Override
+    public void draw(PGraphics pg) {
+        pg.background(240);
+
+        // Processing描画
+        pg.fill(0);
+        pg.text("Processingで描画", 10, 30);
+
+        // HTMLウィジェットをレンダリング
+        if (htmlWidget != null) {
+            PImage widgetImage = htmlWidget.renderToImage();
+            if (widgetImage != null) {
+                pg.image(widgetImage, 50, 100);
+            }
+        }
+    }
+
+    @Override
+    public void cleanup(PGraphics pg) {
+        // ウィジェットを破棄
+        if (htmlWidget != null) {
+            kernel.getWebViewManager().destroyWidget(htmlWidget);
+        }
+    }
+
+    @Override
+    public String getScreenTitle() {
+        return "混合UIアプリ";
+    }
+}
+```
+
+#### 3.8 HTMLアプリのベストプラクティス
+
+**パフォーマンス最適化**:
+- 初回読み込みを軽量に保つ（HTMLのサイズを小さく）
+- 大量のDOM操作を避ける
+- CSSアニメーションを適切に使用（JavaScriptアニメーションは重い）
+- バックグラウンド時は重い処理を避ける（`tick()`で間引く）
+
+**ライフサイクル管理**:
+- `onBackground()`/`onForeground()`を活用してリソース管理を最適化
+- バックグラウンド時は自動的にWebViewレンダリングが停止する
+- セッションは自動的に保持されるため、状態保存は最小限でOK
+
+**デバッグ**:
+- JavaScriptコンソールログは`System.out`に出力される
+- `kernel.getLogger()`を使用してログを記録
+- エラーハンドリングを適切に実装
+
+**セキュリティ**:
+- 外部URLを読み込む場合は信頼できるソースのみを使用
+- ユーザー入力を適切にサニタイズ
+- VFSアクセスは必要最小限に
+
+#### 3.9 完全な実装例
+
+完全な実装例として、組み込みアプリの`HTML電卓`を参照してください:
+- `core/src/main/java/jp/moyashi/phoneos/core/apps/htmlcalculator/CalculatorHTMLApp.java`
+- `core/src/main/java/jp/moyashi/phoneos/core/apps/htmlcalculator/CalculatorHTMLScreen.java`
+
+この実装例では、以下の機能が含まれています:
+- HTML/CSS/JavaScriptによる電卓UI
+- MochiOS APIを使用した通知表示
+- バックグラウンド/フォアグラウンドライフサイクル管理
+- GPU使用率最適化（Chrome Tab Discarding技術の適用）
+
 ## MinecraftのMODとして開発する場合
 
 MochiMobileOSは、Minecraft Forge MODとしてアプリケーションを開発することをサポートしています。MODアプリケーションは、`PhoneAppRegistryEvent`を通じて登録され、`ModAppRegistry`によって管理されます。
@@ -483,7 +897,663 @@ long currentTime = kernel.getSystemClock().getCurrentTime();
 String timeString = kernel.getSystemClock().getFormattedTime("HH:mm:ss");
 ```
 
-### 5. ハードウェアバイパスAPI
+### 5. パーミッション管理 (PermissionManager)
+
+MochiMobileOSは、Android風のパーミッション管理システムを提供しています。アプリケーションは、特定の機能を使用する前にパーミッションを要求する必要があります。
+
+#### 5.1 パーミッションの要求
+
+```java
+import jp.moyashi.phoneos.core.service.permission.PermissionManager;
+
+// パーミッションマネージャーを取得
+PermissionManager permissionManager = kernel.getPermissionManager();
+
+// パーミッションを要求（許可されている場合はtrue）
+boolean granted = permissionManager.requestPermission(
+    "com.yourcompany.yourapp",
+    PermissionManager.Permission.CAMERA
+);
+
+if (granted) {
+    // パーミッションが許可されている
+    useCamera();
+} else {
+    // パーミッションが拒否された
+    showPermissionDeniedMessage();
+}
+```
+
+#### 5.2 パーミッションのチェック
+
+```java
+// パーミッションが許可されているか確認
+boolean hasCamera = permissionManager.hasPermission(
+    "com.yourcompany.yourapp",
+    PermissionManager.Permission.CAMERA
+);
+
+// 複数のパーミッションをチェック
+boolean hasAllPermissions = permissionManager.hasPermissions(
+    "com.yourcompany.yourapp",
+    PermissionManager.Permission.CAMERA,
+    PermissionManager.Permission.MICROPHONE,
+    PermissionManager.Permission.LOCATION
+);
+```
+
+#### 5.3 利用可能なパーミッション
+
+```java
+// カメラアクセス
+PermissionManager.Permission.CAMERA
+
+// マイクアクセス
+PermissionManager.Permission.MICROPHONE
+
+// 位置情報アクセス
+PermissionManager.Permission.LOCATION
+
+// ストレージアクセス
+PermissionManager.Permission.STORAGE
+
+// 連絡先アクセス
+PermissionManager.Permission.CONTACTS
+
+// カレンダーアクセス
+PermissionManager.Permission.CALENDAR
+
+// 通話履歴アクセス
+PermissionManager.Permission.CALL_LOG
+
+// SMSアクセス
+PermissionManager.Permission.SMS
+
+// インターネットアクセス
+PermissionManager.Permission.INTERNET
+
+// Bluetoothアクセス
+PermissionManager.Permission.BLUETOOTH
+```
+
+#### 5.4 パーミッション管理のベストプラクティス
+
+- **必要な時に要求**: パーミッションは実際に必要になった時に要求する
+- **拒否された場合の対処**: パーミッションが拒否された場合の代替手段を用意する
+- **最小権限の原則**: アプリの機能に必要最小限のパーミッションのみを要求する
+
+**使用例**:
+
+```java
+public class YourCameraApp implements Screen {
+    private Kernel kernel;
+
+    @Override
+    public void setup(PGraphics pg) {
+        PermissionManager pm = kernel.getPermissionManager();
+
+        // カメラパーミッションを要求
+        if (!pm.hasPermission("com.yourcompany.cameraapp", PermissionManager.Permission.CAMERA)) {
+            boolean granted = pm.requestPermission(
+                "com.yourcompany.cameraapp",
+                PermissionManager.Permission.CAMERA
+            );
+
+            if (!granted) {
+                kernel.getLogger().warn("CameraApp", "カメラパーミッションが拒否されました");
+                return;
+            }
+        }
+
+        // カメラを初期化
+        initializeCamera();
+    }
+}
+```
+
+### 6. インテント/アクティビティシステム (Intent/ActivityManager)
+
+MochiMobileOSは、Android風のIntent/Activityシステムを提供しており、アプリ間通信と画面遷移を統一的に管理できます。
+
+#### 6.1 Intentの作成と送信
+
+```java
+import jp.moyashi.phoneos.core.service.intent.Intent;
+import jp.moyashi.phoneos.core.service.intent.ActivityManager;
+
+// ActivityManagerを取得
+ActivityManager activityManager = kernel.getActivityManager();
+
+// 明示的Intent（特定のアプリを直接起動）
+Intent explicitIntent = new Intent();
+explicitIntent.setComponent("com.yourcompany.targetapp");
+explicitIntent.putExtra("message", "Hello from another app!");
+
+// Intentを送信してアプリを起動
+activityManager.startActivity(explicitIntent);
+
+// 暗黙的Intent（アクションに基づいてアプリを選択）
+Intent implicitIntent = new Intent();
+implicitIntent.setAction(Intent.ACTION_VIEW);
+implicitIntent.setData("https://example.com");
+implicitIntent.setType("text/html");
+
+// 対応するアプリを起動
+activityManager.startActivity(implicitIntent);
+```
+
+#### 6.2 IntentFilterの登録
+
+アプリケーションが特定のIntentを受け取れるようにするには、IntentFilterを登録します。
+
+```java
+import jp.moyashi.phoneos.core.service.intent.IntentFilter;
+import jp.moyashi.phoneos.core.service.intent.ActivityInfo;
+
+// アプリケーションの初期化時にIntentFilterを登録
+@Override
+public void onInitialize(Kernel kernel) {
+    ActivityManager activityManager = kernel.getActivityManager();
+
+    // IntentFilterを作成
+    IntentFilter filter = new IntentFilter();
+    filter.addAction(Intent.ACTION_VIEW);
+    filter.addDataScheme("https");
+    filter.addMimeType("text/html");
+    filter.setPriority(100); // 優先度を設定
+
+    // ActivityInfoを作成して登録
+    ActivityInfo activityInfo = new ActivityInfo(
+        getApplicationId(),
+        getApplicationName()
+    );
+    activityInfo.addIntentFilter(filter);
+
+    activityManager.registerActivity(activityInfo);
+}
+```
+
+#### 6.3 Intentを受け取る
+
+```java
+import jp.moyashi.phoneos.core.service.intent.IntentAwareScreen;
+
+// IntentAwareScreenインターフェースを実装
+public class YourAppScreen implements Screen, IntentAwareScreen {
+
+    @Override
+    public void onNewIntent(Intent intent) {
+        // Intentからデータを取得
+        String action = intent.getAction();
+        String data = intent.getData();
+
+        // Extrasからデータを取得
+        String message = (String) intent.getExtra("message");
+        int count = intent.getIntExtra("count", 0);
+
+        // Intentに基づいて処理を実行
+        if (Intent.ACTION_VIEW.equals(action)) {
+            displayURL(data);
+        } else if (Intent.ACTION_SEND.equals(action)) {
+            shareContent(message);
+        }
+    }
+}
+```
+
+#### 6.4 結果を返すActivity
+
+```java
+import jp.moyashi.phoneos.core.service.intent.ActivityManager.ActivityResultCallback;
+
+// 結果を受け取るコールバックを定義
+ActivityResultCallback callback = (resultCode, data) -> {
+    if (resultCode == ActivityManager.RESULT_OK) {
+        String result = (String) data.getExtra("result");
+        processResult(result);
+    } else if (resultCode == ActivityManager.RESULT_CANCELED) {
+        // ユーザーがキャンセルした
+        handleCancel();
+    }
+};
+
+// 結果を返すActivityを起動
+Intent intent = new Intent();
+intent.setComponent("com.yourcompany.picker");
+activityManager.startActivityForResult(intent, callback);
+
+// 結果を返す側（ピッカーアプリ）
+Intent resultIntent = new Intent();
+resultIntent.putExtra("result", selectedValue);
+activityManager.setActivityResult(ActivityManager.RESULT_OK, resultIntent);
+
+// 画面を閉じる
+kernel.getScreenManager().popScreen();
+```
+
+#### 6.5 アプリチューザー
+
+複数のアプリが同じIntentに対応している場合、ユーザーに選択させることができます。
+
+```java
+Intent intent = new Intent();
+intent.setAction(Intent.ACTION_SEND);
+intent.setType("text/plain");
+intent.putExtra("text", "共有するテキスト");
+
+// アプリチューザーを表示
+activityManager.startActivityWithChooser(intent);
+```
+
+#### 6.6 標準的なActionとCategory
+
+```java
+// 標準的なアクション
+Intent.ACTION_VIEW    // データを表示（URLを開くなど）
+Intent.ACTION_SEND    // データを共有
+Intent.ACTION_EDIT    // データを編集
+Intent.ACTION_PICK    // データを選択
+Intent.ACTION_MAIN    // メインエントリーポイント
+Intent.ACTION_DIAL    // 電話をかける
+Intent.ACTION_CALL    // 直接通話
+Intent.ACTION_SENDTO  // 宛先を指定して送信
+
+// 標準的なカテゴリ
+Intent.CATEGORY_DEFAULT        // デフォルトアクション
+Intent.CATEGORY_LAUNCHER       // ランチャーに表示
+Intent.CATEGORY_BROWSABLE      // ブラウザから起動可能
+Intent.CATEGORY_HOME           // ホーム画面
+```
+
+### 7. クリップボード管理 (ClipboardManager)
+
+MochiMobileOSは、アプリ間でデータを共有するためのクリップボードAPIを提供しています。
+
+#### 7.1 テキストのコピー/ペースト
+
+```java
+import jp.moyashi.phoneos.core.service.clipboard.ClipboardManager;
+
+// ClipboardManagerを取得
+ClipboardManager clipboard = kernel.getClipboardManager();
+
+// テキストをコピー
+clipboard.copyText("コピーするテキスト");
+
+// ラベル付きでコピー
+clipboard.copyText("メモ", "重要なメモの内容");
+
+// テキストをペースト
+String text = clipboard.pasteText();
+if (text != null) {
+    displayText(text);
+}
+
+// クリップボードにテキストがあるか確認
+if (clipboard.hasText()) {
+    String text = clipboard.pasteText();
+}
+```
+
+#### 7.2 画像のコピー/ペースト
+
+```java
+import processing.core.PImage;
+
+// 画像をコピー
+PImage image = loadImage("screenshot.png");
+clipboard.copyImage(image);
+
+// ラベル付きでコピー
+clipboard.copyImage("スクリーンショット", image);
+
+// 画像をペースト
+PImage pastedImage = clipboard.pasteImage();
+if (pastedImage != null) {
+    pg.image(pastedImage, 0, 0);
+}
+
+// クリップボードに画像があるか確認
+if (clipboard.hasImage()) {
+    PImage image = clipboard.pasteImage();
+}
+```
+
+#### 7.3 HTMLのコピー
+
+```java
+// HTMLテキストをコピー
+String htmlContent = "<h1>Hello</h1><p>World</p>";
+clipboard.copyHtml("Webページ", htmlContent);
+
+// HTMLがあるか確認
+if (clipboard.hasHtml()) {
+    String html = clipboard.pasteText(); // HTMLもテキストとして取得可能
+}
+```
+
+#### 7.4 クリップボードのクリア
+
+```java
+// クリップボードをクリア
+clipboard.clear();
+```
+
+#### 7.5 クリップボードデータの詳細取得
+
+```java
+import jp.moyashi.phoneos.core.service.clipboard.ClipData;
+
+// 現在のクリップボードデータを取得
+ClipData clipData = clipboard.getPrimaryClip();
+
+if (clipData != null) {
+    // データタイプを確認
+    ClipData.Type type = clipData.getType();
+
+    switch (type) {
+        case TEXT:
+            String text = clipData.getText();
+            break;
+        case IMAGE:
+            PImage image = clipData.getImage();
+            break;
+        case HTML:
+            String html = clipData.getText();
+            break;
+    }
+
+    // メタデータを取得
+    String label = clipData.getLabel();
+    long timestamp = clipData.getTimestamp();
+    String mimeType = clipData.getMimeType();
+}
+
+// クリップボードにデータがあるか確認
+boolean hasData = clipboard.hasPrimaryClip();
+```
+
+#### 7.6 クリップボードの使用例
+
+```java
+public class NoteApp implements Screen {
+    private Kernel kernel;
+    private String noteText = "";
+
+    @Override
+    public void mousePressed(PGraphics pg, int x, int y) {
+        // コピーボタン
+        if (isInCopyButton(x, y)) {
+            ClipboardManager clipboard = kernel.getClipboardManager();
+            clipboard.copyText("メモ", noteText);
+
+            // 通知を表示
+            kernel.getNotificationManager().addNotification(
+                new SimpleNotification("メモ", "テキストをコピーしました", System.currentTimeMillis())
+            );
+        }
+
+        // ペーストボタン
+        if (isInPasteButton(x, y)) {
+            ClipboardManager clipboard = kernel.getClipboardManager();
+            if (clipboard.hasText()) {
+                noteText = clipboard.pasteText();
+                kernel.getLogger().info("NoteApp", "テキストをペーストしました");
+            }
+        }
+    }
+}
+```
+
+### 8. センサー管理 (SensorManager)
+
+MochiMobileOSは、加速度センサー、ジャイロスコープ、GPS、バッテリーなどの仮想センサーシステムを提供しています。
+
+#### 8.1 センサーの取得
+
+```java
+import jp.moyashi.phoneos.core.service.sensor.SensorManager;
+import jp.moyashi.phoneos.core.service.sensor.Sensor;
+
+// SensorManagerを取得
+SensorManager sensorManager = kernel.getSensorManager();
+
+// デフォルトセンサーを取得
+Sensor accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+Sensor gyroscope = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
+Sensor lightSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT);
+Sensor gps = sensorManager.getDefaultSensor(Sensor.TYPE_GPS);
+Sensor battery = sensorManager.getDefaultSensor(Sensor.TYPE_BATTERY);
+
+// 特定タイプの全センサーを取得
+List<Sensor> sensors = sensorManager.getSensorList(Sensor.TYPE_ACCELEROMETER);
+
+// 全センサーを取得
+List<Sensor> allSensors = sensorManager.getSensorList(-1);
+```
+
+#### 8.2 センサーリスナーの登録
+
+```java
+import jp.moyashi.phoneos.core.service.sensor.SensorEventListener;
+import jp.moyashi.phoneos.core.service.sensor.SensorEvent;
+
+// SensorEventListenerを実装
+SensorEventListener listener = new SensorEventListener() {
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        // センサー値が変化した時に呼ばれる
+        float[] values = event.values;
+
+        switch (event.sensor.getType()) {
+            case Sensor.TYPE_ACCELEROMETER:
+                float x = values[0];  // X軸加速度
+                float y = values[1];  // Y軸加速度
+                float z = values[2];  // Z軸加速度
+                updateAccelerometer(x, y, z);
+                break;
+
+            case Sensor.TYPE_LIGHT:
+                float lux = values[0];  // 照度（lx）
+                adjustBrightness(lux);
+                break;
+
+            case Sensor.TYPE_BATTERY:
+                float level = values[0];  // バッテリー残量（0-100%）
+                updateBatteryDisplay(level);
+                break;
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+        // センサー精度が変化した時に呼ばれる
+        kernel.getLogger().info("SensorApp",
+            "センサー精度変更: " + sensor.getName() + " -> " + accuracy);
+    }
+};
+
+// センサーリスナーを登録（サンプリングレート指定）
+sensorManager.registerListener(
+    listener,
+    accelerometer,
+    SensorManager.SENSOR_DELAY_GAME  // 20ms = 50Hz
+);
+
+// サンプリング周期を直接指定（マイクロ秒）
+sensorManager.registerListener(
+    listener,
+    lightSensor,
+    100000  // 100ms = 10Hz
+);
+```
+
+#### 8.3 利用可能なセンサータイプ
+
+```java
+// 加速度センサー（m/s²）
+Sensor.TYPE_ACCELEROMETER
+
+// ジャイロスコープ（rad/s）
+Sensor.TYPE_GYROSCOPE
+
+// 光センサー（lx）
+Sensor.TYPE_LIGHT
+
+// 近接センサー（cm）
+Sensor.TYPE_PROXIMITY
+
+// 温度センサー（℃）
+Sensor.TYPE_AMBIENT_TEMPERATURE
+
+// 気圧センサー（hPa）
+Sensor.TYPE_PRESSURE
+
+// 湿度センサー（%）
+Sensor.TYPE_RELATIVE_HUMIDITY
+
+// 磁気センサー（μT）
+Sensor.TYPE_MAGNETIC_FIELD
+
+// GPS位置情報
+Sensor.TYPE_GPS
+
+// バッテリー状態（%）
+Sensor.TYPE_BATTERY
+
+// ネットワーク状態
+Sensor.TYPE_NETWORK
+```
+
+#### 8.4 サンプリングレート
+
+```java
+// 最速（0ms、可能な限り高速）
+SensorManager.SENSOR_DELAY_FASTEST
+
+// ゲーム向け（20ms = 50Hz）
+SensorManager.SENSOR_DELAY_GAME
+
+// UI更新向け（66ms = 15Hz）
+SensorManager.SENSOR_DELAY_UI
+
+// 通常（200ms = 5Hz）
+SensorManager.SENSOR_DELAY_NORMAL
+```
+
+#### 8.5 センサーリスナーの解除
+
+```java
+// 特定のセンサーのリスナーを解除
+sensorManager.unregisterListener(listener, accelerometer);
+
+// すべてのセンサーのリスナーを解除
+sensorManager.unregisterListener(listener);
+```
+
+#### 8.6 センサーのシミュレーション（デバッグ用）
+
+```java
+// センサー値をシミュレート
+float[] accelerometerValues = {0.5f, 1.0f, 9.8f};  // X, Y, Z軸
+sensorManager.setSimulatedSensorValues(Sensor.TYPE_ACCELEROMETER, accelerometerValues);
+
+// センサー精度をシミュレート
+sensorManager.setSimulatedSensorAccuracy(
+    Sensor.TYPE_ACCELEROMETER,
+    Sensor.SENSOR_STATUS_ACCURACY_HIGH
+);
+```
+
+#### 8.7 センサーアプリの完全な実装例
+
+```java
+public class SensorDemoApp implements Screen {
+    private Kernel kernel;
+    private SensorManager sensorManager;
+    private float accelX, accelY, accelZ;
+    private float lightLevel;
+
+    private SensorEventListener sensorListener = new SensorEventListener() {
+        @Override
+        public void onSensorChanged(SensorEvent event) {
+            switch (event.sensor.getType()) {
+                case Sensor.TYPE_ACCELEROMETER:
+                    accelX = event.values[0];
+                    accelY = event.values[1];
+                    accelZ = event.values[2];
+                    break;
+
+                case Sensor.TYPE_LIGHT:
+                    lightLevel = event.values[0];
+                    break;
+            }
+        }
+
+        @Override
+        public void onAccuracyChanged(Sensor sensor, int accuracy) {
+            // 精度変化時の処理
+        }
+    };
+
+    public SensorDemoApp(Kernel kernel) {
+        this.kernel = kernel;
+        this.sensorManager = kernel.getSensorManager();
+    }
+
+    @Override
+    public void setup(PGraphics pg) {
+        // センサーリスナーを登録
+        Sensor accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        Sensor lightSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT);
+
+        if (accelerometer != null) {
+            sensorManager.registerListener(
+                sensorListener,
+                accelerometer,
+                SensorManager.SENSOR_DELAY_GAME
+            );
+        }
+
+        if (lightSensor != null) {
+            sensorManager.registerListener(
+                sensorListener,
+                lightSensor,
+                SensorManager.SENSOR_DELAY_UI
+            );
+        }
+    }
+
+    @Override
+    public void draw(PGraphics pg) {
+        pg.background(240);
+
+        // 加速度センサー表示
+        pg.fill(0);
+        pg.textSize(16);
+        pg.text("加速度センサー:", 20, 50);
+        pg.text("X: " + String.format("%.2f", accelX) + " m/s²", 40, 80);
+        pg.text("Y: " + String.format("%.2f", accelY) + " m/s²", 40, 110);
+        pg.text("Z: " + String.format("%.2f", accelZ) + " m/s²", 40, 140);
+
+        // 光センサー表示
+        pg.text("照度: " + String.format("%.1f", lightLevel) + " lx", 20, 200);
+    }
+
+    @Override
+    public void cleanup(PGraphics pg) {
+        // リスナーを解除
+        sensorManager.unregisterListener(sensorListener);
+    }
+
+    @Override
+    public String getScreenTitle() {
+        return "センサーデモ";
+    }
+}
+```
+
+### 9. ハードウェアバイパスAPI
 
 MochiMobileOSは、スマートフォンのハードウェア機能をエミュレートする**ハードウェアバイパスAPI**を提供しています。これらのAPIは、standalone環境では基本的な動作を提供し、Minecraft Forge環境ではゲーム内の実データに基づいた高度な機能を提供します。
 

@@ -4,9 +4,16 @@ package jp.moyashi.phoneos.core.service.hardware;
  * マイクAPI。
  * オンオフのプロパティを持ち、オンの際はストリーム形式で音声をバイパスする。
  *
+ * 3つの独立したチャンネルを提供：
+ * - チャンネル1: 自分のマイク入力
+ * - チャンネル2: 他プレイヤーのVC音声
+ * - チャンネル3: Minecraft環境音
+ *
+ * ミキシングはOS側で行う。
+ *
  * 環境別動作:
  * - standalone: nullを返す
- * - forge-mod: SVCのマイク入力をバイパス
+ * - forge-mod: SVCのマイク入力と環境音をバイパス
  */
 public interface MicrophoneSocket {
     /**
@@ -32,10 +39,40 @@ public interface MicrophoneSocket {
 
     /**
      * 音声データを取得する（ストリーム形式）。
+     * 全チャンネルをミックスした音声を返す（後方互換性のため）。
+     *
+     * @return 音声データ、利用不可の場合null
+     * @deprecated チャンネル別メソッドを使用してください
+     */
+    @Deprecated
+    byte[] getAudioData();
+
+    /**
+     * チャンネル1: 自分のマイク入力音声データを取得する。
      *
      * @return 音声データ、利用不可の場合null
      */
-    byte[] getAudioData();
+    default byte[] getMicrophoneAudio() {
+        return null;
+    }
+
+    /**
+     * チャンネル2: 他プレイヤーのVC音声データを取得する。
+     *
+     * @return 音声データ、利用不可の場合null
+     */
+    default byte[] getVoicechatAudio() {
+        return null;
+    }
+
+    /**
+     * チャンネル3: Minecraft環境音データを取得する。
+     *
+     * @return 音声データ、利用不可の場合null
+     */
+    default byte[] getEnvironmentAudio() {
+        return null;
+    }
 
     /**
      * 現在のサンプリングレートを取得する。

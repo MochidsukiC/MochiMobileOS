@@ -39,6 +39,12 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
     /** Kernelインスタンスへの参照（レイヤー管理のため） */
     private Kernel kernel;
 
+    /** 修飾キー状態 - Shiftキー */
+    private boolean shiftPressed = false;
+
+    /** 修飾キー状態 - Ctrlキー */
+    private boolean ctrlPressed = false;
+
     /**
      * ロガーヘルパーメソッド。
      *
@@ -104,20 +110,32 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
     /**
      * ナビゲーションスタックに新しいスクリーンをプッシュする。
      * 新しいスクリーンがアクティブスクリーンになり、そのsetup()メソッドが呼び出される。
-     * 
+     *
      * @param screen スタックにプッシュするスクリーン
      */
     public void pushScreen(Screen screen) {
         if (screen != null) {
+            // 古いトップスクリーンをバックグラウンドに移行（OS側で強制的に制御）
+            Screen previousScreen = getCurrentScreen();
+            if (previousScreen != null) {
+                previousScreen.onBackground();
+                log("Previous screen moved to background: " + previousScreen.getScreenTitle());
+            }
+
             screenStack.push(screen);
-            // setup()にPAppletを渡すため、currentPAppletが利用可能な場合のみ呼び出し
+            // setup()にPGraphicsを渡すため、currentPAppletが利用可能な場合のみ呼び出し
             if (currentPApplet != null) {
-                screen.setup(currentPApplet);
+                screen.setup(currentPApplet.g);
             } else {
                 // PAppletが利用できない場合、後で初期化するためにリストに追加
                 unsetupScreens.add(screen);
                 log("Screen " + screen.getScreenTitle() + " queued for setup (PApplet not available)");
             }
+
+            // 新しくプッシュされたスクリーンをフォアグラウンドに設定（OS側で強制的に制御）
+            // スクリーンが再利用される場合（ServiceManager経由）でも、確実にフォアグラウンド状態にする
+            screen.onForeground();
+            log("New screen moved to foreground: " + screen.getScreenTitle());
 
             // アプリケーション画面の場合はKernelレイヤースタックにAPPLICATIONレイヤーを追加
             boolean isLauncher = isLauncherScreen(screen);
@@ -135,7 +153,7 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
     
     /**
      * アニメーション付きでスクリーンをプッシュする（アイコンからの起動）。
-     * 
+     *
      * @param screen スタックにプッシュするスクリーン
      * @param iconX アイコンの中心X座標
      * @param iconY アイコンの中心Y座標
@@ -148,13 +166,34 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
         log("currentPApplet=" + (currentPApplet != null ? "available" : "null"));
         log("iconImage=" + (iconImage != null ? iconImage.width + "x" + iconImage.height : "null"));
         log("iconPosition=(" + iconX + ", " + iconY + "), iconSize=" + iconSize);
-        
+
         if (screen != null && currentPApplet != null) {
+            // 古いトップスクリーンをバックグラウンドに移行（OS側で強制的に制御）
+            Screen previousScreen = getCurrentScreen();
+            if (previousScreen != null) {
+                previousScreen.onBackground();
+                log("Previous screen moved to background (animation): " + previousScreen.getScreenTitle());
+            }
+
             // スクリーンを即座にプッシュするが、アニメーション中は描画をブロック
             screenStack.push(screen);
-            screen.setup(currentPApplet);
+
+            // デバッグ: setup()呼び出し前
+            log("Calling setup() on screen: " + screen.getScreenTitle() + ", PGraphics available: " + (currentPApplet.g != null));
+            try {
+                screen.setup(currentPApplet.g);
+                log("setup() completed successfully for: " + screen.getScreenTitle());
+            } catch (Exception e) {
+                logError("Error calling setup() on " + screen.getScreenTitle() + ": " + e.getMessage(), e);
+            }
+
             unsetupScreens.remove(screen); // セットアップ完了なのでリストから削除
             animatingScreen = screen; // このスクリーンはアニメーション中
+
+            // 新しくプッシュされたスクリーンをフォアグラウンドに設定（OS側で強制的に制御）
+            // スクリーンが再利用される場合（ServiceManager経由）でも、確実にフォアグラウンド状態にする
+            screen.onForeground();
+            log("New screen moved to foreground (animation): " + screen.getScreenTitle());
 
             // アプリケーション画面の場合はKernelレイヤースタックにAPPLICATIONレイヤーを追加
             boolean isLauncher = isLauncherScreen(screen);
@@ -183,7 +222,7 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
      * ナビゲーションスタックから現在のスクリーンをポップする。
      * 前のスクリーンが再びアクティブになる。
      * ポップされたスクリーンのcleanup()を呼び出す。
-     * 
+     *
      * @return ポップされたスクリーン、またはスタックが空の場合null
      */
     public Screen popScreen() {
@@ -201,6 +240,13 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
                 log("Removed APPLICATION layer from Kernel stack for screen: " + poppedScreen.getScreenTitle());
             }
 
+            // 新しいトップスクリーンをフォアグラウンドに復帰（OS側で強制的に制御）
+            Screen newTopScreen = getCurrentScreen();
+            if (newTopScreen != null) {
+                newTopScreen.onForeground();
+                log("New top screen moved to foreground: " + newTopScreen.getScreenTitle());
+            }
+
             log("Popped screen - " + poppedScreen.getScreenTitle());
             return poppedScreen;
         }
@@ -209,7 +255,7 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
     
     /**
      * アニメーション付きでスクリーンをポップする（アイコンへの終了）。
-     * 
+     *
      * @param iconX 戻り先アイコンの中心X座標
      * @param iconY 戻り先アイコンの中心Y座標
      * @param iconSize アイコンのサイズ
@@ -221,12 +267,12 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
             // 現在のスクリーンをキャプチャ（現在の描画を使用）
             PGraphics screenCapture = currentPApplet.createGraphics(currentPApplet.width, currentPApplet.height);
             screenCapture.beginDraw();
-            
+
             // 現在のフレームバッファからコピー
             screenCapture.image(currentPApplet.get(), 0, 0);
-            
+
             screenCapture.endDraw();
-            
+
             // スクリーンをポップ
             Screen poppedScreen = screenStack.pop();
             if (currentPApplet != null) {
@@ -234,10 +280,17 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
             }
             // 未セットアップリストからも削除
             unsetupScreens.remove(poppedScreen);
-            
+
+            // 新しいトップスクリーンをフォアグラウンドに復帰（OS側で強制的に制御）
+            Screen newTopScreen = getCurrentScreen();
+            if (newTopScreen != null) {
+                newTopScreen.onForeground();
+                log("New top screen moved to foreground (animation): " + newTopScreen.getScreenTitle());
+            }
+
             // アニメーションを開始
             screenTransition.startZoomOut(iconX, iconY, iconSize, iconImage, screenCapture);
-            
+
             log("Popped screen with zoom-out animation - " + poppedScreen.getScreenTitle());
             return poppedScreen;
         }
@@ -257,12 +310,34 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
     }
     
     /**
+     * 全てのスクリーン（バックグラウンドも含む）のtick()を呼び出す。
+     * このメソッドは毎フレーム実行され、バックグラウンドタスク（通知フェッチなど）の処理継続を保証する。
+     * tick()はスリープ中でも動作し、重要なバックグラウンド処理を継続する。
+     */
+    public void tick() {
+        // スタック内の全スクリーンのtick()を呼び出し（バックグラウンドも含む）
+        for (Screen screen : screenStack) {
+            try {
+                screen.tick();
+            } catch (Exception e) {
+                logError("Error in tick() for screen " + screen.getScreenTitle() + ": " + e.getMessage(), e);
+            }
+        }
+    }
+
+    /**
      * 現在アクティブなスクリーンを描画する（PGraphics版）。
      * PGraphics統一アーキテクチャで使用する。
      *
      * @param g 描画操作用のPGraphicsインスタンス
      */
     public void draw(PGraphics g) {
+        // スリープ中の場合は黒背景のみ描画
+        if (kernel != null && kernel.isSleeping()) {
+            g.background(0);
+            return;
+        }
+
         // 初回draw()呼び出し時に、未初期化のスクリーンのsetup()を呼び出す
         ensureCurrentScreenSetup();
 
@@ -279,9 +354,16 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
         // 通常の画面描画（アニメーション中でも実行）
         {
             // 通常の画面描画
-            if (getCurrentScreen() != null) {
+            Screen currentScreen = getCurrentScreen();
+            if (currentScreen != null) {
                 try {
-                    getCurrentScreen().draw(g);
+                    // デバッグ：現在描画しているスクリーンを表示
+                    if (currentScreen.getClass().getSimpleName().contains("HTML")) {
+                        if (kernel != null && kernel.getLogger() != null) {
+                            kernel.getLogger().debug("ScreenManager", "Drawing current screen: " + currentScreen.getScreenTitle());
+                        }
+                    }
+                    currentScreen.draw(g);
                 } catch (Exception e) {
                     logError("Error drawing current screen: " + e.getMessage(), e);
 
@@ -420,10 +502,29 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
             currentScreen.mouseReleased(currentPApplet, mouseX, mouseY);
         }
     }
-    
+
+    /**
+     * 現在のスクリーンに委託してマウスホイールイベントを処理する。
+     *
+     * @param mouseX マウス位置のx座標
+     * @param mouseY マウス位置のy座標
+     * @param delta スクロール量（正の値：下スクロール、負の値：上スクロール）
+     */
+    public void mouseWheel(int mouseX, int mouseY, float delta) {
+        // Block mouse events during animations
+        if (screenTransition.isAnimating()) {
+            return;
+        }
+
+        Screen currentScreen = getCurrentScreen();
+        if (currentScreen != null && currentPApplet != null) {
+            currentScreen.mouseWheel(currentPApplet, mouseX, mouseY, delta);
+        }
+    }
+
     /**
      * 現在のスクリーンに委託してキーボード入力イベントを処理する。
-     * 
+     *
      * @param key 押されたキー
      * @param keyCode キーコード
      */
@@ -498,7 +599,7 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
                 Screen screen = iterator.next();
                 try {
                     log("Delayed setup for screen - " + screen.getScreenTitle());
-                    screen.setup(currentPApplet);
+                    screen.setup(currentPApplet.g);
                     iterator.remove(); // セットアップ完了後にリストから削除
                 } catch (Exception e) {
                     logError("Error in delayed setup for " + screen.getScreenTitle() + ": " + e.getMessage(), e);
@@ -568,7 +669,7 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
             log(unsetupScreens.size() + "個の未初期化スクリーンのsetup()を実行中...");
             for (Screen screen : unsetupScreens.toArray(new Screen[0])) {
                 try {
-                    screen.setup(pApplet);
+                    screen.setup(pApplet.g);
                     unsetupScreens.remove(screen);
                     log(screen.getScreenTitle() + "のsetup()完了");
                 } catch (Exception e) {
@@ -603,6 +704,7 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
      * ホーム画面に戻る処理を実行する。
      * スペースキー（ホームボタン）が押された時に呼び出される。
      * 現在の画面がホーム画面でない場合、スタックをクリアしてホーム画面に戻る。
+     * アプリケーション画面はバックグラウンドに送られ、次回起動時に即座に復帰できる。
      */
     private void navigateToHome() {
         Screen currentScreen = getCurrentScreen();
@@ -622,6 +724,11 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
             Screen poppedScreen = screenStack.pop();
             log("Popped screen during home navigation - " + poppedScreen.getClass().getSimpleName());
 
+            // ★重要★ スクリーンをバックグラウンドに送る（OS側の強制制御）
+            // これにより、WebViewのレンダリングパイプラインが停止し、GPU使用率が削減される
+            poppedScreen.onBackground();
+            log("Screen moved to background during home navigation: " + poppedScreen.getScreenTitle());
+
             // APPLICATIONレイヤーを削除
             if (kernel != null) {
                 kernel.removeLayer(LayerType.APPLICATION);
@@ -636,7 +743,46 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
             // このケースは異常状態として扱う
         }
 
+        // ホーム画面をフォアグラウンドに復帰
+        Screen homeScreen = getCurrentScreen();
+        if (homeScreen != null) {
+            homeScreen.onForeground();
+            log("Home screen moved to foreground: " + homeScreen.getScreenTitle());
+        }
+
         log("Home navigation completed - current screen: " +
                          (getCurrentScreen() != null ? getCurrentScreen().getClass().getSimpleName() : "null"));
+    }
+
+    /**
+     * 修飾キー（Shift/Ctrl）の状態を設定する。
+     * Kernelから呼び出され、テキスト入力コンポーネントに伝播される。
+     *
+     * @param shift Shiftキーが押されているかどうか
+     * @param ctrl Ctrlキーが押されているかどうか
+     */
+    public void setModifierKeys(boolean shift, boolean ctrl) {
+        this.shiftPressed = shift;
+        this.ctrlPressed = ctrl;
+
+        // 現在のスクリーンに修飾キーの状態を伝播
+        Screen currentScreen = getCurrentScreen();
+        if (currentScreen != null) {
+            currentScreen.setModifierKeys(shift, ctrl);
+        }
+    }
+
+    /**
+     * 現在のスクリーンにフォーカスされたテキスト入力コンポーネントがあるかチェック。
+     * スペースキー処理の前にKernelから呼び出される。
+     *
+     * @return フォーカスされたコンポーネントがある場合true
+     */
+    public boolean hasFocusedComponent() {
+        Screen currentScreen = getCurrentScreen();
+        if (currentScreen != null) {
+            return currentScreen.hasFocusedComponent();
+        }
+        return false;
     }
 }

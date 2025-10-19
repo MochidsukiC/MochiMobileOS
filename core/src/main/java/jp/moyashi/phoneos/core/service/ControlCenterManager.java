@@ -288,29 +288,30 @@ public class ControlCenterManager implements GestureListener {
             panelY = (int)animatedY;
         }
 
-        // パネル背景描画
-        g.fill(50, 55, 65, 240);
+        // パネル背景描画 (ビジュアル改善)
+        g.fill(40, 45, 55, 240); // モダンなダークブルーグレーに戻す
         g.noStroke();
-        g.rect(0, panelY, panelWidth, panelHeight);
+        g.rect(0, panelY, panelWidth, panelHeight, 20, 20, 0, 0); // 角を丸める
 
-        // ハンドル描画
-        int handleWidth = 40;
-        int handleHeight = 4;
-        int handleX = (int)(screenWidth - handleWidth) / 2;
-        int handleY = panelY + 15;
-
-        g.fill(160, 165, 175);
-        g.rect(handleX, handleY, handleWidth, handleHeight, 2);
+        // --- レイアウト変更：タイトルを一番上に配置 ---
 
         // タイトル領域
-        int titleY = panelY + 35;
+        int titleY = panelY + 20;
         g.fill(255, 255, 255);
         g.textAlign(PApplet.CENTER, PApplet.TOP);
         g.textSize(18);
         g.text("コントロールセンター", screenWidth / 2, titleY);
 
-        // アイテムグリッド描画
-        int startY = titleY + 40;
+        // ハンドル描画 (タイトルの下に配置)
+        int handleY = titleY + 30; // 位置調整
+        int handleWidth = 60;
+        int handleHeight = 5;
+        int handleX = (int)(screenWidth - handleWidth) / 2;
+        g.fill(200, 205, 215);
+        g.rect(handleX, handleY, handleWidth, handleHeight, 2.5f);
+
+        // アイテムグリッド描画 (ハンドルの下に配置)
+        int startY = handleY + 25; // 位置を調整
         int cols = 3;
         int itemWidth = (panelWidth - 40) / cols;
         int itemHeight = 80;
@@ -392,28 +393,22 @@ public class ControlCenterManager implements GestureListener {
     private void drawControlPanel(PApplet p) {
         float panelHeight = screenHeight * CONTROL_CENTER_HEIGHT_RATIO;
         float panelY = screenHeight - panelHeight * animationProgress;
-        
-        // クリッピングマスクを設定（下のレイヤーに影響しないように）
-        // まず、パネルの背景をクリップ領域として設定
+
         p.pushMatrix();
         p.pushStyle();
-        
+
         try {
-            // パネル背景
-            int backgroundAlpha = (int) (BACKGROUND_ALPHA * animationProgress);
-            p.fill(40, 40, 45, backgroundAlpha);
+            // パネル背景 (ビジュアル改善)
+            int backgroundAlpha = (int) (240 * animationProgress);
+            p.fill(40, 45, 55, backgroundAlpha); // モダンなダークブルーグレーに戻す
             p.noStroke();
             p.rect(0, panelY, screenWidth, panelHeight, 20, 20, 0, 0);
-            
-            // パネル上部の取っ手
-            drawHandle(p, panelY);
-            
-            // ヘッダーテキスト
-            drawHeader(p, panelY);
-            
-            // アイテム描画領域をクリップ（上部ヘッダー分の余白を確保）
-            drawItemsWithClipping(p, panelY + 70, panelHeight - 90);
-            
+
+            // --- レイアウト変更：タイトルを一番上に配置 ---
+            drawHeader(p, panelY); // 1. ヘッダー（タイトル）
+            drawHandle(p, panelY); // 2. ハンドル
+            drawItemsWithClipping(p, panelY + 80, panelHeight - 90); // 3. アイテム
+
         } finally {
             p.popStyle();
             p.popMatrix();
@@ -424,15 +419,16 @@ public class ControlCenterManager implements GestureListener {
      * パネル上部の取っ手を描画する。
      */
     private void drawHandle(PApplet p, float panelY) {
-        float handleWidth = 40;
-        float handleHeight = 4;
+        // ビジュアル改善 (タイトルの下に配置)
+        float handleWidth = 60;
+        float handleHeight = 5;
         float handleX = (screenWidth - handleWidth) / 2;
-        float handleY = panelY + 10;
-        
-        int handleAlpha = (int) (150 * animationProgress);
-        p.fill(255, 255, 255, handleAlpha);
+        float handleY = panelY + 50; // 位置調整
+
+        int handleAlpha = (int) (200 * animationProgress);
+        p.fill(200, 205, 215, handleAlpha);
         p.noStroke();
-        p.rect(handleX, handleY, handleWidth, handleHeight, handleHeight / 2);
+        p.rect(handleX, handleY, handleWidth, handleHeight, 2.5f);
     }
     
     /**
@@ -443,12 +439,9 @@ public class ControlCenterManager implements GestureListener {
         p.fill(255, 255, 255, textAlpha);
         p.textAlign(p.CENTER, p.TOP);
         p.textSize(16);
-        p.text("コントロールセンター", screenWidth / 2, panelY + 25);
+        p.text("コントロールセンター", screenWidth / 2, panelY + 20); // 位置を調整
         
-        // 使い方のヒント（小さいテキスト）
-        p.fill(200, 200, 200, textAlpha);
-        p.textSize(10);
-        p.text("上をタップまたは下スワイプで閉じる", screenWidth / 2, panelY + 45);
+        // 使い方のヒントは削除し、シンプルにする
     }
     
     /**
@@ -783,7 +776,8 @@ public class ControlCenterManager implements GestureListener {
         // draw(PGraphics g)の座標計算と完全に一致させる
         int panelWidth = (int) screenWidth;
         int titleY = (int) (panelY + 20);
-        int startY = titleY + 40;
+        int handleY = titleY + 30;
+        int startY = handleY + 25;
         int cols = 3;
         int itemWidth = (panelWidth - 40) / cols;
         int itemHeight = 80;

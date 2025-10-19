@@ -114,7 +114,7 @@ public class VFS {
             }
             
             String content = Files.readString(filePath);
-            System.out.println("VFS: ファイル読み込み成功: " + path + " (" + content.length() + "文字)");
+            //System.out.println("VFS: ファイル読み込み成功: " + path + " (" + content.length() + "文字)");
             return content;
             
         } catch (IOException e) {
@@ -142,7 +142,7 @@ public class VFS {
             
             // ファイルに書き込み（既存ファイルを上書き）
             Files.writeString(filePath, data, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-            System.out.println("VFS: ファイル書き込み成功: " + path + " (" + data.length() + "文字)");
+            //System.out.println("VFS: ファイル書き込み成功: " + path + " (" + data.length() + "文字)");
             return true;
             
         } catch (IOException e) {

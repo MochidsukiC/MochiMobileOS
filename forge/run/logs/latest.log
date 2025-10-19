@@ -1,188 +1,943 @@
-[0310月2025 08:32:46.297] [main/INFO] [cpw.mods.modlauncher.Launcher/MODLAUNCHER]: ModLauncher running: args [--launchTarget, forgeclientuserdev, --version, MOD_DEV, --assetIndex, 5, --assetsDir, C:\Users\dora2\.gradle\caches\forge_gradle\assets, --gameDir, ., --fml.forgeVersion, 47.3.12, --fml.mcVersion, 1.20.1, --fml.forgeGroup, net.minecraftforge, --fml.mcpVersion, 20230612.114412]
-[0310月2025 08:32:46.323] [main/INFO] [cpw.mods.modlauncher.Launcher/MODLAUNCHER]: ModLauncher 10.0.9+10.0.9+main.dcd20f30 starting: java version 17.0.8.1 by Eclipse Adoptium; OS Windows 11 arch amd64 version 10.0
-[0310月2025 08:32:46.537] [main/INFO] [net.minecraftforge.fml.loading.ImmediateWindowHandler/]: Loading ImmediateWindowProvider fmlearlywindow
-[0310月2025 08:32:46.628] [main/INFO] [EARLYDISPLAY/]: Trying GL version 4.6
-[0310月2025 08:32:46.847] [main/INFO] [EARLYDISPLAY/]: Requested GL version 4.6 got version 4.6
-[0310月2025 08:32:46.972] [main/INFO] [mixin/]: SpongePowered MIXIN Subsystem Version=0.8.5 Source=union:/C:/Users/dora2/.gradle/caches/modules-2/files-2.1/org.spongepowered/mixin/0.8.5/9d1c0c3a304ae6697ecd477218fa61b850bf57fc/mixin-0.8.5.jar%23128!/ Service=ModLauncher Env=CLIENT
-[0310月2025 08:32:47.000] [pool-2-thread-1/INFO] [EARLYDISPLAY/]: GL info: AMD Radeon(TM) Graphics GL version 4.6.14800 Core Profile Forward-Compatible Context 22.3.1 30.0.15002.1004, ATI Technologies Inc.
-[0310月2025 08:32:47.481] [main/WARN] [net.minecraftforge.fml.loading.moddiscovery.ModFileParser/LOADING]: Mod file C:\Users\dora2\.gradle\caches\modules-2\files-2.1\net.minecraftforge\javafmllanguage\1.20.1-47.3.12\f6b9f7f45e33548b47f78d9f54c7b4eb1e94e9bd\javafmllanguage-1.20.1-47.3.12.jar is missing mods.toml file
-[0310月2025 08:32:47.485] [main/WARN] [net.minecraftforge.fml.loading.moddiscovery.ModFileParser/LOADING]: Mod file C:\Users\dora2\.gradle\caches\modules-2\files-2.1\net.minecraftforge\lowcodelanguage\1.20.1-47.3.12\81de74e1180787af25604b6ecb3728fc485bd3c7\lowcodelanguage-1.20.1-47.3.12.jar is missing mods.toml file
-[0310月2025 08:32:47.489] [main/WARN] [net.minecraftforge.fml.loading.moddiscovery.ModFileParser/LOADING]: Mod file C:\Users\dora2\.gradle\caches\modules-2\files-2.1\net.minecraftforge\mclanguage\1.20.1-47.3.12\1ff4ed058e0774b82d8da352d9e051e6d2a154eb\mclanguage-1.20.1-47.3.12.jar is missing mods.toml file
-[0310月2025 08:32:47.496] [main/WARN] [net.minecraftforge.fml.loading.moddiscovery.ModFileParser/LOADING]: Mod file C:\Users\dora2\.gradle\caches\modules-2\files-2.1\net.minecraftforge\fmlcore\1.20.1-47.3.12\9a4d9f99e106aa2358cdbe6777921855d353371\fmlcore-1.20.1-47.3.12.jar is missing mods.toml file
-[0310月2025 08:32:48.242] [main/INFO] [net.minecraftforge.fml.loading.moddiscovery.JarInJarDependencyLocator/]: No dependencies to load found. Skipping!
-[0310月2025 08:32:50.517] [main/INFO] [cpw.mods.modlauncher.LaunchServiceHandler/MODLAUNCHER]: Launching target 'forgeclientuserdev' with arguments [--version, MOD_DEV, --gameDir, ., --assetsDir, C:\Users\dora2\.gradle\caches\forge_gradle\assets, --assetIndex, 5]
-[0310月2025 08:32:53.572] [main/WARN] [oshi.driver.windows.perfmon.PerfmonDisabled/]: Invalid registry value type detected for PerfOS counters. Should be REG_DWORD. Ignoring: HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\PerfOS\Performance\Disable Performance Counters.
-[0310月2025 08:32:58.544] [Datafixer Bootstrap/INFO] [com.mojang.datafixers.DataFixerBuilder/]: 188 Datafixer optimizations took 220 milliseconds
-[0310月2025 08:33:00.826] [Render thread/WARN] [net.minecraft.server.packs.VanillaPackResourcesBuilder/]: Assets URL 'union:/C:/Users/dora2/.gradle/caches/forge_gradle/minecraft_user_repo/net/minecraftforge/forge/1.20.1-47.3.12_mapped_official_1.20.1/forge-1.20.1-47.3.12_mapped_official_1.20.1.jar%23191!/assets/.mcassetsroot' uses unexpected schema
-[0310月2025 08:33:00.827] [Render thread/WARN] [net.minecraft.server.packs.VanillaPackResourcesBuilder/]: Assets URL 'union:/C:/Users/dora2/.gradle/caches/forge_gradle/minecraft_user_repo/net/minecraftforge/forge/1.20.1-47.3.12_mapped_official_1.20.1/forge-1.20.1-47.3.12_mapped_official_1.20.1.jar%23191!/data/.mcassetsroot' uses unexpected schema
-[0310月2025 08:33:00.874] [Render thread/INFO] [com.mojang.authlib.yggdrasil.YggdrasilAuthenticationService/]: Environment: authHost='https://authserver.mojang.com', accountsHost='https://api.mojang.com', sessionHost='https://sessionserver.mojang.com', servicesHost='https://api.minecraftservices.com', name='PROD'
-[0310月2025 08:33:00.886] [Render thread/INFO] [net.minecraft.client.Minecraft/]: Setting user: Dev
-[0310月2025 08:33:01.098] [Render thread/INFO] [net.minecraft.client.Minecraft/]: Backend library: LWJGL version 3.3.1 build 7
-[0310月2025 08:33:01.574] [modloading-worker-0/INFO] [net.minecraftforge.common.ForgeMod/FORGEMOD]: Forge mod loading, version 47.3.12, for MC 1.20.1 with MCP 20230612.114412
-[0310月2025 08:33:01.578] [modloading-worker-0/INFO] [net.minecraftforge.common.MinecraftForge/FORGE]: MinecraftForge v47.3.12 Initialized
-[0310月2025 08:33:03.202] [Render thread/INFO] [net.minecraftforge.gametest.ForgeGameTestHooks/]: Enabled Gametest Namespaces: []
-[0310月2025 08:33:03.423] [Render thread/INFO] [net.minecraft.server.packs.resources.ReloadableResourceManager/]: Reloading ResourceManager: vanilla, mod_resources
-[0310月2025 08:33:03.762] [Worker-Main-4/INFO] [net.minecraft.client.gui.font.providers.UnihexProvider/]: Found unifont_all_no_pua-15.0.06.hex, loading
-[0310月2025 08:33:03.771] [Forge Version Check/INFO] [net.minecraftforge.fml.VersionChecker/]: [forge] Starting version check at https://files.minecraftforge.net/net/minecraftforge/forge/promotions_slim.json
-[0310月2025 08:33:04.698] [Forge Version Check/INFO] [net.minecraftforge.fml.VersionChecker/]: [forge] Found status: OUTDATED Current: 47.3.12 Target: 47.4.0
-[0310月2025 08:33:07.341] [Render thread/WARN] [net.minecraft.client.sounds.SoundEngine/]: Missing sound for event: minecraft:item.goat_horn.play
-[0310月2025 08:33:07.343] [Render thread/WARN] [net.minecraft.client.sounds.SoundEngine/]: Missing sound for event: minecraft:entity.goat.screaming.horn_break
-[0310月2025 08:33:07.386] [Render thread/INFO] [com.mojang.blaze3d.audio.Library/]: OpenAL initialized on device OpenAL Soft on スピーカー (2- USB Audio CODEC )
-[0310月2025 08:33:07.388] [Render thread/INFO] [net.minecraft.client.sounds.SoundEngine/SOUNDS]: Sound engine started
-[0310月2025 08:33:07.500] [Render thread/INFO] [net.minecraft.client.renderer.texture.TextureAtlas/]: Created: 1024x512x4 minecraft:textures/atlas/blocks.png-atlas
-[0310月2025 08:33:07.600] [Render thread/INFO] [net.minecraft.client.renderer.texture.TextureAtlas/]: Created: 256x256x4 minecraft:textures/atlas/signs.png-atlas
-[0310月2025 08:33:07.602] [Render thread/INFO] [net.minecraft.client.renderer.texture.TextureAtlas/]: Created: 512x512x4 minecraft:textures/atlas/shield_patterns.png-atlas
-[0310月2025 08:33:07.605] [Render thread/INFO] [net.minecraft.client.renderer.texture.TextureAtlas/]: Created: 512x512x4 minecraft:textures/atlas/banner_patterns.png-atlas
-[0310月2025 08:33:07.609] [Render thread/INFO] [net.minecraft.client.renderer.texture.TextureAtlas/]: Created: 1024x1024x4 minecraft:textures/atlas/armor_trims.png-atlas
-[0310月2025 08:33:07.642] [Render thread/INFO] [net.minecraft.client.renderer.texture.TextureAtlas/]: Created: 128x64x4 minecraft:textures/atlas/decorated_pot.png-atlas
-[0310月2025 08:33:07.644] [Render thread/INFO] [net.minecraft.client.renderer.texture.TextureAtlas/]: Created: 256x256x4 minecraft:textures/atlas/chest.png-atlas
-[0310月2025 08:33:07.646] [Render thread/INFO] [net.minecraft.client.renderer.texture.TextureAtlas/]: Created: 512x256x4 minecraft:textures/atlas/shulker_boxes.png-atlas
-[0310月2025 08:33:07.647] [Render thread/INFO] [net.minecraft.client.renderer.texture.TextureAtlas/]: Created: 512x256x4 minecraft:textures/atlas/beds.png-atlas
-[0310月2025 08:33:07.866] [Render thread/WARN] [net.minecraft.client.renderer.ShaderInstance/]: Shader rendertype_entity_translucent_emissive could not find sampler named Sampler2 in the specified shader program.
-[0310月2025 08:33:07.918] [Render thread/INFO] [net.minecraft.client.renderer.texture.TextureAtlas/]: Created: 256x256x0 minecraft:textures/atlas/particles.png-atlas
-[0310月2025 08:33:07.923] [Render thread/INFO] [net.minecraft.client.renderer.texture.TextureAtlas/]: Created: 256x256x0 minecraft:textures/atlas/paintings.png-atlas
-[0310月2025 08:33:07.924] [Render thread/INFO] [net.minecraft.client.renderer.texture.TextureAtlas/]: Created: 128x128x0 minecraft:textures/atlas/mob_effects.png-atlas
-[0310月2025 08:33:08.729] [Realms Notification Availability checker #1/INFO] [com.mojang.realmsclient.client.RealmsClient/]: Could not authorize you against Realms server: java.lang.RuntimeException: Failed to parse into SignedJWT: 0
-[0310月2025 08:33:11.305] [Render thread/INFO] [net.minecraftforge.registries.GameData/REGISTRIES]: Injecting existing registry data into this CLIENT instance
-[0310月2025 08:33:13.211] [Render thread/INFO] [net.minecraft.world.item.crafting.RecipeManager/]: Loaded 7 recipes
-[0310月2025 08:33:13.330] [Render thread/INFO] [net.minecraft.advancements.AdvancementList/]: Loaded 1271 advancements
-[0310月2025 08:33:13.755] [Server thread/INFO] [net.minecraft.client.server.IntegratedServer/]: Starting integrated minecraft server version 1.20.1
-[0310月2025 08:33:13.756] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: Generating keypair
-[0310月2025 08:33:14.855] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: Preparing start region for dimension minecraft:overworld
-[0310月2025 08:33:16.818] [Render thread/INFO] [net.minecraft.server.level.progress.LoggerChunkProgressListener/]: スポーン地点を準備中：0%
-[0310月2025 08:33:16.818] [Render thread/INFO] [net.minecraft.server.level.progress.LoggerChunkProgressListener/]: スポーン地点を準備中：0%
-[0310月2025 08:33:16.819] [Render thread/INFO] [net.minecraft.server.level.progress.LoggerChunkProgressListener/]: スポーン地点を準備中：0%
-[0310月2025 08:33:16.819] [Render thread/INFO] [net.minecraft.server.level.progress.LoggerChunkProgressListener/]: スポーン地点を準備中：0%
-[0310月2025 08:33:16.882] [Render thread/INFO] [net.minecraft.server.level.progress.LoggerChunkProgressListener/]: スポーン地点を準備中：0%
-[0310月2025 08:33:17.384] [Render thread/INFO] [net.minecraft.server.level.progress.LoggerChunkProgressListener/]: スポーン地点を準備中：0%
-[0310月2025 08:33:17.884] [Render thread/INFO] [net.minecraft.server.level.progress.LoggerChunkProgressListener/]: スポーン地点を準備中：79%
-[0310月2025 08:33:17.954] [Server thread/INFO] [net.minecraftforge.server.permission.PermissionAPI/]: Successfully initialized permission handler forge:default_handler
-[0310月2025 08:33:17.983] [Render thread/INFO] [net.minecraft.server.level.progress.LoggerChunkProgressListener/]: Time elapsed: 3102 ms
-[0310月2025 08:33:18.129] [Server thread/INFO] [net.minecraft.client.server.IntegratedServer/]: Changing view distance to 12, from 10
-[0310月2025 08:33:18.131] [Server thread/INFO] [net.minecraft.client.server.IntegratedServer/]: Changing simulation distance to 12, from 0
-[0310月2025 08:33:18.368] [Render thread/WARN] [io.netty.util.internal.SystemPropertyUtil/]: Unable to parse the boolean system property 'java.net.preferIPv6Addresses':system - using the default value: false
-[0310月2025 08:33:19.493] [Netty Local Client IO #0/INFO] [net.minecraftforge.network.NetworkHooks/]: Connected to a modded server.
-[0310月2025 08:33:19.597] [Server thread/INFO] [net.minecraft.server.players.PlayerList/]: Dev[local:E:3a337a66] logged in with entity id 168 at (249.46991726959135, 65.0, 185.54521434071168)
-[0310月2025 08:33:19.674] [Render thread/INFO] [jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService/]: [SmartphoneBackgroundService] World loaded: 新規ワールド
-[0310月2025 08:33:19.674] [Render thread/INFO] [jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService/]: [SmartphoneBackgroundService] Creating shared kernel for world: 新規ワールド
-[0310月2025 08:33:19.698] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: Devがゲームに参加しました
-[0310月2025 08:33:20.100] [Render thread/INFO] [jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService/]: [SmartphoneBackgroundService] Initializing virtual network router...
-[0310月2025 08:33:20.108] [Render thread/INFO] [jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService/]: [SmartphoneBackgroundService] Virtual network router initialized
-[0310月2025 08:33:20.108] [Render thread/INFO] [jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService/]: [SmartphoneBackgroundService] Initializing hardware bypass APIs...
-[0310月2025 08:33:20.108] [Render thread/INFO] [jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService/]: [SmartphoneBackgroundService] Initializing hardware APIs - Player: null
-[0310月2025 08:33:20.108] [Render thread/WARN] [jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService/]: [SmartphoneBackgroundService] Player not available yet, creating Forge implementations without player
-[0310月2025 08:33:20.113] [Render thread/INFO] [jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService/]: [SmartphoneBackgroundService] - MobileDataSocket set
-[0310月2025 08:33:20.116] [Render thread/INFO] [jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService/]: [SmartphoneBackgroundService] - BluetoothSocket set
-[0310月2025 08:33:20.121] [Render thread/INFO] [jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService/]: [SmartphoneBackgroundService] - LocationSocket set
-[0310月2025 08:33:20.123] [Render thread/INFO] [jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService/]: [SmartphoneBackgroundService] - BatteryInfo set
-[0310月2025 08:33:20.126] [Render thread/INFO] [jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService/]: [SmartphoneBackgroundService] - CameraSocket set
-[0310月2025 08:33:20.133] [Render thread/INFO] [jp.moyashi.phoneos.forge.hardware.SVCDetector/]: [SVCDetector] Simple Voice Chat MOD not found - Audio features disabled
-[0310月2025 08:33:20.133] [Render thread/INFO] [jp.moyashi.phoneos.forge.hardware.ForgeMicrophoneSocket/]: [ForgeMicrophoneSocket] Initialized without SVC (microphone unavailable)
-[0310月2025 08:33:20.133] [Render thread/INFO] [jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService/]: [SmartphoneBackgroundService] - MicrophoneSocket set
-[0310月2025 08:33:20.139] [Render thread/ERROR] [net.minecraftforge.eventbus.EventBus/EVENTBUS]: Exception caught during firing event: de/maxhenkel/voicechat/api/Position
-	Index: 1
-	Listeners:
-		0: NORMAL
-		1: ASM: class jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService onWorldLoad(Lnet/minecraftforge/event/level/LevelEvent$Load;)V
-java.lang.NoClassDefFoundError: de/maxhenkel/voicechat/api/Position
-	at TRANSFORMER/mochimobileos@0.0NONE/jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService.initializeHardwareAPIs(SmartphoneBackgroundService.java:179)
-	at TRANSFORMER/mochimobileos@0.0NONE/jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService.createKernel(SmartphoneBackgroundService.java:130)
-	at TRANSFORMER/mochimobileos@0.0NONE/jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService.onWorldLoad(SmartphoneBackgroundService.java:71)
-	at TRANSFORMER/mochimobileos@0.0NONE/jp.moyashi.phoneos.forge.service.__SmartphoneBackgroundService_onWorldLoad_Load.invoke(.dynamic)
-	at MC-BOOTSTRAP/net.minecraftforge.eventbus/net.minecraftforge.eventbus.ASMEventHandler.invoke(ASMEventHandler.java:73)
-	at MC-BOOTSTRAP/net.minecraftforge.eventbus/net.minecraftforge.eventbus.EventBus.post(EventBus.java:315)
-	at MC-BOOTSTRAP/net.minecraftforge.eventbus/net.minecraftforge.eventbus.EventBus.post(EventBus.java:296)
-	at TRANSFORMER/minecraft@1.20.1/net.minecraft.client.multiplayer.ClientLevel.<init>(ClientLevel.java:182)
-	at TRANSFORMER/minecraft@1.20.1/net.minecraft.client.multiplayer.ClientPacketListener.handleLogin(ClientPacketListener.java:403)
-	at TRANSFORMER/minecraft@1.20.1/net.minecraft.network.protocol.game.ClientboundLoginPacket.handle(ClientboundLoginPacket.java:95)
-	at TRANSFORMER/minecraft@1.20.1/net.minecraft.network.protocol.game.ClientboundLoginPacket.handle(ClientboundLoginPacket.java:25)
-	at TRANSFORMER/minecraft@1.20.1/net.minecraft.network.protocol.PacketUtils.lambda$ensureRunningOnSameThread$0(PacketUtils.java:22)
-	at TRANSFORMER/minecraft@1.20.1/net.minecraft.util.thread.BlockableEventLoop.doRunTask(BlockableEventLoop.java:156)
-	at TRANSFORMER/minecraft@1.20.1/net.minecraft.util.thread.ReentrantBlockableEventLoop.doRunTask(ReentrantBlockableEventLoop.java:23)
-	at TRANSFORMER/minecraft@1.20.1/net.minecraft.util.thread.BlockableEventLoop.pollTask(BlockableEventLoop.java:130)
-	at TRANSFORMER/minecraft@1.20.1/net.minecraft.util.thread.BlockableEventLoop.runAllTasks(BlockableEventLoop.java:115)
-	at TRANSFORMER/minecraft@1.20.1/net.minecraft.client.Minecraft.runTick(Minecraft.java:1106)
-	at TRANSFORMER/minecraft@1.20.1/net.minecraft.client.Minecraft.run(Minecraft.java:718)
-	at TRANSFORMER/minecraft@1.20.1/net.minecraft.client.main.Main.main(Main.java:218)
-	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
-	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.base/java.lang.reflect.Method.invoke(Method.java:568)
-	at MC-BOOTSTRAP/fmlloader@1.20.1-47.3.12/net.minecraftforge.fml.loading.targets.CommonLaunchHandler.runTarget(CommonLaunchHandler.java:111)
-	at MC-BOOTSTRAP/fmlloader@1.20.1-47.3.12/net.minecraftforge.fml.loading.targets.CommonLaunchHandler.clientService(CommonLaunchHandler.java:99)
-	at MC-BOOTSTRAP/fmlloader@1.20.1-47.3.12/net.minecraftforge.fml.loading.targets.ForgeClientUserdevLaunchHandler.devService(ForgeClientUserdevLaunchHandler.java:19)
-	at MC-BOOTSTRAP/fmlloader@1.20.1-47.3.12/net.minecraftforge.fml.loading.targets.CommonDevLaunchHandler.lambda$makeService$7(CommonDevLaunchHandler.java:135)
-	at MC-BOOTSTRAP/cpw.mods.modlauncher@10.0.9/cpw.mods.modlauncher.LaunchServiceHandlerDecorator.launch(LaunchServiceHandlerDecorator.java:30)
-	at MC-BOOTSTRAP/cpw.mods.modlauncher@10.0.9/cpw.mods.modlauncher.LaunchServiceHandler.launch(LaunchServiceHandler.java:53)
-	at MC-BOOTSTRAP/cpw.mods.modlauncher@10.0.9/cpw.mods.modlauncher.LaunchServiceHandler.launch(LaunchServiceHandler.java:71)
-	at MC-BOOTSTRAP/cpw.mods.modlauncher@10.0.9/cpw.mods.modlauncher.Launcher.run(Launcher.java:108)
-	at MC-BOOTSTRAP/cpw.mods.modlauncher@10.0.9/cpw.mods.modlauncher.Launcher.main(Launcher.java:78)
-	at MC-BOOTSTRAP/cpw.mods.modlauncher@10.0.9/cpw.mods.modlauncher.BootstrapLaunchConsumer.accept(BootstrapLaunchConsumer.java:26)
-	at MC-BOOTSTRAP/cpw.mods.modlauncher@10.0.9/cpw.mods.modlauncher.BootstrapLaunchConsumer.accept(BootstrapLaunchConsumer.java:23)
-	at cpw.mods.bootstraplauncher@1.1.2/cpw.mods.bootstraplauncher.BootstrapLauncher.main(BootstrapLauncher.java:141)
-Caused by: java.lang.ClassNotFoundException: de.maxhenkel.voicechat.api.Position
-	at java.base/jdk.internal.loader.BuiltinClassLoader.loadClass(BuiltinClassLoader.java:641)
-	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:525)
-	at cpw.mods.securejarhandler/cpw.mods.cl.ModuleClassLoader.loadClass(ModuleClassLoader.java:137)
-	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:525)
-	at cpw.mods.securejarhandler/cpw.mods.cl.ModuleClassLoader.loadClass(ModuleClassLoader.java:137)
-	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:525)
-	... 35 more
-
-[0310月2025 08:33:20.301] [Render thread/ERROR] [net.minecraft.client.Minecraft/FATAL]: Unreported exception thrown!
-java.lang.NoClassDefFoundError: de/maxhenkel/voicechat/api/Position
-	at jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService.initializeHardwareAPIs(SmartphoneBackgroundService.java:179) ~[%23196!/:?]
-	at jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService.createKernel(SmartphoneBackgroundService.java:130) ~[%23196!/:?]
-	at jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService.onWorldLoad(SmartphoneBackgroundService.java:71) ~[%23196!/:?]
-	at jp.moyashi.phoneos.forge.service.__SmartphoneBackgroundService_onWorldLoad_Load.invoke(.dynamic) ~[%23196!/:?]
-	at net.minecraftforge.eventbus.ASMEventHandler.invoke(ASMEventHandler.java:73) ~[eventbus-6.0.5.jar:?]
-	at net.minecraftforge.eventbus.EventBus.post(EventBus.java:315) ~[eventbus-6.0.5.jar:?]
-	at net.minecraftforge.eventbus.EventBus.post(EventBus.java:296) ~[eventbus-6.0.5.jar:?]
-	at net.minecraft.client.multiplayer.ClientLevel.<init>(ClientLevel.java:182) ~[forge-1.20.1-47.3.12_mapped_official_1.20.1.jar:?]
-	at net.minecraft.client.multiplayer.ClientPacketListener.handleLogin(ClientPacketListener.java:403) ~[forge-1.20.1-47.3.12_mapped_official_1.20.1.jar:?]
-	at net.minecraft.network.protocol.game.ClientboundLoginPacket.handle(ClientboundLoginPacket.java:95) ~[forge-1.20.1-47.3.12_mapped_official_1.20.1.jar:?]
-	at net.minecraft.network.protocol.game.ClientboundLoginPacket.handle(ClientboundLoginPacket.java:25) ~[forge-1.20.1-47.3.12_mapped_official_1.20.1.jar:?]
-	at net.minecraft.network.protocol.PacketUtils.lambda$ensureRunningOnSameThread$0(PacketUtils.java:22) ~[forge-1.20.1-47.3.12_mapped_official_1.20.1.jar:?]
-	at net.minecraft.util.thread.BlockableEventLoop.doRunTask(BlockableEventLoop.java:156) ~[forge-1.20.1-47.3.12_mapped_official_1.20.1.jar:?]
-	at net.minecraft.util.thread.ReentrantBlockableEventLoop.doRunTask(ReentrantBlockableEventLoop.java:23) ~[forge-1.20.1-47.3.12_mapped_official_1.20.1.jar:?]
-	at net.minecraft.util.thread.BlockableEventLoop.pollTask(BlockableEventLoop.java:130) ~[forge-1.20.1-47.3.12_mapped_official_1.20.1.jar:?]
-	at net.minecraft.util.thread.BlockableEventLoop.runAllTasks(BlockableEventLoop.java:115) ~[forge-1.20.1-47.3.12_mapped_official_1.20.1.jar:?]
-	at net.minecraft.client.Minecraft.runTick(Minecraft.java:1106) ~[forge-1.20.1-47.3.12_mapped_official_1.20.1.jar:?]
-	at net.minecraft.client.Minecraft.run(Minecraft.java:718) ~[forge-1.20.1-47.3.12_mapped_official_1.20.1.jar:?]
-	at net.minecraft.client.main.Main.main(Main.java:218) ~[forge-1.20.1-47.3.12_mapped_official_1.20.1.jar:?]
-	at jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[?:?]
-	at jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77) ~[?:?]
-	at jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) ~[?:?]
-	at java.lang.reflect.Method.invoke(Method.java:568) ~[?:?]
-	at net.minecraftforge.fml.loading.targets.CommonLaunchHandler.runTarget(CommonLaunchHandler.java:111) ~[fmlloader-1.20.1-47.3.12.jar:?]
-	at net.minecraftforge.fml.loading.targets.CommonLaunchHandler.clientService(CommonLaunchHandler.java:99) ~[fmlloader-1.20.1-47.3.12.jar:?]
-	at net.minecraftforge.fml.loading.targets.ForgeClientUserdevLaunchHandler.devService(ForgeClientUserdevLaunchHandler.java:19) ~[fmlloader-1.20.1-47.3.12.jar:?]
-	at net.minecraftforge.fml.loading.targets.CommonDevLaunchHandler.lambda$makeService$7(CommonDevLaunchHandler.java:135) ~[fmlloader-1.20.1-47.3.12.jar:?]
-	at cpw.mods.modlauncher.LaunchServiceHandlerDecorator.launch(LaunchServiceHandlerDecorator.java:30) ~[modlauncher-10.0.9.jar:?]
-	at cpw.mods.modlauncher.LaunchServiceHandler.launch(LaunchServiceHandler.java:53) ~[modlauncher-10.0.9.jar:?]
-	at cpw.mods.modlauncher.LaunchServiceHandler.launch(LaunchServiceHandler.java:71) ~[modlauncher-10.0.9.jar:?]
-	at cpw.mods.modlauncher.Launcher.run(Launcher.java:108) ~[modlauncher-10.0.9.jar:?]
-	at cpw.mods.modlauncher.Launcher.main(Launcher.java:78) ~[modlauncher-10.0.9.jar:?]
-	at cpw.mods.modlauncher.BootstrapLaunchConsumer.accept(BootstrapLaunchConsumer.java:26) ~[modlauncher-10.0.9.jar:?]
-	at cpw.mods.modlauncher.BootstrapLaunchConsumer.accept(BootstrapLaunchConsumer.java:23) ~[modlauncher-10.0.9.jar:?]
-	at cpw.mods.bootstraplauncher.BootstrapLauncher.main(BootstrapLauncher.java:141) ~[bootstraplauncher-1.1.2.jar:?]
-Caused by: java.lang.ClassNotFoundException: de.maxhenkel.voicechat.api.Position
-	at jdk.internal.loader.BuiltinClassLoader.loadClass(BuiltinClassLoader.java:641) ~[?:?]
-	at java.lang.ClassLoader.loadClass(ClassLoader.java:525) ~[?:?]
-	at cpw.mods.cl.ModuleClassLoader.loadClass(ModuleClassLoader.java:137) ~[securejarhandler-2.1.10.jar:?]
-	at java.lang.ClassLoader.loadClass(ClassLoader.java:525) ~[?:?]
-	at cpw.mods.cl.ModuleClassLoader.loadClass(ModuleClassLoader.java:137) ~[securejarhandler-2.1.10.jar:?]
-	at java.lang.ClassLoader.loadClass(ClassLoader.java:525) ~[?:?]
-	... 35 more
-[0310月2025 08:33:20.744] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: Stopping server
-[0310月2025 08:33:20.746] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: Saving players
-[0310月2025 08:33:20.746] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: Saving worlds
-[0310月2025 08:33:21.722] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: Saving chunks for level 'ServerLevel[新規ワールド]'/minecraft:overworld
-[0310月2025 08:33:22.291] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: Saving chunks for level 'ServerLevel[新規ワールド]'/minecraft:the_end
-[0310月2025 08:33:22.293] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: Saving chunks for level 'ServerLevel[新規ワールド]'/minecraft:the_nether
-[0310月2025 08:33:22.319] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: ThreadedAnvilChunkStorage (新規ワールド (1)): All chunks are saved
-[0310月2025 08:33:22.319] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: ThreadedAnvilChunkStorage (DIM1): All chunks are saved
-[0310月2025 08:33:22.319] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: ThreadedAnvilChunkStorage (DIM-1): All chunks are saved
-[0310月2025 08:33:22.319] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: ThreadedAnvilChunkStorage: All dimensions are saved
-[0310月2025 08:33:22.848] [Render thread/FATAL] [net.minecraftforge.common.ForgeMod/]: Preparing crash report with UUID 38b5cc7c-032c-4863-8c75-bd9671d61ac6
-[0310月2025 08:33:22.856] [Render thread/FATAL] [net.minecraftforge.common.ForgeMod/]: Preparing crash report with UUID 8ebee18f-6dc1-4fa6-8d70-641a1e9b5bc9
+[1910月2025 22:06:51.698] [main/INFO] [cpw.mods.modlauncher.Launcher/MODLAUNCHER]: ModLauncher running: args [--launchTarget, forgeclientuserdev, --version, MOD_DEV, --assetIndex, 5, --assetsDir, C:\Users\dora2\.gradle\caches\forge_gradle\assets, --gameDir, ., --fml.forgeVersion, 47.3.12, --fml.mcVersion, 1.20.1, --fml.forgeGroup, net.minecraftforge, --fml.mcpVersion, 20230612.114412]
+[1910月2025 22:06:51.708] [main/INFO] [cpw.mods.modlauncher.Launcher/MODLAUNCHER]: ModLauncher 10.0.9+10.0.9+main.dcd20f30 starting: java version 17.0.16 by Microsoft; OS Windows 11 arch amd64 version 10.0
+[1910月2025 22:06:51.942] [main/INFO] [net.minecraftforge.fml.loading.ImmediateWindowHandler/]: Loading ImmediateWindowProvider fmlearlywindow
+[1910月2025 22:06:52.093] [main/INFO] [EARLYDISPLAY/]: Trying GL version 4.6
+[1910月2025 22:06:52.527] [main/INFO] [EARLYDISPLAY/]: Requested GL version 4.6 got version 4.6
+[1910月2025 22:06:52.730] [main/INFO] [mixin/]: SpongePowered MIXIN Subsystem Version=0.8.5 Source=union:/C:/Users/dora2/.gradle/caches/modules-2/files-2.1/org.spongepowered/mixin/0.8.5/9d1c0c3a304ae6697ecd477218fa61b850bf57fc/mixin-0.8.5.jar%23128!/ Service=ModLauncher Env=CLIENT
+[1910月2025 22:06:52.750] [pool-2-thread-1/INFO] [EARLYDISPLAY/]: GL info: AMD Radeon(TM) Graphics GL version 4.6.14800 Core Profile Forward-Compatible Context 22.3.1 30.0.15002.1004, ATI Technologies Inc.
+[1910月2025 22:06:53.715] [main/WARN] [net.minecraftforge.fml.loading.moddiscovery.ModFileParser/LOADING]: Mod file C:\Users\dora2\.gradle\caches\modules-2\files-2.1\net.minecraftforge\javafmllanguage\1.20.1-47.3.12\f6b9f7f45e33548b47f78d9f54c7b4eb1e94e9bd\javafmllanguage-1.20.1-47.3.12.jar is missing mods.toml file
+[1910月2025 22:06:53.721] [main/WARN] [net.minecraftforge.fml.loading.moddiscovery.ModFileParser/LOADING]: Mod file C:\Users\dora2\.gradle\caches\modules-2\files-2.1\net.minecraftforge\lowcodelanguage\1.20.1-47.3.12\81de74e1180787af25604b6ecb3728fc485bd3c7\lowcodelanguage-1.20.1-47.3.12.jar is missing mods.toml file
+[1910月2025 22:06:53.727] [main/WARN] [net.minecraftforge.fml.loading.moddiscovery.ModFileParser/LOADING]: Mod file C:\Users\dora2\.gradle\caches\modules-2\files-2.1\net.minecraftforge\mclanguage\1.20.1-47.3.12\1ff4ed058e0774b82d8da352d9e051e6d2a154eb\mclanguage-1.20.1-47.3.12.jar is missing mods.toml file
+[1910月2025 22:06:53.733] [main/WARN] [net.minecraftforge.fml.loading.moddiscovery.ModFileParser/LOADING]: Mod file C:\Users\dora2\.gradle\caches\modules-2\files-2.1\net.minecraftforge\fmlcore\1.20.1-47.3.12\9a4d9f99e106aa2358cdbe6777921855d353371\fmlcore-1.20.1-47.3.12.jar is missing mods.toml file
+[1910月2025 22:06:54.839] [main/INFO] [net.minecraftforge.fml.loading.moddiscovery.JarInJarDependencyLocator/]: No dependencies to load found. Skipping!
+[1910月2025 22:07:01.482] [main/INFO] [cpw.mods.modlauncher.LaunchServiceHandler/MODLAUNCHER]: Launching target 'forgeclientuserdev' with arguments [--version, MOD_DEV, --gameDir, ., --assetsDir, C:\Users\dora2\.gradle\caches\forge_gradle\assets, --assetIndex, 5]
+[1910月2025 22:07:03.634] [main/WARN] [oshi.driver.windows.perfmon.PerfmonDisabled/]: Invalid registry value type detected for PerfOS counters. Should be REG_DWORD. Ignoring: HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\PerfOS\Performance\Disable Performance Counters.
+[1910月2025 22:07:12.479] [Datafixer Bootstrap/INFO] [com.mojang.datafixers.DataFixerBuilder/]: 188 Datafixer optimizations took 1165 milliseconds
+[1910月2025 22:07:16.076] [Render thread/WARN] [net.minecraft.server.packs.VanillaPackResourcesBuilder/]: Assets URL 'union:/C:/Users/dora2/.gradle/caches/forge_gradle/minecraft_user_repo/net/minecraftforge/forge/1.20.1-47.3.12_mapped_official_1.20.1/forge-1.20.1-47.3.12_mapped_official_1.20.1.jar%23191!/assets/.mcassetsroot' uses unexpected schema
+[1910月2025 22:07:16.077] [Render thread/WARN] [net.minecraft.server.packs.VanillaPackResourcesBuilder/]: Assets URL 'union:/C:/Users/dora2/.gradle/caches/forge_gradle/minecraft_user_repo/net/minecraftforge/forge/1.20.1-47.3.12_mapped_official_1.20.1/forge-1.20.1-47.3.12_mapped_official_1.20.1.jar%23191!/data/.mcassetsroot' uses unexpected schema
+[1910月2025 22:07:16.123] [Render thread/INFO] [com.mojang.authlib.yggdrasil.YggdrasilAuthenticationService/]: Environment: authHost='https://authserver.mojang.com', accountsHost='https://api.mojang.com', sessionHost='https://sessionserver.mojang.com', servicesHost='https://api.minecraftservices.com', name='PROD'
+[1910月2025 22:07:16.133] [Render thread/INFO] [net.minecraft.client.Minecraft/]: Setting user: Dev
+[1910月2025 22:07:16.410] [Render thread/INFO] [net.minecraft.client.Minecraft/]: Backend library: LWJGL version 3.3.1 build 7
+[1910月2025 22:07:16.844] [modloading-worker-0/INFO] [net.minecraftforge.common.ForgeMod/FORGEMOD]: Forge mod loading, version 47.3.12, for MC 1.20.1 with MCP 20230612.114412
+[1910月2025 22:07:16.853] [modloading-worker-0/INFO] [net.minecraftforge.common.MinecraftForge/FORGE]: MinecraftForge v47.3.12 Initialized
+[1910月2025 22:07:18.634] [Render thread/INFO] [net.minecraftforge.gametest.ForgeGameTestHooks/]: Enabled Gametest Namespaces: []
+[1910月2025 22:07:18.934] [Render thread/INFO] [net.minecraft.server.packs.resources.ReloadableResourceManager/]: Reloading ResourceManager: vanilla, mod_resources
+[1910月2025 22:07:19.370] [Forge Version Check/INFO] [net.minecraftforge.fml.VersionChecker/]: [forge] Starting version check at https://files.minecraftforge.net/net/minecraftforge/forge/promotions_slim.json
+[1910月2025 22:07:19.482] [Worker-Main-9/INFO] [net.minecraft.client.gui.font.providers.UnihexProvider/]: Found unifont_all_no_pua-15.0.06.hex, loading
+[1910月2025 22:07:20.417] [Forge Version Check/INFO] [net.minecraftforge.fml.VersionChecker/]: [forge] Found status: OUTDATED Current: 47.3.12 Target: 47.4.0
+[1910月2025 22:07:23.752] [Render thread/WARN] [net.minecraft.client.sounds.SoundEngine/]: Missing sound for event: minecraft:item.goat_horn.play
+[1910月2025 22:07:23.753] [Render thread/WARN] [net.minecraft.client.sounds.SoundEngine/]: Missing sound for event: minecraft:entity.goat.screaming.horn_break
+[1910月2025 22:07:23.809] [Render thread/INFO] [com.mojang.blaze3d.audio.Library/]: OpenAL initialized on device OpenAL Soft on スピーカー (2- USB Audio CODEC )
+[1910月2025 22:07:23.811] [Render thread/INFO] [net.minecraft.client.sounds.SoundEngine/SOUNDS]: Sound engine started
+[1910月2025 22:07:23.967] [Render thread/INFO] [net.minecraft.client.renderer.texture.TextureAtlas/]: Created: 1024x512x4 minecraft:textures/atlas/blocks.png-atlas
+[1910月2025 22:07:24.068] [Render thread/INFO] [net.minecraft.client.renderer.texture.TextureAtlas/]: Created: 256x256x4 minecraft:textures/atlas/signs.png-atlas
+[1910月2025 22:07:24.069] [Render thread/INFO] [net.minecraft.client.renderer.texture.TextureAtlas/]: Created: 512x512x4 minecraft:textures/atlas/banner_patterns.png-atlas
+[1910月2025 22:07:24.074] [Render thread/INFO] [net.minecraft.client.renderer.texture.TextureAtlas/]: Created: 512x512x4 minecraft:textures/atlas/shield_patterns.png-atlas
+[1910月2025 22:07:24.077] [Render thread/INFO] [net.minecraft.client.renderer.texture.TextureAtlas/]: Created: 1024x1024x4 minecraft:textures/atlas/armor_trims.png-atlas
+[1910月2025 22:07:24.103] [Render thread/INFO] [net.minecraft.client.renderer.texture.TextureAtlas/]: Created: 256x256x4 minecraft:textures/atlas/chest.png-atlas
+[1910月2025 22:07:24.106] [Render thread/INFO] [net.minecraft.client.renderer.texture.TextureAtlas/]: Created: 128x64x4 minecraft:textures/atlas/decorated_pot.png-atlas
+[1910月2025 22:07:24.107] [Render thread/INFO] [net.minecraft.client.renderer.texture.TextureAtlas/]: Created: 512x256x4 minecraft:textures/atlas/beds.png-atlas
+[1910月2025 22:07:24.109] [Render thread/INFO] [net.minecraft.client.renderer.texture.TextureAtlas/]: Created: 512x256x4 minecraft:textures/atlas/shulker_boxes.png-atlas
+[1910月2025 22:07:24.423] [Render thread/WARN] [net.minecraft.client.renderer.ShaderInstance/]: Shader rendertype_entity_translucent_emissive could not find sampler named Sampler2 in the specified shader program.
+[1910月2025 22:07:24.509] [Render thread/INFO] [net.minecraft.client.renderer.texture.TextureAtlas/]: Created: 256x256x0 minecraft:textures/atlas/particles.png-atlas
+[1910月2025 22:07:24.513] [Render thread/INFO] [net.minecraft.client.renderer.texture.TextureAtlas/]: Created: 256x256x0 minecraft:textures/atlas/paintings.png-atlas
+[1910月2025 22:07:24.517] [Render thread/INFO] [net.minecraft.client.renderer.texture.TextureAtlas/]: Created: 128x128x0 minecraft:textures/atlas/mob_effects.png-atlas
+[1910月2025 22:07:25.002] [Realms Notification Availability checker #1/INFO] [com.mojang.realmsclient.client.RealmsClient/]: Could not authorize you against Realms server: java.lang.RuntimeException: Failed to parse into SignedJWT: 0
+[1910月2025 22:07:28.656] [Render thread/INFO] [net.minecraftforge.registries.GameData/REGISTRIES]: Injecting existing registry data into this CLIENT instance
+[1910月2025 22:07:30.999] [Render thread/INFO] [net.minecraft.world.item.crafting.RecipeManager/]: Loaded 7 recipes
+[1910月2025 22:07:31.173] [Render thread/INFO] [net.minecraft.advancements.AdvancementList/]: Loaded 1271 advancements
+[1910月2025 22:07:31.835] [Server thread/INFO] [net.minecraft.client.server.IntegratedServer/]: Starting integrated minecraft server version 1.20.1
+[1910月2025 22:07:31.835] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: Generating keypair
+[1910月2025 22:07:33.404] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: Preparing start region for dimension minecraft:overworld
+[1910月2025 22:07:37.029] [Render thread/INFO] [net.minecraft.server.level.progress.LoggerChunkProgressListener/]: スポーン地点を準備中：0%
+[1910月2025 22:07:37.097] [Render thread/INFO] [net.minecraft.server.level.progress.LoggerChunkProgressListener/]: スポーン地点を準備中：0%
+[1910月2025 22:07:37.097] [Render thread/INFO] [net.minecraft.server.level.progress.LoggerChunkProgressListener/]: スポーン地点を準備中：0%
+[1910月2025 22:07:37.130] [Render thread/INFO] [net.minecraft.server.level.progress.LoggerChunkProgressListener/]: スポーン地点を準備中：0%
+[1910月2025 22:07:37.130] [Render thread/INFO] [net.minecraft.server.level.progress.LoggerChunkProgressListener/]: スポーン地点を準備中：0%
+[1910月2025 22:07:37.130] [Render thread/INFO] [net.minecraft.server.level.progress.LoggerChunkProgressListener/]: スポーン地点を準備中：0%
+[1910月2025 22:07:37.130] [Render thread/INFO] [net.minecraft.server.level.progress.LoggerChunkProgressListener/]: スポーン地点を準備中：0%
+[1910月2025 22:07:37.165] [Render thread/INFO] [net.minecraft.server.level.progress.LoggerChunkProgressListener/]: スポーン地点を準備中：0%
+[1910月2025 22:07:37.431] [Render thread/INFO] [net.minecraft.server.level.progress.LoggerChunkProgressListener/]: スポーン地点を準備中：0%
+[1910月2025 22:07:37.935] [Render thread/INFO] [net.minecraft.server.level.progress.LoggerChunkProgressListener/]: スポーン地点を準備中：0%
+[1910月2025 22:07:38.450] [Render thread/INFO] [net.minecraft.server.level.progress.LoggerChunkProgressListener/]: スポーン地点を準備中：23%
+[1910月2025 22:07:38.933] [Render thread/INFO] [net.minecraft.server.level.progress.LoggerChunkProgressListener/]: スポーン地点を準備中：81%
+[1910月2025 22:07:39.151] [Server thread/INFO] [net.minecraftforge.server.permission.PermissionAPI/]: Successfully initialized permission handler forge:default_handler
+[1910月2025 22:07:39.164] [Render thread/INFO] [net.minecraft.server.level.progress.LoggerChunkProgressListener/]: Time elapsed: 5739 ms
+[1910月2025 22:07:39.584] [Server thread/INFO] [net.minecraft.client.server.IntegratedServer/]: Changing view distance to 12, from 10
+[1910月2025 22:07:39.587] [Server thread/INFO] [net.minecraft.client.server.IntegratedServer/]: Changing simulation distance to 12, from 0
+[1910月2025 22:07:39.818] [Render thread/WARN] [io.netty.util.internal.SystemPropertyUtil/]: Unable to parse the boolean system property 'java.net.preferIPv6Addresses':system - using the default value: false
+[1910月2025 22:07:40.694] [Netty Local Client IO #0/INFO] [net.minecraftforge.network.NetworkHooks/]: Connected to a modded server.
+[1910月2025 22:07:40.786] [Server thread/INFO] [net.minecraft.server.players.PlayerList/]: Dev[local:E:270b95a7] logged in with entity id 225 at (20.82123918981041, 73.0, 1.8479879576913685)
+[1910月2025 22:07:40.867] [Render thread/INFO] [jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService/]: [SmartphoneBackgroundService] World loaded: 新規ワールド
+[1910月2025 22:07:40.867] [Render thread/INFO] [jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService/]: [SmartphoneBackgroundService] Creating shared kernel for world: 新規ワールド
+[1910月2025 22:07:40.902] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: Devがゲームに参加しました
+[1910月2025 22:07:44.417] [Render thread/INFO] [jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService/]: [SmartphoneBackgroundService] Initializing virtual network router...
+[1910月2025 22:07:44.427] [Render thread/INFO] [jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService/]: [SmartphoneBackgroundService] Virtual network router initialized
+[1910月2025 22:07:44.427] [Render thread/INFO] [jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService/]: [SmartphoneBackgroundService] Initializing hardware bypass APIs...
+[1910月2025 22:07:44.428] [Render thread/INFO] [jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService/]: [SmartphoneBackgroundService] Initializing hardware APIs - Player: null
+[1910月2025 22:07:44.428] [Render thread/WARN] [jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService/]: [SmartphoneBackgroundService] Player not available yet, creating Forge implementations without player
+[1910月2025 22:07:44.432] [Render thread/INFO] [jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService/]: [SmartphoneBackgroundService] - MobileDataSocket set
+[1910月2025 22:07:44.435] [Render thread/INFO] [jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService/]: [SmartphoneBackgroundService] - BluetoothSocket set
+[1910月2025 22:07:44.438] [Render thread/INFO] [jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService/]: [SmartphoneBackgroundService] - LocationSocket set
+[1910月2025 22:07:44.444] [Render thread/INFO] [jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService/]: [SmartphoneBackgroundService] - BatteryInfo set
+[1910月2025 22:07:44.447] [Render thread/INFO] [jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService/]: [SmartphoneBackgroundService] - CameraSocket set
+[1910月2025 22:07:44.460] [Render thread/INFO] [jp.moyashi.phoneos.forge.hardware.SVCDetector/]: [SVCDetector] Simple Voice Chat MOD not found - Audio features disabled
+[1910月2025 22:07:44.460] [Render thread/INFO] [jp.moyashi.phoneos.forge.hardware.ForgeMicrophoneSocket/]: [ForgeMicrophoneSocket] Initialized without SVC (microphone unavailable)
+[1910月2025 22:07:44.461] [Render thread/INFO] [jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService/]: [SmartphoneBackgroundService] - MicrophoneSocket set
+[1910月2025 22:07:44.461] [Render thread/INFO] [jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService/]: [SmartphoneBackgroundService] - DefaultSpeakerSocket set (SVC not available)
+[1910月2025 22:07:44.469] [Render thread/INFO] [jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService/]: [SmartphoneBackgroundService] - ICSocket set
+[1910月2025 22:07:44.473] [Render thread/INFO] [jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService/]: [SmartphoneBackgroundService] - SIMInfo set
+[1910月2025 22:07:44.473] [Render thread/INFO] [jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService/]: [SmartphoneBackgroundService] All hardware APIs initialized with Forge implementations
+[1910月2025 22:07:44.473] [Render thread/INFO] [jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService/]: [SmartphoneBackgroundService] Hardware bypass APIs initialized
+[1910月2025 22:07:44.473] [Render thread/INFO] [jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService/]: [SmartphoneBackgroundService] Initializing clipboard provider...
+[1910月2025 22:07:44.491] [Render thread/INFO] [jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService/]: [SmartphoneBackgroundService] GLFWClipboardProvider set (available: true)
+[1910月2025 22:07:44.492] [Render thread/INFO] [jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService/]: [SmartphoneBackgroundService] Clipboard provider initialized
+[1910月2025 22:07:44.492] [Render thread/INFO] [jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService/]: [SmartphoneBackgroundService] Shared kernel created successfully for world: 新規ワールド
+[1910月2025 22:07:44.492] [Render thread/INFO] [jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService/]: [SmartphoneBackgroundService] Kernel created for world: 新規ワールド
+[1910月2025 22:07:45.231] [Render thread/INFO] [net.minecraft.advancements.AdvancementList/]: Loaded 2 advancements
+[1910月2025 22:07:46.380] [Server thread/INFO] [net.minecraft.client.server.IntegratedServer/]: Saving and pausing game...
+[1910月2025 22:07:46.416] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: Saving chunks for level 'ServerLevel[新規ワールド]'/minecraft:overworld
+[1910月2025 22:07:47.816] [Render thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] use() called - level.isClientSide: true, player: Dev
+[1910月2025 22:07:47.816] [Render thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] Client side - opening GUI
+[1910月2025 22:07:47.816] [Render thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] ==================== OPENING SMARTPHONE GUI ====================
+[1910月2025 22:07:47.816] [Render thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] Player: Dev
+[1910月2025 22:07:47.816] [Render thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] Player UUID: 380df991-f603-344c-a090-369bad2a924a
+[1910月2025 22:07:47.816] [Render thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] Creating ProcessingScreen instance...
+[1910月2025 22:07:47.818] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Creating MochiMobileOS display screen
+[1910月2025 22:07:47.818] [Render thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] ProcessingScreen created, setting screen...
+[1910月2025 22:07:47.819] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Initializing MochiMobileOS display...
+[1910月2025 22:07:47.834] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Screen size: 427x240, Phone size: 400x600, Scale: 0.33333334, Scaled size: 133x200, Offset: (147,20)
+[1910月2025 22:07:47.834] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Found shared kernel - frameCount: 0
+[1910月2025 22:07:47.834] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Enabling graphics for kernel...
+[1910月2025 22:07:47.834] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Graphics enabled successfully
+[1910月2025 22:07:47.834] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Initializing texture for 400x600
+[1910月2025 22:07:47.835] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Texture initialized successfully: minecraft:dynamic/mochimobileos_screen_1
+[1910月2025 22:07:47.836] [Render thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] Screen set successfully
+[1910月2025 22:07:47.836] [Render thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] Minecraft window size: 427x240
+[1910月2025 22:07:47.836] [Render thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] ==================== GUI OPENING COMPLETE ====================
+[1910月2025 22:07:47.877] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: Saving chunks for level 'ServerLevel[新規ワールド]'/minecraft:the_nether
+[1910月2025 22:07:47.882] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: Saving chunks for level 'ServerLevel[新規ワールド]'/minecraft:the_end
+[1910月2025 22:07:47.926] [Server thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] use() called - level.isClientSide: false, player: Dev
+[1910月2025 22:07:47.927] [Server thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] Server side - skipping GUI
+[1910月2025 22:07:48.575] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key pressed: 32 -> 32 (Ctrl: false)
+[1910月2025 22:07:48.579] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] charTyped - char: ' ' (Unicode: 32)
+[1910月2025 22:07:48.580] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Skipping control character/space in charTyped()
+[1910月2025 22:07:48.642] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 32
+[1910月2025 22:07:48.643] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 32 -> 32
+[1910月2025 22:07:49.494] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Initializing MochiMobileOS display...
+[1910月2025 22:07:49.494] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Screen size: 960x505, Phone size: 400x600, Scale: 0.775, Scaled size: 310x465, Offset: (325,20)
+[1910月2025 22:07:49.494] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Found shared kernel - frameCount: 22
+[1910月2025 22:07:49.494] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Enabling graphics for kernel...
+[1910月2025 22:07:49.494] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Graphics enabled successfully
+[1910月2025 22:07:49.496] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Initializing texture for 400x600
+[1910月2025 22:07:49.497] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Texture initialized successfully: minecraft:dynamic/mochimobileos_screen_2
+[1910月2025 22:07:50.228] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (417.0, 257.7552031714569), graphics=true, kernel=true
+[1910月2025 22:07:50.231] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:07:50.232] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(118, 306)
+[1910月2025 22:07:51.970] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 60
+[1910月2025 22:07:53.067] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (551.0, 171.16947472745292), graphics=true, kernel=true
+[1910月2025 22:07:53.067] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:07:53.067] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(291, 195)
+[1910月2025 22:07:58.594] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (456.5, 30.530227948463825), graphics=true, kernel=true
+[1910月2025 22:07:58.594] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:07:58.594] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(169, 13)
+[1910月2025 22:07:58.707] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 120
+[1910月2025 22:07:58.852] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key pressed: 341 -> 17 (Ctrl: true)
+[1910月2025 22:07:58.954] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key pressed: 86 -> 86 (Ctrl: true)
+[1910月2025 22:07:58.986] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 341
+[1910月2025 22:07:58.986] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 341 -> 17
+[1910月2025 22:07:59.007] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 86
+[1910月2025 22:07:59.007] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 86 -> 86
+[1910月2025 22:07:59.639] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (630.0, 35.53518334985134), graphics=true, kernel=true
+[1910月2025 22:07:59.639] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:07:59.639] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(393, 20)
+[1910月2025 22:08:00.754] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 180
+[1910月2025 22:08:02.321] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (718.0, 214.21209117938554), graphics=true, kernel=true
+[1910月2025 22:08:02.321] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:08:02.321] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Outside bounds, ignoring click
+[1910月2025 22:08:03.239] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 240
+[1910月2025 22:08:05.575] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 300
+[1910月2025 22:08:07.233] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 360
+[1910月2025 22:08:08.813] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 420
+[1910月2025 22:08:10.338] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 480
+[1910月2025 22:08:12.097] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (410.5, 193.19127849355797), graphics=true, kernel=true
+[1910月2025 22:08:12.097] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:08:12.098] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(110, 223)
+[1910月2025 22:08:12.439] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 540
+[1910月2025 22:08:14.291] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 600
+[1910月2025 22:08:16.120] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 660
+[1910月2025 22:08:17.996] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 720
+[1910月2025 22:08:19.774] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 780
+[1910月2025 22:08:21.784] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 840
+[1910月2025 22:08:23.538] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 900
+[1910月2025 22:08:25.358] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 960
+[1910月2025 22:08:27.516] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 1020
+[1910月2025 22:08:29.532] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 1080
+[1910月2025 22:08:31.973] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 1140
+[1910月2025 22:08:34.328] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 1200
+[1910月2025 22:08:36.993] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (686.5, 153.15163528245787), graphics=true, kernel=true
+[1910月2025 22:08:36.993] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:08:36.993] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Outside bounds, ignoring click
+[1910月2025 22:08:37.204] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 1260
+[1910月2025 22:08:37.697] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (516.5, 39.0386521308226), graphics=true, kernel=true
+[1910月2025 22:08:37.697] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:08:37.697] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(247, 24)
+[1910月2025 22:08:38.562] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (434.5, 42.0416253716551), graphics=true, kernel=true
+[1910月2025 22:08:38.562] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:08:38.562] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(141, 28)
+[1910月2025 22:08:39.529] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 1320
+[1910月2025 22:08:39.881] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key pressed: 259 -> 8 (Ctrl: false)
+[1910月2025 22:08:39.932] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 259
+[1910月2025 22:08:39.932] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 259 -> 8
+[1910月2025 22:08:40.067] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key pressed: 261 -> 127 (Ctrl: false)
+[1910月2025 22:08:40.160] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 261
+[1910月2025 22:08:40.161] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 261 -> 127
+[1910月2025 22:08:40.447] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key pressed: 341 -> 17 (Ctrl: true)
+[1910月2025 22:08:40.763] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key pressed: 65 -> 65 (Ctrl: true)
+[1910月2025 22:08:40.851] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 65
+[1910月2025 22:08:40.851] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 65 -> 65
+[1910月2025 22:08:40.910] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 341
+[1910月2025 22:08:40.911] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 341 -> 17
+[1910月2025 22:08:41.419] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key pressed: 259 -> 8 (Ctrl: false)
+[1910月2025 22:08:41.485] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 259
+[1910月2025 22:08:41.486] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 259 -> 8
+[1910月2025 22:08:41.569] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key pressed: 341 -> 17 (Ctrl: true)
+[1910月2025 22:08:41.641] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key pressed: 86 -> 86 (Ctrl: true)
+[1910月2025 22:08:41.665] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 1380
+[1910月2025 22:08:41.731] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 341
+[1910月2025 22:08:41.731] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 341 -> 17
+[1910月2025 22:08:41.763] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 86
+[1910月2025 22:08:41.763] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 86 -> 86
+[1910月2025 22:08:42.562] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (626.5, 34.033696729435086), graphics=true, kernel=true
+[1910月2025 22:08:42.562] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:08:42.562] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(389, 18)
+[1910月2025 22:08:43.787] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 1440
+[1910月2025 22:08:45.289] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 1500
+[1910月2025 22:08:46.813] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 1560
+[1910月2025 22:08:46.817] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (538.5, 274.27155599603566), graphics=true, kernel=true
+[1910月2025 22:08:46.817] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:08:46.817] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(275, 328)
+[1910月2025 22:08:47.719] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (380.0, 275.2725470763132), graphics=true, kernel=true
+[1910月2025 22:08:47.719] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:08:47.719] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(70, 329)
+[1910月2025 22:08:47.937] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (380.0, 275.2725470763132), graphics=true, kernel=true
+[1910月2025 22:08:47.937] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:08:47.937] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(70, 329)
+[1910月2025 22:08:48.034] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Skipping normal character in keyPressed() - will be handled by charTyped()
+[1910月2025 22:08:48.034] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] charTyped - char: 'a' (Unicode: 97)
+[1910月2025 22:08:48.094] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 65
+[1910月2025 22:08:48.094] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 65 -> 65
+[1910月2025 22:08:48.301] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Skipping normal character in keyPressed() - will be handled by charTyped()
+[1910月2025 22:08:48.301] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] charTyped - char: 'a' (Unicode: 97)
+[1910月2025 22:08:48.384] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 65
+[1910月2025 22:08:48.384] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 65 -> 65
+[1910月2025 22:08:48.413] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 1620
+[1910月2025 22:08:48.841] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (475.5, 30.530227948463825), graphics=true, kernel=true
+[1910月2025 22:08:48.841] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:08:48.841] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(194, 13)
+[1910月2025 22:08:50.009] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key pressed: 341 -> 17 (Ctrl: true)
+[1910月2025 22:08:50.121] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key pressed: 65 -> 65 (Ctrl: true)
+[1910月2025 22:08:50.186] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 65
+[1910月2025 22:08:50.186] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 65 -> 65
+[1910月2025 22:08:50.202] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 341
+[1910月2025 22:08:50.202] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 341 -> 17
+[1910月2025 22:08:50.339] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 1680
+[1910月2025 22:08:50.790] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key pressed: 259 -> 8 (Ctrl: false)
+[1910月2025 22:08:50.853] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 259
+[1910月2025 22:08:50.854] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 259 -> 8
+[1910月2025 22:08:52.185] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 1740
+[1910月2025 22:08:54.824] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 1800
+[1910月2025 22:08:56.838] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 1860
+[1910月2025 22:08:58.989] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 1920
+[1910月2025 22:09:01.450] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 1980
+[1910月2025 22:09:02.143] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (472.0, 37.537165510406346), graphics=true, kernel=true
+[1910月2025 22:09:02.143] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:09:02.143] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(189, 22)
+[1910月2025 22:09:02.274] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key pressed: 341 -> 17 (Ctrl: true)
+[1910月2025 22:09:02.350] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key pressed: 86 -> 86 (Ctrl: true)
+[1910月2025 22:09:02.397] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 341
+[1910月2025 22:09:02.397] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 341 -> 17
+[1910月2025 22:09:02.419] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 86
+[1910月2025 22:09:02.419] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 86 -> 86
+[1910月2025 22:09:02.785] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (620.5, 29.529236868186324), graphics=true, kernel=true
+[1910月2025 22:09:02.785] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:09:02.785] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(381, 12)
+[1910月2025 22:09:03.717] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 2040
+[1910月2025 22:09:05.319] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 2100
+[1910月2025 22:09:06.925] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 2160
+[1910月2025 22:09:08.824] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 2220
+[1910月2025 22:09:10.266] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 2280
+[1910月2025 22:09:11.709] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 2340
+[1910月2025 22:09:12.984] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 2400
+[1910月2025 22:09:13.779] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (617.0, 79.57879088206144), graphics=true, kernel=true
+[1910月2025 22:09:13.779] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:09:13.779] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(376, 76)
+[1910月2025 22:09:14.583] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 2460
+[1910月2025 22:09:16.294] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 2520
+[1910月2025 22:09:18.346] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 2580
+[1910月2025 22:09:20.295] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 2640
+[1910月2025 22:09:21.927] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (491.5, 448.4440039643211), graphics=true, kernel=true
+[1910月2025 22:09:21.927] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:09:21.927] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(214, 552)
+[1910月2025 22:09:22.696] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 2700
+[1910月2025 22:09:24.403] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 2760
+[1910月2025 22:09:25.731] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 2820
+[1910月2025 22:09:26.832] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 2880
+[1910月2025 22:09:28.213] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 2940
+[1910月2025 22:09:29.634] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 3000
+[1910月2025 22:09:31.809] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 3060
+[1910月2025 22:09:33.481] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 3120
+[1910月2025 22:09:34.043] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (490.5, 448.9444995044599), graphics=true, kernel=true
+[1910月2025 22:09:34.043] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:09:34.043] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(213, 553)
+[1910月2025 22:09:35.383] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 3180
+[1910月2025 22:09:36.993] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 3240
+[1910月2025 22:09:38.177] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 3300
+[1910月2025 22:09:39.585] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 3360
+[1910月2025 22:09:40.982] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 3420
+[1910月2025 22:09:42.749] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 3480
+[1910月2025 22:09:44.833] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 3540
+[1910月2025 22:09:47.594] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 3600
+[1910月2025 22:09:48.239] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (472.0, 30.029732408325074), graphics=true, kernel=true
+[1910月2025 22:09:48.239] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:09:48.239] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(189, 12)
+[1910月2025 22:09:48.731] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key pressed: 341 -> 17 (Ctrl: true)
+[1910月2025 22:09:48.882] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key pressed: 65 -> 65 (Ctrl: true)
+[1910月2025 22:09:48.913] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 65
+[1910月2025 22:09:48.913] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 65 -> 65
+[1910月2025 22:09:48.945] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 341
+[1910月2025 22:09:48.945] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 341 -> 17
+[1910月2025 22:09:49.118] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key pressed: 341 -> 17 (Ctrl: true)
+[1910月2025 22:09:49.208] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key pressed: 86 -> 86 (Ctrl: true)
+[1910月2025 22:09:49.363] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 86
+[1910月2025 22:09:49.363] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 86 -> 86
+[1910月2025 22:09:49.386] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 341
+[1910月2025 22:09:49.386] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 341 -> 17
+[1910月2025 22:09:49.954] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (618.0, 37.03666997026759), graphics=true, kernel=true
+[1910月2025 22:09:49.954] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:09:49.954] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(378, 21)
+[1910月2025 22:09:50.130] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 3660
+[1910月2025 22:09:51.640] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 3720
+[1910月2025 22:09:52.874] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 3780
+[1910月2025 22:09:53.961] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 3840
+[1910月2025 22:09:55.028] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 3900
+[1910月2025 22:09:56.312] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 3960
+[1910月2025 22:09:58.094] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 4020
+[1910月2025 22:09:58.533] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (585.0, 162.66105054509416), graphics=true, kernel=true
+[1910月2025 22:09:58.533] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:09:58.533] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(335, 184)
+[1910月2025 22:09:59.984] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 4080
+[1910月2025 22:10:00.039] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (567.5, 233.73141724479683), graphics=true, kernel=true
+[1910月2025 22:10:00.040] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:10:00.040] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(312, 275)
+[1910月2025 22:10:01.785] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 4140
+[1910月2025 22:10:03.408] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 4200
+[1910月2025 22:10:04.714] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (351.0, 120.1189296333003), graphics=true, kernel=true
+[1910月2025 22:10:04.714] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:10:04.714] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(33, 129)
+[1910月2025 22:10:05.012] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 4260
+[1910月2025 22:10:06.081] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (574.5, 160.65906838453915), graphics=true, kernel=true
+[1910月2025 22:10:06.081] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:10:06.081] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(321, 181)
+[1910月2025 22:10:06.881] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 4320
+[1910月2025 22:10:08.663] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 4380
+[1910月2025 22:10:10.319] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 4440
+[1910月2025 22:10:12.078] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 4500
+[1910月2025 22:10:13.681] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 4560
+[1910月2025 22:10:13.804] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (347.0, 115.61446977205154), graphics=true, kernel=true
+[1910月2025 22:10:13.805] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:10:13.805] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(28, 123)
+[1910月2025 22:10:15.241] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 4620
+[1910月2025 22:10:17.137] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 4680
+[1910月2025 22:10:18.735] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 4740
+[1910月2025 22:10:20.363] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 4800
+[1910月2025 22:10:22.604] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 4860
+[1910月2025 22:10:24.480] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 4920
+[1910月2025 22:10:24.553] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (481.0, 44.54410307234886), graphics=true, kernel=true
+[1910月2025 22:10:24.553] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:10:24.553] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(201, 31)
+[1910月2025 22:10:24.676] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (482.0, 31.53121902874133), graphics=true, kernel=true
+[1910月2025 22:10:24.676] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:10:24.676] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(202, 14)
+[1910月2025 22:10:25.033] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (483.5, 36.03567888999009), graphics=true, kernel=true
+[1910月2025 22:10:25.033] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:10:25.033] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(204, 20)
+[1910月2025 22:10:25.635] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key pressed: 341 -> 17 (Ctrl: true)
+[1910月2025 22:10:25.734] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key pressed: 65 -> 65 (Ctrl: true)
+[1910月2025 22:10:25.845] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 341
+[1910月2025 22:10:25.845] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 341 -> 17
+[1910月2025 22:10:25.866] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 65
+[1910月2025 22:10:25.866] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 65 -> 65
+[1910月2025 22:10:26.064] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 4980
+[1910月2025 22:10:27.305] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Skipping normal character in keyPressed() - will be handled by charTyped()
+[1910月2025 22:10:27.305] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] charTyped - char: 'g' (Unicode: 103)
+[1910月2025 22:10:27.351] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Skipping normal character in keyPressed() - will be handled by charTyped()
+[1910月2025 22:10:27.351] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] charTyped - char: 'e' (Unicode: 101)
+[1910月2025 22:10:27.404] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 71
+[1910月2025 22:10:27.404] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 71 -> 71
+[1910月2025 22:10:27.471] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 69
+[1910月2025 22:10:27.471] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 69 -> 69
+[1910月2025 22:10:27.853] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 5040
+[1910月2025 22:10:28.306] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key pressed: 259 -> 8 (Ctrl: false)
+[1910月2025 22:10:28.349] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 259
+[1910月2025 22:10:28.351] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 259 -> 8
+[1910月2025 22:10:28.388] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key pressed: 259 -> 8 (Ctrl: false)
+[1910月2025 22:10:28.481] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 259
+[1910月2025 22:10:28.481] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 259 -> 8
+[1910月2025 22:10:28.506] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Skipping normal character in keyPressed() - will be handled by charTyped()
+[1910月2025 22:10:28.547] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 342
+[1910月2025 22:10:28.547] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 342 -> 342
+[1910月2025 22:10:29.591] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 5100
+[1910月2025 22:10:31.587] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 5160
+[1910月2025 22:10:33.593] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 5220
+[1910月2025 22:10:35.487] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 5280
+[1910月2025 22:10:37.257] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 5340
+[1910月2025 22:10:40.393] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 5400
+[1910月2025 22:10:41.920] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 5460
+[1910月2025 22:10:43.497] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 5520
+[1910月2025 22:10:45.000] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (452.5, 39.53914767096135), graphics=true, kernel=true
+[1910月2025 22:10:45.000] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:10:45.000] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(164, 25)
+[1910月2025 22:10:45.128] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key pressed: 341 -> 17 (Ctrl: true)
+[1910月2025 22:10:45.188] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key pressed: 86 -> 86 (Ctrl: true)
+[1910月2025 22:10:45.226] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 341
+[1910月2025 22:10:45.226] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 341 -> 17
+[1910月2025 22:10:45.275] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 86
+[1910月2025 22:10:45.275] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 86 -> 86
+[1910月2025 22:10:45.321] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 5580
+[1910月2025 22:10:45.539] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (616.0, 34.534192269573836), graphics=true, kernel=true
+[1910月2025 22:10:45.539] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:10:45.539] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(375, 18)
+[1910月2025 22:10:47.063] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 5640
+[1910月2025 22:10:48.181] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 5700
+[1910月2025 22:10:49.596] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 5760
+[1910月2025 22:10:51.132] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 5820
+[1910月2025 22:10:52.337] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 5880
+[1910月2025 22:10:54.313] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 5940
+[1910月2025 22:10:55.921] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 6000
+[1910月2025 22:10:58.183] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 6060
+[1910月2025 22:11:00.079] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 6120
+[1910月2025 22:11:01.584] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (389.5, 224.7224975222993), graphics=true, kernel=true
+[1910月2025 22:11:01.586] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:11:01.586] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(83, 264)
+[1910月2025 22:11:02.003] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 6180
+[1910月2025 22:11:03.586] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 6240
+[1910月2025 22:11:05.155] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 6300
+[1910月2025 22:11:06.685] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 6360
+[1910月2025 22:11:08.532] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 6420
+[1910月2025 22:11:10.143] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 6480
+[1910月2025 22:11:11.944] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 6540
+[1910月2025 22:11:13.797] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 6600
+[1910月2025 22:11:15.457] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 6660
+[1910月2025 22:11:17.158] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (681.5, 109.10802775024777), graphics=true, kernel=true
+[1910月2025 22:11:17.158] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:11:17.158] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Outside bounds, ignoring click
+[1910月2025 22:11:17.355] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 6720
+[1910月2025 22:11:19.032] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 6780
+[1910月2025 22:11:20.556] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 6840
+[1910月2025 22:11:22.285] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 6900
+[1910月2025 22:11:23.810] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 6960
+[1910月2025 22:11:25.511] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 7020
+[1910月2025 22:11:27.463] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 7080
+[1910月2025 22:11:29.062] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 7140
+[1910月2025 22:11:30.677] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 7200
+[1910月2025 22:11:31.813] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 7260
+[1910月2025 22:11:33.405] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 7320
+[1910月2025 22:11:34.987] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 7380
+[1910月2025 22:11:36.932] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 7440
+[1910月2025 22:11:38.627] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 7500
+[1910月2025 22:11:40.502] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 7560
+[1910月2025 22:11:42.361] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 7620
+[1910月2025 22:11:44.747] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 7680
+[1910月2025 22:11:45.729] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (605.5, 167.66600594648168), graphics=true, kernel=true
+[1910月2025 22:11:45.729] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:11:45.729] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(361, 190)
+[1910月2025 22:11:46.240] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key pressed: 32 -> 32 (Ctrl: false)
+[1910月2025 22:11:46.240] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] charTyped - char: ' ' (Unicode: 32)
+[1910月2025 22:11:46.240] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Skipping control character/space in charTyped()
+[1910月2025 22:11:46.257] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 32
+[1910月2025 22:11:46.257] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 32 -> 32
+[1910月2025 22:11:46.664] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 7740
+[1910月2025 22:11:48.228] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 7800
+[1910月2025 22:11:48.717] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (550.5, 159.15758176412288), graphics=true, kernel=true
+[1910月2025 22:11:48.717] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:11:48.717] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(290, 179)
+[1910月2025 22:11:50.005] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 7860
+[1910月2025 22:11:51.806] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 7920
+[1910月2025 22:11:53.456] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 7980
+[1910月2025 22:11:55.084] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 8040
+[1910月2025 22:11:56.809] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 8100
+[1910月2025 22:11:59.164] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 8160
+[1910月2025 22:12:00.942] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 8220
+[1910月2025 22:12:02.849] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 8280
+[1910月2025 22:12:04.744] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 8340
+[1910月2025 22:12:06.350] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 8400
+[1910月2025 22:12:08.103] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 8460
+[1910月2025 22:12:10.384] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 8520
+[1910月2025 22:12:12.159] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 8580
+[1910月2025 22:12:14.136] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 8640
+[1910月2025 22:12:15.783] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 8700
+[1910月2025 22:12:17.516] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 8760
+[1910月2025 22:12:19.611] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 8820
+[1910月2025 22:12:21.522] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 8880
+[1910月2025 22:12:23.331] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 8940
+[1910月2025 22:12:25.007] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 9000
+[1910月2025 22:12:26.483] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 9060
+[1910月2025 22:12:28.085] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 9120
+[1910月2025 22:12:29.609] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 9180
+[1910月2025 22:12:31.164] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 9240
+[1910月2025 22:12:32.714] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 9300
+[1910月2025 22:12:34.892] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 9360
+[1910月2025 22:12:36.414] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 9420
+[1910月2025 22:12:38.058] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 9480
+[1910月2025 22:12:40.599] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 9540
+[1910月2025 22:12:42.461] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 9600
+[1910月2025 22:12:44.234] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 9660
+[1910月2025 22:12:46.187] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 9720
+[1910月2025 22:12:47.758] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 9780
+[1910月2025 22:12:49.261] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 9840
+[1910月2025 22:12:50.790] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 9900
+[1910月2025 22:12:52.463] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (873.5, 346.84340931615463), graphics=true, kernel=true
+[1910月2025 22:12:52.463] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:12:52.463] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Outside bounds, ignoring click
+[1910月2025 22:12:52.636] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 9960
+[1910月2025 22:12:52.841] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] ESC pressed, entering sleep mode and closing screen
+[1910月2025 22:12:52.856] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Closing MochiMobileOS display...
+[1910月2025 22:12:52.856] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] MochiMobileOS display closed, background processing continues
+[1910月2025 22:12:52.856] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Texture cleaned up successfully
+[1910月2025 22:12:54.410] [Render thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] use() called - level.isClientSide: true, player: Dev
+[1910月2025 22:12:54.410] [Render thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] Client side - opening GUI
+[1910月2025 22:12:54.410] [Render thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] ==================== OPENING SMARTPHONE GUI ====================
+[1910月2025 22:12:54.411] [Render thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] Player: Dev
+[1910月2025 22:12:54.411] [Render thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] Player UUID: 380df991-f603-344c-a090-369bad2a924a
+[1910月2025 22:12:54.411] [Render thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] Device is sleeping, waking up...
+[1910月2025 22:12:54.440] [Render thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] Creating ProcessingScreen instance...
+[1910月2025 22:12:54.440] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Creating MochiMobileOS display screen
+[1910月2025 22:12:54.440] [Render thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] ProcessingScreen created, setting screen...
+[1910月2025 22:12:54.441] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Initializing MochiMobileOS display...
+[1910月2025 22:12:54.441] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Screen size: 960x505, Phone size: 400x600, Scale: 0.775, Scaled size: 310x465, Offset: (325,20)
+[1910月2025 22:12:54.441] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Found shared kernel - frameCount: 9964
+[1910月2025 22:12:54.441] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Enabling graphics for kernel...
+[1910月2025 22:12:54.441] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Graphics enabled successfully
+[1910月2025 22:12:54.441] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Initializing texture for 400x600
+[1910月2025 22:12:54.442] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Texture initialized successfully: minecraft:dynamic/mochimobileos_screen_3
+[1910月2025 22:12:54.443] [Render thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] Screen set successfully
+[1910月2025 22:12:54.443] [Render thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] Minecraft window size: 960x505
+[1910月2025 22:12:54.443] [Render thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] ==================== GUI OPENING COMPLETE ====================
+[1910月2025 22:12:54.456] [Server thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] use() called - level.isClientSide: false, player: Dev
+[1910月2025 22:12:54.456] [Server thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] Server side - skipping GUI
+[1910月2025 22:12:55.011] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key pressed: 32 -> 32 (Ctrl: false)
+[1910月2025 22:12:55.011] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] charTyped - char: ' ' (Unicode: 32)
+[1910月2025 22:12:55.011] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Skipping control character/space in charTyped()
+[1910月2025 22:12:55.113] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 32
+[1910月2025 22:12:55.113] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 32 -> 32
+[1910月2025 22:12:55.622] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (419.5, 239.73736372646184), graphics=true, kernel=true
+[1910月2025 22:12:55.622] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:12:55.622] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(121, 283)
+[1910月2025 22:12:56.966] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 10020
+[1910月2025 22:12:57.640] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (556.5, 167.16551040634292), graphics=true, kernel=true
+[1910月2025 22:12:57.640] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:12:57.640] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(298, 189)
+[1910月2025 22:12:58.933] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 10080
+[1910月2025 22:13:00.444] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] ESC pressed, entering sleep mode and closing screen
+[1910月2025 22:13:00.452] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Closing MochiMobileOS display...
+[1910月2025 22:13:00.452] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] MochiMobileOS display closed, background processing continues
+[1910月2025 22:13:00.452] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Texture cleaned up successfully
+[1910月2025 22:13:27.044] [Render thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] use() called - level.isClientSide: true, player: Dev
+[1910月2025 22:13:27.044] [Render thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] Client side - opening GUI
+[1910月2025 22:13:27.044] [Render thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] ==================== OPENING SMARTPHONE GUI ====================
+[1910月2025 22:13:27.045] [Render thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] Player: Dev
+[1910月2025 22:13:27.045] [Render thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] Player UUID: 380df991-f603-344c-a090-369bad2a924a
+[1910月2025 22:13:27.045] [Render thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] Device is sleeping, waking up...
+[1910月2025 22:13:27.065] [Render thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] Creating ProcessingScreen instance...
+[1910月2025 22:13:27.066] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Creating MochiMobileOS display screen
+[1910月2025 22:13:27.066] [Render thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] ProcessingScreen created, setting screen...
+[1910月2025 22:13:27.067] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Initializing MochiMobileOS display...
+[1910月2025 22:13:27.067] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Screen size: 960x505, Phone size: 400x600, Scale: 0.775, Scaled size: 310x465, Offset: (325,20)
+[1910月2025 22:13:27.067] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Found shared kernel - frameCount: 10136
+[1910月2025 22:13:27.067] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Enabling graphics for kernel...
+[1910月2025 22:13:27.067] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Graphics enabled successfully
+[1910月2025 22:13:27.067] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Initializing texture for 400x600
+[1910月2025 22:13:27.068] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Texture initialized successfully: minecraft:dynamic/mochimobileos_screen_4
+[1910月2025 22:13:27.069] [Render thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] Screen set successfully
+[1910月2025 22:13:27.069] [Render thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] Minecraft window size: 960x505
+[1910月2025 22:13:27.069] [Render thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] ==================== GUI OPENING COMPLETE ====================
+[1910月2025 22:13:27.070] [Server thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] use() called - level.isClientSide: false, player: Dev
+[1910月2025 22:13:27.070] [Server thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] Server side - skipping GUI
+[1910月2025 22:13:27.228] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 10140
+[1910月2025 22:13:28.231] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (518.5, 327.3240832507433), graphics=true, kernel=true
+[1910月2025 22:13:28.232] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:13:28.232] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(249, 396)
+[1910月2025 22:13:28.858] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (535.0, 334.33102081268584), graphics=true, kernel=true
+[1910月2025 22:13:28.858] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:13:28.858] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(270, 405)
+[1910月2025 22:13:29.225] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key pressed: 32 -> 32 (Ctrl: false)
+[1910月2025 22:13:29.225] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] charTyped - char: ' ' (Unicode: 32)
+[1910月2025 22:13:29.225] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Skipping control character/space in charTyped()
+[1910月2025 22:13:29.358] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 32
+[1910月2025 22:13:29.358] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 32 -> 32
+[1910月2025 22:13:29.532] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 10200
+[1910月2025 22:13:29.888] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (416.5, 251.24876114965312), graphics=true, kernel=true
+[1910月2025 22:13:29.888] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:13:29.888] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(118, 298)
+[1910月2025 22:13:32.086] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 10260
+[1910月2025 22:13:32.244] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (403.0, 230.7284440039643), graphics=true, kernel=true
+[1910月2025 22:13:32.245] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:13:32.245] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(100, 271)
+[1910月2025 22:13:33.604] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 10320
+[1910月2025 22:13:34.968] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 10380
+[1910月2025 22:13:35.289] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key pressed: 32 -> 32 (Ctrl: false)
+[1910月2025 22:13:35.289] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] charTyped - char: ' ' (Unicode: 32)
+[1910月2025 22:13:35.289] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Skipping control character/space in charTyped()
+[1910月2025 22:13:35.412] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 32
+[1910月2025 22:13:35.412] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 32 -> 32
+[1910月2025 22:13:36.112] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (402.0, 234.2319127849356), graphics=true, kernel=true
+[1910月2025 22:13:36.112] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:13:36.112] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(99, 276)
+[1910月2025 22:13:36.536] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 10440
+[1910月2025 22:13:37.442] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key pressed: 32 -> 32 (Ctrl: false)
+[1910月2025 22:13:37.442] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] charTyped - char: ' ' (Unicode: 32)
+[1910月2025 22:13:37.442] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Skipping control character/space in charTyped()
+[1910月2025 22:13:37.542] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 32
+[1910月2025 22:13:37.543] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 32 -> 32
+[1910月2025 22:13:38.059] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 10500
+[1910月2025 22:13:39.715] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 10560
+[1910月2025 22:13:39.900] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (414.0, 184.18235877106045), graphics=true, kernel=true
+[1910月2025 22:13:39.900] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:13:39.900] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(114, 211)
+[1910月2025 22:13:41.025] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 10620
+[1910月2025 22:13:41.643] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key pressed: 32 -> 32 (Ctrl: false)
+[1910月2025 22:13:41.643] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] charTyped - char: ' ' (Unicode: 32)
+[1910月2025 22:13:41.644] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Skipping control character/space in charTyped()
+[1910月2025 22:13:41.751] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 32
+[1910月2025 22:13:41.751] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 32 -> 32
+[1910月2025 22:13:42.102] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (586.5, 169.16749256689792), graphics=true, kernel=true
+[1910月2025 22:13:42.102] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:13:42.102] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(337, 192)
+[1910月2025 22:13:42.530] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 10680
+[1910月2025 22:13:42.553] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (570.5, 163.1615460852329), graphics=true, kernel=true
+[1910月2025 22:13:42.553] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:13:42.553] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(316, 184)
+[1910月2025 22:13:44.421] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 10740
+[1910月2025 22:13:45.270] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (499.0, 43.04261645193261), graphics=true, kernel=true
+[1910月2025 22:13:45.272] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:13:45.272] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(224, 29)
+[1910月2025 22:13:45.575] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key pressed: 341 -> 17 (Ctrl: true)
+[1910月2025 22:13:45.631] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key pressed: 65 -> 65 (Ctrl: true)
+[1910月2025 22:13:45.728] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 341
+[1910月2025 22:13:45.728] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 341 -> 17
+[1910月2025 22:13:45.764] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 65
+[1910月2025 22:13:45.764] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 65 -> 65
+[1910月2025 22:13:46.404] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 10800
+[1910月2025 22:13:46.435] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Skipping normal character in keyPressed() - will be handled by charTyped()
+[1910月2025 22:13:46.435] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] charTyped - char: 'g' (Unicode: 103)
+[1910月2025 22:13:46.523] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 71
+[1910月2025 22:13:46.523] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 71 -> 71
+[1910月2025 22:13:47.438] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key pressed: 259 -> 8 (Ctrl: false)
+[1910月2025 22:13:47.508] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 259
+[1910月2025 22:13:47.508] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 259 -> 8
+[1910月2025 22:13:47.624] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key pressed: 259 -> 8 (Ctrl: false)
+[1910月2025 22:13:47.709] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 259
+[1910月2025 22:13:47.709] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 259 -> 8
+[1910月2025 22:13:48.308] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 10860
+[1910月2025 22:13:48.538] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Skipping normal character in keyPressed() - will be handled by charTyped()
+[1910月2025 22:13:48.539] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] charTyped - char: 'y' (Unicode: 121)
+[1910月2025 22:13:48.624] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 89
+[1910月2025 22:13:48.624] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 89 -> 89
+[1910月2025 22:13:48.643] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Skipping normal character in keyPressed() - will be handled by charTyped()
+[1910月2025 22:13:48.643] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] charTyped - char: 'o' (Unicode: 111)
+[1910月2025 22:13:48.692] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 79
+[1910月2025 22:13:48.692] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 79 -> 79
+[1910月2025 22:13:48.825] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Skipping normal character in keyPressed() - will be handled by charTyped()
+[1910月2025 22:13:48.825] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] charTyped - char: 'u' (Unicode: 117)
+[1910月2025 22:13:48.908] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 85
+[1910月2025 22:13:48.909] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 85 -> 85
+[1910月2025 22:13:48.939] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Skipping normal character in keyPressed() - will be handled by charTyped()
+[1910月2025 22:13:48.940] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] charTyped - char: 't' (Unicode: 116)
+[1910月2025 22:13:49.025] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 84
+[1910月2025 22:13:49.025] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 84 -> 84
+[1910月2025 22:13:49.075] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Skipping normal character in keyPressed() - will be handled by charTyped()
+[1910月2025 22:13:49.075] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] charTyped - char: 'u' (Unicode: 117)
+[1910月2025 22:13:49.125] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 85
+[1910月2025 22:13:49.125] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 85 -> 85
+[1910月2025 22:13:49.143] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Skipping normal character in keyPressed() - will be handled by charTyped()
+[1910月2025 22:13:49.144] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] charTyped - char: 'b' (Unicode: 98)
+[1910月2025 22:13:49.228] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Skipping normal character in keyPressed() - will be handled by charTyped()
+[1910月2025 22:13:49.228] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] charTyped - char: 'e' (Unicode: 101)
+[1910月2025 22:13:49.277] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 66
+[1910月2025 22:13:49.278] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 66 -> 66
+[1910月2025 22:13:49.342] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 69
+[1910月2025 22:13:49.343] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 69 -> 69
+[1910月2025 22:13:49.894] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Skipping normal character in keyPressed() - will be handled by charTyped()
+[1910月2025 22:13:49.894] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] charTyped - char: '.' (Unicode: 46)
+[1910月2025 22:13:49.945] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 46
+[1910月2025 22:13:49.946] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 46 -> 46
+[1910月2025 22:13:50.010] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 10920
+[1910月2025 22:13:50.025] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Skipping normal character in keyPressed() - will be handled by charTyped()
+[1910月2025 22:13:50.025] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] charTyped - char: 'c' (Unicode: 99)
+[1910月2025 22:13:50.091] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 67
+[1910月2025 22:13:50.091] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 67 -> 67
+[1910月2025 22:13:50.146] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Skipping normal character in keyPressed() - will be handled by charTyped()
+[1910月2025 22:13:50.146] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] charTyped - char: 'o' (Unicode: 111)
+[1910月2025 22:13:50.259] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 79
+[1910月2025 22:13:50.259] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 79 -> 79
+[1910月2025 22:13:50.295] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Skipping normal character in keyPressed() - will be handled by charTyped()
+[1910月2025 22:13:50.295] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] charTyped - char: 'm' (Unicode: 109)
+[1910月2025 22:13:50.377] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 77
+[1910月2025 22:13:50.377] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 77 -> 77
+[1910月2025 22:13:50.449] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key pressed: 257 -> 10 (Ctrl: false)
+[1910月2025 22:13:50.487] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 257
+[1910月2025 22:13:50.487] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 257 -> 10
+[1910月2025 22:13:51.923] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 10980
+[1910月2025 22:13:53.536] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 11040
+[1910月2025 22:13:54.658] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 11100
+[1910月2025 22:13:55.973] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 11160
+[1910月2025 22:13:57.061] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 11220
+[1910月2025 22:13:58.142] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 11280
+[1910月2025 22:13:59.829] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 11340
+[1910月2025 22:14:00.730] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (616.0, 111.11000991080277), graphics=true, kernel=true
+[1910月2025 22:14:00.730] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:14:00.730] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(375, 117)
+[1910月2025 22:14:01.353] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (524.5, 111.11000991080277), graphics=true, kernel=true
+[1910月2025 22:14:01.353] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:14:01.353] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(257, 117)
+[1910月2025 22:14:01.533] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 11400
+[1910月2025 22:14:03.358] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 11460
+[1910月2025 22:14:04.147] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] charTyped - char: '放' (Unicode: 25918)
+[1910月2025 22:14:04.149] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] charTyped - char: '課' (Unicode: 35506)
+[1910月2025 22:14:04.150] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] charTyped - char: '後' (Unicode: 24460)
+[1910月2025 22:14:04.152] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] charTyped - char: 'ら' (Unicode: 12425)
+[1910月2025 22:14:04.153] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] charTyped - char: 'ぼ' (Unicode: 12412)
+[1910月2025 22:14:04.155] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] charTyped - char: 'ら' (Unicode: 12425)
+[1910月2025 22:14:04.157] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] charTyped - char: 'と' (Unicode: 12392)
+[1910月2025 22:14:04.159] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] charTyped - char: 'り' (Unicode: 12426)
+[1910月2025 22:14:04.725] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key pressed: 257 -> 10 (Ctrl: false)
+[1910月2025 22:14:04.774] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 257
+[1910月2025 22:14:04.774] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 257 -> 10
+[1910月2025 22:14:05.159] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 11520
+[1910月2025 22:14:06.696] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (614.5, 113.61248761149653), graphics=true, kernel=true
+[1910月2025 22:14:06.696] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:14:06.696] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(373, 120)
+[1910月2025 22:14:07.036] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 11580
+[1910月2025 22:14:08.762] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 11640
+[1910月2025 22:14:10.732] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 11700
+[1910月2025 22:14:10.815] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (474.5, 243.2408325074331), graphics=true, kernel=true
+[1910月2025 22:14:10.816] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:14:10.816] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(192, 288)
+[1910月2025 22:14:12.417] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 11760
+[1910月2025 22:14:14.066] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 11820
+[1910月2025 22:14:16.104] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 11880
+[1910月2025 22:14:17.781] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 11940
+[1910月2025 22:14:19.470] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 12000
+[1910月2025 22:14:21.185] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 12060
+[1910月2025 22:14:21.410] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (583.0, 233.23092170465807), graphics=true, kernel=true
+[1910月2025 22:14:21.410] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:14:21.410] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(332, 275)
+[1910月2025 22:14:23.008] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 12120
+[1910月2025 22:14:23.138] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (606.5, 265.26263627353813), graphics=true, kernel=true
+[1910月2025 22:14:23.138] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:14:23.138] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(363, 316)
+[1910月2025 22:14:24.739] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 12180
+[1910月2025 22:14:26.256] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 12240
+[1910月2025 22:14:27.813] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 12300
+[1910月2025 22:14:29.343] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 12360
+[1910月2025 22:14:30.964] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 12420
+[1910月2025 22:14:32.530] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 12480
+[1910月2025 22:14:34.101] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 12540
+[1910月2025 22:14:35.953] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 12600
+[1910月2025 22:14:37.600] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 12660
+[1910月2025 22:14:39.287] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 12720
+[1910月2025 22:14:40.876] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 12780
+[1910月2025 22:14:42.657] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 12840
+[1910月2025 22:14:44.191] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 12900
+[1910月2025 22:14:46.380] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 12960
+[1910月2025 22:14:48.179] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 13020
+[1910月2025 22:14:49.830] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 13080
+[1910月2025 22:14:51.622] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 13140
+[1910月2025 22:14:53.408] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 13200
+[1910月2025 22:14:54.955] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 13260
+[1910月2025 22:14:56.715] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 13320
+[1910月2025 22:14:58.539] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 13380
+[1910月2025 22:15:00.062] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 13440
+[1910月2025 22:15:01.744] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 13500
+[1910月2025 22:15:03.264] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 13560
+[1910月2025 22:15:06.082] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 13620
+[1910月2025 22:15:07.620] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 13680
+[1910月2025 22:15:09.234] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 13740
+[1910月2025 22:15:10.807] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 13800
+[1910月2025 22:15:13.109] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 13860
+[1910月2025 22:15:15.289] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 13920
+[1910月2025 22:15:16.913] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 13980
+[1910月2025 22:15:18.864] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 14040
+[1910月2025 22:15:20.447] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 14100
+[1910月2025 22:15:22.082] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 14160
+[1910月2025 22:15:23.931] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 14220
+[1910月2025 22:15:25.913] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 14280
+[1910月2025 22:15:27.862] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 14340
+[1910月2025 22:15:29.734] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 14400
+[1910月2025 22:15:31.947] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 14460
+[1910月2025 22:15:33.793] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 14520
+[1910月2025 22:15:35.928] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 14580
+[1910月2025 22:15:37.537] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 14640
+[1910月2025 22:15:38.636] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (516.0, 226.7244796828543), graphics=true, kernel=true
+[1910月2025 22:15:38.637] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:15:38.637] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(246, 266)
+[1910月2025 22:15:39.173] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (482.0, 227.22497522299307), graphics=true, kernel=true
+[1910月2025 22:15:39.173] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:15:39.173] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(202, 267)
+[1910月2025 22:15:39.481] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 14700
+[1910月2025 22:15:42.092] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 14760
+[1910月2025 22:15:44.040] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 14820
+[1910月2025 22:15:44.423] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (926.0, 129.12784935579782), graphics=true, kernel=true
+[1910月2025 22:15:44.424] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:15:44.424] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Outside bounds, ignoring click
+[1910月2025 22:15:45.276] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (467.0, 214.71258671952427), graphics=true, kernel=true
+[1910月2025 22:15:45.276] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:15:45.276] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(183, 251)
+[1910月2025 22:15:46.821] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 14880
+[1910月2025 22:15:48.376] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 14940
+[1910月2025 22:15:48.414] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (596.5, 213.21110009910802), graphics=true, kernel=true
+[1910月2025 22:15:48.415] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:15:48.415] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(350, 249)
+[1910月2025 22:15:48.533] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (596.5, 213.21110009910802), graphics=true, kernel=true
+[1910月2025 22:15:48.533] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:15:48.533] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(350, 249)
+[1910月2025 22:15:50.178] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 15000
+[1910月2025 22:15:50.732] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (620.0, 214.21209117938554), graphics=true, kernel=true
+[1910月2025 22:15:50.733] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:15:50.733] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(380, 250)
+[1910月2025 22:15:50.833] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (620.0, 214.21209117938554), graphics=true, kernel=true
+[1910月2025 22:15:50.833] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:15:50.833] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(380, 250)
+[1910月2025 22:15:52.045] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 15060
+[1910月2025 22:15:54.233] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 15120
+[1910月2025 22:15:56.358] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 15180
+[1910月2025 22:15:58.678] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 15240
+[1910月2025 22:15:59.037] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (461.0, 220.7185332011893), graphics=true, kernel=true
+[1910月2025 22:15:59.038] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:15:59.038] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(175, 258)
+[1910月2025 22:15:59.561] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (479.5, 224.7224975222993), graphics=true, kernel=true
+[1910月2025 22:15:59.562] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:15:59.562] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(199, 264)
+[1910月2025 22:16:00.391] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 15300
+[1910月2025 22:16:00.691] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (467.5, 219.21704658077303), graphics=true, kernel=true
+[1910月2025 22:16:00.691] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:16:00.691] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(183, 257)
+[1910月2025 22:16:02.712] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 15360
+[1910月2025 22:16:03.092] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (680.0, 210.70862239841426), graphics=true, kernel=true
+[1910月2025 22:16:03.092] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:16:03.092] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Outside bounds, ignoring click
+[1910月2025 22:16:04.339] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 15420
+[1910月2025 22:16:05.950] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 15480
+[1910月2025 22:16:07.483] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 15540
+[1910月2025 22:16:09.584] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 15600
+[1910月2025 22:16:11.649] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 15660
+[1910月2025 22:16:13.705] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 15720
+[1910月2025 22:16:13.824] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (478.5, 209.70763131813678), graphics=true, kernel=true
+[1910月2025 22:16:13.824] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:16:13.824] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(198, 244)
+[1910月2025 22:16:15.225] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (682.5, 218.21605550049554), graphics=true, kernel=true
+[1910月2025 22:16:15.225] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:16:15.225] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Outside bounds, ignoring click
+[1910月2025 22:16:15.456] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 15780
+[1910月2025 22:16:17.118] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 15840
+[1910月2025 22:16:18.713] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 15900
+[1910月2025 22:16:20.440] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 15960
+[1910月2025 22:16:22.416] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 16020
+[1910月2025 22:16:24.167] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 16080
+[1910月2025 22:16:25.848] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 16140
+[1910月2025 22:16:27.402] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 16200
+[1910月2025 22:16:29.781] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 16260
+[1910月2025 22:16:31.334] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 16320
+[1910月2025 22:16:33.377] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 16380
+[1910月2025 22:16:35.654] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 16440
+[1910月2025 22:16:37.480] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 16500
+[1910月2025 22:16:39.194] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 16560
+[1910月2025 22:16:41.093] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 16620
+[1910月2025 22:16:42.751] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 16680
+[1910月2025 22:16:44.357] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 16740
+[1910月2025 22:16:46.563] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 16800
+[1910月2025 22:16:48.494] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 16860
+[1910月2025 22:16:50.285] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 16920
+[1910月2025 22:16:52.013] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 16980
+[1910月2025 22:16:53.794] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 17040
+[1910月2025 22:16:55.514] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 17100
+[1910月2025 22:16:56.894] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (467.5, 197.69573835480674), graphics=true, kernel=true
+[1910月2025 22:16:56.894] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:16:56.894] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(183, 229)
+[1910月2025 22:16:57.385] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (476.5, 214.71258671952427), graphics=true, kernel=true
+[1910月2025 22:16:57.385] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:16:57.385] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(195, 251)
+[1910月2025 22:16:57.938] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 17160
+[1910月2025 22:16:59.561] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 17220
+[1910月2025 22:17:01.180] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 17280
+[1910月2025 22:17:03.013] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 17340
+[1910月2025 22:17:03.536] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (721.0, 254.75222993062437), graphics=true, kernel=true
+[1910月2025 22:17:03.538] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:17:03.539] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Outside bounds, ignoring click
+[1910月2025 22:17:04.274] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] ESC pressed, entering sleep mode and closing screen
+[1910月2025 22:17:04.289] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Closing MochiMobileOS display...
+[1910月2025 22:17:04.290] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] MochiMobileOS display closed, background processing continues
+[1910月2025 22:17:04.290] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Texture cleaned up successfully
+[1910月2025 22:17:04.644] [Render thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] use() called - level.isClientSide: true, player: Dev
+[1910月2025 22:17:04.644] [Render thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] Client side - opening GUI
+[1910月2025 22:17:04.644] [Render thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] ==================== OPENING SMARTPHONE GUI ====================
+[1910月2025 22:17:04.644] [Render thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] Player: Dev
+[1910月2025 22:17:04.644] [Render thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] Player UUID: 380df991-f603-344c-a090-369bad2a924a
+[1910月2025 22:17:04.644] [Render thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] Device is sleeping, waking up...
+[1910月2025 22:17:04.671] [Render thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] Creating ProcessingScreen instance...
+[1910月2025 22:17:04.671] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Creating MochiMobileOS display screen
+[1910月2025 22:17:04.671] [Render thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] ProcessingScreen created, setting screen...
+[1910月2025 22:17:04.672] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Initializing MochiMobileOS display...
+[1910月2025 22:17:04.672] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Screen size: 960x505, Phone size: 400x600, Scale: 0.775, Scaled size: 310x465, Offset: (325,20)
+[1910月2025 22:17:04.672] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Found shared kernel - frameCount: 17379
+[1910月2025 22:17:04.672] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Enabling graphics for kernel...
+[1910月2025 22:17:04.672] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Graphics enabled successfully
+[1910月2025 22:17:04.672] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Initializing texture for 400x600
+[1910月2025 22:17:04.673] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Texture initialized successfully: minecraft:dynamic/mochimobileos_screen_5
+[1910月2025 22:17:04.673] [Render thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] Screen set successfully
+[1910月2025 22:17:04.673] [Render thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] Minecraft window size: 960x505
+[1910月2025 22:17:04.673] [Render thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] ==================== GUI OPENING COMPLETE ====================
+[1910月2025 22:17:04.673] [Server thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] use() called - level.isClientSide: false, player: Dev
+[1910月2025 22:17:04.674] [Server thread/INFO] [jp.moyashi.phoneos.forge.item.SmartphoneItem/]: [SmartphoneItem] Server side - skipping GUI
+[1910月2025 22:17:05.154] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 17400
+[1910月2025 22:17:05.336] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (508.5, 357.3538156590684), graphics=true, kernel=true
+[1910月2025 22:17:05.336] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:17:05.336] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(236, 435)
+[1910月2025 22:17:05.547] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key pressed: 32 -> 32 (Ctrl: false)
+[1910月2025 22:17:05.547] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] charTyped - char: ' ' (Unicode: 32)
+[1910月2025 22:17:05.548] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Skipping control character/space in charTyped()
+[1910月2025 22:17:05.642] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] keyReleased - keyCode: 32
+[1910月2025 22:17:05.642] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Key released: 32 -> 32
+[1910月2025 22:17:06.157] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] mouseClicked: (406.0, 264.2616451932607), graphics=true, kernel=true
+[1910月2025 22:17:06.157] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Checking bounds: offset=(325,20), scaled size=310x465
+[1910月2025 22:17:06.157] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Inside bounds, calling kernel.mousePressed(104, 315)
+[1910月2025 22:17:06.635] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 17460
+[1910月2025 22:17:08.059] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Kernel updated and rendered, frame: 17520
+[1910月2025 22:17:08.613] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] ESC pressed, entering sleep mode and closing screen
+[1910月2025 22:17:08.618] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Closing MochiMobileOS display...
+[1910月2025 22:17:08.618] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] MochiMobileOS display closed, background processing continues
+[1910月2025 22:17:08.618] [Render thread/INFO] [jp.moyashi.phoneos.forge.gui.ProcessingScreen/]: [ProcessingScreen] Texture cleaned up successfully
+[1910月2025 22:17:33.152] [Server thread/INFO] [net.minecraft.client.server.IntegratedServer/]: Saving and pausing game...
+[1910月2025 22:17:33.159] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: Saving chunks for level 'ServerLevel[新規ワールド]'/minecraft:overworld
+[1910月2025 22:17:33.167] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: Saving chunks for level 'ServerLevel[新規ワールド]'/minecraft:the_nether
+[1910月2025 22:17:33.169] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: Saving chunks for level 'ServerLevel[新規ワールド]'/minecraft:the_end
+[1910月2025 22:17:33.471] [Render thread/INFO] [jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService/]: [SmartphoneBackgroundService] World unloading: 新規ワールド
+[1910月2025 22:17:33.471] [Render thread/INFO] [jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService/]: [SmartphoneBackgroundService] Shutting down kernel...
+[1910月2025 22:17:33.471] [Render thread/INFO] [jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService/]: [SmartphoneBackgroundService] Speaker stopped
+[1910月2025 22:17:33.471] [Render thread/INFO] [jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService/]: [SmartphoneBackgroundService] Kernel shutdown complete
+[1910月2025 22:17:33.471] [Render thread/INFO] [jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService/]: [SmartphoneBackgroundService] Kernel shut down successfully
+[1910月2025 22:17:33.510] [Server thread/INFO] [net.minecraft.server.network.ServerGamePacketListenerImpl/]: Dev lost connection: 切断されました
+[1910月2025 22:17:33.510] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: Devがゲームを退出しました
+[1910月2025 22:17:33.517] [Server thread/INFO] [net.minecraft.server.network.ServerGamePacketListenerImpl/]: Stopping singleplayer server as player logged out
+[1910月2025 22:17:33.553] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: Stopping server
+[1910月2025 22:17:33.554] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: Saving players
+[1910月2025 22:17:33.554] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: Saving worlds
+[1910月2025 22:17:34.021] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: Saving chunks for level 'ServerLevel[新規ワールド]'/minecraft:overworld
+[1910月2025 22:17:34.760] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: Saving chunks for level 'ServerLevel[新規ワールド]'/minecraft:the_nether
+[1910月2025 22:17:34.761] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: Saving chunks for level 'ServerLevel[新規ワールド]'/minecraft:the_end
+[1910月2025 22:17:34.774] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: ThreadedAnvilChunkStorage (新規ワールド (2)): All chunks are saved
+[1910月2025 22:17:34.774] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: ThreadedAnvilChunkStorage (DIM-1): All chunks are saved
+[1910月2025 22:17:34.774] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: ThreadedAnvilChunkStorage (DIM1): All chunks are saved
+[1910月2025 22:17:34.774] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: ThreadedAnvilChunkStorage: All dimensions are saved
+[1910月2025 22:17:35.322] [Render thread/INFO] [net.minecraft.client.Minecraft/]: Stopping!

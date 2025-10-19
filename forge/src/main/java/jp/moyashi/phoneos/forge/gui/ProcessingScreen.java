@@ -168,76 +168,13 @@ public class ProcessingScreen extends Screen {
      * 画面の描画処理。
      * バックグラウンドで動作するカーネルに対してグラフィック描画を実行し、結果をMinecraftのGUIに描画する。
      */
-    // マウスボタン状態追跡用
-    private boolean wasMouseButtonDown = false;
-
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         // 背景を暗くする
         this.renderBackground(guiGraphics);
 
-        // マウスボタンの状態をチェック（デバッグ用）
-        boolean isMouseButtonDown = org.lwjgl.glfw.GLFW.glfwGetMouseButton(
-            Minecraft.getInstance().getWindow().getWindow(),
-            org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_LEFT
-        ) == org.lwjgl.glfw.GLFW.GLFW_PRESS;
-
-        // マウスボタンが押された瞬間を検出
-        if (isMouseButtonDown && !wasMouseButtonDown) {
-            LOGGER.info("[ProcessingScreen] DIRECT MOUSE CLICK DETECTED at (" + mouseX + ", " + mouseY + ")");
-            // 直接kernel.mousePressedを呼び出す
-            if (graphicsEnabled && kernel != null) {
-                if (mouseX >= offsetX && mouseX <= offsetX + scaledWidth &&
-                    mouseY >= offsetY && mouseY <= offsetY + scaledHeight) {
-                    int mobileX = (int) ((mouseX - offsetX) / scale);
-                    int mobileY = (int) ((mouseY - offsetY) / scale);
-                    LOGGER.info("[ProcessingScreen] DIRECT: Calling kernel.mousePressed(" + mobileX + ", " + mobileY + ")");
-                    try {
-                        kernel.mousePressed(mobileX, mobileY);
-                        LOGGER.info("[ProcessingScreen] DIRECT: kernel.mousePressed() completed successfully");
-
-                        // マウスイベント後に即座に画面を更新
-                        LOGGER.info("[ProcessingScreen] DIRECT: Forcing kernel update and render after mousePressed");
-                        kernel.update();
-                        kernel.render();
-                        LOGGER.info("[ProcessingScreen] DIRECT: Forced update completed");
-                    } catch (Exception e) {
-                        LOGGER.error("[ProcessingScreen] DIRECT: kernel.mousePressed() threw exception: " + e.getMessage(), e);
-                    }
-                } else {
-                    LOGGER.info("[ProcessingScreen] DIRECT MOUSE CLICK outside phone area");
-                }
-            } else {
-                LOGGER.info("[ProcessingScreen] DIRECT MOUSE CLICK but graphics not enabled or kernel null");
-            }
-        }
-
-        // マウスボタンが離された瞬間を検出
-        if (!isMouseButtonDown && wasMouseButtonDown) {
-            LOGGER.info("[ProcessingScreen] DIRECT MOUSE RELEASE DETECTED at (" + mouseX + ", " + mouseY + ")");
-            if (graphicsEnabled && kernel != null) {
-                if (mouseX >= offsetX && mouseX <= offsetX + scaledWidth &&
-                    mouseY >= offsetY && mouseY <= offsetY + scaledHeight) {
-                    int mobileX = (int) ((mouseX - offsetX) / scale);
-                    int mobileY = (int) ((mouseY - offsetY) / scale);
-                    LOGGER.info("[ProcessingScreen] DIRECT: Calling kernel.mouseReleased(" + mobileX + ", " + mobileY + ")");
-                    try {
-                        kernel.mouseReleased(mobileX, mobileY);
-                        LOGGER.info("[ProcessingScreen] DIRECT: kernel.mouseReleased() completed successfully");
-
-                        // マウスイベント後に即座に画面を更新
-                        LOGGER.info("[ProcessingScreen] DIRECT: Forcing kernel update and render after mouseReleased");
-                        kernel.update();
-                        kernel.render();
-                        LOGGER.info("[ProcessingScreen] DIRECT: Forced update completed");
-                    } catch (Exception e) {
-                        LOGGER.error("[ProcessingScreen] DIRECT: kernel.mouseReleased() threw exception: " + e.getMessage(), e);
-                    }
-                }
-            }
-        }
-
-        wasMouseButtonDown = isMouseButtonDown;
+        // 注: 以前のLWJGL/GLFWによる直接マウスイベント処理は削除されました。
+        // マウスイベントはminecraftのイベントハンドラ（mouseClicked, mouseReleased）で処理されます。
 
         if (!graphicsEnabled || kernel == null) {
             // カーネル接続待ちまたはエラー状態の表示
@@ -656,28 +593,162 @@ public class ProcessingScreen extends Screen {
     }
 
     /**
-     * キーボード入力処理。
+     * マウスホイール処理（スクロール操作）。
+     */
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+        if (!graphicsEnabled || kernel == null) {
+            return super.mouseScrolled(mouseX, mouseY, delta);
+        }
+
+        // スマートフォン画面内のスクロールかチェック（スケール後のサイズを使用）
+        if (mouseX >= offsetX && mouseX <= offsetX + scaledWidth &&
+            mouseY >= offsetY && mouseY <= offsetY + scaledHeight) {
+
+            try {
+                // Minecraft座標をMochiMobileOS座標に変換（スケールを考慮）
+                int mobileX = (int) ((mouseX - offsetX) / scale);
+                int mobileY = (int) ((mouseY - offsetY) / scale);
+
+                // MochiMobileOSのマウスホイールイベントを送信
+                kernel.mouseWheel(mobileX, mobileY, (float) delta);
+
+                return true;
+
+            } catch (Exception e) {
+                System.err.println("[ProcessingScreen] Mouse scroll error: " + e.getMessage());
+            }
+        }
+
+        return super.mouseScrolled(mouseX, mouseY, delta);
+    }
+
+    /**
+     * キーボード入力処理（特殊キー用）。
      */
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        // ESCキーで画面を閉じる
+        // ESCキーでスリープしてから画面を閉じる
         if (keyCode == 256) { // ESC key
-            LOGGER.info("[ProcessingScreen] ESC pressed, closing screen");
+            LOGGER.info("[ProcessingScreen] ESC pressed, entering sleep mode and closing screen");
+            // カーネルをスリープ状態にする
+            if (kernel != null) {
+                kernel.sleep();
+            }
             this.onClose();
             return true;
         }
 
-        // その他のキーはMochiMobileOSに転送
-        if (graphicsEnabled && kernel != null) {
+        // 特殊キー（矢印、Backspace、Delete、Space、Shift、Ctrl等）のみここで処理
+        // 通常の文字入力はcharTyped()で処理される
+        // Minecraftキーコード: 259=Backspace, 261=Delete, 257=Enter, 262-265=矢印, 268=Home, 269=End, 32=Space
+        // 修飾キー: 340=Shift Left, 344=Shift Right, 341=Ctrl Left, 345=Ctrl Right
+        boolean isSpecialKey = (keyCode == 259 || keyCode == 261 || keyCode == 257 ||
+                               (keyCode >= 262 && keyCode <= 265) || keyCode == 268 || keyCode == 269 || keyCode == 32 ||
+                               keyCode == 340 || keyCode == 344 || keyCode == 341 || keyCode == 345);
+
+        // Ctrlが押されている場合、通常文字キーもkeyPressed()に転送（Ctrl+C/V/A等のショートカット用）
+        boolean isCtrlPressed = (modifiers & 2) != 0; // GLFW_MOD_CONTROL = 2
+        boolean shouldForwardKey = isSpecialKey || isCtrlPressed;
+
+        if (graphicsEnabled && kernel != null && shouldForwardKey) {
             try {
-                char key = (char) keyCode; // 簡易的な変換
-                kernel.keyPressed(key, keyCode);
+                // Minecraftキーコードを対応するProcessingキーコードに変換
+                int processingKeyCode = isSpecialKey ? convertMinecraftKeyCode(keyCode) : keyCode;
+                char key = (char) processingKeyCode;
+                kernel.keyPressed(key, processingKeyCode);
+                LOGGER.info("[ProcessingScreen] Key pressed: " + keyCode + " -> " + processingKeyCode + " (Ctrl: " + isCtrlPressed + ")");
+                // 特殊キーとCtrlショートカットはイベントを消費してcharTyped()での二重処理を防ぐ
+                return true;
             } catch (Exception e) {
                 LOGGER.error("[ProcessingScreen] Key press error: " + e.getMessage(), e);
             }
+        } else {
+            LOGGER.info("[ProcessingScreen] Skipping normal character in keyPressed() - will be handled by charTyped()");
         }
 
         return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    /**
+     * MinecraftキーコードをProcessingキーコードに変換。
+     */
+    private int convertMinecraftKeyCode(int minecraftKeyCode) {
+        switch (minecraftKeyCode) {
+            case 259: return 8;   // Backspace
+            case 261: return 127; // Delete
+            case 257: return 10;  // Enter
+            case 262: return 39;  // Right Arrow
+            case 263: return 37;  // Left Arrow
+            case 264: return 40;  // Down Arrow
+            case 265: return 38;  // Up Arrow
+            case 268: return 36;  // Home
+            case 269: return 35;  // End
+            case 32:  return 32;  // Space
+            case 340: return 16;  // Shift Left
+            case 344: return 16;  // Shift Right
+            case 341: return 17;  // Ctrl Left
+            case 345: return 17;  // Ctrl Right
+            default:  return minecraftKeyCode;
+        }
+    }
+
+    /**
+     * 文字入力処理（Unicode対応）。
+     * IMEを通じて確定した文字がここに渡される。
+     */
+    @Override
+    public boolean charTyped(char codePoint, int modifiers) {
+        LOGGER.info("[ProcessingScreen] charTyped - char: '" + codePoint + "' (Unicode: " + (int)codePoint + ")");
+
+        // 制御文字とスペース（Enter、Backspace、Delete、Space等）は除外
+        // これらはkeyPressed()で既に処理されている
+        if (codePoint <= 32 || codePoint == 127) {
+            LOGGER.info("[ProcessingScreen] Skipping control character/space in charTyped()");
+            return super.charTyped(codePoint, modifiers);
+        }
+
+        // 矢印キーとその他の特殊キーのキーコードを除外
+        // 35=End, 36=Home, 37=Left, 38=Up, 39=Right, 40=Down
+        if ((codePoint >= 35 && codePoint <= 40)) {
+            LOGGER.info("[ProcessingScreen] Skipping special key code in charTyped(): " + (int)codePoint);
+            return super.charTyped(codePoint, modifiers);
+        }
+
+        if (graphicsEnabled && kernel != null) {
+            try {
+                // Unicode文字をMochiMobileOSに転送
+                kernel.keyPressed(codePoint, 0);
+                return true;
+            } catch (Exception e) {
+                LOGGER.error("[ProcessingScreen] Char typed error: " + e.getMessage(), e);
+            }
+        }
+
+        return super.charTyped(codePoint, modifiers);
+    }
+
+    /**
+     * キーリリース処理。
+     * 修飾キー（Shift、Ctrl等）のリリースイベントをKernelに転送する。
+     */
+    @Override
+    public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
+        LOGGER.info("[ProcessingScreen] keyReleased - keyCode: " + keyCode);
+
+        if (graphicsEnabled && kernel != null) {
+            try {
+                // Minecraftキーコードを対応するProcessingキーコードに変換
+                int processingKeyCode = convertMinecraftKeyCode(keyCode);
+                char key = (char) processingKeyCode;
+                kernel.keyReleased(key, processingKeyCode);
+                LOGGER.info("[ProcessingScreen] Key released: " + keyCode + " -> " + processingKeyCode);
+            } catch (Exception e) {
+                LOGGER.error("[ProcessingScreen] Key release error: " + e.getMessage(), e);
+            }
+        }
+
+        return super.keyReleased(keyCode, scanCode, modifiers);
     }
 
     /**

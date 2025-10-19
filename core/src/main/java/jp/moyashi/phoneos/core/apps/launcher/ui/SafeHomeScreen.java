@@ -377,6 +377,46 @@ public class SafeHomeScreen implements Screen {
             System.err.println("Error launching application: " + e.getMessage());
         }
     }
+
+    private void launchApplicationWithAnimation(IApplication app, float iconX, float iconY, float iconSize) {
+        System.out.println("SafeHomeScreen: Launching app with animation: " + app.getName());
+        System.out.println("SafeHomeScreen: Icon position: (" + iconX + ", " + iconY + "), size: " + iconSize);
+
+        if (kernel != null && kernel.getScreenManager() != null) {
+            try {
+                Screen appScreen = app.getEntryScreen(kernel);
+                if (appScreen == null) {
+                    System.err.println("SafeHomeScreen: getEntryScreen returned null for " + app.getName());
+                    return;
+                }
+                
+                processing.core.PImage appIcon = app.getIcon();
+
+                if (appIcon == null && kernel != null) {
+                    processing.core.PGraphics graphics = kernel.getGraphics();
+                    if (graphics != null) {
+                        appIcon = graphics.get(0, 0, 1, 1);
+                        appIcon.resize(64, 64);
+                        appIcon.loadPixels();
+                        for (int i = 0; i < appIcon.pixels.length; i++) {
+                            appIcon.pixels[i] = 0xFFFFFFFF; // White color
+                        }
+                        appIcon.updatePixels();
+                    }
+                }
+                
+                if (appIcon != null) {
+                    kernel.getScreenManager().pushScreenWithAnimation(appScreen, iconX, iconY, iconSize, appIcon);
+                } else {
+                    // Fallback to normal launch
+                    kernel.getScreenManager().pushScreen(appScreen);
+                }
+            } catch (Exception e) {
+                System.err.println("SafeHomeScreen: Failed to launch app with animation " + app.getName() + ": " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+    }
     
     @Override
     public void cleanup(PGraphics g) {
@@ -600,10 +640,21 @@ public class SafeHomeScreen implements Screen {
             } else if (!homePages.isEmpty()) {
                 // Click on home page shortcuts
                 HomePage currentPage = homePages.get(currentPageIndex);
+                int startY = 150;
+                int gridWidth = GRID_COLS * (ICON_SIZE + ICON_SPACING) - ICON_SPACING;
+                int startX = (400 - gridWidth) / 2;
+
                 for (Shortcut shortcut : currentPage.getShortcuts()) {
-                    if (isClickOnShortcut(mouseX, mouseY, shortcut)) {
+                    int x = startX + shortcut.getGridX() * (ICON_SIZE + ICON_SPACING);
+                    int y = startY + shortcut.getGridY() * (ICON_SIZE + ICON_SPACING + 15);
+
+                    if (mouseX >= x && mouseX <= x + ICON_SIZE && 
+                        mouseY >= y && mouseY <= y + ICON_SIZE) {
+                        
                         System.out.println("🚀 Clicking to launch: " + shortcut.getDisplayName());
-                        launchApplication(shortcut.getApplication());
+                        float iconCenterX = x + ICON_SIZE / 2f;
+                        float iconCenterY = y + ICON_SIZE / 2f;
+                        launchApplicationWithAnimation(shortcut.getApplication(), iconCenterX, iconCenterY, ICON_SIZE);
                         return;
                     }
                 }
