@@ -17,15 +17,35 @@ java {
     targetCompatibility = JavaVersion.VERSION_17
 }
 
+val os = org.gradle.internal.os.OperatingSystem.current()
+val platform = when {
+    os.isWindows -> "win"
+    os.isMacOsX -> "mac"
+    os.isLinux -> "linux"
+    else -> "win" // fallback
+}
+
 dependencies {
     // Processing 4 Core library (compatible with Forge 1.20.1 Java 17)
     implementation("org.processing:core:4.4.4")
-    
+
     // Minim audio library for Processing
     implementation("net.compartmental.code:minim:2.2.2")
-    
+
     // JSON processing library for layout persistence
     implementation("com.google.code.gson:gson:2.10.1")
+
+    // JCEF (Java Chromium Embedded Framework) for Chromium browser integration
+    implementation("me.friwi:jcefmaven:135.0.20")
+
+    // JavaFX for HTML/WebView integration (platform-specific)
+    // TODO: これは旧BrowserAppで使用。ChromiumBrowserApp完成後に削除予定
+    implementation("org.openjfx:javafx-base:17.0.2:$platform")
+    implementation("org.openjfx:javafx-graphics:17.0.2:$platform")
+    implementation("org.openjfx:javafx-controls:17.0.2:$platform")
+    implementation("org.openjfx:javafx-web:17.0.2:$platform")
+    implementation("org.openjfx:javafx-swing:17.0.2:$platform")
+    implementation("org.openjfx:javafx-media:17.0.2:$platform")
 }
 
 tasks.withType<JavaCompile> {
