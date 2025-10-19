@@ -275,10 +275,29 @@ public class BasicHomeScreen implements Screen {
         }
 
         // Check app icons
-        IApplication clickedApp = getAppAtPosition(mouseX, mouseY);
-        if (clickedApp != null) {
-            System.out.println("🚀 Launching: " + clickedApp.getName());
-            launchApplication(clickedApp);
+        int startY = 60;
+        int gridWidth = GRID_COLS * (ICON_SIZE + ICON_SPACING) - ICON_SPACING;
+        int startX = (g.width - gridWidth) / 2;
+
+        for (int i = 0; i < apps.size() && i < (GRID_COLS * GRID_ROWS); i++) {
+            int col = i % GRID_COLS;
+            int row = i / GRID_COLS;
+
+            int x = startX + col * (ICON_SIZE + ICON_SPACING);
+            int y = startY + row * (ICON_SIZE + ICON_SPACING + 15);
+
+            if (mouseX >= x && mouseX <= x + ICON_SIZE &&
+                    mouseY >= y && mouseY <= y + ICON_SIZE) {
+
+                IApplication clickedApp = apps.get(i);
+                System.out.println("🚀 Launching: " + clickedApp.getName());
+
+                float iconCenterX = x + ICON_SIZE / 2f;
+                float iconCenterY = y + ICON_SIZE / 2f;
+
+                launchApplicationWithAnimation(clickedApp, iconCenterX, iconCenterY, ICON_SIZE);
+                return; // Found and handled click
+            }
         }
     }
 
@@ -290,29 +309,6 @@ public class BasicHomeScreen implements Screen {
     public void mousePressed(processing.core.PApplet p, int mouseX, int mouseY) {
         PGraphics g = p.g;
         mousePressed(g, mouseX, mouseY);
-    }
-    
-    private IApplication getAppAtPosition(int mouseX, int mouseY) {
-        if (apps.isEmpty()) return null;
-        
-        int startY = 60;
-        int gridWidth = GRID_COLS * (ICON_SIZE + ICON_SPACING) - ICON_SPACING;
-        int startX = (400 - gridWidth) / 2; // Assume 400px width
-        
-        for (int i = 0; i < apps.size() && i < (GRID_COLS * GRID_ROWS); i++) {
-            int col = i % GRID_COLS;
-            int row = i / GRID_COLS;
-            
-            int x = startX + col * (ICON_SIZE + ICON_SPACING);
-            int y = startY + row * (ICON_SIZE + ICON_SPACING + 15);
-            
-            if (mouseX >= x && mouseX <= x + ICON_SIZE && 
-                mouseY >= y && mouseY <= y + ICON_SIZE) {
-                return apps.get(i);
-            }
-        }
-        
-        return null;
     }
     
     private void openAppLibrary() {
@@ -333,6 +329,46 @@ public class BasicHomeScreen implements Screen {
                 kernel.getScreenManager().pushScreen(appScreen);
             } catch (Exception e) {
                 System.err.println("Error launching app: " + e.getMessage());
+            }
+        }
+    }
+
+    private void launchApplicationWithAnimation(IApplication app, float iconX, float iconY, float iconSize) {
+        System.out.println("BasicHomeScreen: Launching app with animation: " + app.getName());
+        System.out.println("BasicHomeScreen: Icon position: (" + iconX + ", " + iconY + "), size: " + iconSize);
+
+        if (kernel != null && kernel.getScreenManager() != null) {
+            try {
+                Screen appScreen = app.getEntryScreen(kernel);
+                if (appScreen == null) {
+                    System.err.println("BasicHomeScreen: getEntryScreen returned null for " + app.getName());
+                    return;
+                }
+                
+                processing.core.PImage appIcon = app.getIcon();
+
+                if (appIcon == null && kernel != null) {
+                    processing.core.PGraphics graphics = kernel.getGraphics();
+                    if (graphics != null) {
+                        appIcon = graphics.get(0, 0, 1, 1);
+                        appIcon.resize(64, 64);
+                        appIcon.loadPixels();
+                        for (int i = 0; i < appIcon.pixels.length; i++) {
+                            appIcon.pixels[i] = 0xFFFFFFFF; // White color
+                        }
+                        appIcon.updatePixels();
+                    }
+                }
+                
+                if (appIcon != null) {
+                    kernel.getScreenManager().pushScreenWithAnimation(appScreen, iconX, iconY, iconSize, appIcon);
+                } else {
+                    // Fallback to normal launch
+                    kernel.getScreenManager().pushScreen(appScreen);
+                }
+            } catch (Exception e) {
+                System.err.println("BasicHomeScreen: Failed to launch app with animation " + app.getName() + ": " + e.getMessage());
+                e.printStackTrace();
             }
         }
     }

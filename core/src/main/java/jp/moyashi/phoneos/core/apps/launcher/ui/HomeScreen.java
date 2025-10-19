@@ -1778,11 +1778,16 @@ public class HomeScreen implements Screen, GestureListener {
      */
     private void launchApplication(IApplication app) {
         System.out.println("HomeScreen: Launching app: " + app.getName());
-        
-        if (kernel != null && kernel.getScreenManager() != null) {
+
+        if (kernel != null && kernel.getScreenManager() != null && kernel.getServiceManager() != null) {
             try {
-                Screen appScreen = app.getEntryScreen(kernel);
-                kernel.getScreenManager().pushScreen(appScreen);
+                // ServiceManager経由でアプリを起動（既存インスタンスを再利用または新規作成）
+                Screen appScreen = kernel.getServiceManager().launchApp(app.getApplicationId());
+                if (appScreen != null) {
+                    kernel.getScreenManager().pushScreen(appScreen);
+                } else {
+                    System.err.println("HomeScreen: ServiceManager returned null screen for " + app.getName());
+                }
             } catch (Exception e) {
                 System.err.println("HomeScreen: Failed to launch app " + app.getName() + ": " + e.getMessage());
                 e.printStackTrace();
@@ -1796,10 +1801,15 @@ public class HomeScreen implements Screen, GestureListener {
     private void launchApplicationWithAnimation(IApplication app, float iconX, float iconY, float iconSize) {
         System.out.println("HomeScreen: Launching app with animation: " + app.getName());
         System.out.println("HomeScreen: Icon position: (" + iconX + ", " + iconY + "), size: " + iconSize);
-        
-        if (kernel != null && kernel.getScreenManager() != null) {
+
+        if (kernel != null && kernel.getScreenManager() != null && kernel.getServiceManager() != null) {
             try {
-                Screen appScreen = app.getEntryScreen(kernel);
+                // ServiceManager経由でアプリを起動（既存インスタンスを再利用または新規作成）
+                Screen appScreen = kernel.getServiceManager().launchApp(app.getApplicationId());
+                if (appScreen == null) {
+                    System.err.println("HomeScreen: ServiceManager returned null screen for " + app.getName());
+                    return;
+                }
                 System.out.println("HomeScreen: Got app screen: " + appScreen.getScreenTitle());
                 
                 // Get app icon for animation

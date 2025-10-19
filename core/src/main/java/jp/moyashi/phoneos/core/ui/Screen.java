@@ -39,6 +39,63 @@ public interface Screen {
     }
     
     /**
+     * 毎フレーム実行される処理。
+     * このメソッドはスクリーンがバックグラウンドでもフォアグラウンドでも呼び出される。
+     * 描画に依存しないロジック（タイマー、ネットワーク処理、音声再生など）を実装する。
+     * バックグラウンドアプリの継続的な処理に使用される。
+     * デフォルト実装は何もしない。
+     */
+    default void tick() {
+        // デフォルト実装：何もしない
+        // 各実装クラスでオーバーライドしてください
+    }
+
+    /**
+     * バックグラウンドサービス初期化時に呼び出される。
+     * OS起動時に自動起動リストに登録されているアプリはこのメソッドで初期化される。
+     * アプリ本体が起動していなくても、バックグラウンドサービスとして動作するための準備を行う。
+     * デフォルト実装は何もしない。
+     */
+    default void backgroundInit() {
+        // デフォルト実装：何もしない
+        // バックグラウンドサービスとして動作する場合にオーバーライドしてください
+    }
+
+    /**
+     * バックグラウンドサービスとして毎フレーム実行される処理。
+     * OS起動時から終了まで、アプリ本体が起動していなくても呼び出され続ける。
+     * 自動起動リストに登録されたアプリのみが対象。
+     * 例：音楽プレイヤーのバックグラウンド再生、メッセージ通知監視など。
+     * デフォルト実装は何もしない。
+     */
+    default void background() {
+        // デフォルト実装：何もしない
+        // バックグラウンドサービスとして動作する場合にオーバーライドしてください
+    }
+
+    /**
+     * スクリーンがフォアグラウンド（画面に表示）に移行した時に呼び出される。
+     * アプリがユーザーに表示され、操作可能になったタイミング。
+     * UIの更新、一時停止していた処理の再開などを行う。
+     * デフォルト実装は何もしない。
+     */
+    default void onForeground() {
+        // デフォルト実装：何もしない
+        // 必要に応じてオーバーライドしてください
+    }
+
+    /**
+     * スクリーンがバックグラウンドに移行した時に呼び出される。
+     * 別のアプリが起動されて、画面から非表示になったタイミング。
+     * リソースの解放、状態の保存などを行う。
+     * デフォルト実装は何もしない。
+     */
+    default void onBackground() {
+        // デフォルト実装：何もしない
+        // 必要に応じてオーバーライドしてください
+    }
+
+    /**
      * スクリーンのコンテンツを描画するために継続的に呼び出される（PGraphics版）。
      * PGraphics統一アーキテクチャで使用する。
      *
@@ -177,6 +234,37 @@ public interface Screen {
         // デフォルト実装：PGraphics版を呼び出すブリッジ
         mouseReleased(p.g, mouseX, mouseY);
     }
+
+    /**
+     * マウスホイールイベントが発生した時に呼び出される（PGraphics版）。
+     * PGraphics統一アーキテクチャで使用する。
+     * このメソッドでスクロール操作を処理する。
+     * デフォルト実装は何もしない。
+     *
+     * @param g 描画・計算処理用のPGraphicsインスタンス
+     * @param mouseX マウス位置のx座標
+     * @param mouseY マウス位置のy座標
+     * @param delta スクロール量（正の値：下スクロール、負の値：上スクロール）
+     */
+    default void mouseWheel(PGraphics g, int mouseX, int mouseY, float delta) {
+        // デフォルト実装：何もしない
+    }
+
+    /**
+     * マウスホイールイベントが発生した時に呼び出される（PApplet版）。
+     * 互換性のために残存。段階的にPGraphics版に移行予定。
+     *
+     * @deprecated Use {@link #mouseWheel(PGraphics, int, int, float)} instead. This method will be removed in a future version.
+     * @param p 描画・計算処理用のPAppletインスタンス
+     * @param mouseX マウス位置のx座標
+     * @param mouseY マウス位置のy座標
+     * @param delta スクロール量（正の値：下スクロール、負の値：上スクロール）
+     */
+    @Deprecated
+    default void mouseWheel(PApplet p, int mouseX, int mouseY, float delta) {
+        // デフォルト実装：PGraphics版を呼び出すブリッジ
+        mouseWheel(p.g, mouseX, mouseY, delta);
+    }
     
     /**
      * スクリーンが非表示になるまたは破棄される直前に呼び出される（PGraphics版）。
@@ -206,10 +294,35 @@ public interface Screen {
     /**
      * このスクリーンのタイトルまたは名前を取得する。
      * これはデバッグやナビゲーション履歴に使用できる。
-     * 
+     *
      * @return スクリーンのタイトル
      */
     default String getScreenTitle() {
         return this.getClass().getSimpleName();
+    }
+
+    /**
+     * 修飾キー（Shift/Ctrl）の状態を設定する。
+     * ScreenManagerから呼び出され、フォーカスされたテキスト入力コンポーネントに伝播される。
+     * デフォルト実装は何もしない。
+     *
+     * @param shift Shiftキーが押されているかどうか
+     * @param ctrl Ctrlキーが押されているかどうか
+     */
+    default void setModifierKeys(boolean shift, boolean ctrl) {
+        // デフォルト実装：何もしない
+        // テキスト入力を持つスクリーンでオーバーライドしてください
+    }
+
+    /**
+     * このスクリーンにフォーカスされたテキスト入力コンポーネントがあるかチェック。
+     * スペースキー処理の前にKernelから呼び出される。
+     * デフォルト実装はfalseを返す。
+     *
+     * @return フォーカスされたコンポーネントがある場合true
+     */
+    default boolean hasFocusedComponent() {
+        // デフォルト実装：フォーカスされたコンポーネントなし
+        return false;
     }
 }

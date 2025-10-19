@@ -130,6 +130,11 @@ public class SmartphoneBackgroundService {
             initializeHardwareAPIs(kernel);
             LOGGER.info("[SmartphoneBackgroundService] Hardware bypass APIs initialized");
 
+            // クリップボードプロバイダーの初期化（GLFW実装に置き換え）
+            LOGGER.info("[SmartphoneBackgroundService] Initializing clipboard provider...");
+            initializeClipboardProvider(kernel);
+            LOGGER.info("[SmartphoneBackgroundService] Clipboard provider initialized");
+
             LOGGER.info("[SmartphoneBackgroundService] Shared kernel created successfully for world: " + worldId);
             return kernel;
 
@@ -176,8 +181,14 @@ public class SmartphoneBackgroundService {
             kernel.setMicrophoneSocket(new jp.moyashi.phoneos.forge.hardware.ForgeMicrophoneSocket());
             LOGGER.info("[SmartphoneBackgroundService] - MicrophoneSocket set");
 
-            kernel.setSpeakerSocket(new jp.moyashi.phoneos.forge.hardware.ForgeSpeakerSocket());
-            LOGGER.info("[SmartphoneBackgroundService] - SpeakerSocket set");
+            // SpeakerSocket: SVCが利用可能な場合のみForgeSpeakerSocketを使用
+            if (jp.moyashi.phoneos.forge.hardware.SVCDetector.isSVCAvailable()) {
+                kernel.setSpeakerSocket(new jp.moyashi.phoneos.forge.hardware.ForgeSpeakerSocket());
+                LOGGER.info("[SmartphoneBackgroundService] - ForgeSpeakerSocket set (SVC available)");
+            } else {
+                kernel.setSpeakerSocket(new jp.moyashi.phoneos.core.service.hardware.DefaultSpeakerSocket());
+                LOGGER.info("[SmartphoneBackgroundService] - DefaultSpeakerSocket set (SVC not available)");
+            }
 
             kernel.setICSocket(new jp.moyashi.phoneos.forge.hardware.ForgeICSocket());
             LOGGER.info("[SmartphoneBackgroundService] - ICSocket set");
@@ -189,6 +200,35 @@ public class SmartphoneBackgroundService {
 
         } catch (Exception e) {
             LOGGER.error("[SmartphoneBackgroundService] Failed to initialize hardware APIs", e);
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * クリップボードプロバイダーを初期化する。
+     * デフォルトのAWTクリップボードをGLFWクリップボードに置き換える。
+     *
+     * @param kernel Kernelインスタンス
+     */
+    private static void initializeClipboardProvider(Kernel kernel) {
+        try {
+            // ClipboardManagerを取得
+            jp.moyashi.phoneos.core.service.clipboard.ClipboardManager clipboardManager = kernel.getClipboardManager();
+
+            if (clipboardManager instanceof jp.moyashi.phoneos.core.service.clipboard.ClipboardManagerImpl) {
+                // GLFWクリップボードプロバイダーを作成して設定
+                jp.moyashi.phoneos.core.service.clipboard.ClipboardProvider glfwProvider =
+                    new jp.moyashi.phoneos.forge.clipboard.GLFWClipboardProvider(kernel.getLogger());
+
+                ((jp.moyashi.phoneos.core.service.clipboard.ClipboardManagerImpl) clipboardManager).setProvider(glfwProvider);
+
+                LOGGER.info("[SmartphoneBackgroundService] GLFWClipboardProvider set (available: " + glfwProvider.isAvailable() + ")");
+            } else {
+                LOGGER.warn("[SmartphoneBackgroundService] ClipboardManager is not ClipboardManagerImpl, cannot set GLFW provider");
+            }
+
+        } catch (Exception e) {
+            LOGGER.error("[SmartphoneBackgroundService] Failed to initialize clipboard provider", e);
             e.printStackTrace();
         }
     }

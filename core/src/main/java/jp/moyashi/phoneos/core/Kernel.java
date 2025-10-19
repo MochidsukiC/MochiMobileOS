@@ -12,6 +12,7 @@ import jp.moyashi.phoneos.core.input.GestureType;
 import jp.moyashi.phoneos.core.apps.launcher.LauncherApp;
 import jp.moyashi.phoneos.core.apps.settings.SettingsApp;
 import jp.moyashi.phoneos.core.apps.calculator.CalculatorApp;
+import jp.moyashi.phoneos.core.apps.browser.BrowserApp;
 import jp.moyashi.phoneos.core.ui.LayerManager;
 import jp.moyashi.phoneos.core.coordinate.CoordinateTransform;
 import processing.core.PApplet;
@@ -19,6 +20,9 @@ import processing.core.PGraphics;
 import processing.core.PFont;
 import java.util.ArrayList;
 import java.util.List;
+import java.awt.Font;
+import java.awt.GraphicsEnvironment;
+import java.io.InputStream;
 
 /**
  * スマートフォンOSの中核となるメインカーネル。
@@ -83,6 +87,9 @@ public class Kernel implements GestureListener {
     /** OSロガーサービス */
     private LoggerService logger;
 
+    /** サービスマネージャー（アプリプロセス管理） */
+    private ServiceManager serviceManager;
+
     /** ハードウェアバイパスAPI - モバイルデータ通信ソケット */
     private jp.moyashi.phoneos.core.service.hardware.MobileDataSocket mobileDataSocket;
 
@@ -110,6 +117,24 @@ public class Kernel implements GestureListener {
     /** ハードウェアバイパスAPI - SIM情報 */
     private jp.moyashi.phoneos.core.service.hardware.SIMInfo simInfo;
 
+    /** HTML/WebView統合サービス */
+    private jp.moyashi.phoneos.core.service.webview.WebViewManager webViewManager;
+
+    /** パーミッション管理サービス */
+    private jp.moyashi.phoneos.core.service.permission.PermissionManager permissionManager;
+
+    /** アクティビティ管理サービス（Intent/Activityシステム） */
+    private jp.moyashi.phoneos.core.service.intent.ActivityManager activityManager;
+
+    /** クリップボード管理サービス */
+    private jp.moyashi.phoneos.core.service.clipboard.ClipboardManager clipboardManager;
+
+    /** センサー管理サービス */
+    private jp.moyashi.phoneos.core.service.sensor.SensorManager sensorManager;
+
+    /** Chromium統合管理サービス */
+    private jp.moyashi.phoneos.core.service.chromium.ChromiumManager chromiumManager;
+
     /** PGraphics描画バッファ（PGraphics統一アーキテクチャ） */
     private PGraphics graphics;
 
@@ -133,13 +158,24 @@ public class Kernel implements GestureListener {
 
     /** 日本語フォント */
     private PFont japaneseFont;
-    
+
     // ESCキー長押し検出用変数
     /** ESCキーが押されている時間 */
     private long escKeyPressTime = 0;
-    
+
     /** ESCキーが現在押されているかどうか */
     private boolean escKeyPressed = false;
+
+    // スリープ機能用変数
+    /** スリープ状態かどうか */
+    private boolean isSleeping = false;
+
+    // 修飾キー状態管理
+    /** Shiftキーが押されているかどうか */
+    private boolean shiftPressed = false;
+
+    /** Ctrlキーが押されているかどうか */
+    private boolean ctrlPressed = false;
 
     // ホームボタン動的優先順位システム
     /** レイヤー種別定義 */
@@ -179,6 +215,29 @@ public class Kernel implements GestureListener {
                 escKeyPressed = false;
             }
         }
+
+        // ServiceManagerのバックグラウンドサービス処理を呼び出し
+        if (serviceManager != null) {
+            serviceManager.tickBackground();
+        }
+
+        // SensorManagerの更新処理
+        if (sensorManager != null) {
+            ((jp.moyashi.phoneos.core.service.sensor.SensorManagerImpl) sensorManager).update();
+        }
+
+        // ChromiumManagerのCEFメッセージループ処理
+        // これがないと、JCEF（Chromiumブラウザ）が完全に動作しない
+        // URL読み込み、onPaint()コールバック、イベント処理を駆動する
+        if (chromiumManager != null) {
+            chromiumManager.doMessageLoopWork();
+        }
+
+        // 全てのスクリーン（バックグラウンドも含む）のtick()を呼び出し
+        // 注: 画面スタック内のScreenのtick()はScreenManagerが管理
+        if (screenManager != null) {
+            screenManager.tick();
+        }
     }
 
     /**
@@ -192,10 +251,18 @@ public class Kernel implements GestureListener {
                 return;
             }
 
+            // スリープ中の場合は描画処理を完全にスキップしてGPU使用率を削減
+            if (isSleeping) {
+                // 描画をスキップ（前フレームのバッファ内容を維持）
+                // これにより、GPU処理が大幅に削減される
+                return;
+            }
+
             // PGraphicsバッファへの描画開始
             graphics.beginDraw();
 
             try {
+
             // まず背景を描画（重要：Screenが背景を描画しない場合のために）
             graphics.background(0, 0, 0); // 黒背景
 
@@ -270,6 +337,12 @@ public class Kernel implements GestureListener {
      * @param y マウスY座標
      */
     public void mousePressed(int x, int y) {
+        // スリープ中はすべてのマウスインタラクトを拒否
+        if (isSleeping) {
+            System.out.println("Kernel: mousePressed ignored - device is sleeping");
+            return;
+        }
+
         if (logger != null) {
             logger.debug("Kernel", "mousePressed at (" + x + ", " + y + ")");
         }
@@ -300,11 +373,14 @@ public class Kernel implements GestureListener {
                 }
             }
 
-            // スクリーンマネージャーでの処理
+            // スクリーンマネージャーでの処理（修飾キーの状態を事前に送信）
             if (screenManager != null) {
                 if (logger != null) {
                     logger.debug("Kernel", "Forwarding mousePressed to ScreenManager");
                 }
+                // マウスイベントの前に修飾キーの状態を更新
+                System.out.println("Kernel: mousePressed - propagating modifier keys (shift=" + shiftPressed + ", ctrl=" + ctrlPressed + ")");
+                screenManager.setModifierKeys(shiftPressed, ctrlPressed);
                 screenManager.mousePressed(x, y);
             }
         } catch (Exception e) {
@@ -323,6 +399,12 @@ public class Kernel implements GestureListener {
      * @param y マウスY座標
      */
     public void mouseReleased(int x, int y) {
+        // スリープ中はすべてのマウスインタラクトを拒否
+        if (isSleeping) {
+            System.out.println("Kernel: mouseReleased ignored - device is sleeping");
+            return;
+        }
+
         if (logger != null) {
             logger.debug("Kernel", "mouseReleased at (" + x + ", " + y + ")");
         }
@@ -334,11 +416,13 @@ public class Kernel implements GestureListener {
                 gestureManager.handleMouseReleased(x, y);
             }
 
-            // スクリーンマネージャーでの処理
+            // スクリーンマネージャーでの処理（修飾キーの状態を事前に送信）
             if (screenManager != null) {
                 if (logger != null) {
                     logger.debug("Kernel", "Forwarding mouseReleased to ScreenManager");
                 }
+                // マウスイベントの前に修飾キーの状態を更新
+                screenManager.setModifierKeys(shiftPressed, ctrlPressed);
                 screenManager.mouseReleased(x, y);
             }
         } catch (Exception e) {
@@ -358,6 +442,12 @@ public class Kernel implements GestureListener {
      * @param y マウスY座標
      */
     public void mouseDragged(int x, int y) {
+        // スリープ中はすべてのマウスインタラクトを拒否
+        if (isSleeping) {
+            System.out.println("Kernel: mouseDragged ignored - device is sleeping");
+            return;
+        }
+
         System.out.println("Kernel: mouseDragged at (" + x + ", " + y + ")");
 
         try {
@@ -369,12 +459,53 @@ public class Kernel implements GestureListener {
                 System.out.println("Kernel: Gesture processed mouseDragged");
             }
 
-            // スクリーンマネージャーでの処理
+            // スクリーンマネージャーでの処理（修飾キーの状態を事前に送信）
             if (screenManager != null) {
+                // マウスイベントの前に修飾キーの状態を更新
+                screenManager.setModifierKeys(shiftPressed, ctrlPressed);
                 screenManager.mouseDragged(x, y);
             }
         } catch (Exception e) {
             System.err.println("Kernel: mouseDragged処理エラー: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * マウスホイール処理（独立API）。
+     *
+     * @param x マウスX座標
+     * @param y マウスY座標
+     * @param delta スクロール量（正の値：下スクロール、負の値：上スクロール）
+     */
+    public void mouseWheel(int x, int y, float delta) {
+        // スリープ中はすべてのマウスインタラクトを拒否
+        if (isSleeping) {
+            System.out.println("Kernel: mouseWheel ignored - device is sleeping");
+            if (logger != null) {
+                logger.debug("Kernel", "mouseWheel ignored - device is sleeping");
+            }
+            return;
+        }
+
+        System.out.println("Kernel: mouseWheel at (" + x + ", " + y + ") delta=" + delta);
+        if (logger != null) {
+            logger.debug("Kernel", "mouseWheel at (" + x + ", " + y + ") delta=" + delta);
+        }
+
+        try {
+            // スクリーンマネージャーでの処理
+            if (screenManager != null) {
+                screenManager.mouseWheel(x, y, delta);
+                if (logger != null) {
+                    logger.debug("Kernel", "mouseWheel forwarded to ScreenManager");
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Kernel: mouseWheel処理エラー: " + e.getMessage());
+            if (logger != null) {
+                logger.error("Kernel", "mouseWheel処理エラー", e);
+            }
             e.printStackTrace();
         }
     }
@@ -388,11 +519,46 @@ public class Kernel implements GestureListener {
     public void keyPressed(char key, int keyCode) {
         System.out.println("Kernel: keyPressed - key: '" + key + "', keyCode: " + keyCode);
 
+        // LoggerServiceでデバッグログを記録（VFS保存用）
+        if (logger != null) {
+            logger.debug("Kernel", "keyPressed - key='" + key + "' (charCode=" + (int)key + "), keyCode=" + keyCode);
+        }
+
         try {
-            // ESCキーの特別処理
+            // 修飾キーの状態を追跡
+            if (keyCode == 16) { // Shift key code
+                shiftPressed = true;
+                System.out.println("Kernel: *** Shift key pressed - shiftPressed=true ***");
+                if (logger != null) {
+                    logger.debug("Kernel", "*** SHIFT キー検出 (keyCode=16) - shiftPressed=true ***");
+                }
+                // 修飾キーの状態をすぐにScreenManagerに伝播
+                if (screenManager != null) {
+                    screenManager.setModifierKeys(shiftPressed, ctrlPressed);
+                }
+            }
+            if (keyCode == 17) { // Ctrl key code
+                ctrlPressed = true;
+                System.out.println("Kernel: *** Ctrl key pressed - ctrlPressed=true ***");
+                if (logger != null) {
+                    logger.debug("Kernel", "*** CTRL キー検出 (keyCode=17) - ctrlPressed=true ***");
+                }
+                // 修飾キーの状態をすぐにScreenManagerに伝播
+                if (screenManager != null) {
+                    screenManager.setModifierKeys(shiftPressed, ctrlPressed);
+                }
+            }
+
+            // ESCキーの特別処理（スリープ中でも許可）
             if (keyCode == 27) { // ESC key code
                 escKeyPressed = true;
                 escKeyPressTime = System.currentTimeMillis();
+                return;
+            }
+
+            // スリープ中はESC以外のすべてのキー入力を拒否
+            if (isSleeping) {
+                System.out.println("Kernel: keyPressed ignored - device is sleeping (only ESC is allowed)");
                 return;
             }
 
@@ -403,15 +569,9 @@ public class Kernel implements GestureListener {
                 return;
             }
 
-            // 'e'または'E'でテストエラー
-            if (key == 'e' || key == 'E') {
-                System.out.println("Kernel: E key pressed - testing error handling");
-                throw new RuntimeException("Test error triggered by user");
-            }
-
             // スペースキー（ホームボタン）の階層管理処理
             if (key == ' ' || keyCode == 32) {
-                System.out.println("Kernel: Space key pressed - checking lock screen status");
+                System.out.println("Kernel: Space key pressed - checking lock screen and focus status");
 
                 // ロック画面が表示されている場合は、ロック画面に処理を委譲
                 if (layerStack.contains(LayerType.LOCK_SCREEN)) {
@@ -422,14 +582,23 @@ public class Kernel implements GestureListener {
                     return;
                 }
 
-                // ロック画面が表示されていない場合は、通常のホームボタン処理
-                System.out.println("Kernel: Space key pressed - handling home button");
+                // テキスト入力フォーカスがある場合は、スペースキーをスクリーンに転送
+                if (screenManager != null && screenManager.hasFocusedComponent()) {
+                    System.out.println("Kernel: Text input focused - forwarding space key to screen manager");
+                    screenManager.keyPressed(key, keyCode);
+                    return;
+                }
+
+                // フォーカスがない場合は、通常のホームボタン処理
+                System.out.println("Kernel: No focus - handling home button");
                 handleHomeButton();
                 return;
             }
 
             // 通常のキー処理をスクリーンマネージャーに転送
+            // 修飾キーの状態も一緒に送る
             if (screenManager != null) {
+                screenManager.setModifierKeys(shiftPressed, ctrlPressed);
                 screenManager.keyPressed(key, keyCode);
             }
         } catch (Exception e) {
@@ -447,9 +616,50 @@ public class Kernel implements GestureListener {
     public void keyReleased(char key, int keyCode) {
         System.out.println("Kernel: keyReleased - key: '" + key + "', keyCode: " + keyCode);
 
-        // ESCキーの処理
+        // 修飾キーのリリースを追跡
+        if (keyCode == 16) { // Shift key code
+            shiftPressed = false;
+            System.out.println("Kernel: *** Shift key released - shiftPressed=false ***");
+            // 修飾キーの状態をすぐにScreenManagerに伝播
+            if (screenManager != null) {
+                screenManager.setModifierKeys(shiftPressed, ctrlPressed);
+            }
+        }
+        if (keyCode == 17) { // Ctrl key code
+            ctrlPressed = false;
+            System.out.println("Kernel: *** Ctrl key released - ctrlPressed=false ***");
+            // 修飾キーの状態をすぐにScreenManagerに伝播
+            if (screenManager != null) {
+                screenManager.setModifierKeys(shiftPressed, ctrlPressed);
+            }
+        }
+
+        // ESCキーの処理（スリープ中でも許可）
         if (keyCode == 27) { // ESC key code
-            escKeyPressed = false;
+            if (escKeyPressed) {
+                long pressDuration = System.currentTimeMillis() - escKeyPressTime;
+                escKeyPressed = false;
+
+                System.out.println("Kernel: ESC key released after " + pressDuration + "ms");
+
+                // 長押し判定時間未満の場合はスリープ/解除の切り替え
+                if (pressDuration < LONG_PRESS_DURATION) {
+                    if (isSleeping) {
+                        // スリープ解除
+                        wake();
+                    } else {
+                        // スリープ
+                        sleep();
+                    }
+                }
+                // 長押しの場合はupdate()でシャットダウンが実行される
+            }
+            return;
+        }
+
+        // スリープ中はESC以外のすべてのキー入力を拒否
+        if (isSleeping) {
+            System.out.println("Kernel: keyReleased ignored - device is sleeping (only ESC is allowed)");
             return;
         }
     }
@@ -547,7 +757,9 @@ public class Kernel implements GestureListener {
             this.parentApplet = new PApplet();
             this.graphics.setParent(parentApplet);
 
-            System.out.println("📱 Kernel: PGraphics buffer created successfully via reflection");
+            // 重要: ScreenManagerがscreen.setup(currentPApplet.g)を呼ぶために、
+            // parentApplet.gにgraphicsを設定する必要がある
+            this.parentApplet.g = this.graphics;
 
         } catch (Exception e) {
             System.err.println("Failed to create PGraphics directly: " + e.getMessage());
@@ -564,21 +776,6 @@ public class Kernel implements GestureListener {
      * PGraphics統一アーキテクチャ対応版。
      */
     private void setup() {
-        // 日本語フォントの初期化
-        // TEMPORARY FIX: Disable font creation as PApplet.createFont() causes issues in Forge environment
-        System.out.println("Kernel: 日本語フォント機能を一時的に無効化");
-        japaneseFont = null;
-        /*
-        System.out.println("Kernel: 日本語フォントを設定中...");
-        try {
-            japaneseFont = parentApplet.createFont("Meiryo", 16, true);
-            System.out.println("Kernel: Meiryoフォントを正常に読み込みました");
-        } catch (Exception e) {
-            System.err.println("Kernel: Meiryoフォントの読み込みに失敗: " + e.getMessage());
-            System.err.println("Kernel: デフォルトフォントを使用します");
-        }
-        */
-        
         System.out.println("Kernel: OSサービスを初期化中...");
         System.out.println("Kernel: フレームレートを60FPSに設定");
 
@@ -591,7 +788,7 @@ public class Kernel implements GestureListener {
         System.out.println("  -> 統一座標変換システム作成中...");
         coordinateTransform = new CoordinateTransform(width, height);
 
-        // コアサービスの初期化
+        // コアサービスの初期化（LoggerService用にVFSを先に初期化）
         System.out.println("  -> VFS（仮想ファイルシステム）作成中...");
         if (worldId != null && !worldId.isEmpty()) {
             System.out.println("     World ID: " + worldId);
@@ -604,6 +801,20 @@ public class Kernel implements GestureListener {
         logger.info("Kernel", "画面サイズ: " + width + "x" + height);
         if (worldId != null && !worldId.isEmpty()) {
             logger.info("Kernel", "World ID: " + worldId);
+        }
+
+        System.out.println("  -> サービスマネージャー作成中...");
+        serviceManager = new ServiceManager(this);
+        serviceManager.initialize();
+        logger.info("Kernel", "サービスマネージャー初期化完了");
+
+        // 日本語フォントの初期化（LoggerService使用）
+        logger.info("Kernel", "日本語フォントを初期化中...");
+        japaneseFont = loadJapaneseFont();
+        if (japaneseFont != null) {
+            logger.info("Kernel", "日本語フォント (Noto Sans JP) を正常に読み込みました");
+        } else {
+            logger.warn("Kernel", "日本語フォントの読み込みに失敗しました。デフォルトフォントを使用します");
         }
 
         System.out.println("  -> 設定マネージャー作成中...");
@@ -662,6 +873,66 @@ public class Kernel implements GestureListener {
         icSocket = new jp.moyashi.phoneos.core.service.hardware.DefaultICSocket();
         simInfo = new jp.moyashi.phoneos.core.service.hardware.DefaultSIMInfo();
 
+        // HTML/WebView統合サービスの初期化
+        System.out.println("  -> WebViewManager作成中...");
+        try {
+            webViewManager = new jp.moyashi.phoneos.core.service.webview.WebViewManager(this, width, height);
+            webViewManager.initialize();
+            System.out.println("  -> WebViewManager初期化完了");
+            logger.info("Kernel", "WebViewManager初期化完了");
+        } catch (Exception e) {
+            // JavaFXが利用できない環境（Forge MODなど）でのエラーを処理
+            logger.error("Kernel", "WebViewManagerの初期化に失敗しました。JavaFXが利用できない環境の可能性があります", e);
+            System.err.println("  -> WebViewManager初期化失敗: " + e.getClass().getName() + ": " + e.getMessage());
+            e.printStackTrace();
+            webViewManager = null; // nullに設定して、利用不可を明示
+        } catch (Error e) {
+            // NoClassDefFoundError等のエラーも捕捉
+            logger.error("Kernel", "WebViewManagerの初期化中に致命的エラーが発生しました", e);
+            System.err.println("  -> WebViewManager初期化失敗（致命的エラー）: " + e.getClass().getName() + ": " + e.getMessage());
+            e.printStackTrace();
+            webViewManager = null;
+        }
+
+        // Chromium統合管理サービスの初期化
+        System.out.println("  -> ChromiumManager作成中...");
+        try {
+            chromiumManager = new jp.moyashi.phoneos.core.service.chromium.ChromiumManager(this);
+            chromiumManager.initialize();
+            System.out.println("  -> ChromiumManager初期化完了");
+            logger.info("Kernel", "ChromiumManager初期化完了");
+        } catch (Exception e) {
+            logger.error("Kernel", "ChromiumManagerの初期化に失敗しました", e);
+            System.err.println("  -> ChromiumManager初期化失敗: " + e.getClass().getName() + ": " + e.getMessage());
+            e.printStackTrace();
+            chromiumManager = null;
+        } catch (Error e) {
+            logger.error("Kernel", "ChromiumManagerの初期化中に致命的エラーが発生しました", e);
+            System.err.println("  -> ChromiumManager初期化失敗（致命的エラー）: " + e.getClass().getName() + ": " + e.getMessage());
+            e.printStackTrace();
+            chromiumManager = null;
+        }
+
+        // パーミッション管理サービスの初期化
+        System.out.println("  -> パーミッション管理サービス作成中...");
+        permissionManager = new jp.moyashi.phoneos.core.service.permission.PermissionManagerImpl(this);
+        logger.info("Kernel", "パーミッション管理サービス初期化完了");
+
+        // アクティビティ管理サービスの初期化
+        System.out.println("  -> アクティビティ管理サービス作成中...");
+        activityManager = new jp.moyashi.phoneos.core.service.intent.ActivityManagerImpl(this);
+        logger.info("Kernel", "アクティビティ管理サービス初期化完了");
+
+        // クリップボード管理サービスの初期化
+        System.out.println("  -> クリップボード管理サービス作成中...");
+        clipboardManager = new jp.moyashi.phoneos.core.service.clipboard.ClipboardManagerImpl(this);
+        logger.info("Kernel", "クリップボード管理サービス初期化完了");
+
+        // センサー管理サービスの初期化
+        System.out.println("  -> センサー管理サービス作成中...");
+        sensorManager = new jp.moyashi.phoneos.core.service.sensor.SensorManagerImpl(this);
+        logger.info("Kernel", "センサー管理サービス初期化完了");
+
         // コントロールセンターを最高優先度のジェスチャーリスナーとして登録
         gestureManager.addGestureListener(controlCenterManager);
         
@@ -691,6 +962,18 @@ public class Kernel implements GestureListener {
         jp.moyashi.phoneos.core.apps.voicememo.VoiceMemoApp voiceMemoApp = new jp.moyashi.phoneos.core.apps.voicememo.VoiceMemoApp();
         appLoader.registerApplication(voiceMemoApp);
 
+        jp.moyashi.phoneos.core.apps.htmlcalculator.CalculatorHTMLApp calculatorHTMLApp = new jp.moyashi.phoneos.core.apps.htmlcalculator.CalculatorHTMLApp();
+        appLoader.registerApplication(calculatorHTMLApp);
+
+        jp.moyashi.phoneos.core.apps.note.NoteApp noteApp = new jp.moyashi.phoneos.core.apps.note.NoteApp();
+        appLoader.registerApplication(noteApp);
+
+        BrowserApp browserApp = new BrowserApp();
+        appLoader.registerApplication(browserApp);
+
+        jp.moyashi.phoneos.core.apps.chromiumbrowser.ChromiumBrowserApp chromiumBrowserApp = new jp.moyashi.phoneos.core.apps.chromiumbrowser.ChromiumBrowserApp();
+        appLoader.registerApplication(chromiumBrowserApp);
+
         System.out.println("Kernel: " + appLoader.getLoadedApps().size() + " 個のアプリケーションを登録");
 
         // すべてのアプリ登録後に初期化を実行
@@ -700,7 +983,11 @@ public class Kernel implements GestureListener {
         calculatorApp.onInitialize(this);
         networkApp.onInitialize(this);
         hardwareTestApp.onInitialize(this);
-        
+        calculatorHTMLApp.onInitialize(this);
+        noteApp.onInitialize(this);
+        browserApp.onInitialize(this);
+        chromiumBrowserApp.onInitialize(this);
+
         // スクリーンマネージャーを初期化してランチャーを初期画面に設定
         System.out.println("  -> スクリーンマネージャー作成中...");
         screenManager = new ScreenManager();
@@ -871,6 +1158,24 @@ public class Kernel implements GestureListener {
     public void shutdown() {
         System.out.println("Kernel: System shutdown requested");
 
+        // ServiceManager のシャットダウン
+        if (serviceManager != null) {
+            System.out.println("Kernel: Shutting down ServiceManager...");
+            serviceManager.shutdown();
+        }
+
+        // WebViewManager のクリーンアップ
+        if (webViewManager != null) {
+            System.out.println("Kernel: Shutting down WebViewManager...");
+            webViewManager.shutdown();
+        }
+
+        // ChromiumManager のクリーンアップ
+        if (chromiumManager != null) {
+            System.out.println("Kernel: Shutting down ChromiumManager...");
+            chromiumManager.shutdown();
+        }
+
         // シャットダウンメッセージをPGraphicsバッファに描画
         if (graphics != null) {
             graphics.beginDraw();
@@ -937,7 +1242,34 @@ public class Kernel implements GestureListener {
     public LoggerService getLogger() {
         return logger;
     }
-    
+
+    /**
+     * サービスマネージャーを取得する。
+     *
+     * @return ServiceManager
+     */
+    public ServiceManager getServiceManager() {
+        return serviceManager;
+    }
+
+    /**
+     * Shiftキーが押されているかどうかを取得する。
+     *
+     * @return Shiftキーが押されている場合true
+     */
+    public boolean isShiftPressed() {
+        return shiftPressed;
+    }
+
+    /**
+     * Ctrlキーが押されているかどうかを取得する。
+     *
+     * @return Ctrlキーが押されている場合true
+     */
+    public boolean isCtrlPressed() {
+        return ctrlPressed;
+    }
+
     /**
      * アプリケーションローダーサービスを取得する。
      * @return AppLoaderインスタンス
@@ -1114,6 +1446,60 @@ public class Kernel implements GestureListener {
     }
 
     /**
+     * WebViewManager サービスを取得する。
+     *
+     * @return WebViewManagerインスタンス
+     */
+    public jp.moyashi.phoneos.core.service.webview.WebViewManager getWebViewManager() {
+        return webViewManager;
+    }
+
+    /**
+     * ChromiumManager サービスを取得する。
+     *
+     * @return ChromiumManagerインスタンス
+     */
+    public jp.moyashi.phoneos.core.service.chromium.ChromiumManager getChromiumManager() {
+        return chromiumManager;
+    }
+
+    /**
+     * パーミッション管理サービスを取得する。
+     *
+     * @return PermissionManagerインスタンス
+     */
+    public jp.moyashi.phoneos.core.service.permission.PermissionManager getPermissionManager() {
+        return permissionManager;
+    }
+
+    /**
+     * アクティビティ管理サービスを取得する。
+     *
+     * @return ActivityManagerインスタンス
+     */
+    public jp.moyashi.phoneos.core.service.intent.ActivityManager getActivityManager() {
+        return activityManager;
+    }
+
+    /**
+     * クリップボード管理サービスを取得する。
+     *
+     * @return ClipboardManagerインスタンス
+     */
+    public jp.moyashi.phoneos.core.service.clipboard.ClipboardManager getClipboardManager() {
+        return clipboardManager;
+    }
+
+    /**
+     * センサー管理サービスを取得する。
+     *
+     * @return SensorManagerインスタンス
+     */
+    public jp.moyashi.phoneos.core.service.sensor.SensorManager getSensorManager() {
+        return sensorManager;
+    }
+
+    /**
      * モバイルデータ通信ソケットを設定する（forge-mod用）。
      *
      * @param socket モバイルデータ通信ソケット
@@ -1192,6 +1578,83 @@ public class Kernel implements GestureListener {
      */
     public void setSIMInfo(jp.moyashi.phoneos.core.service.hardware.SIMInfo info) {
         this.simInfo = info;
+    }
+
+    /**
+     * リソースから日本語フォントを読み込む。
+     * Noto Sans JP TTFファイルをリソースから読み込み、Processing PFontとして返す。
+     * クロスプラットフォーム対応（Windows, Mac, Linux）およびForge環境でも動作する。
+     *
+     * @return 読み込まれたPFont、失敗した場合はnull
+     */
+    private PFont loadJapaneseFont() {
+        try {
+            // リソースからTTFファイルを読み込む
+            if (logger != null) {
+                logger.debug("Kernel", "リソースからNoto Sans JP TTFファイルを読み込み中...");
+            }
+            InputStream fontStream = getClass().getResourceAsStream("/fonts/NotoSansJP-Regular.ttf");
+
+            if (fontStream == null) {
+                if (logger != null) {
+                    logger.error("Kernel", "フォントファイルが見つかりません: /fonts/NotoSansJP-Regular.ttf");
+                }
+                return null;
+            }
+
+            // Java AWTフォントを作成
+            Font awtFont = Font.createFont(Font.TRUETYPE_FONT, fontStream);
+            fontStream.close();
+
+            if (logger != null) {
+                logger.debug("Kernel", "AWTフォントを作成しました: " + awtFont.getFontName());
+            }
+
+            // GraphicsEnvironmentに登録（システムフォントとして利用可能にする）
+            GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+            boolean registered = ge.registerFont(awtFont);
+
+            if (registered) {
+                if (logger != null) {
+                    logger.info("Kernel", "フォントをシステムに登録しました: " + awtFont.getFontName());
+                }
+            } else {
+                if (logger != null) {
+                    logger.debug("Kernel", "フォント登録をスキップ（既に登録済みまたは登録不要）");
+                }
+            }
+
+            // Processing PFontとして作成
+            // PApplet.createFont()を使わず、AWT FontからPFontを直接構築する
+            // これにより、setup()が呼ばれていない状態でも動作する
+            if (logger != null) {
+                logger.debug("Kernel", "AWT FontからPFontを直接構築中... (フォント名: " + awtFont.getFontName() + ")");
+            }
+            try {
+                // サイズ16でフォントを派生
+                java.awt.Font derivedFont = awtFont.deriveFont(16f);
+
+                // PFontコンストラクタを使用して直接作成（PApplet不要）
+                PFont pFont = new PFont(derivedFont, true);  // smooth=true
+
+                if (logger != null) {
+                    logger.info("Kernel", "PFontを作成しました (サイズ: 16、フォント名: " + derivedFont.getFontName() + ")");
+                }
+                return pFont;
+            } catch (Exception e) {
+                if (logger != null) {
+                    logger.error("Kernel", "PFont構築に失敗: " + e.getMessage(), e);
+                }
+                // フォールバック: nullを返してデフォルトフォントを使用
+                return null;
+            }
+
+        } catch (Exception e) {
+            if (logger != null) {
+                logger.error("Kernel", "フォント読み込み中にエラーが発生: " + e.getMessage(), e);
+            }
+            return null;
+        }
     }
 
     /**
@@ -1596,12 +2059,106 @@ public class Kernel implements GestureListener {
     
     /**
      * 指定されたコンポーネントがレイヤー管理システムで管理されているかチェックする。
-     * 
+     *
      * @param componentId コンポーネントID
      * @return レイヤー管理されている場合true
      */
     private boolean isComponentManagedByLayer(String componentId) {
         if (layerManager == null) return false;
         return layerManager.isLayerVisible(componentId);
+    }
+
+    // =========================================================================
+    // スリープ機能
+    // =========================================================================
+
+    /**
+     * スリープ状態に入る。
+     * 画面がブラックアウトし、すべてのdraw()が停止する。
+     * background()とtick()はそのまま動作する。
+     */
+    public void sleep() {
+        if (!isSleeping) {
+            isSleeping = true;
+            System.out.println("Kernel: Device entering sleep mode");
+            if (logger != null) {
+                logger.info("Kernel", "スリープモードに入りました");
+            }
+
+            // スリープに入る際、現在のスクリーンをバックグラウンドに送る
+            // これにより、WebViewのレンダリングが停止し、GPU使用率が削減される
+            if (screenManager != null) {
+                Screen currentScreen = screenManager.getCurrentScreen();
+                if (currentScreen != null) {
+                    currentScreen.onBackground();
+                    System.out.println("Kernel: Current screen moved to background for sleep: " + currentScreen.getScreenTitle());
+                    if (logger != null) {
+                        logger.info("Kernel", "スクリーンをバックグラウンドに移行: " + currentScreen.getScreenTitle());
+                    }
+                }
+            }
+
+            // スリープに入る際に一度だけ黒背景を描画
+            // 以降はrender()がスキップされるため、この黒い画面が維持される
+            synchronized (renderLock) {
+                if (graphics != null) {
+                    graphics.beginDraw();
+                    graphics.background(0, 0, 0); // 完全な黒背景
+                    graphics.endDraw();
+                    System.out.println("Kernel: Black screen drawn for sleep mode");
+                }
+            }
+        }
+    }
+
+    /**
+     * スリープ状態から復帰する。
+     * ロック画面が表示される。
+     * 注意: 既存のスクリーンスタックは保持され、ロック画面がその上にプッシュされる。
+     * これにより、ロック解除後に前回のセッションを復帰できる。
+     */
+    public void wake() {
+        if (isSleeping) {
+            isSleeping = false;
+            System.out.println("Kernel: Device waking up from sleep mode");
+            if (logger != null) {
+                logger.info("Kernel", "スリープモードから復帰しました");
+            }
+
+            // ロック画面を表示
+            if (lockManager != null) {
+                lockManager.lock(); // デバイスをロック状態にする
+
+                // ロック画面に切り替え
+                try {
+                    jp.moyashi.phoneos.core.ui.lock.LockScreen lockScreen =
+                        new jp.moyashi.phoneos.core.ui.lock.LockScreen(this);
+
+                    // 既存のスクリーンスタックを保持したまま、ロック画面をプッシュ
+                    // 注意: clearAllScreens()は呼ばない（WebViewの破棄を防ぐため）
+                    if (screenManager != null) {
+                        screenManager.pushScreen(lockScreen);
+                        addLayer(LayerType.LOCK_SCREEN); // レイヤースタックに追加
+                    }
+
+                    System.out.println("Kernel: Wake up - lock screen pushed (screen stack preserved)");
+                    if (logger != null) {
+                        logger.info("Kernel", "ロック画面を表示（スクリーンスタック保持）");
+                    }
+                } catch (Exception e) {
+                    System.err.println("Kernel: Error displaying lock screen after wake: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    /**
+     * スリープ状態かどうかを取得する。
+     *
+     * @return スリープ状態の場合true
+     */
+    public boolean isSleeping() {
+        return isSleeping;
     }
 }

@@ -287,7 +287,21 @@ public class AppLibraryScreen implements Screen, GestureListener {
         if (pressDuration < LONG_PRESS_DURATION && longPressedApp != null && !showingContextMenu) {
             // Short press - launch app
             System.out.println("AppLibraryScreen: Short press detected, launching app: " + longPressedApp.getName());
-            launchApplication(longPressedApp);
+            
+            // アイコン位置を計算
+            int itemIndex = getAppIndex(longPressedApp);
+            if (itemIndex >= 0) {
+                int itemY = LIST_START_Y + (itemIndex * ITEM_HEIGHT) - scrollOffset;
+                float iconCenterX = ITEM_PADDING + ICON_SIZE / 2;
+                float iconCenterY = itemY + ITEM_HEIGHT / 2;
+                
+                System.out.println("AppLibraryScreen: Using animation launch for " + longPressedApp.getName());
+                launchApplicationWithAnimation(longPressedApp, iconCenterX, iconCenterY);
+            } else {
+                // フォールバック
+                System.out.println("AppLibraryScreen: Using fallback launch for " + longPressedApp.getName());
+                launchApplication(longPressedApp);
+            }
         } else if (showingContextMenu) {
             System.out.println("AppLibraryScreen: Context menu was already shown via long press detection");
         }
@@ -615,11 +629,16 @@ public class AppLibraryScreen implements Screen, GestureListener {
      */
     private void launchApplication(IApplication app) {
         System.out.println("AppLibraryScreen: Launching app: " + app.getName());
-        
-        if (kernel != null && kernel.getScreenManager() != null) {
+
+        if (kernel != null && kernel.getScreenManager() != null && kernel.getServiceManager() != null) {
             try {
-                Screen appScreen = app.getEntryScreen(kernel);
-                kernel.getScreenManager().pushScreen(appScreen);
+                // ServiceManager経由でアプリを起動（既存インスタンスを再利用または新規作成）
+                Screen appScreen = kernel.getServiceManager().launchApp(app.getApplicationId());
+                if (appScreen != null) {
+                    kernel.getScreenManager().pushScreen(appScreen);
+                } else {
+                    System.err.println("AppLibraryScreen: ServiceManager returned null screen for " + app.getName());
+                }
             } catch (Exception e) {
                 System.err.println("AppLibraryScreen: Failed to launch app " + app.getName() + ": " + e.getMessage());
                 e.printStackTrace();
@@ -637,10 +656,15 @@ public class AppLibraryScreen implements Screen, GestureListener {
     private void launchApplicationWithAnimation(IApplication app, float iconX, float iconY) {
         System.out.println("AppLibraryScreen: Launching app with animation: " + app.getName());
         System.out.println("AppLibraryScreen: Icon position: (" + iconX + ", " + iconY + "), size: " + ICON_SIZE);
-        
-        if (kernel != null && kernel.getScreenManager() != null) {
+
+        if (kernel != null && kernel.getScreenManager() != null && kernel.getServiceManager() != null) {
             try {
-                Screen appScreen = app.getEntryScreen(kernel);
+                // ServiceManager経由でアプリを起動（既存インスタンスを再利用または新規作成）
+                Screen appScreen = kernel.getServiceManager().launchApp(app.getApplicationId());
+                if (appScreen == null) {
+                    System.err.println("AppLibraryScreen: ServiceManager returned null screen for " + app.getName());
+                    return;
+                }
                 System.out.println("AppLibraryScreen: Got app screen: " + appScreen.getScreenTitle());
                 
                 // Get app icon for animation

@@ -73,12 +73,36 @@ dependencies {
 
     implementation 'com.google.code.gson:gson:2.10.1'
 
+    // JavaFX for HTML/WebView integration (platform-specific)
+    // These are required for runClient environment
+    def platform = System.getProperty('os.name').toLowerCase().contains('win') ? 'win' :
+                   System.getProperty('os.name').toLowerCase().contains('mac') ? 'mac' : 'linux'
+    implementation "org.openjfx:javafx-base:17.0.2:${platform}"
+    implementation "org.openjfx:javafx-graphics:17.0.2:${platform}"
+    implementation "org.openjfx:javafx-controls:17.0.2:${platform}"
+    implementation "org.openjfx:javafx-web:17.0.2:${platform}"
+    implementation "org.openjfx:javafx-swing:17.0.2:${platform}"
+    implementation "org.openjfx:javafx-media:17.0.2:${platform}"
+
     // Simple Voice Chat API - for audio recording integration
-    compileOnly 'de.maxhenkel.voicechat:voicechat-api:2.5.0'
+    compileOnly 'de.maxhenkel.voicechat:voicechat-api:2.6.0'
 
     // Test dependencies
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.1'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+// Task to copy JavaFX JARs from Gradle cache to libs directory
+task copyJavaFxJars(type: Copy) {
+    def platform = System.getProperty('os.name').toLowerCase().contains('win') ? 'win' :
+                   System.getProperty('os.name').toLowerCase().contains('mac') ? 'mac' : 'linux'
+
+    from configurations.runtimeClasspath.filter { it.name.contains('javafx') }
+    into 'libs/javafx'
+
+    doLast {
+        println "Copied JavaFX JARs to libs/javafx for ${platform} platform"
+    }
 }
 
 // Task to extract Processing core classes into build output for development
@@ -92,14 +116,28 @@ task extractProcessingCore(type: Copy) {
     exclude '*.dylib'
 }
 
-// Make compileJava depend on extractProcessingCore
+// Task to extract JavaFX classes AND native libraries into build output for development
+task extractJavaFxCore(type: Copy) {
+    dependsOn copyJavaFxJars
+
+    from fileTree('libs/javafx').matching {
+        include '*.jar'
+    }.collect { zipTree(it) }
+
+    into 'build/classes/java/main'
+    exclude 'META-INF/**'
+    exclude 'module-info.class'
+    // Keep native libraries (.dll, .so, .dylib) - JavaFX needs them!
+}
+
+// Make compileJava depend on extractions
 tasks.named('compileJava').configure {
-    finalizedBy extractProcessingCore
+    finalizedBy extractProcessingCore, extractJavaFxCore
 }
 
 // Make sure classes task also triggers extraction
 tasks.named('classes').configure {
-    dependsOn extractProcessingCore
+    dependsOn extractProcessingCore, extractJavaFxCore
 }
 
 // Minecraft run configuration

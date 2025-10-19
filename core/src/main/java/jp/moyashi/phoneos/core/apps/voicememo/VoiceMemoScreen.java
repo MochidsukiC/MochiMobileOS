@@ -5,6 +5,10 @@ import jp.moyashi.phoneos.core.service.VFS;
 import jp.moyashi.phoneos.core.service.hardware.MicrophoneSocket;
 import jp.moyashi.phoneos.core.service.hardware.SpeakerSocket;
 import jp.moyashi.phoneos.core.ui.Screen;
+import jp.moyashi.phoneos.core.ui.components.Button;
+import jp.moyashi.phoneos.core.ui.components.Checkbox;
+import jp.moyashi.phoneos.core.ui.components.Label;
+import jp.moyashi.phoneos.core.ui.components.ProgressBar;
 import processing.core.PApplet;
 import processing.core.PGraphics;
 
@@ -31,6 +35,11 @@ public class VoiceMemoScreen implements Screen {
     private int totalChunksReceived = 0;    // 受信したチャンク数
     private float recordingSampleRate = 48000.0f; // 録音時のサンプリングレート
 
+    // チャンネル選択状態
+    private boolean enableMicChannel = true;      // チャンネル1: マイク入力
+    private boolean enableVoicechatChannel = true; // チャンネル2: VC音声
+    private boolean enableEnvironmentChannel = false; // チャンネル3: 環境音（未実装のためデフォルトOFF）
+
     // 再生状態
     private boolean isPlaying = false;
     private int playingIndex = -1;
@@ -48,6 +57,35 @@ public class VoiceMemoScreen implements Screen {
     // UI状態
     private String statusMessage = "";
     private long statusMessageTime = 0;
+
+    // UIコンポーネント
+    private Label headerLabel;
+    private Label micStatusLabel;
+    private Label speakerStatusLabel;
+    private Label volumeLabel;
+    private Label inputLevelLabel;
+    private Label outputLevelLabel;
+    private Label recordingTimeLabel;
+    private Label channelTitleLabel;
+    private Label statusLabel;
+    private Label memoListTitleLabel;
+
+    private Button recordButton;
+    private Button playLastButton;
+    private Button volumeLowButton;
+    private Button volumeMedButton;
+    private Button volumeHighButton;
+    private Button volumeOffButton;
+
+    private Checkbox micChannelCheckbox;
+    private Checkbox voicechatChannelCheckbox;
+    private Checkbox environmentChannelCheckbox;
+
+    private ProgressBar inputLevelMeter;
+    private ProgressBar outputLevelMeter;
+
+    private List<Button> memoPlayButtons = new ArrayList<>();
+    private List<Button> memoDeleteButtons = new ArrayList<>();
 
     public VoiceMemoScreen(Kernel kernel) {
         this.kernel = kernel;
@@ -87,7 +125,167 @@ public class VoiceMemoScreen implements Screen {
 
     @Override
     public void setup(PGraphics g) {
-        log("Setup");
+        log("Setup - Initializing UI components");
+
+        // ヘッダーラベル
+        headerLabel = new Label(0, 20, 400, 30, "🎤 Voice Memo");
+        headerLabel.setTextSize(20);
+        headerLabel.setHorizontalAlign(PApplet.CENTER);
+        headerLabel.setVerticalAlign(PApplet.TOP);
+        headerLabel.setTextColor(0xFFFFFFFF);
+
+        // ハードウェアステータスラベル
+        micStatusLabel = new Label(30, 70, 340, 15, "");
+        micStatusLabel.setTextSize(11);
+        micStatusLabel.setHorizontalAlign(PApplet.LEFT);
+        micStatusLabel.setTextColor(0xFF64FF64);
+
+        speakerStatusLabel = new Label(30, 85, 340, 15, "");
+        speakerStatusLabel.setTextSize(11);
+        speakerStatusLabel.setHorizontalAlign(PApplet.LEFT);
+        speakerStatusLabel.setTextColor(0xFF64FF64);
+
+        volumeLabel = new Label(30, 100, 340, 15, "");
+        volumeLabel.setTextSize(11);
+        volumeLabel.setHorizontalAlign(PApplet.LEFT);
+        volumeLabel.setTextColor(0xFFC8C8C8);
+
+        // 録音/再生コントロールボタン
+        recordButton = new Button(50, 150, 120, 40, "⏺ Record");
+        recordButton.setBackgroundColor(0xFFFF5050);
+        recordButton.setHoverColor(0xFFFF6060);
+        recordButton.setPressColor(0xFFFF4040);
+        recordButton.setTextColor(0xFFFFFFFF);
+        recordButton.setCornerRadius(5);
+        recordButton.setOnClickListener(this::handleRecordButton);
+
+        playLastButton = new Button(230, 150, 120, 40, "▶ Play Last");
+        playLastButton.setBackgroundColor(0xFF64FF64);
+        playLastButton.setHoverColor(0xFF74FF74);
+        playLastButton.setPressColor(0xFF54FF54);
+        playLastButton.setTextColor(0xFFFFFFFF);
+        playLastButton.setCornerRadius(5);
+        playLastButton.setOnClickListener(this::handlePlayLastButton);
+
+        // 音量調整ボタン
+        volumeLowButton = new Button(50, 200, 80, 30, "🔉 Low");
+        volumeLowButton.setBackgroundColor(0xFF9696C8);
+        volumeLowButton.setHoverColor(0xFFA6A6D8);
+        volumeLowButton.setPressColor(0xFF8686B8);
+        volumeLowButton.setTextColor(0xFFFFFFFF);
+        volumeLowButton.setCornerRadius(3);
+        volumeLowButton.setOnClickListener(() -> {
+            speaker.setVolumeLevel(SpeakerSocket.VolumeLevel.LOW);
+            showStatus("Volume: Low");
+        });
+
+        volumeMedButton = new Button(140, 200, 80, 30, "🔊 Med");
+        volumeMedButton.setBackgroundColor(0xFF9696C8);
+        volumeMedButton.setHoverColor(0xFFA6A6D8);
+        volumeMedButton.setPressColor(0xFF8686B8);
+        volumeMedButton.setTextColor(0xFFFFFFFF);
+        volumeMedButton.setCornerRadius(3);
+        volumeMedButton.setOnClickListener(() -> {
+            speaker.setVolumeLevel(SpeakerSocket.VolumeLevel.MEDIUM);
+            showStatus("Volume: Medium");
+        });
+
+        volumeHighButton = new Button(230, 200, 80, 30, "📢 High");
+        volumeHighButton.setBackgroundColor(0xFF9696C8);
+        volumeHighButton.setHoverColor(0xFFA6A6D8);
+        volumeHighButton.setPressColor(0xFF8686B8);
+        volumeHighButton.setTextColor(0xFFFFFFFF);
+        volumeHighButton.setCornerRadius(3);
+        volumeHighButton.setOnClickListener(() -> {
+            speaker.setVolumeLevel(SpeakerSocket.VolumeLevel.HIGH);
+            showStatus("Volume: High");
+        });
+
+        volumeOffButton = new Button(320, 200, 80, 30, "🔇 Off");
+        volumeOffButton.setBackgroundColor(0xFF9696C8);
+        volumeOffButton.setHoverColor(0xFFA6A6D8);
+        volumeOffButton.setPressColor(0xFF8686B8);
+        volumeOffButton.setTextColor(0xFFFFFFFF);
+        volumeOffButton.setCornerRadius(3);
+        volumeOffButton.setOnClickListener(() -> {
+            speaker.setVolumeLevel(SpeakerSocket.VolumeLevel.OFF);
+            showStatus("Volume: Off");
+        });
+
+        // 録音時間ラベル
+        recordingTimeLabel = new Label(0, 240, 400, 20, "");
+        recordingTimeLabel.setTextSize(14);
+        recordingTimeLabel.setHorizontalAlign(PApplet.CENTER);
+        recordingTimeLabel.setTextColor(0xFFFF6464);
+
+        // レベルメーター用ラベル
+        inputLevelLabel = new Label(30, 120, 90, 15, "Input Level:");
+        inputLevelLabel.setTextSize(11);
+        inputLevelLabel.setHorizontalAlign(PApplet.LEFT);
+        inputLevelLabel.setTextColor(0xFFC8C8C8);
+
+        outputLevelLabel = new Label(30, 120, 90, 15, "Output Level:");
+        outputLevelLabel.setTextSize(11);
+        outputLevelLabel.setHorizontalAlign(PApplet.LEFT);
+        outputLevelLabel.setTextColor(0xFFC8C8C8);
+
+        // レベルメーター
+        inputLevelMeter = new ProgressBar(120, 120, 240, 12);
+        inputLevelMeter.setMinValue(0.0f);
+        inputLevelMeter.setMaxValue(1.0f);
+        inputLevelMeter.setValue(0.0f);
+        inputLevelMeter.setFillColor(0xFF00FF00);
+        inputLevelMeter.setBackgroundColor(0xFF323C3C);
+        inputLevelMeter.setShowPercentage(false);
+        inputLevelMeter.setCornerRadius(2);
+
+        outputLevelMeter = new ProgressBar(120, 120, 240, 12);
+        outputLevelMeter.setMinValue(0.0f);
+        outputLevelMeter.setMaxValue(1.0f);
+        outputLevelMeter.setValue(0.0f);
+        outputLevelMeter.setFillColor(0xFF0096FF);
+        outputLevelMeter.setBackgroundColor(0xFF323C3C);
+        outputLevelMeter.setShowPercentage(false);
+        outputLevelMeter.setCornerRadius(2);
+
+        // チャンネル選択
+        channelTitleLabel = new Label(50, 260, 300, 15, "Recording Channels:");
+        channelTitleLabel.setTextSize(12);
+        channelTitleLabel.setHorizontalAlign(PApplet.LEFT);
+        channelTitleLabel.setTextColor(0xFFC8C8C8);
+
+        micChannelCheckbox = new Checkbox(50, 280, "🎤 Microphone");
+        micChannelCheckbox.setChecked(enableMicChannel);
+        micChannelCheckbox.setOnChangeListener(checked -> {
+            enableMicChannel = checked;
+            log("Mic channel: " + enableMicChannel);
+        });
+
+        voicechatChannelCheckbox = new Checkbox(200, 280, "👥 Voicechat");
+        voicechatChannelCheckbox.setChecked(enableVoicechatChannel);
+        voicechatChannelCheckbox.setOnChangeListener(checked -> {
+            enableVoicechatChannel = checked;
+            log("Voicechat channel: " + enableVoicechatChannel);
+        });
+
+        environmentChannelCheckbox = new Checkbox(50, 305, "🔊 Environment (Not implemented)");
+        environmentChannelCheckbox.setChecked(enableEnvironmentChannel);
+        environmentChannelCheckbox.setOnChangeListener(checked -> {
+            enableEnvironmentChannel = checked;
+            log("Environment channel: " + enableEnvironmentChannel);
+        });
+
+        // メモリストタイトル
+        memoListTitleLabel = new Label(30, 340, 340, 20, "");
+        memoListTitleLabel.setTextSize(14);
+        memoListTitleLabel.setHorizontalAlign(PApplet.LEFT);
+        memoListTitleLabel.setTextColor(0xFFFFFFFF);
+
+        // ステータスラベル
+        statusLabel = new Label(0, 570, 400, 20, "");
+        statusLabel.setTextSize(11);
+        statusLabel.setHorizontalAlign(PApplet.CENTER);
+        statusLabel.setTextColor(0xFF64C8FF);
     }
 
     @Override
@@ -96,19 +294,32 @@ public class VoiceMemoScreen implements Screen {
         g.background(30, 30, 40);
 
         // ヘッダー
-        drawHeader(g);
+        headerLabel.draw(g);
+
+        // セパレーター
+        g.stroke(100, 100, 100);
+        g.line(20, 60, 380, 60);
 
         // ハードウェアステータス
-        drawHardwareStatus(g);
+        updateAndDrawHardwareStatus(g);
 
         // 録音/再生コントロール
-        drawControls(g);
+        updateAndDrawControls(g);
+
+        // チャンネル選択
+        channelTitleLabel.draw(g);
+        micChannelCheckbox.draw(g);
+        voicechatChannelCheckbox.draw(g);
+        environmentChannelCheckbox.draw(g);
 
         // メモ一覧
         drawMemoList(g);
 
         // ステータスメッセージ
-        drawStatusMessage(g);
+        if (System.currentTimeMillis() - statusMessageTime < 3000) {
+            statusLabel.setText(statusMessage);
+            statusLabel.draw(g);
+        }
 
         // 録音中のアニメーション
         if (isRecording) {
@@ -121,124 +332,103 @@ public class VoiceMemoScreen implements Screen {
         }
     }
 
-    private void drawHeader(PGraphics g) {
-        g.fill(255, 255, 255);
-        g.textAlign(PApplet.CENTER, PApplet.TOP);
-        g.textSize(20);
-        g.text("🎤 Voice Memo", 200, 20);
-
-        // セパレーター
-        g.stroke(100, 100, 100);
-        g.line(20, 60, 380, 60);
-    }
-
-    private void drawHardwareStatus(PGraphics g) {
-        g.noStroke();
-        g.textAlign(PApplet.LEFT, PApplet.TOP);
-        g.textSize(11);
-
-        int y = 70;
-
+    private void updateAndDrawHardwareStatus(PGraphics g) {
         // マイク状態
         boolean micAvailable = microphone.isAvailable();
-        g.fill(micAvailable ? 100 : 255, micAvailable ? 255 : 100, 100);
-        g.text("🎤 Microphone: " + (micAvailable ? "Available" : "Not Available"), 30, y);
+        micStatusLabel.setText("🎤 Microphone: " + (micAvailable ? "Available" : "Not Available"));
+        micStatusLabel.setTextColor(micAvailable ? 0xFF64FF64 : 0xFFFF6464);
+        micStatusLabel.draw(g);
 
         // スピーカー状態
         boolean speakerAvailable = speaker.isAvailable();
-        g.fill(speakerAvailable ? 100 : 255, speakerAvailable ? 255 : 100, 100);
-        g.text("🔊 Speaker: " + (speakerAvailable ? "Available" : "Not Available"), 30, y + 15);
+        speakerStatusLabel.setText("🔊 Speaker: " + (speakerAvailable ? "Available" : "Not Available"));
+        speakerStatusLabel.setTextColor(speakerAvailable ? 0xFF64FF64 : 0xFFFF6464);
+        speakerStatusLabel.draw(g);
 
         // 音量レベル
         if (speakerAvailable) {
-            g.fill(200, 200, 200);
-            g.text("Volume: " + speaker.getVolumeLevel().name(), 30, y + 30);
+            volumeLabel.setText("Volume: " + speaker.getVolumeLevel().name());
+            volumeLabel.draw(g);
         }
 
         // 録音中の入力レベルメーター
         if (isRecording) {
-            g.fill(200, 200, 200);
-            g.text("Input Level:", 30, y + 50);
-
-            // レベルメーターバー
-            g.noStroke();
-            g.fill(50, 50, 60);
-            g.rect(120, y + 50, 240, 12, 2);
-
-            // 現在のレベル（緑→黄色→赤）
-            if (currentInputLevel > 0) {
-                float barWidth = currentInputLevel * 240;
-                int r = (int) (currentInputLevel * 255);
-                int gr = (int) ((1.0f - currentInputLevel) * 255);
-                g.fill(r, gr, 0);
-                g.rect(120, y + 50, barWidth, 12, 2);
+            inputLevelLabel.draw(g);
+            inputLevelMeter.setValue(currentInputLevel);
+            // レベルに応じて色を変更（緑→黄→赤）
+            if (currentInputLevel < 0.5f) {
+                inputLevelMeter.setFillColor(0xFF00FF00);
+            } else if (currentInputLevel < 0.8f) {
+                inputLevelMeter.setFillColor(0xFFFFFF00);
+            } else {
+                inputLevelMeter.setFillColor(0xFFFF0000);
             }
+            inputLevelMeter.draw(g);
 
             // チャンク受信数
             g.fill(180, 180, 180);
             g.textSize(10);
-            g.text("Chunks: " + totalChunksReceived, 30, y + 68);
+            g.textAlign(PApplet.LEFT, PApplet.TOP);
+            g.text("Chunks: " + totalChunksReceived, 30, 138);
         }
 
         // 再生中の出力レベルメーター
         if (isPlaying) {
-            g.fill(200, 200, 200);
-            g.textSize(11);
-            g.text("Output Level:", 30, y + 50);
-
-            // レベルメーターバー
-            g.noStroke();
-            g.fill(50, 50, 60);
-            g.rect(120, y + 50, 240, 12, 2);
-
-            // 現在のレベル（青→シアン）
-            if (currentOutputLevel > 0) {
-                float barWidth = currentOutputLevel * 240;
-                g.fill(0, 150, 255);
-                g.rect(120, y + 50, barWidth, 12, 2);
-            }
+            outputLevelLabel.draw(g);
+            outputLevelMeter.setValue(currentOutputLevel);
+            outputLevelMeter.draw(g);
         }
     }
 
-    private void drawControls(PGraphics g) {
-        int y = 150;
-
-        // 録音ボタン
+    private void updateAndDrawControls(PGraphics g) {
+        // 録音ボタンの状態を更新
         boolean canRecord = microphone.isAvailable() && !isPlaying;
-        drawButton(g, 50, y, 120, 40, isRecording ? "⏹ Stop" : "⏺ Record",
-                   isRecording ? 255 : (canRecord ? 255 : 100), 80, 80);
+        recordButton.setText(isRecording ? "⏹ Stop" : "⏺ Record");
+        recordButton.setEnabled(canRecord || isRecording);
+        if (!canRecord && !isRecording) {
+            recordButton.setBackgroundColor(0xFF646464);
+        } else {
+            recordButton.setBackgroundColor(0xFFFF5050);
+        }
+        recordButton.draw(g);
 
-        // 再生ボタン（最後に録音したメモを再生）
+        // 再生ボタンの状態を更新
         boolean canPlay = speaker.isAvailable() && !memos.isEmpty() && !isRecording;
-        drawButton(g, 230, y, 120, 40, isPlaying ? "⏹ Stop" : "▶ Play Last",
-                   isPlaying ? 255 : (canPlay ? 100 : 50), isPlaying ? 255 : (canPlay ? 255 : 100), 100);
+        playLastButton.setText(isPlaying ? "⏹ Stop" : "▶ Play Last");
+        playLastButton.setEnabled(canPlay || isPlaying);
+        if (!canPlay && !isPlaying) {
+            playLastButton.setBackgroundColor(0xFF323232);
+        } else if (isPlaying) {
+            playLastButton.setBackgroundColor(0xFFFF6464);
+        } else {
+            playLastButton.setBackgroundColor(0xFF64FF64);
+        }
+        playLastButton.draw(g);
 
         // 音量調整ボタン
         if (speaker.isAvailable()) {
-            drawSmallButton(g, 50, y + 50, 80, 30, "🔉 Low", 150, 150, 200);
-            drawSmallButton(g, 140, y + 50, 80, 30, "🔊 Med", 150, 150, 200);
-            drawSmallButton(g, 230, y + 50, 80, 30, "📢 High", 150, 150, 200);
-            drawSmallButton(g, 320, y + 50, 80, 30, "🔇 Off", 150, 150, 200);
+            volumeLowButton.draw(g);
+            volumeMedButton.draw(g);
+            volumeHighButton.draw(g);
+            volumeOffButton.draw(g);
         }
 
         // 録音時間表示
         if (isRecording) {
             long duration = (System.currentTimeMillis() - recordingStartTime) / 1000;
-            g.fill(255, 100, 100);
-            g.textAlign(PApplet.CENTER, PApplet.TOP);
-            g.textSize(14);
-            g.text(String.format("⏱ %02d:%02d", duration / 60, duration % 60), 200, y + 90);
+            recordingTimeLabel.setText(String.format("⏱ %02d:%02d", duration / 60, duration % 60));
+            recordingTimeLabel.draw(g);
         }
     }
 
-    private void drawMemoList(PGraphics g) {
-        int listY = 270;
-        int listHeight = 300;
 
-        g.fill(255, 255, 255);
-        g.textAlign(PApplet.LEFT, PApplet.TOP);
-        g.textSize(14);
-        g.text("Saved Memos (" + memos.size() + ")", 30, listY);
+    private void drawMemoList(PGraphics g) {
+        int listY = 340;
+        int listHeight = 230;
+
+        // タイトル更新
+        memoListTitleLabel.setText("Saved Memos (" + memos.size() + ")");
+        memoListTitleLabel.draw(g);
 
         // セパレーター
         g.stroke(100, 100, 100);
@@ -247,6 +437,29 @@ public class VoiceMemoScreen implements Screen {
         // メモ一覧
         g.pushMatrix();
         g.translate(0, listY + 30);
+
+        // メモリストボタンを動的生成（必要に応じて）
+        while (memoPlayButtons.size() < memos.size()) {
+            int index = memoPlayButtons.size();
+            Button playBtn = new Button(280, 0, 40, 30, "▶");
+            playBtn.setBackgroundColor(0xFF64C864);
+            playBtn.setTextColor(0xFFFFFFFF);
+            playBtn.setCornerRadius(3);
+            final int capturedIndex = index;
+            playBtn.setOnClickListener(() -> {
+                if (speaker.isAvailable() && !isRecording) {
+                    playMemo(capturedIndex);
+                }
+            });
+            memoPlayButtons.add(playBtn);
+
+            Button deleteBtn = new Button(330, 0, 30, 30, "🗑");
+            deleteBtn.setBackgroundColor(0xFFC86464);
+            deleteBtn.setTextColor(0xFFFFFFFF);
+            deleteBtn.setCornerRadius(3);
+            deleteBtn.setOnClickListener(() -> deleteMemo(capturedIndex));
+            memoDeleteButtons.add(deleteBtn);
+        }
 
         for (int i = 0; i < memos.size(); i++) {
             int itemY = i * ITEM_HEIGHT - scrollOffset;
@@ -265,6 +478,7 @@ public class VoiceMemoScreen implements Screen {
             // タイトル
             g.fill(255, 255, 255);
             g.textSize(13);
+            g.textAlign(PApplet.LEFT, PApplet.TOP);
             g.text(memo.getName(), 40, itemY + 10);
 
             // 詳細情報
@@ -272,13 +486,18 @@ public class VoiceMemoScreen implements Screen {
             g.textSize(10);
             g.text(memo.getDateString() + " | " + memo.getDurationString(), 40, itemY + 30);
 
-            // 再生ボタン
-            if (speaker.isAvailable()) {
-                drawSmallButton(g, 280, itemY + 10, 40, 30, "▶", 100, 200, 100);
+            // ボタンの位置を更新して描画
+            if (speaker.isAvailable() && i < memoPlayButtons.size()) {
+                Button playBtn = memoPlayButtons.get(i);
+                playBtn.setPosition(280, itemY + 10);
+                playBtn.draw(g);
             }
 
-            // 削除ボタン
-            drawSmallButton(g, 330, itemY + 10, 30, 30, "🗑", 200, 100, 100);
+            if (i < memoDeleteButtons.size()) {
+                Button deleteBtn = memoDeleteButtons.get(i);
+                deleteBtn.setPosition(330, itemY + 10);
+                deleteBtn.draw(g);
+            }
         }
 
         g.popMatrix();
@@ -292,96 +511,94 @@ public class VoiceMemoScreen implements Screen {
         }
     }
 
-    private void drawButton(PGraphics g, int x, int y, int w, int h, String label, int r, int gr, int b) {
-        g.noStroke();
-        g.fill(r, gr, b);
-        g.rect(x, y, w, h, 5);
+    @Override
+    public void mousePressed(PGraphics g, int mouseX, int mouseY) {
+        // コンポーネントのmousePressedイベント
+        if (recordButton.onMousePressed(mouseX, mouseY)) return;
+        if (playLastButton.onMousePressed(mouseX, mouseY)) return;
 
-        g.fill(255, 255, 255);
-        g.textAlign(PApplet.CENTER, PApplet.CENTER);
-        g.textSize(13);
-        g.text(label, x + w/2, y + h/2);
-    }
+        if (speaker.isAvailable()) {
+            if (volumeLowButton.onMousePressed(mouseX, mouseY)) return;
+            if (volumeMedButton.onMousePressed(mouseX, mouseY)) return;
+            if (volumeHighButton.onMousePressed(mouseX, mouseY)) return;
+            if (volumeOffButton.onMousePressed(mouseX, mouseY)) return;
+        }
 
-    private void drawSmallButton(PGraphics g, int x, int y, int w, int h, String label, int r, int gr, int b) {
-        g.noStroke();
-        g.fill(r, gr, b);
-        g.rect(x, y, w, h, 3);
+        // チャンネル選択チェックボックス
+        if (micChannelCheckbox.onMousePressed(mouseX, mouseY)) return;
+        if (voicechatChannelCheckbox.onMousePressed(mouseX, mouseY)) return;
+        if (environmentChannelCheckbox.onMousePressed(mouseX, mouseY)) return;
 
-        g.fill(255, 255, 255);
-        g.textAlign(PApplet.CENTER, PApplet.CENTER);
-        g.textSize(10);
-        g.text(label, x + w/2, y + h/2);
-    }
+        // メモ一覧のボタン（translate考慮）
+        int listY = 340 + 30;
+        for (int i = 0; i < memos.size(); i++) {
+            int itemY = listY + i * ITEM_HEIGHT - scrollOffset;
 
-    private void drawStatusMessage(PGraphics g) {
-        if (System.currentTimeMillis() - statusMessageTime < 3000) {
-            g.fill(100, 200, 255);
-            g.textAlign(PApplet.CENTER, PApplet.BOTTOM);
-            g.textSize(11);
-            g.text(statusMessage, 200, 590);
+            if (i < memoPlayButtons.size()) {
+                Button playBtn = memoPlayButtons.get(i);
+                if (playBtn.onMousePressed(mouseX, mouseY - listY + scrollOffset)) return;
+            }
+
+            if (i < memoDeleteButtons.size()) {
+                Button deleteBtn = memoDeleteButtons.get(i);
+                if (deleteBtn.onMousePressed(mouseX, mouseY - listY + scrollOffset)) return;
+            }
         }
     }
 
     @Override
-    public void mousePressed(PGraphics g, int mouseX, int mouseY) {
-        log("mousePressed: (" + mouseX + ", " + mouseY + ")");
+    public void mouseReleased(PGraphics g, int mouseX, int mouseY) {
+        // コンポーネントのmouseReleasedイベント
+        recordButton.onMouseReleased(mouseX, mouseY);
+        playLastButton.onMouseReleased(mouseX, mouseY);
 
-        // 録音ボタン
-        if (isInside(mouseX, mouseY, 50, 150, 120, 40)) {
-            log("Record button clicked - mic.available=" + microphone.isAvailable() + ", isPlaying=" + isPlaying);
-            if (microphone.isAvailable() && !isPlaying) {
-                if (isRecording) {
-                    stopRecording();
-                } else {
-                    startRecording();
-                }
-            }
-        }
-
-        // 再生ボタン（最後のメモ）
-        if (isInside(mouseX, mouseY, 230, 150, 120, 40)) {
-            if (speaker.isAvailable() && !memos.isEmpty() && !isRecording) {
-                if (isPlaying) {
-                    stopPlayback();
-                } else {
-                    playMemo(memos.size() - 1);
-                }
-            }
-        }
-
-        // 音量調整ボタン
         if (speaker.isAvailable()) {
-            if (isInside(mouseX, mouseY, 50, 200, 80, 30)) {
-                speaker.setVolumeLevel(SpeakerSocket.VolumeLevel.LOW);
-                showStatus("Volume: Low");
-            } else if (isInside(mouseX, mouseY, 140, 200, 80, 30)) {
-                speaker.setVolumeLevel(SpeakerSocket.VolumeLevel.MEDIUM);
-                showStatus("Volume: Medium");
-            } else if (isInside(mouseX, mouseY, 230, 200, 80, 30)) {
-                speaker.setVolumeLevel(SpeakerSocket.VolumeLevel.HIGH);
-                showStatus("Volume: High");
-            } else if (isInside(mouseX, mouseY, 320, 200, 80, 30)) {
-                speaker.setVolumeLevel(SpeakerSocket.VolumeLevel.OFF);
-                showStatus("Volume: Off");
-            }
+            volumeLowButton.onMouseReleased(mouseX, mouseY);
+            volumeMedButton.onMouseReleased(mouseX, mouseY);
+            volumeHighButton.onMouseReleased(mouseX, mouseY);
+            volumeOffButton.onMouseReleased(mouseX, mouseY);
         }
 
-        // メモ一覧のクリック判定
-        int listY = 270 + 30;
+        micChannelCheckbox.onMouseReleased(mouseX, mouseY);
+        voicechatChannelCheckbox.onMouseReleased(mouseX, mouseY);
+        environmentChannelCheckbox.onMouseReleased(mouseX, mouseY);
+
+        // メモ一覧のボタン
+        int listY = 340 + 30;
         for (int i = 0; i < memos.size(); i++) {
-            int itemY = listY + i * ITEM_HEIGHT - scrollOffset;
-
-            // 再生ボタン
-            if (isInside(mouseX, mouseY, 280, itemY + 10, 40, 30)) {
-                if (speaker.isAvailable() && !isRecording) {
-                    playMemo(i);
-                }
+            if (i < memoPlayButtons.size()) {
+                memoPlayButtons.get(i).onMouseReleased(mouseX, mouseY - listY + scrollOffset);
             }
+            if (i < memoDeleteButtons.size()) {
+                memoDeleteButtons.get(i).onMouseReleased(mouseX, mouseY - listY + scrollOffset);
+            }
+        }
+    }
 
-            // 削除ボタン
-            if (isInside(mouseX, mouseY, 330, itemY + 10, 30, 30)) {
-                deleteMemo(i);
+    public void mouseMoved(PGraphics g, int mouseX, int mouseY) {
+        // コンポーネントのhoverイベント
+        recordButton.onMouseMoved(mouseX, mouseY);
+        playLastButton.onMouseMoved(mouseX, mouseY);
+
+        if (speaker.isAvailable()) {
+            volumeLowButton.onMouseMoved(mouseX, mouseY);
+            volumeMedButton.onMouseMoved(mouseX, mouseY);
+            volumeHighButton.onMouseMoved(mouseX, mouseY);
+            volumeOffButton.onMouseMoved(mouseX, mouseY);
+        }
+
+        micChannelCheckbox.onMouseMoved(mouseX, mouseY);
+        voicechatChannelCheckbox.onMouseMoved(mouseX, mouseY);
+        environmentChannelCheckbox.onMouseMoved(mouseX, mouseY);
+
+        // メモ一覧のボタン
+        int listY = 340 + 30;
+        for (int i = 0; i < memos.size(); i++) {
+            if (i < memoPlayButtons.size()) {
+                memoPlayButtons.get(i).onMouseMoved(mouseX, mouseY - listY + scrollOffset);
+            }
+            if (i < memoDeleteButtons.size()) {
+                memoDeleteButtons.get(i).onMouseMoved(mouseX, mouseY - listY + scrollOffset);
             }
         }
     }
@@ -398,8 +615,25 @@ public class VoiceMemoScreen implements Screen {
         return "Voice Memo";
     }
 
-    private boolean isInside(int x, int y, int rx, int ry, int rw, int rh) {
-        return x >= rx && x <= rx + rw && y >= ry && y <= ry + rh;
+    private void handleRecordButton() {
+        log("Record button clicked - mic.available=" + microphone.isAvailable() + ", isPlaying=" + isPlaying);
+        if (microphone.isAvailable() && !isPlaying) {
+            if (isRecording) {
+                stopRecording();
+            } else {
+                startRecording();
+            }
+        }
+    }
+
+    private void handlePlayLastButton() {
+        if (speaker.isAvailable() && !memos.isEmpty() && !isRecording) {
+            if (isPlaying) {
+                stopPlayback();
+            } else {
+                playMemo(memos.size() - 1);
+            }
+        }
     }
 
     public void startRecording() {
@@ -439,18 +673,79 @@ public class VoiceMemoScreen implements Screen {
     }
 
     private void updateRecording() {
-        // マイクからデータを取得（バッファ内の全チャンクを連結して取得）
-        byte[] audioData = microphone.getAudioData();
-        if (audioData != null && audioData.length > 0) {
-            recordingBuffer.add(audioData);
+        // 有効なチャンネルのみからデータを取得（データの重複消費を防ぐ）
+        byte[] micData = enableMicChannel ? microphone.getMicrophoneAudio() : null;       // チャンネル1
+        byte[] vcData = enableVoicechatChannel ? microphone.getVoicechatAudio() : null;   // チャンネル2
+        byte[] envData = enableEnvironmentChannel ? microphone.getEnvironmentAudio() : null; // チャンネル3
+
+        // デバッグログ
+        if (totalChunksReceived % 50 == 0) { // 50回に1回ログ出力
+            log(String.format("Channel data - Mic: %s, VC: %s, Env: %s (Enabled: Mic=%b, VC=%b, Env=%b)",
+                micData != null ? micData.length + "B" : "null",
+                vcData != null ? vcData.length + "B" : "null",
+                envData != null ? envData.length + "B" : "null",
+                enableMicChannel, enableVoicechatChannel, enableEnvironmentChannel));
+        }
+
+        // OS側でミキシング（有効なチャンネルのみ）
+        byte[] mixedData = mixAudioChannels(micData, vcData, envData);
+
+        if (mixedData != null && mixedData.length > 0) {
+            recordingBuffer.add(mixedData);
             totalChunksReceived++;
 
             // 音声レベルを計算（16-bit PCM）
-            currentInputLevel = calculateAudioLevel(audioData);
+            currentInputLevel = calculateAudioLevel(mixedData);
         } else {
             // データがない場合はレベルを徐々に下げる
             currentInputLevel *= 0.8f;
         }
+    }
+
+    /**
+     * 複数の音声チャンネルをミキシングする。
+     * OS側でのミキシング処理。
+     * チェックボックスで選択されたチャンネルのみをミックスする。
+     */
+    private byte[] mixAudioChannels(byte[] channel1, byte[] channel2, byte[] channel3) {
+        // 有効なチャンネルのみを追加
+        List<byte[]> channels = new ArrayList<>();
+        if (enableMicChannel && channel1 != null && channel1.length > 0) channels.add(channel1);
+        if (enableVoicechatChannel && channel2 != null && channel2.length > 0) channels.add(channel2);
+        if (enableEnvironmentChannel && channel3 != null && channel3.length > 0) channels.add(channel3);
+
+        if (channels.isEmpty()) {
+            return null;
+        }
+
+        if (channels.size() == 1) {
+            return channels.get(0);
+        }
+
+        // 最も長いチャンネルの長さに合わせる
+        int maxLength = channels.stream().mapToInt(arr -> arr.length).max().orElse(0);
+        byte[] mixed = new byte[maxLength];
+
+        for (int i = 0; i < maxLength; i += 2) {
+            int mixedSample = 0;
+
+            for (byte[] channel : channels) {
+                if (i + 1 < channel.length) {
+                    // 16-bit PCMとして読み取り
+                    short sample = (short) ((channel[i + 1] << 8) | (channel[i] & 0xFF));
+                    mixedSample += sample;
+                }
+            }
+
+            // クリッピング防止
+            mixedSample = Math.max(Short.MIN_VALUE, Math.min(Short.MAX_VALUE, mixedSample));
+
+            // バイト配列に書き戻し
+            mixed[i] = (byte) (mixedSample & 0xFF);
+            mixed[i + 1] = (byte) ((mixedSample >> 8) & 0xFF);
+        }
+
+        return mixed;
     }
 
     private void saveMemo() {

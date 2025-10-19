@@ -45,6 +45,37 @@ public class StandaloneWrapper extends PApplet {
     public void setup() {
         System.out.println("StandaloneWrapper: Kernel初期化開始...");
 
+        // IMEを有効化（日本語入力のインライン編集対応）
+        try {
+            if (surface != null) {
+                System.out.println("StandaloneWrapper: Enabling input methods for IME support");
+                surface.setResizable(false); // ウィンドウサイズ固定
+
+                // Java AWTコンポーネントでIMEを有効化し、MouseWheelListenerを登録
+                java.awt.Component component = (java.awt.Component) surface.getNative();
+                if (component != null) {
+                    component.enableInputMethods(true);
+                    System.out.println("StandaloneWrapper: Input methods enabled on AWT component");
+
+                    // AWTのMouseWheelListenerを直接登録（Processingのイベントが機能しないため）
+                    component.addMouseWheelListener(new java.awt.event.MouseWheelListener() {
+                        @Override
+                        public void mouseWheelMoved(java.awt.event.MouseWheelEvent e) {
+                            System.out.println("StandaloneWrapper: AWT mouseWheelMoved - wheelRotation: " + e.getWheelRotation() + ", x: " + mouseX + ", y: " + mouseY);
+                            if (kernel != null) {
+                                // wheelRotationは回転量（正の値：下スクロール、負の値：上スクロール）
+                                kernel.mouseWheel(mouseX, mouseY, e.getWheelRotation());
+                                System.out.println("StandaloneWrapper: mouseWheel forwarded to Kernel via AWT listener");
+                            }
+                        }
+                    });
+                    System.out.println("StandaloneWrapper: MouseWheelListener registered on AWT component");
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("StandaloneWrapper: Failed to enable input methods: " + e.getMessage());
+        }
+
         // Kernelを作成し、PGraphics統一アーキテクチャで初期化
         kernel = new Kernel();
         kernel.initialize(this, SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -129,13 +160,83 @@ public class StandaloneWrapper extends PApplet {
     }
 
     /**
+     * PAppletマウスホイールイベント → Kernel独立API変換。
+     * スクロール操作の処理に使用。
+     */
+    @Override
+    public void mouseWheel(processing.event.MouseEvent event) {
+        System.out.println("StandaloneWrapper: mouseWheel event received - count: " + event.getCount() + ", mouseX: " + mouseX + ", mouseY: " + mouseY);
+        if (kernel != null) {
+            // Kernelの独立mouseWheel APIを呼び出し
+            // getCount()はスクロール量を返す（正の値：下スクロール、負の値：上スクロール）
+            kernel.mouseWheel(mouseX, mouseY, event.getCount());
+            System.out.println("StandaloneWrapper: mouseWheel forwarded to Kernel");
+        } else {
+            System.out.println("StandaloneWrapper: kernel is null, cannot forward mouseWheel event");
+        }
+    }
+
+    /**
      * PAppletキー押下イベント → Kernel独立API変換。
+     * 特殊キー（矢印、Backspace等）の処理に使用。
      */
     @Override
     public void keyPressed() {
         System.out.println("StandaloneWrapper: keyPressed - key: '" + key + "', keyCode: " + keyCode);
+
+        // ESCキー（keyCode == 27）の場合、Processingのデフォルト動作（アプリケーション終了）を無効化
+        if (keyCode == 27) {
+            System.out.println("StandaloneWrapper: ESC key detected - disabling default exit behavior");
+            if (kernel != null) {
+                kernel.keyPressed(key, keyCode);
+            }
+            key = 0; // Processingのデフォルト処理を無効化
+            return;
+        }
+
+        // 特殊キー（矢印、Backspace、Delete、Shift、Ctrl等）のみここで処理
+        // 通常の文字入力はkeyTyped()で処理される
+        // 制御文字（< 32）、CODEDキー、特殊キーコード（35-40: Home, End, 矢印）、修飾キー（16: Shift, 17: Ctrl）を処理
+        // 修飾キーはkeyCodeで判定（keyの値が不定のため）
+        boolean isSpecialKey = (key == CODED || key < 32 || (keyCode >= 35 && keyCode <= 40) ||
+                                keyCode == 8 || keyCode == 127 || keyCode == 16 || keyCode == 17);
+
+        // Ctrlが押されている場合、通常文字キーもkeyPressed()に転送（Ctrl+C/V/A等のショートカット用）
+        boolean isCtrlPressed = (kernel != null && kernel.isCtrlPressed());
+        boolean shouldForwardKey = isSpecialKey || isCtrlPressed;
+
+        if (shouldForwardKey) {
+            if (kernel != null) {
+                System.out.println("StandaloneWrapper: Forwarding key to Kernel (key: '" + key + "', keyCode: " + keyCode + ", Ctrl: " + isCtrlPressed + ")");
+                kernel.keyPressed(key, keyCode);
+            } else {
+                System.out.println("StandaloneWrapper: kernel is null, cannot forward key event");
+            }
+        } else {
+            System.out.println("StandaloneWrapper: Skipping normal character in keyPressed() - will be handled by keyTyped()");
+        }
+    }
+
+    /**
+     * PAppletキータイプイベント → Kernel独立API変換。
+     * Unicode文字（日本語等）の入力処理に使用。
+     * keyPressed()と異なり、IMEを通じて確定した文字がここに渡される。
+     */
+    @Override
+    public void keyTyped() {
+        System.out.println("StandaloneWrapper: keyTyped - key: '" + key + "' (Unicode: " + (int)key + ")");
+
+        // 制御文字、CODEDキー、特殊キーコード（35-40: Home, End, 矢印）を除外
+        // これらはkeyPressed()で既に処理されている
+        if (key == CODED || key < 32 || (key >= 35 && key <= 40) || key == 127) {
+            System.out.println("StandaloneWrapper: Skipping control character or special key in keyTyped()");
+            return;
+        }
+
         if (kernel != null) {
-            kernel.keyPressed(key, keyCode);
+            // keyTypedでは通常のUnicode文字が渡される
+            // keyCodeは常に0なので、keyのみを使用
+            kernel.keyPressed(key, 0);
         } else {
             System.out.println("StandaloneWrapper: kernel is null, cannot forward key event");
         }

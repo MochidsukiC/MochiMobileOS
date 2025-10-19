@@ -153,6 +153,13 @@ public class SmartphoneItem extends Item {
             LOGGER.info("[SmartphoneItem] Player: " + player.getName().getString());
             LOGGER.info("[SmartphoneItem] Player UUID: " + player.getUUID());
 
+            // スリープ中の場合は解除する
+            Kernel kernel = SmartphoneBackgroundService.getKernel();
+            if (kernel != null && kernel.isSleeping()) {
+                LOGGER.info("[SmartphoneItem] Device is sleeping, waking up...");
+                kernel.wake();
+            }
+
             // MinecraftのGUIシステムを使ってProcessingベースのMochiMobileOS画面を開く
             Minecraft minecraft = Minecraft.getInstance();
             LOGGER.info("[SmartphoneItem] Creating ProcessingScreen instance...");
