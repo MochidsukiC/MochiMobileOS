@@ -113,9 +113,9 @@ LauncherApp, SettingsApp, CalculatorApp, AppStoreApp (UIのみ), NetworkApp (メ
     - NoSuchMethodException: addOnPaintListener()メソッドが見つからない場合
     - 汎用Exception: リフレクション呼び出しやリスナー内でのエラー
     - スタックトレース出力による詳細なデバッグ情報の記録
-- **Phase 6: 技術的限界の発見** (❌ OSRモード実現不可 - 2025-10-20):
+- **Phase 6: ChromiumBrowser実装成功！** (✅ 完全動作確認 - 2025-10-20):
   - **Phase 6目標**: onPaint()コールバックが発火するか確認し、ChromiumBrowserの描画を実現する
-  - **実施したテスト**（全7回のビルド＆テスト反復）:
+  - **実施したデバッグ＆修正サイクル**（全9回のビルド＆テスト反復）:
     1. ✅ wasResized()リフレクション呼び出し試行 → ❌ メソッドが存在しない（private）
     2. ✅ getUIComponent() + setSize()アプローチ → ❌ onPaint()発火せず
     3. ✅ デバッグログ追加（🎨絵文字）で発火確認 → ❌ ログ出力なし（リスナー未呼出）
@@ -123,47 +123,69 @@ LauncherApp, SettingsApp, CalculatorApp, AppStoreApp (UIのみ), NetworkApp (メ
     5. ✅ SwingUtilities.invokeLater()でAWT Event Thread実行 → ❌ 競合エラー継続
     6. ✅ tryTriggerRendering()フォールバック実装 → ❌ 根本的な解決には至らず
     7. ✅ 公式サンプル（MainFrame.java）との比較・ソースコード解析
-  - **技術的限界の特定**:
-    - ❌ **ProcessingとJOGL（JCEF）のGraphicsConfiguration競合が解決不可能**
-    - **根本原因**（CefBrowserOsr.java:385-389のソースコード解析により判明）:
-      ```java
-      public void onPaint(...) {
-          final GLContext context = canvas_ != null ? canvas_.getContext() : null;
-          if (context == null) {
-              return;  // ← GLContextがnullだと早期リターン！
-          }
-          // ... リスナー呼び出しはこの後
-      }
-      ```
-    - **レンダリングパイプライン**:
-      1. GLCanvasをvisible UI treeに追加
-      2. reshape() GLEventListenerが発火
-      3. reshape()内でwasResized()が呼ばれる
-      4. wasResized()がブラウザにサイズを通知
-      5. ブラウザがonPaint()イベントを生成
-      6. 登録されたリスナーが呼ばれる
-    - **破綻ポイント**: ステップ1でGraphicsConfiguration競合により失敗
-      - Processing: 既にOpenGLコンテキストを使用してPGraphicsレンダリング
-      - JOGL（JCEF）: 独立したOpenGLコンテキストを必要とする
-      - 両者が同一JVMプロセス内で競合し、GLCanvasの作成が不可能
+    8. **✅ JVMフラグ追加でGraphicsConfiguration問題を解決** → ✅ onPaint()発火成功！
+    9. **✅ CefPaintEvent APIメソッド名修正** → ✅ **完全動作確認！**
+  - **問題の根本原因と解決策**:
+    - **問題1: GraphicsConfigurationエラー**
+      - 原因: JOGL（JCEF）がJava 9+モジュールシステムでsun.awt等の内部APIにアクセス不可
       - エラー: `Unable to determine GraphicsConfiguration: WindowsWGLGraphicsConfiguration`
-    - **試行した全ての回避策が失敗**:
-      - 空JFrameの事前作成
-      - AWT Event Threadでの実行
-      - 100msディレイ
-      - JPanel経由での追加
-  - **検証結果**:
-    - ✅ addOnPaintListener()登録成功（例外なし）
-    - ✅ LoadHandler正常動作（status 200）
-    - ✅ UIComponent（GLCanvas）取得成功
-    - ❌ GLCanvasのUI tree追加が不可能（GraphicsConfiguration競合）
-    - ❌ onPaint()リスナーが一度も呼ばれない（GLContextがnullのため）
-    - ❌ 画面は白いまま（レンダリングデータが生成されない）
-  - **結論**: **OSRモードはProcessingアーキテクチャと根本的に互換性がない**
-  - **代替案の検討が必要**:
-    - WindowedモードでのJCEF使用（別ウィンドウ表示）
-    - JavaFX WebViewへのフォールバック（既存BrowserAppの活用）
-    - 他のブラウザエンジン統合（例: CEF4Delphi、Electron的アプローチ）
+      - **解決策**: JVMフラグ追加（standalone/build.gradle.kts）
+        ```kotlin
+        jvmArgs(
+            "--add-opens=java.base/java.lang=ALL-UNNAMED",
+            "--add-exports=java.base/java.lang=ALL-UNNAMED",
+            "--add-exports=java.desktop/sun.awt=ALL-UNNAMED",
+            "--add-exports=java.desktop/sun.java2d=ALL-UNNAMED"
+        )
+        ```
+      - run_standalone_with_jogl.bat実行スクリプト作成
+    - **問題2: CefPaintEvent APIメソッド名の誤り**
+      - 原因: リフレクションで呼び出すメソッド名が誤っていた
+      - 誤: `getBuffer()` / `isPopup()`
+      - 正: `getRenderedFrame()` / `getPopup()`
+      - 修正: ChromiumBrowser.java (lines 145, 149)
+  - **最終検証結果**:
+    - ✅ GraphicsConfigurationエラー完全解消
+    - ✅ GLCanvas正常初期化（"GLCanvas added to hidden JFrame"）
+    - ✅ onPaint()コールバック発火（"🎨 Paint listener called!"）
+    - ✅ CefPaintEventからByteBuffer取得成功
+    - ✅ ChromiumRenderHandler.onPaint()正常動作
+    - ✅ BGRA → ARGB変換成功
+    - ✅ PImageに正常レンダリング
+    - ✅ **Webページが画面に表示される！**
+    - ✅ **BrowserAppより大幅に高速なページロード**
+  - **結論**: **Processing上でChromium（CEF）ベースのブラウザが正常に動作することを確認！**
+  - **技術的成果**:
+    - Processing (Java2D) + JCEF (JOGL) の共存に成功
+    - JVMモジュールシステムの制約を適切に回避
+    - OSRモードでのオフスクリーンレンダリング実現
+    - Reflection APIを活用したpackage-privateクラスへのアクセス
+    - 高パフォーマンスなWebレンダリングエンジンの統合
+  - **実行方法**（JVMフラグが必要）:
+    - **方法1（推奨）**: Gradle runタスク
+      ```bash
+      ./gradlew standalone:run
+      ```
+      → JVMフラグが自動適用される（build.gradle.kts設定済み）
+    - **方法2**: 簡易起動スクリプト
+      ```bash
+      run.bat
+      ```
+      または
+      ```bash
+      run_standalone_with_jogl.bat
+      ```
+      → JVMフラグ付きでJARを実行
+    - **方法3**: IntelliJ IDEA Run Configuration
+      1. Run → Edit Configurations...
+      2. VM options に以下を追加：
+         ```
+         --add-opens=java.base/java.lang=ALL-UNNAMED
+         --add-exports=java.base/java.lang=ALL-UNNAMED
+         --add-exports=java.desktop/sun.awt=ALL-UNNAMED
+         --add-exports=java.desktop/sun.java2d=ALL-UNNAMED
+         ```
+    - **注意**: 通常の`java -jar`コマンドでは**GraphicsConfigurationエラーが発生**します。必ず上記のいずれかの方法で実行してください。
 
 **フォントシステム** (✅ 実装完了、テスト済み - 2025-10-14):
 - **目的**: 日本語フォントの文字化けを修正し、全環境（standalone、Forge、Windows、Mac、Linux）で統一されたフォント表示を実現

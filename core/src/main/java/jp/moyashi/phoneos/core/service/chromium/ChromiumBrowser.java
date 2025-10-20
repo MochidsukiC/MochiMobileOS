@@ -142,11 +142,11 @@ public class ChromiumBrowser {
 
                     // CefPaintEventからデータを取得（リフレクション使用）
                     Class<?> eventClass = paintEvent.getClass();
-                    java.nio.ByteBuffer buffer = (java.nio.ByteBuffer) eventClass.getMethod("getBuffer").invoke(paintEvent);
+                    java.nio.ByteBuffer buffer = (java.nio.ByteBuffer) eventClass.getMethod("getRenderedFrame").invoke(paintEvent);
                     int eventWidth = (Integer) eventClass.getMethod("getWidth").invoke(paintEvent);
                     int eventHeight = (Integer) eventClass.getMethod("getHeight").invoke(paintEvent);
                     java.awt.Rectangle[] dirtyRects = (java.awt.Rectangle[]) eventClass.getMethod("getDirtyRects").invoke(paintEvent);
-                    boolean popup = (Boolean) eventClass.getMethod("isPopup").invoke(paintEvent);
+                    boolean popup = (Boolean) eventClass.getMethod("getPopup").invoke(paintEvent);
 
                     log("🎨 Paint data extracted: " + eventWidth + "x" + eventHeight + ", popup=" + popup);
 
