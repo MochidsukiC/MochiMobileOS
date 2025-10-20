@@ -6,7 +6,8 @@
       "Bash(./gradlew core:clean core:build standalone:clean standalone:shadowJar --no-daemon)",
       "Bash(powershell -Command \"Get-Content ''C:\\Users\\dora2\\IdeaProjects\\MochiMobileOS\\standalone\\mochi_os_data\\system\\logs\\latest.log'' -Tail 100 | Select-String ''ChromiumBrowser|ChromiumRenderHandler|onPaint|GraphicsConfiguration|Successfully registered|Loading|Browser instance'' -Context 0,2\")",
       "Bash(powershell -Command \"Get-Content ''C:\\Users\\dora2\\IdeaProjects\\MochiMobileOS\\standalone\\mochi_os_data\\system\\logs\\latest.log'' | Select-String ''Creating ChromiumBrowser|Browser instance created|Successfully registered|GraphicsConfiguration|onPaint|🎨|Loading started|Loading completed'' -Context 0,1 | Select-Object -Last 50\")",
-      "Bash(powershell -Command \"Get-Item ''C:\\Users\\dora2\\IdeaProjects\\MochiMobileOS\\standalone\\build\\libs\\standalone-1.1-SNAPSHOT.jar'' | Select-Object Name, LastWriteTime, @{Name=''Size(MB)'';Expression={[math]::Round($_Length/1MB,2)}} | Format-Table -AutoSize\")"
+      "Bash(powershell -Command \"Get-Item ''C:\\Users\\dora2\\IdeaProjects\\MochiMobileOS\\standalone\\build\\libs\\standalone-1.1-SNAPSHOT.jar'' | Select-Object Name, LastWriteTime, @{Name=''Size(MB)'';Expression={[math]::Round($_Length/1MB,2)}} | Format-Table -AutoSize\")",
+      "Bash(powershell -Command \"Get-Content ''C:\\Users\\dora2\\IdeaProjects\\MochiMobileOS\\standalone\\mochi_os_data\\system\\logs\\latest.log'' | Select-String ''Creating ChromiumBrowser|Browser instance created|Successfully registered|GraphicsConfiguration|onPaint|🎨|Failed to setup'' -Context 0,1 | Select-Object -Last 30\")"
     ],
     "deny": [],
     "ask": [],
