@@ -50,16 +50,21 @@ repositories {
         name = 'Maxhenkel Maven'
         url = 'https://maven.maxhenkel.de/repository/public/'
     }
+    maven {
+        name = 'MCEF Releases'
+        url = 'https://mcef-download.cinemamod.com/repositories/releases'
+    }
     mavenCentral()
 }
 
 configurations {
     runtimeLib
+    jarJar
 }
 
 dependencies {
     // Minecraft Forge for 1.20.1
-    minecraft 'net.minecraftforge:forge:1.20.1-47.3.12'
+    minecraft 'net.minecraftforge:forge:1.20.1-47.4.0'
 
     // Core module dependency - embed in jar
     implementation project(':core')
@@ -72,6 +77,17 @@ dependencies {
     runtimeLib files('libs/core-4.4.4.jar')
 
     implementation 'com.google.code.gson:gson:2.10.1'
+
+    // MCEF (Minecraft Chromium Embedded Framework) for Chromium browser integration in Forge
+    // Note: Core module uses jcefmaven (me.friwi:jcefmaven:135.0.20) for standalone environment
+    // Forge uses MCEF to solve apache-commons-compress conflicts and JVM module access issues
+    // MCEF provides org.cef.* APIs compatible with jcefmaven, but uses LWJGL instead of JOGL
+    // Version 2.1.4-1.20.1: Stable version compatible with Minecraft Forge 1.20.1-47.4.0
+    // MCEFは外部MODとしてmodsフォルダに配置する必要がある（implementation指定だけでは不十分）
+    compileOnly('com.cinemamod:mcef:2.1.4-1.20.1') {
+        // Exclude Fabric Loader - we're using Forge, not Fabric
+        exclude group: 'net.fabricmc', module: 'fabric-loader'
+    }
 
     // JavaFX for HTML/WebView integration (platform-specific)
     // These are required for runClient environment
@@ -130,6 +146,10 @@ task extractJavaFxCore(type: Copy) {
     // Keep native libraries (.dll, .so, .dylib) - JavaFX needs them!
 }
 
+// MCEF (Minecraft Chromium Embedded Framework) is now used instead of jcefmaven for Forge
+// MCEF is automatically loaded from Maven repository - no manual library copying needed
+// Previous JCEF tasks (copyJcefLibs, extractJcefCore) are no longer required
+
 // Make compileJava depend on extractions
 tasks.named('compileJava').configure {
     finalizedBy extractProcessingCore, extractJavaFxCore
@@ -150,6 +170,10 @@ minecraft {
             property 'forge.logging.markers', 'REGISTRIES'
             property 'forge.logging.console.level', 'debug'
             property 'fml.earlyprogresswindow', 'false'
+
+            // MCEF (Minecraft Chromium Embedded Framework) is used for Chromium integration
+            // MCEF uses LWJGL instead of JOGL, so no JVM module access flags are required
+            // Previous JVM flags (--add-opens, --add-exports) are no longer needed
 
             mods {
                 mochimobileos {
@@ -177,6 +201,9 @@ minecraft {
 // Configure jar
 jar {
     // Include core module classes in the jar
+    // Note: org.cef.* packages are NOT excluded anymore
+    // ChromiumProviderパターンにより、coreモジュールはcompileOnlyでjcefmavenを参照
+    // Forge環境ではMCEFがorg.cef.* APIを提供し、ForgeChromiumProviderがCefAppを注入する
     from(project(':core').sourceSets.main.output) {
         include '**/*.class'
     }

@@ -5,12 +5,19 @@ import org.cef.CefApp;
 import org.cef.CefClient;
 import org.cef.browser.CefBrowser;
 import org.cef.browser.CefFrame;
-import org.cef.handler.*;
+import org.cef.handler.CefDisplayHandlerAdapter;
+import org.cef.handler.CefFocusHandlerAdapter;
+import org.cef.handler.CefLoadHandlerAdapter;
+import org.cef.handler.CefRequestContextHandlerAdapter;
+import org.cef.handler.CefWindowHandlerAdapter;
 import processing.core.PGraphics;
 import processing.core.PImage;
 
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Chromiumブラウザインスタンスのラッパークラス。
@@ -31,6 +38,7 @@ import java.awt.event.MouseEvent;
 public class ChromiumBrowser {
 
     private final Kernel kernel;
+    private final ChromiumProvider provider;
     private final CefClient client;
     private final CefBrowser browser;
     private final ChromiumRenderHandler renderHandler;
@@ -39,6 +47,10 @@ public class ChromiumBrowser {
 
     private String currentUrl = "";
     private boolean isLoading = false;
+    private String currentTitle = "";
+
+    private final ConcurrentLinkedQueue<InputEvent> inputQueue = new ConcurrentLinkedQueue<>();
+    private long lastInputLogNs = System.nanoTime();
 
     // 隠しJFrame（ChromiumのOSRレンダリングをトリガーするために必要）
     private javax.swing.JFrame hiddenFrame;
@@ -52,19 +64,47 @@ public class ChromiumBrowser {
      * @param width 幅
      * @param height 高さ
      */
-    public ChromiumBrowser(Kernel kernel, CefApp cefApp, String url, int width, int height) {
+    public ChromiumBrowser(Kernel kernel, CefApp cefApp, ChromiumProvider provider, String url, int width, int height) {
         this.kernel = kernel;
+        this.provider = provider;
         this.width = width;
         this.height = height;
         this.currentUrl = url;
 
-        log("Creating ChromiumBrowser: " + url + " (" + width + "x" + height + ")");
-
-        // ChromiumRenderHandlerを作成
-        this.renderHandler = new ChromiumRenderHandler(kernel, width, height);
-
         // CefClientを作成（CefApp.createClient()を使用）
         this.client = cefApp.createClient();
+        client.addDisplayHandler(new CefDisplayHandlerAdapter() {
+            @Override
+            public void onTitleChange(CefBrowser browser, String title) {
+                currentTitle = title;
+            }
+        });
+
+        if (provider == null) {
+            logError("CRITICAL: ChromiumProvider is null!");
+            throw new RuntimeException("ChromiumProvider is not set");
+        }
+
+        // プロバイダー経由でブラウザを作成（環境ごとのAPI差異を吸収）
+        this.browser = provider.createBrowser(client, url, true, false);
+
+        // ブラウザインスタンスの状態を確認
+        if (browser == null) {
+            logError("CRITICAL: createBrowser() returned null!");
+            this.renderHandler = null;
+            return;
+        }
+
+        // ChromiumRenderHandlerを作成
+        // MCEFBrowser（Forge）の場合は、プロバイダー経由でアダプターを取得
+        // jcefmaven（Standalone）の場合は、通常のChromiumRenderHandlerを使用
+        ChromiumRenderHandler customRenderHandler = provider.createRenderHandler(kernel, browser, width, height);
+        if (customRenderHandler != null) {
+            this.renderHandler = customRenderHandler;
+        } else {
+            this.renderHandler = new ChromiumRenderHandler(kernel, width, height);
+        }
+        currentTitle = url == null ? "" : url;
 
         // ロードハンドラーを追加（ローディング状態管理）
         client.addLoadHandler(new CefLoadHandlerAdapter() {
@@ -72,7 +112,8 @@ public class ChromiumBrowser {
             public void onLoadStart(CefBrowser browser, CefFrame frame, org.cef.network.CefRequest.TransitionType transitionType) {
                 if (frame.isMain()) {
                     isLoading = true;
-                    log("Loading started: " + frame.getURL());
+                    currentUrl = frame.getURL();
+                    currentTitle = currentUrl;
                 }
             }
 
@@ -81,7 +122,9 @@ public class ChromiumBrowser {
                 if (frame.isMain()) {
                     isLoading = false;
                     currentUrl = frame.getURL();
-                    log("Loading completed: " + currentUrl + " (status: " + httpStatusCode + ")");
+                    if (currentTitle == null || currentTitle.isBlank()) {
+                        currentTitle = currentUrl;
+                    }
                 }
             }
 
@@ -94,24 +137,29 @@ public class ChromiumBrowser {
             }
         });
 
-        // オフスクリーンブラウザを作成（3引数API）
-        // jcefmaven 135.0.20の正しいAPI仕様に従う
-        // arg1: url - 初期URL
-        // arg2: osrEnabled - オフスクリーンレンダリング有効
-        // arg3: transparent - 透過なし
-        // 注: RenderHandlerはcreateBrowser()では渡せない（4番目の引数はCefRequestContext）
-        log("Creating browser with URL: " + url);
-        this.browser = client.createBrowser(url, true, false);
-
         // OSRモードでは、createImmediately()を呼び出す必要がある
         // これにより、ブラウザが即座に作成・初期化される
         if (browser != null) {
-            log("Calling createImmediately() for OSR browser");
             try {
                 browser.createImmediately();
-                log("createImmediately() completed successfully");
             } catch (Exception e) {
                 logError("createImmediately() failed: " + e.getMessage());
+            }
+
+            // setWindowlessFrameRateはjava-cef master（jcefmaven 135.0.20+）でのみサポート
+            // MCEFの古いjava-cefにはこのメソッドが存在しないため、リフレクションで実行時チェック
+            if (!provider.getName().equals("MCEF")) {
+                try {
+                    java.lang.reflect.Method setFrameRateMethod = browser.getClass().getMethod("setWindowlessFrameRate", int.class);
+                    setFrameRateMethod.invoke(browser, 60);
+                    log("Windowless frame rate set to 60 FPS");
+                } catch (NoSuchMethodException e) {
+                    log("setWindowlessFrameRate() not available in this JCEF version");
+                } catch (Exception e) {
+                    logError("Failed to set windowless frame rate: " + e.getMessage());
+                }
+            } else {
+                log("Skipping setWindowlessFrameRate() for MCEF (method not available)");
             }
         }
 
@@ -121,8 +169,6 @@ public class ChromiumBrowser {
             return;
         }
 
-        log("Browser instance created successfully");
-        log("Browser class: " + browser.getClass().getName());
 
         // CefBrowserOsrにonPaintリスナーを登録
         // addOnPaintListener()はConsumer<CefPaintEvent>を受け取る
@@ -138,8 +184,6 @@ public class ChromiumBrowser {
             // paintEvent（CefPaintEvent）からデータを取得してrenderHandlerに渡す
             java.util.function.Consumer<Object> paintListener = paintEvent -> {
                 try {
-                    log("🎨 Paint listener called! Event class: " + paintEvent.getClass().getName());
-
                     // CefPaintEventからデータを取得（リフレクション使用）
                     Class<?> eventClass = paintEvent.getClass();
                     java.nio.ByteBuffer buffer = (java.nio.ByteBuffer) eventClass.getMethod("getRenderedFrame").invoke(paintEvent);
@@ -148,12 +192,8 @@ public class ChromiumBrowser {
                     java.awt.Rectangle[] dirtyRects = (java.awt.Rectangle[]) eventClass.getMethod("getDirtyRects").invoke(paintEvent);
                     boolean popup = (Boolean) eventClass.getMethod("getPopup").invoke(paintEvent);
 
-                    log("🎨 Paint data extracted: " + eventWidth + "x" + eventHeight + ", popup=" + popup);
-
                     // ChromiumRenderHandlerのonPaint()を呼び出す
                     renderHandler.onPaint(browser, popup, dirtyRects, buffer, eventWidth, eventHeight);
-
-                    log("🎨 renderHandler.onPaint() completed");
                 } catch (Exception e) {
                     logError("onPaint listener error: " + e.getMessage());
                     e.printStackTrace();
@@ -162,7 +202,6 @@ public class ChromiumBrowser {
 
             // addOnPaintListener()を呼び出す
             addListenerMethod.invoke(browser, paintListener);
-            log("✅ Successfully registered onPaint listener via addOnPaintListener()");
         } catch (NoSuchMethodException e) {
             logError("addOnPaintListener() method not found on browser: " + browser.getClass().getName());
         } catch (Exception e) {
@@ -170,13 +209,9 @@ public class ChromiumBrowser {
             e.printStackTrace(); // スタックトレースも出力
         }
 
-        log("ChromiumBrowser instance created");
-        log("Browser will load URL: " + url);
-
         // 重要: createBrowser()はブラウザインスタンスを作成するだけで、URLを自動的に読み込まない
         // 明示的にloadURL()を呼び出す必要がある
         if (url != null && !url.isEmpty()) {
-            log("Calling loadURL() explicitly: " + url);
             browser.loadURL(url);
         }
 
@@ -190,18 +225,18 @@ public class ChromiumBrowser {
         // GraphicsConfigurationエラーを回避するため、SwingUtilities.invokeLater()で遅延実行：
         // 1. 空のJFrameを先に作成・表示（GraphicsConfiguration確定）
         // 2. その後GLCanvasを追加（エラー回避）
-        try {
-            java.awt.Component uiComponent = browser.getUIComponent();
-            if (uiComponent != null) {
-                log("UIComponent retrieved: " + uiComponent.getClass().getName());
-
+        //
+        // 注: MCEFはgetUIComponent()をサポートしていない（LWJGLベース）
+        // jcefmavenのみがこのメソッドをサポートする（JOGLベース）
+        if (provider != null && provider.supportsUIComponent()) {
+            try {
+                java.awt.Component uiComponent = browser.getUIComponent();
+                if (uiComponent != null) {
                 // SwingUtilities.invokeLater()で遅延実行（AWTイベントスレッドで実行）
                 javax.swing.SwingUtilities.invokeLater(new Runnable() {
                     @Override
                     public void run() {
                         try {
-                            log("Creating hidden JFrame on AWT Event Thread...");
-
                             // 隠しJFrameを作成（軽量、装飾なし）
                             hiddenFrame = new javax.swing.JFrame();
                             hiddenFrame.setUndecorated(true);
@@ -213,7 +248,6 @@ public class ChromiumBrowser {
                             // 先にJFrameを表示（GraphicsConfiguration確定）
                             hiddenFrame.setVisible(true);
 
-                            log("Hidden JFrame created and visible");
 
                             // 少し待機してからGLCanvasを追加（GraphicsConfiguration確定後）
                             try {
@@ -233,7 +267,6 @@ public class ChromiumBrowser {
                             // GLCanvasのサイズを明示的に設定
                             uiComponent.setSize(width, height);
 
-                            log("✅ GLCanvas added to hidden JFrame - GLContext should be initialized");
                         } catch (Exception e) {
                             logError("Failed to setup hidden JFrame (invokeLater): " + e.getMessage());
                             // GraphicsConfigurationエラーが発生しても、レンダリングを試みる
@@ -242,12 +275,19 @@ public class ChromiumBrowser {
                         }
                     }
                 });
-            } else {
-                logError("getUIComponent() returned null");
+                } else {
+                    logError("getUIComponent() returned null");
+                }
+            } catch (Exception e) {
+                logError("Failed to setup hidden JFrame: " + e.getMessage());
+                e.printStackTrace();
             }
-        } catch (Exception e) {
-            logError("Failed to setup hidden JFrame: " + e.getMessage());
-            e.printStackTrace();
+        } else {
+            // MCEFなど、UIComponentをサポートしないプロバイダー
+
+            // MCEFでは、レンダリングは自動的に開始される
+            // wasResized()を呼び出してブラウザにサイズを通知
+            tryTriggerRendering();
         }
     }
 
@@ -312,12 +352,40 @@ public class ChromiumBrowser {
     }
 
     /**
+     * 現在のページタイトルを取得する。
+     *
+     * @return タイトル、取得できない場合はnull
+     */
+    public String getTitle() {
+        return currentTitle;
+    }
+
+    /**
      * ローディング中かを確認する。
      *
      * @return ローディング中の場合true
      */
     public boolean isLoading() {
         return isLoading;
+    }
+
+    /**
+     * ウィンドウレス描画フレームレートを設定する。
+     *
+     * @param frameRate フレームレート（1-60）
+     */
+    public void setFrameRate(int frameRate) {
+        if (browser != null && !provider.getName().equals("MCEF")) {
+            try {
+                int fps = Math.max(1, Math.min(60, frameRate));
+                java.lang.reflect.Method setFrameRateMethod = browser.getClass().getMethod("setWindowlessFrameRate", int.class);
+                setFrameRateMethod.invoke(browser, fps);
+            } catch (NoSuchMethodException e) {
+                log("setWindowlessFrameRate() not available in this JCEF version");
+            } catch (Exception e) {
+                logError("Failed to set frame rate: " + e.getMessage());
+            }
+        }
     }
 
     /**
@@ -382,9 +450,7 @@ public class ChromiumBrowser {
      * @param button マウスボタン（1=左、2=中、3=右）
      */
     public void sendMousePressed(int x, int y, int button) {
-        // TODO: sendMouseEvent()メソッドがjcefmaven 122.1.10で利用できない
-        // JCEFバージョンアップグレード後に実装
-        log("Mouse pressed: " + x + "," + y + " button=" + button + " (not implemented)");
+        enqueueInput(InputEvent.mousePress(x, y, button));
     }
 
     /**
@@ -395,8 +461,7 @@ public class ChromiumBrowser {
      * @param button マウスボタン（1=左、2=中、3=右）
      */
     public void sendMouseReleased(int x, int y, int button) {
-        // TODO: sendMouseEvent()メソッドがjcefmaven 122.1.10で利用できない
-        log("Mouse released: " + x + "," + y + " button=" + button + " (not implemented)");
+        enqueueInput(InputEvent.mouseRelease(x, y, button));
     }
 
     /**
@@ -406,8 +471,7 @@ public class ChromiumBrowser {
      * @param y Y座標
      */
     public void sendMouseMoved(int x, int y) {
-        // TODO: sendMouseEvent()メソッドがjcefmaven 122.1.10で利用できない
-        log("Mouse moved: " + x + "," + y + " (not implemented)");
+        enqueueInput(InputEvent.mouseMove(x, y));
     }
 
     /**
@@ -418,8 +482,7 @@ public class ChromiumBrowser {
      * @param delta スクロール量（正=下、負=上）
      */
     public void sendMouseWheel(int x, int y, float delta) {
-        // TODO: sendMouseWheelEvent()メソッドがjcefmaven 122.1.10で利用できない
-        log("Mouse wheel: " + x + "," + y + " delta=" + delta + " (not implemented)");
+        enqueueInput(InputEvent.mouseWheel(x, y, delta));
     }
 
     /**
@@ -429,8 +492,7 @@ public class ChromiumBrowser {
      * @param keyChar 文字
      */
     public void sendKeyPressed(int keyCode, char keyChar) {
-        // TODO: sendKeyEvent()メソッドがjcefmaven 122.1.10で利用できない
-        log("Key pressed: code=" + keyCode + " char=" + keyChar + " (not implemented)");
+        enqueueInput(InputEvent.keyPress(keyCode, keyChar));
     }
 
     /**
@@ -440,8 +502,131 @@ public class ChromiumBrowser {
      * @param keyChar 文字
      */
     public void sendKeyReleased(int keyCode, char keyChar) {
-        // TODO: sendKeyEvent()メソッドがjcefmaven 122.1.10で利用できない
-        log("Key released: code=" + keyCode + " char=" + keyChar + " (not implemented)");
+        enqueueInput(InputEvent.keyRelease(keyCode, keyChar));
+    }
+
+    public void flushInputEvents() {
+        if (browser == null) {
+            inputQueue.clear();
+            return;
+        }
+
+        if (provider == null) {
+            inputQueue.clear();
+            logError("ChromiumProvider is null, cannot dispatch input events");
+            return;
+        }
+
+        // 時間制限なしで可能な限り処理
+        // draw()は60FPSで呼ばれるため、イベント処理を優先
+        long startNs = System.nanoTime();
+
+        int processed = 0;
+        int mouseMoveProcessed = 0;
+        int maxEventsPerFrame = 100; // イベント処理能力を大幅増加
+        int maxMouseMovePerFrame = 50; // マウス移動も増加
+
+        InputEvent event;
+        while ((event = inputQueue.poll()) != null) {
+            boolean isMouseMove = (event.type == InputEvent.Type.MOUSE_MOVE);
+
+            // マウス移動イベントの制限チェック
+            if (isMouseMove && mouseMoveProcessed >= maxMouseMovePerFrame) {
+                // マウス移動の処理数上限に達した場合、スキップ（破棄）
+                continue;
+            }
+
+            long latencyNs = System.nanoTime() - event.enqueueTimeNs;
+            event.dispatch(provider, browser);
+            long processedNs = System.nanoTime();
+            logInputLatency(event, processedNs, inputQueue.size());
+
+            if (isMouseMove) {
+                mouseMoveProcessed++;
+            }
+            processed++;
+
+            if (latencyNs > 50_000_000L && kernel.getLogger() != null) { // >50ms
+                kernel.getLogger().debug("ChromiumBrowser", String.format(
+                        "InputEvent latency %.3fms type=%s backlog=%d",
+                        latencyNs / 1_000_000.0, event.type, inputQueue.size()));
+            }
+
+            // イベント数制限
+            if (processed >= maxEventsPerFrame) {
+                break;
+            }
+        }
+
+        if (!inputQueue.isEmpty()) {
+            long now = System.nanoTime();
+            if (now - lastInputLogNs > 500_000_000L) {
+                log("Input queue backlog: " + inputQueue.size() + " events");
+                lastInputLogNs = now;
+            }
+        }
+    }
+
+    private void enqueueInput(InputEvent event) {
+        if (browser == null || event == null) {
+            return;
+        }
+
+        event.markCaptured();
+        event.enqueueTimeNs = System.nanoTime();
+
+        if (provider == null) {
+            inputQueue.offer(event);
+            return;
+        }
+
+        // 全てのイベントをキューに入れて非同期処理
+        // （同期処理によるUIブロックを回避）
+
+        // 適度なキューサイズ制限: YouTube動画再生時のバッファ詰まりを防ぐ
+        int queueSize = inputQueue.size();
+
+        // マウス移動イベント：キューが50以上なら新規追加を完全拒否
+        if (event.type == InputEvent.Type.MOUSE_MOVE) {
+            if (queueSize >= 50) {
+                return; // 追加しない（ログも出さない）
+            }
+        }
+
+        // 重要なイベント（クリック、キー入力）：キューが150以上なら拒否
+        if (queueSize >= 150) {
+            if (kernel.getLogger() != null) {
+                kernel.getLogger().error("ChromiumBrowser",
+                    "Emergency: Rejecting event type=" + event.type + " (queue size: " + queueSize + ")");
+            }
+            return; // 追加しない
+        }
+
+        inputQueue.offer(event);
+    }
+
+    private void logInputLatency(InputEvent event, long processedNs, int backlogSize) {
+        if (event.captureTimeNs == 0L) {
+            return;
+        }
+        double latencyMs = (processedNs - event.captureTimeNs) / 1_000_000.0;
+        // ログI/O負荷軽減: 50ms以上のレイテンシのみ記録
+        // （YouTube動画再生時のフレームレート維持）
+        if (latencyMs < 50.0) {
+            return;
+        }
+        long processedWallClockMs = System.currentTimeMillis();
+        String message = String.format(
+                "type=%s latency=%.3fms captured=%tT.%03d processed=%tT.%03d backlog=%d",
+                event.type,
+                latencyMs,
+                event.captureWallClockMs, (int) (event.captureWallClockMs % 1000),
+                processedWallClockMs, (int) (processedWallClockMs % 1000),
+                backlogSize);
+        if (kernel.getLogger() == null) {
+            return;
+        }
+        kernel.getLogger().warn("ChromiumInput", message);
     }
 
     /**
@@ -450,12 +635,62 @@ public class ChromiumBrowser {
      * @param pg PGraphics
      */
     public void drawToPGraphics(PGraphics pg) {
-        if (renderHandler != null) {
-            PImage img = renderHandler.getImage();
-            if (img != null) {
-                pg.image(img, 0, 0);
+        PImage img = getUpdatedImage();
+        if (img != null) {
+            pg.image(img, 0, 0);
+        }
+    }
+
+    public int getWidth() {
+        return width;
+    }
+
+    public int getHeight() {
+        return height;
+    }
+
+    public void resize(int newWidth, int newHeight) {
+        if (browser == null) {
+            return;
+        }
+        try {
+            java.lang.reflect.Method resizeMethod = browser.getClass().getMethod("resize", int.class, int.class);
+            resizeMethod.setAccessible(true);
+            resizeMethod.invoke(browser, newWidth, newHeight);
+        } catch (NoSuchMethodException e) {
+            try {
+                java.lang.reflect.Method wasResizedMethod = browser.getClass().getMethod("wasResized", int.class, int.class);
+                wasResizedMethod.setAccessible(true);
+                wasResizedMethod.invoke(browser, newWidth, newHeight);
+            } catch (Exception ex) {
+                logError("Failed to resize browser via wasResized: " + ex.getMessage());
+            }
+        } catch (Exception e) {
+            logError("Failed to resize browser: " + e.getMessage());
+        }
+    }
+
+    /**
+     * レンダリング結果を更新して最新のPImageを取得する。
+     *
+     * @return 最新のPImage、取得できない場合はnull
+     */
+    public PImage getUpdatedImage() {
+        if (renderHandler == null) {
+            return null;
+        }
+
+        // MCEFRenderHandlerAdapterの場合はOpenGLテクスチャを読み出す
+        if (renderHandler.getClass().getName().contains("MCEFRenderHandlerAdapter")) {
+            try {
+                java.lang.reflect.Method updateMethod = renderHandler.getClass().getMethod("updateFromTexture");
+                updateMethod.invoke(renderHandler);
+            } catch (Exception e) {
+                // Silent failure (毎フレーム呼ばれるためログ出力しない)
             }
         }
+
+        return renderHandler.getImage();
     }
 
     /**
@@ -468,10 +703,21 @@ public class ChromiumBrowser {
     }
 
     /**
+     * レンダリングハンドラーを取得する。
+     *
+     * @return ChromiumRenderHandler
+     */
+    public ChromiumRenderHandler getRenderHandler() {
+        return renderHandler;
+    }
+
+    /**
      * ブラウザを破棄する。
      */
     public void dispose() {
         log("Disposing ChromiumBrowser");
+
+        inputQueue.clear();
 
         // 隠しJFrameを破棄
         if (hiddenFrame != null) {
@@ -502,6 +748,16 @@ public class ChromiumBrowser {
             log("Attempting to trigger rendering via wasResized()...");
 
             // Reflectionでwas Resized()メソッドを呼び出し
+            try {
+                java.lang.reflect.Method resizeMethod = browser.getClass().getMethod("resize", int.class, int.class);
+                resizeMethod.setAccessible(true);
+                resizeMethod.invoke(browser, width, height);
+                log("✅ resize() called successfully - rendering may start");
+                return;
+            } catch (NoSuchMethodException e) {
+                log("resize(int, int) method not found, falling back to wasResized()");
+            }
+
             java.lang.reflect.Method wasResizedMethod = browser.getClass().getMethod("wasResized", int.class, int.class);
             wasResizedMethod.setAccessible(true);
             wasResizedMethod.invoke(browser, width, height);
@@ -511,6 +767,92 @@ public class ChromiumBrowser {
             logError("wasResized(int, int) method not found on browser");
         } catch (Exception e) {
             logError("Failed to call wasResized(): " + e.getMessage());
+        }
+    }
+
+    private static final class InputEvent {
+        private enum Type {
+            MOUSE_PRESS,
+            MOUSE_RELEASE,
+            MOUSE_MOVE,
+            MOUSE_WHEEL,
+            KEY_PRESS,
+            KEY_RELEASE
+        }
+
+        private final Type type;
+        private final int x;
+        private final int y;
+        private final float wheelDelta;
+        private final int button;
+        private final int keyCode;
+        private final char keyChar;
+        private long enqueueTimeNs;
+        private long captureTimeNs;
+        private long captureWallClockMs;
+
+        private InputEvent(Type type, int x, int y, float wheelDelta, int button, int keyCode, char keyChar) {
+            this.type = type;
+            this.x = x;
+            this.y = y;
+            this.wheelDelta = wheelDelta;
+            this.button = button;
+            this.keyCode = keyCode;
+            this.keyChar = keyChar;
+        }
+
+        static InputEvent mousePress(int x, int y, int button) {
+            return new InputEvent(Type.MOUSE_PRESS, x, y, 0f, button, 0, (char) 0);
+        }
+
+        static InputEvent mouseRelease(int x, int y, int button) {
+            return new InputEvent(Type.MOUSE_RELEASE, x, y, 0f, button, 0, (char) 0);
+        }
+
+        static InputEvent mouseMove(int x, int y) {
+            return new InputEvent(Type.MOUSE_MOVE, x, y, 0f, 0, 0, (char) 0);
+        }
+
+        static InputEvent mouseWheel(int x, int y, float delta) {
+            return new InputEvent(Type.MOUSE_WHEEL, x, y, delta, 0, 0, (char) 0);
+        }
+
+        static InputEvent keyPress(int keyCode, char keyChar) {
+            return new InputEvent(Type.KEY_PRESS, 0, 0, 0f, 0, keyCode, keyChar);
+        }
+
+        static InputEvent keyRelease(int keyCode, char keyChar) {
+            return new InputEvent(Type.KEY_RELEASE, 0, 0, 0f, 0, keyCode, keyChar);
+        }
+
+        void markCaptured() {
+            if (captureTimeNs == 0L) {
+                captureTimeNs = System.nanoTime();
+                captureWallClockMs = System.currentTimeMillis();
+            }
+        }
+
+        void dispatch(ChromiumProvider provider, CefBrowser browser) {
+            switch (type) {
+                case MOUSE_PRESS:
+                    provider.sendMousePressed(browser, x, y, button);
+                    break;
+                case MOUSE_RELEASE:
+                    provider.sendMouseReleased(browser, x, y, button);
+                    break;
+                case MOUSE_MOVE:
+                    provider.sendMouseMoved(browser, x, y);
+                    break;
+                case MOUSE_WHEEL:
+                    provider.sendMouseWheel(browser, x, y, wheelDelta);
+                    break;
+                case KEY_PRESS:
+                    provider.sendKeyPressed(browser, keyCode, keyChar);
+                    break;
+                case KEY_RELEASE:
+                    provider.sendKeyReleased(browser, keyCode, keyChar);
+                    break;
+            }
         }
     }
 

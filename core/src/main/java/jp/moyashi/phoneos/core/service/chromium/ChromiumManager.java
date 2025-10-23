@@ -1,30 +1,30 @@
 package jp.moyashi.phoneos.core.service.chromium;
 
 import jp.moyashi.phoneos.core.Kernel;
-import jp.moyashi.phoneos.core.service.VFS;
-import me.friwi.jcefmaven.CefAppBuilder;
-import me.friwi.jcefmaven.MavenCefAppHandlerAdapter;
 import org.cef.CefApp;
-import org.cef.CefSettings;
 
 /**
  * Chromium統合管理サービス。
- * JCEFのシングルトン初期化と設定を管理する。
+ * ChromiumProviderを通じてJCEFの初期化と設定を管理する。
  *
- * アーキテクチャ:
- * - CefApp.getInstance()でJCEFを初期化
- * - httpm:カスタムスキームをサポート
- * - キャッシュとCookieをVFSに保存
- * - Kernelサービスとして動作
+ * アーキテクチャ（依存性注入パターン）:
+ * - ChromiumProviderを外部から注入（standaloneやforgeモジュールが提供）
+ * - coreモジュールはjcefmavenやMCEFに直接依存しない
+ * - 各環境が適切なプロバイダー実装を提供する
+ *
+ * 使用方法:
+ * 1. ChromiumManagerインスタンスを作成
+ * 2. setProvider()で環境に応じたプロバイダーを注入
+ * 3. initialize()でCefAppを初期化
  *
  * @author MochiOS Team
- * @version 1.0
+ * @version 2.0
  */
 public class ChromiumManager {
 
     private final Kernel kernel;
     private CefApp cefApp;
-    private ChromiumAppHandler appHandler;
+    private ChromiumProvider provider;
     private boolean initialized = false;
 
     /**
@@ -37,8 +37,26 @@ public class ChromiumManager {
     }
 
     /**
-     * JCEFを初期化する。
+     * ChromiumProviderを設定する。
+     * initialize()の前に呼び出す必要がある。
+     *
+     * 上位モジュール（standaloneやforge）が環境に応じた実装を注入する。
+     *
+     * @param provider ChromiumProvider実装
+     */
+    public void setProvider(ChromiumProvider provider) {
+        if (provider == null) {
+            throw new IllegalArgumentException("ChromiumProvider cannot be null");
+        }
+        this.provider = provider;
+        log("ChromiumProvider set: " + provider.getName());
+    }
+
+    /**
+     * Chromiumを初期化する。
      * このメソッドはKernel.setup()から呼び出される。
+     *
+     * 事前条件: setProvider()でChromiumProviderが設定されている必要がある。
      */
     public void initialize() {
         if (initialized) {
@@ -46,48 +64,27 @@ public class ChromiumManager {
             return;
         }
 
-        log("Initializing JCEF (Java Chromium Embedded Framework)...");
+        if (provider == null) {
+            logError("ChromiumProvider not set. Call setProvider() before initialize().", null);
+            throw new IllegalStateException("ChromiumProvider not set. Upper module must call setProvider() first.");
+        }
+
+        if (!provider.isAvailable()) {
+            log("Chromium provider " + provider.getName() + " is not available, skipping initialization");
+            return;
+        }
+
+        log("Initializing Chromium with provider: " + provider.getName());
 
         try {
-            // ChromiumAppHandlerを作成
-            appHandler = new ChromiumAppHandler(kernel);
-
-            // CefAppBuilderを使用してJCEFを初期化（jcefmavenによる自動ダウンロード対応）
-            CefAppBuilder builder = new CefAppBuilder();
-            builder.setAppHandler(appHandler);
-
-            // CefSettingsを取得して設定
-            CefSettings settings = builder.getCefSettings();
-
-            // キャッシュパス（VFS内）
-            String cachePath = kernel.getVFS().getFullPath("system/browser_chromium/cache");
-            settings.cache_path = cachePath;
-            log("Cache path: " + cachePath);
-
-            // User-Agent（モバイル最適化）
-            settings.user_agent = "Mozilla/5.0 (Linux; Android 12; MochiMobileOS) " +
-                                  "AppleWebKit/537.36 (KHTML, like Gecko) " +
-                                  "Chrome/122.0.0.0 Mobile Safari/537.36";
-
-            // ロケール
-            settings.locale = "ja";
-
-            // ログレベル
-            settings.log_severity = CefSettings.LogSeverity.LOGSEVERITY_WARNING;
-
-            // オフスクリーンレンダリング有効化
-            settings.windowless_rendering_enabled = true;
-
-            // JCEFをビルドして初期化
-            cefApp = builder.build();
-
+            cefApp = provider.createCefApp(kernel);
             initialized = true;
-            log("JCEF initialized successfully");
+            log("Chromium initialized successfully");
             log("Chromium version: " + cefApp.getVersion());
 
         } catch (Exception e) {
-            logError("Failed to initialize JCEF", e);
-            throw new RuntimeException("JCEF initialization failed", e);
+            logError("Failed to initialize Chromium", e);
+            throw new RuntimeException("Chromium initialization failed", e);
         }
     }
 
@@ -104,8 +101,11 @@ public class ChromiumManager {
             throw new IllegalStateException("ChromiumManager is not initialized");
         }
 
+        if (provider == null) {
+            throw new IllegalStateException("ChromiumProvider is not set");
+        }
         log("Creating ChromiumBrowser: " + url + " (" + width + "x" + height + ")");
-        return new ChromiumBrowser(kernel, cefApp, url, width, height);
+        return new ChromiumBrowser(kernel, cefApp, provider, url, width, height);
     }
 
     /**
@@ -127,6 +127,15 @@ public class ChromiumManager {
     }
 
     /**
+     * ChromiumProviderインスタンスを取得する。
+     *
+     * @return ChromiumProviderインスタンス
+     */
+    public ChromiumProvider getProvider() {
+        return provider;
+    }
+
+    /**
      * CEFメッセージループを実行する。
      * Kernel.update()から毎フレーム呼び出される必要がある。
      *
@@ -134,18 +143,25 @@ public class ChromiumManager {
      * 呼び出さない場合、ブラウザは完全に動作しない。
      */
     public void doMessageLoopWork() {
-        if (!initialized || cefApp == null) {
+        if (!initialized || cefApp == null || provider == null) {
             return;
         }
 
+        long startNs = System.nanoTime();
         try {
-            // CEFメッセージループを実行（delay=0で即座に実行）
-            // これがURL読み込み、onPaint()コールバック、イベント処理を駆動する
-            cefApp.doMessageLoopWork(0);
+            // プロバイダー経由でメッセージループを実行
+            provider.doMessageLoopWork(cefApp);
 
-            // デバッグログ（フレーム数を100で割った余りが0のときだけ出力）
-            if (System.currentTimeMillis() % 1000 < 16) {
-                log("doMessageLoopWork() called successfully");
+            long durationNs = System.nanoTime() - startNs;
+            // ログI/O負荷軽減: 10ms以上のみ出力（YouTube動画再生時のフレームレート維持）
+            if (durationNs > 10_000_000L && kernel.getLogger() != null) { // >10ms
+                double ms = durationNs / 1_000_000.0;
+                String message = String.format("MessageLoopWork took %.3fms", ms);
+                if (durationNs > 50_000_000L) { // >50ms
+                    kernel.getLogger().warn("ChromiumPump", message);
+                } else {
+                    kernel.getLogger().debug("ChromiumPump", message);
+                }
             }
         } catch (Exception e) {
             // エラーログは出すが、例外は飲み込んで処理を継続
@@ -163,19 +179,19 @@ public class ChromiumManager {
             return;
         }
 
-        log("Shutting down JCEF...");
+        log("Shutting down Chromium...");
 
         try {
-            if (cefApp != null) {
-                cefApp.dispose();
-                cefApp = null;
+            if (provider != null && cefApp != null) {
+                provider.shutdown(cefApp);
             }
 
+            cefApp = null;
             initialized = false;
-            log("JCEF shutdown complete");
+            log("Chromium shutdown complete");
 
         } catch (Exception e) {
-            logError("Error during JCEF shutdown", e);
+            logError("Error during Chromium shutdown", e);
         }
     }
 

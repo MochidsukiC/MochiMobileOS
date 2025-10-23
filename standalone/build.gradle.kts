@@ -32,11 +32,23 @@ dependencies {
     implementation("org.apache.logging.log4j:log4j-api:2.20.0")
     implementation("org.apache.logging.log4j:log4j-core:2.20.0")
     implementation("org.apache.logging.log4j:log4j-slf4j-impl:2.20.0")
+
+    // JCEF (Java Chromium Embedded Framework) for Chromium browser integration
+    // standaloneモジュールがjcefmavenを提供し、coreモジュールで使用する
+    implementation("me.friwi:jcefmaven:135.0.20")
 }
 
 // Configuration for the main class
 application {
     mainClass.set("jp.moyashi.phoneos.standalone.Main")
+
+    // JVM引数でメモリとGCを最適化
+    applicationDefaultJvmArgs = listOf(
+        "-Xmx12G",           // 最大ヒープサイズ2GB（Chromiumが十分使える）
+        "-Xms512M",         // 初期ヒープサイズ512MB
+        "-XX:+UseG1GC",     // G1 GCを使用（低レイテンシ）
+        "-XX:MaxGCPauseMillis=50"  // GC停止時間を最大50msに制限
+    )
 }
 
 // Shadow JAR configuration for fat jar with all dependencies

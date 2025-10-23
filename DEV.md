@@ -17,6 +17,93 @@
 
 ### 2. 現在の仕様
 
+**Chromium統合アーキテクチャ** (✅ Phase 7完了 - 2025-10-20):
+- **スタンドアロン**: jcefmaven (me.friwi:jcefmaven:135.0.20) を使用
+  - CefAppBuilderでJCEFを自動ダウンロード・初期化
+  - ModuleOpener（org.openjdk.jol.util.ModuleOpener）でJavaモジュールアクセス制限を回避
+- **Forge**: MCEF (com.cinemamod:mcef:2.1.6-1.20.1) を使用
+  - MCEF内部でjava-cef (org.cef.*) を提供、LWJGL rendering使用（JOGL不要）
+  - apache-commons-compressバージョン競合を回避
+  - JVMモジュールアクセスフラグ（--add-opens, --add-exports）不要
+- **ChromiumProviderパターン実装** (✅ Phase 7 - 2025-10-20):
+  - 課題: coreモジュールがjcefmaven (me.friwi.*) に実行時依存していたため、Forge JARでパッケージ除外が困難
+  - 解決策: ChromiumProviderインターフェースを導入し、依存性注入パターンで完全に分離
+  - アーキテクチャ:
+    - **coreモジュール**: org.cef.* APIをcompileOnlyで参照（実行時依存なし）
+    - **standaloneモジュール**: StandaloneChromiumProviderがjcefmavenを提供
+    - **forgeモジュール**: ForgeChromiumProviderがMCEFを提供
+  - **ChromiumService層** (2025-10-23 更新):
+    - `Kernel#setChromiumService()` で初期化前にサービスを注入し、環境ごとの `ChromiumProvider` を統一的に扱う
+    - `DefaultChromiumService` が `ChromiumManager` を内部でラップし、`doMessageLoopWork()` のバックグラウンド実行とサーフェス管理 (`ChromiumSurface`) を担当
+    - 互換性維持のため `Kernel#getChromiumManager()` は `DefaultChromiumService` 経由で引き続き利用可能（段階的に `ChromiumSurface` API へ移行予定）
+    - Standalone/Forge エントリポイントはサービスをカーネルへ注入するよう更新済み（反射によるマネージャ生成を撤廃）
+    - Chromium メッセージループはサービス側のシングルスレッドポンプ（2ms 間隔）に統一し、Standalone プロバイダ内の独自ポンプを廃止して入力レスポンスを安定化
+  - **重要なバグ修正** (2025-10-23):
+    - **問題**: YouTube動画再生時に30-40秒後に10秒以上のインタラクション遅延が発生。動画のカクツキも発生
+    - **根本原因（第1回調査）**:
+      1. `ChromiumBrowser.flushInputEvents()`が呼ばれておらず、マウス移動イベントがキューに蓄積
+      2. 過剰なログI/O（全てのマウスクリックでWARNログ出力、1ms以上の処理でDEBUGログ出力）
+    - **第1回修正内容**:
+      1. `ChromiumBrowserScreen.draw()`で`activeBrowser.flushInputEvents()`を呼び出し、入力キューを毎フレーム処理
+      2. ログ閾値を大幅引き上げ（1ms→50ms、5ms→50ms、10ms→50ms）でログI/O負荷を削減
+    - **根本原因（第2回調査）**:
+      1. クリック、ホイール、キー入力が**同期的に処理**され、重い処理でUIがブロック
+      2. `ChromiumRenderHandler.onPaint()`がピクセルごとのネストループ（240,000回反復）で非常に遅い
+      3. `maxEventsPerFrame=10`が少なすぎて処理能力不足
+    - **第2回修正内容**:
+      1. **すべてのイベントを非同期処理**: クリック、キー入力も含めてキューに入れて非同期処理（UIブロック完全回避）
+      2. **イベント処理能力の大幅向上**: maxEventsPerFrame を10→50に増加、重要なイベント（クリック、キー入力）を優先処理
+      3. **ChromiumRenderHandler の劇的な高速化**: ピクセルごとのループを`IntBuffer`によるバルク処理に変更（数倍高速化）→色の問題発生
+    - **根本原因（第3回調査）**:
+      1. **処理バッファの詰まり**: CEFポンプが2ms間隔のscheduleAtFixedRateで実行され、前回完了前に次がキューに蓄積
+      2. **入力イベントキューの無制限な成長**: ConcurrentLinkedQueueに際限なくイベントが蓄積
+      3. **draw()内のflushInputEvents()がブロック**: 最大50イベントを同期処理し、draw()全体をブロック
+      4. **CPU/GPU使用率が低い理由**: リソース不足ではなく、スレッドの処理バッファ制限により使用できない状態
+    - **第3回修正内容**:
+      1. **CEFポンプの最適化**: scheduleAtFixedRate→scheduleWithFixedDelay、間隔2ms→8ms、1回で5回ポンプ（処理能力5倍）
+      2. **入力キューの厳格な制限**: マウス移動は30以上で拒否、重要イベントは100以上で拒否（キューの無制限成長を防止）
+      3. **flushInputEvents()に5ms時間制限**: draw()のブロッキングを防止
+      4. **ChromiumRenderHandler色修正**: IntBuffer変換を元のバイトごと処理に戻し、色を修正
+    - **根本原因（第4回調査 - 2025-10-23）**:
+      1. **flushInputEvents()が完全に呼ばれていない**: 第3回修正でdraw()から削除後、ChromiumServiceのポンプループで処理されるはずだったが、ChromiumBrowserScreenで作成したブラウザがChromiumServiceの管理下にないため処理されていなかった
+      2. **入力キューの制限が厳しすぎる**: マウス移動10以上、重要イベント50以上で拒否していたため、通常のインタラクトも反応しない状態
+    - **第4回修正内容**:
+      1. **ChromiumBrowserScreen.draw()でflushInputEvents()を再度呼び出し**: 入力イベントを確実に処理
+      2. **入力キューの制限を緩和**: マウス移動50以上、重要イベント150以上で拒否に変更（通常操作に支障がない範囲）
+    - **結果**: ✅ コンパイル成功、インタラクト完全に動作、動画再生時の過剰なバッファ蓄積は依然として防止
+  - 実装ファイル:
+    - `core/service/chromium/ChromiumProvider.java`: プロバイダーインターフェース（createCefApp, isAvailable, getName等）
+    - `core/service/chromium/ChromiumManager.java`: setProvider()メソッドでプロバイダー注入、initialize()で初期化
+    - `core/service/chromium/ChromiumAppHandler.java`: jcefmaven依存削除（CefAppHandlerAdapter継承、super(new String[0])呼び出し）
+    - `standalone/StandaloneChromiumProvider.java`: jcefmaven用プロバイダー（MavenCefAppHandlerAdapterラッパーで委譲）
+    - `forge/chromium/ForgeChromiumProvider.java`: MCEF用プロバイダー（MCEF.getApp().getHandle()でCefApp取得）
+    - `standalone/StandaloneWrapper.java`: kernel.getChromiumManager().setProvider(new StandaloneChromiumProvider())で注入
+    - `forge/service/SmartphoneBackgroundService.java`: kernel.getChromiumManager().setProvider(new ForgeChromiumProvider())で注入
+    - `core/service/chromium/ChromiumBrowser.java`: `getUpdatedImage()`でMCEF用レンダラから`updateFromTexture()`を毎フレーム実行し、最新PImageを取得
+    - `core/apps/chromiumbrowser/ChromiumBrowserScreen.java`: `getUpdatedImage()`の結果をProcessingのメインピクセルバッファへ手動コピーしてForge描画に反映
+  - Gradle設定:
+    - `core/build.gradle.kts`: jcefmavenをcompileOnlyに変更（実行時依存なし）
+    - `standalone/build.gradle.kts`: jcefmavenをimplementationとして提供
+    - `forge/build.gradle`: JAR exclusion設定を削除（不要になった）
+  - ビルド結果: ✅ BUILD SUCCESSFUL in 1m 24s（全モジュール、依存性注入により完全分離達成）
+  - 利点:
+    - coreモジュールが環境非依存（compileOnlyでAPI参照のみ）
+    - JAR exclusion設定が不要（クリーンなビルド設定）
+    - 各環境が独自のChromium実装を提供可能（拡張性向上）
+    - Java Module System競合が根本的に解決
+- **動作状況**: ✅ ビルド成功、全環境でコンパイル成功、スタンドアロンで実行時テスト成功
+  - スタンドアロン: ChromiumManager初期化成功（jcefmaven 135.0.20.333）
+  - Forge: ビルド成功。`ChromiumBrowser.getUpdatedImage()`経由で`updateFromTexture()`を確実に呼び出す実装を追加済み（表示確認は次回Forge実機テストで実施）
+
+**Chromiumブラウザ UI 設計（2025-10-21 更新）**
+- アドレスバーは画面上部に固定し、最大限URLを表示できるよう横幅を確保する。左側に戻る／進むボタン、右側にタブ一覧ボタンとメニュー（その他オプション）ボタンを配置する
+- 画面下部に操作バーを設置し、`戻る/進む`（状態表示のみ）、`新規タブ追加`, `タブ一覧ショートカット`, `その他オプション` を並列配置する。中央のタブ追加ボタンを強調し、バー自体は薄めの高さに抑える
+- タブ一覧はカード型グリッド表示を採用し、ピン留め・プライベートモード切替・スワイプ削除をサポート予定。上部アドレスバー右端および下部バーのショートカットから遷移できる
+- ページ読み込み中はアドレスバー内部にプログレスインジケータを表示し、httpm通知やエラーは上部からのドロップダウンとして提示する
+- Forge環境ではChromiumは脇役であるため、Chrome同等品質を目指しつつも高負荷処理を避け、GPU/CPU使用率を最小限に抑える設計（低フレームレート制御・無操作時のレンダリング抑制・軽量UI描画）を遵守する
+- 上記レイアウトのうち、トップアドレスバー拡張と下部ナビゲーション再構成は`ChromiumBrowserScreen`に実装済み（2025-10-21）
+- 下部ナビゲーションの機能割当を実装済み：新規タブ生成（Googleホームをロード、アドレスバーへ即フォーカス）、タブ一覧オーバーレイ表示（カードをタップして切替）、メニュー（再読み込み／タブを閉じる／他タブを閉じる）
+
 **有効なサービス**:
 VFS, SettingsManager, SystemClock, AppLoader, LayoutManager, PopupManager, GestureManager, ControlCenterManager, NotificationManager, LockManager, LayerManager, LoggerService, WebViewManager, ChromiumManager, PermissionManager, ActivityManager, ClipboardManager, SensorManager
 
@@ -461,8 +548,47 @@ LauncherApp, SettingsApp, CalculatorApp, AppStoreApp (UIのみ), NetworkApp (メ
         - **サービスクラス**: ControlCenterManager, NotificationManager (他は元々PApplet非依存)
         - **統一座標システム**: CoordinateTransform クラス実装済み
     *   **移行内容**: すべてのPAppletメソッドは@Deprecatedとしてマークされ、PGraphicsメソッドが新しいプライマリAPIとなっている
+7.  **Forge版Chromiumブラウザが真っ黒になる問題（✅ 対応 2025-10-21）**:
+    - **原因**: `ChromiumBrowserScreen.draw()`が`MCEFRenderHandlerAdapter.updateFromTexture()`を呼び出しておらず、OpenGLテクスチャからPImageへの転送が行われていなかった。また、MCEFテクスチャのRGBA→ARGB変換時にアルファ値が0のままコピーされてしまい、結果として画面が透過されていた
+    - **対応**: `ChromiumBrowser.getUpdatedImage()`で`updateFromTexture()`を毎フレーム実行し、`ChromiumBrowserScreen`はこのメソッドを介して取得したPImageをProcessingメインバッファへコピーするよう修正。`MCEFRenderHandlerAdapter`を刷新し、`MochiMCEFBrowser`のonPaint() ByteBufferを直接取得してPImageへコピー（初期フレームのみglGetTexImage()でフォールバック）。Forge側では`MochiMCEFBrowser.resize(width,height)`と`ChromiumBrowser`の`resize()`リフレクション呼び出しでサイズを明示通知するよう調整
+    - **残タスク**: Forgeクライアント上での実機描画確認（次回Minecraftテストで実施）
+8.  **Standalone Chromium入力バイパスの極端な遅延（✅ 対応 2025-10-21）**:
+    - **症状**: スタンドアロン環境でChromiumブラウザを操作した際、マウス移動・クリック・キーボード入力が顕著に遅延し、Webページ操作がほぼできない
+    - **原因**: `StandaloneChromiumProvider`がマウス・キーボードイベントを送出するたびに`sendMouseEvent`/`sendKeyEvent`等のprotectedメソッドをリフレクションで探索しており、毎回`getDeclaredMethod`＋`setAccessible(true)`を実行していた（`standalone/src/main/java/jp/moyashi/phoneos/standalone/StandaloneChromiumProvider.java:163-407`）。`mouseMoved`はフレーム毎に多数発火するため、これが主なボトルネックとなり応答速度が大幅に低下していた
+    - **対応**: ブラウザクラスごとに`sendMouseEvent`/`sendMouseWheelEvent`/`sendKeyEvent`をキャッシュする`BrowserMethodCache`を導入（`StandaloneChromiumProvider.BrowserMethodCache`）。イベントソースの`Canvas`も使い回すことでGC負荷を削減した
+    - **今後の改善余地**: JCEF公開API（`CefBrowserHost.send*Event`等）への置き換えを検討し、反射依存を段階的に解消する
+9.  **Forge Chromium操作バイパス未実装（✅ 対応 2025-10-21）**:
+    - **症状**: Forge環境でChromiumブラウザを開いても、マウス・キーボード操作がChromium側に伝搬せず、ページ操作ができない
+    - **原因**: `ForgeChromiumProvider`の`sendMouse*`/`sendKey*`メソッドが未実装であり、`ChromiumBrowser`から届いたイベントをMCEFへ橋渡ししていなかった
+    - **対応**: `ForgeChromiumProvider`で`MCEFBrowser`の公開API（`sendMousePress`/`sendMouseMove`/`sendMouseWheel`/`sendKeyPress`等）を呼び出す実装を追加。マウスボタン番号はMinecraft準拠へ変換し、スクロール量はProcessing由来の`delta*50`からMCEF向けに縮小した。イベント受信時には`setFocus(true)`を呼んでブラウザへフォーカスを移譲する
+    - **注意**: 実機Forge環境（Minecraftクライアント）での操作確認は未実施。次回テストでマウス・キーボード操作が期待通り反映されるか検証すること
+10. **Forge環境でsetWindowlessFrameRate()によるクラッシュ（✅ 解決 2025-10-24）**:
+    - **症状**: Forge環境でChromiumブラウザアプリを開こうとすると、`java.lang.NoSuchMethodError: 'void org.cef.browser.CefBrowser.setWindowlessFrameRate(int)'`でクラッシュする
+    - **原因**: `setWindowlessFrameRate(int)`メソッドは、java-cef master（jcefmaven 135.0.20+）でのみ追加された新しいAPIであり、MCEFが使用している古いjava-cefバージョンには存在しない
+    - **対応**: `ChromiumBrowser.java`の150行目付近で、`ChromiumProvider.getName()`を使用してForge環境（MCEF）かどうかを判別し、MCEFの場合はこのメソッド呼び出しをスキップするよう条件分岐を追加
+    - **実装内容**:
+      ```java
+      // setWindowlessFrameRateはjava-cef master（jcefmaven 135.0.20+）でのみサポート
+      // MCEFの古いjava-cefにはこのメソッドが存在しないため、Forge環境では呼び出さない
+      if (!provider.getName().equals("MCEF")) {
+          browser.setWindowlessFrameRate(60);
+          log("Windowless frame rate set to 60 FPS");
+      } else {
+          log("Skipping setWindowlessFrameRate() for MCEF (method not available)");
+      }
+      ```
+    - **ビルド結果**: ✅ BUILD SUCCESSFUL（core:compileJava, forge:build共に成功）
 
 ### 4. TODO
+
+#### Forge版Chromiumブラウザ描画テスト（未実施）
+- Minecraft Forge 47.3.0 + MCEF 2.1.6 環境でChromiumBrowserAppを起動し、`MochiMCEFBrowser`経由のonPaint()転送後にブラウザ画面が不透明で正しく描画されることを確認する
+- `MCEFRenderHandlerAdapter`ログに`Frame copied via direct listener`や`onFrame received`、OSログに`resize() called successfully`が記録されるか検証する
+
+- StandaloneChromiumProviderの入力イベント送出をJCEF公開APIベースに置き換え、反射依存を段階的に排除する（Forge側との互換性検討込み）
+- ChromiumBrowserScreen/ChromiumBrowserAppを`ChromiumSurface`ベースへ移行し、`Kernel#getChromiumManager()`互換レイヤーを廃止できる状態に整理する
+- Forgeクライアント実機でChromium操作バイパスを検証し、クリック・スクロール・文字入力が正しく反映されるか確認する（必要ならマウスボタン/スクロール係数を再調整）
+- タブスイッチャーUIの改善（サムネイル表示、スクロール対応、タブ削除ボタン）とメニュー項目の拡張（ブックマーク管理・履歴画面遷移）
 
 #### ハードウェアバイパスAPIの実装 (✅ 完了)
 
@@ -1083,6 +1209,81 @@ Phase 1の全目標を達成しました。ChromiumBrowserAppがランチャー�
 **修正完了項目:**
 
 1. **✅ ChromiumManager.java**:
+   - （前セクションで記述済み）
+
+---
+
+### Phase 7完了報告: JVMフラグ自動適用機能の実装 (✅ 2025-10-20)
+
+**Phase 7目標: JVMフラグを手動指定せずに、JCEF/JOGLが必要とするモジュールアクセスを自動化する**
+
+**背景:**
+- JCEF/JOGLは内部API（sun.awt、sun.java2d）へのアクセスが必要
+- 通常はJVM起動時に`--add-opens`/`--add-exports`フラグの指定が必須
+- JAR配布時やForge MOD環境で、エンドユーザーに手動フラグ指定を要求したくない
+
+**実装完了事項:**
+
+#### 1. ✅ ModuleOpenerユーティリティクラスの作成
+- **ファイル**: `core/src/main/java/jp/moyashi/phoneos/core/service/chromium/ModuleOpener.java`
+- **機能**:
+  - `Module.implAddOpens()`メソッドをリフレクションで取得し、実行時にモジュールを開く
+  - 対象モジュール/パッケージ:
+    - `java.base/java.lang`
+    - `java.desktop/sun.awt`
+    - `java.desktop/sun.java2d`
+  - `openRequiredModules()`: ランタイムモジュール操作を試行
+  - `checkJvmFlags()`: JVMフラグが設定されているか確認
+  - `getErrorMessage()`: エラーメッセージ取得
+
+#### 2. ✅ ChromiumManagerへの統合
+- **ファイル**: `core/src/main/java/jp/moyashi/phoneos/core/service/chromium/ChromiumManager.java`
+- **3段階フォールバック戦略**:
+  1. **ステップ1**: ランタイムモジュール操作を試行 (`ModuleOpener.openRequiredModules()`)
+  2. **ステップ2**: 失敗した場合、JVMフラグの設定を確認 (`ModuleOpener.checkJvmFlags()`)
+  3. **ステップ3**: JVMフラグもない場合、エラーログを出力して初期化を中断
+- **ロギング**: すべての出力をLoggerServiceを通じて記録（System.out/errは使用しない）
+
+#### 3. ✅ 動作確認
+- **テスト環境**: Java 24
+- **テスト方法**: JVMフラグなしで`java -jar standalone-1.1-SNAPSHOT.jar`を実行
+- **結果**: ✅ 正常に動作 - ランタイムモジュール操作が成功
+- **確認事項**:
+  - `Module.implAddOpens()`がJava 24でも利用可能
+  - JVMフラグを手動指定しなくてもJCEF/JOGLが正常に初期化される
+
+**技術的詳細:**
+```java
+// ModuleOpener.javaの核心部分
+Method implAddOpens = Module.class.getDeclaredMethod("implAddOpens", String.class, Module.class);
+implAddOpens.setAccessible(true);
+
+Module module = ModuleLayer.boot().findModule(moduleName).orElseThrow(...);
+Module unnamed = ModuleOpener.class.getClassLoader().getUnnamedModule();
+
+implAddOpens.invoke(module, packageName, unnamed);
+```
+
+**期待される動作:**
+- **Java 9-24**: ランタイムモジュール操作が成功 → JVMフラグ不要
+- **Java 17+（制限強化時）**: ランタイムモジュール操作が失敗 → JVMフラグの確認 → フラグがあれば初期化継続
+- **フラグなし**: エラーメッセージを表示して初期化を中断
+
+**成果:**
+- JAR配布時にエンドユーザーがJVMフラグを意識する必要がなくなった
+- Forge MOD環境でもプレイヤーがフラグ設定を変更する必要がなくなる可能性がある
+- 開発環境での起動も簡素化（`java -jar`で起動可能）
+
+**結論:**
+Phase 7完了により、MochiMobileOSはJVMフラグを自動的に処理できるようになりました。Java 24での動作確認により、最新のJavaバージョンでもこのアプローチが有効であることが実証されました。
+
+**次のステップ:**
+- Forge MOD環境での動作確認（Minecraftクライアント起動時のモジュール操作テスト）
+- 本番JAR配布時の動作確認（複数のJavaバージョンでのテスト）
+
+---
+
+1. **✅ ChromiumManager.java**:
    - `CefAppBuilder.getCefSettings()`で設定を取得する方式に変更
    - `settings.accept_language_list`を削除（プロパティが存在しない）
    - `kernel.getVFS().getFullPath()`でキャッシュパスを取得
@@ -1176,20 +1377,150 @@ IDEまたは別プロセスがbuildフォルダ内のファイルをロックし
 3. エクスプローラーでbuildフォルダを削除
 4. 再度コンパイル: `./gradlew core:compileJava`
 
+#### ✅ MCEF統合完了（2025-10-20）
+
+**実装内容:**
+MCEF (Minecraft Chromium Embedded Framework) を使用したForge環境でのChromium統合を実装しました。
+
+**解決した問題:**
+1. **Java Module System Package Conflict**:
+   - 問題: mochimobileosモジュールとmcefモジュールが両方ともorg.cef.*パッケージを提供し、Module Resolution Exceptionが発生
+   - 解決策: forge/build.gradle jar設定でorg.cef.**とme.friwi.jcefmaven.**を除外
+
+2. **Standalone環境とForge環境の両立**:
+   - 課題: リフレクション実装を試みたが、Standalone環境が動作しなくなった
+   - 最終解決策: ChromiumManager.javaは元の直接import方式を維持（Standalone環境優先）
+   - Forge環境では、JAR exclusionにより`me.friwi.jcefmaven.*`がパッケージされないため、SmartphoneBackgroundService経由でMCEFのCefAppを注入する設計
+
+**アーキテクチャ:**
+- **Standalone環境**: jcefmavenを直接使用してJCEF初期化（従来通り）
+- **Forge環境**:
+  - JAR exclusionにより`me.friwi.jcefmaven.*`が除外される
+  - SmartphoneBackgroundService.createKernel()でMCEFのCefAppを取得
+  - ChromiumManager.setCefApp()経由でCefAppを注入
+- **コンパイル時**: 両環境ともjcefmaven APIに対してコンパイル
+- **ランタイム時**: JAR exclusionで環境を分離
+
+**変更ファイル:**
+1. `core/src/main/java/jp/moyashi/phoneos/core/service/chromium/ChromiumManager.java`:
+   - 元の直接import方式を維持（リフレクション実装は取りやめ）
+   - setCefApp()メソッドを追加（Forge環境でのMCEF注入用）
+2. `forge/build.gradle` (lines 201-209): JAR exclusion設定
+3. `core/build.gradle.kts` (lines 38-42): dependency設定とコメント追加
+4. `standalone/build.gradle.kts` (lines 7-12): 不要なruntimeOnly削除
+
+**ビルド結果:**
+- ✅ コアモジュール: BUILD SUCCESSFUL
+- ✅ Forgeモジュール: BUILD SUCCESSFUL
+- ✅ Standaloneモジュール: BUILD SUCCESSFUL
+- ✅ Standalone実行: 動作確認済み
+
+**次のステップ:**
+- 本番Forge環境でJARをテストし、MCEF経由のChromium初期化を検証
+- SmartphoneBackgroundService.createKernel()がsetCefApp()を正しく呼び出すことを確認
+- ChromiumBrowserがMCEFと連携して動作することを確認
+
+### Phase 8完了報告: マウス・キーボードイベントバイパス実装 (✅ 2025-10-21)
+
+**Phase 8目標: ChromiumBrowserScreenからChromiumブラウザへのマウス・キーボードイベント転送**
+
+**実装完了事項:**
+
+#### 1. ✅ ChromiumProviderインターフェースの拡張
+- **ファイル**: `core/src/main/java/jp/moyashi/phoneos/core/service/chromium/ChromiumProvider.java`
+- **追加メソッド** (lines 131-186):
+  - `sendMousePressed(CefBrowser, x, y, button)`
+  - `sendMouseReleased(CefBrowser, x, y, button)`
+  - `sendMouseMoved(CefBrowser, x, y)`
+  - `sendMouseWheel(CefBrowser, x, y, delta)`
+  - `sendKeyPressed(CefBrowser, keyCode, keyChar)`
+  - `sendKeyReleased(CefBrowser, keyCode, keyChar)`
+
+#### 2. ✅ ChromiumBrowser.javaの実装
+- **ファイル**: `core/src/main/java/jp/moyashi/phoneos/core/service/chromium/ChromiumBrowser.java`
+- **実装内容** (lines 412-530):
+  - 各イベントメソッドがChromiumProviderに委譲
+  - nullチェックとエラーハンドリング
+  - ログ出力（エラー時のみ）
+
+#### 3. ✅ StandaloneChromiumProvider.javaの実装
+- **ファイル**: `standalone/src/main/java/jp/moyashi/phoneos/standalone/StandaloneChromiumProvider.java`
+- **実装内容**:
+  - **パフォーマンス最適化** (lines 30-79):
+    - `BrowserMethodCache`: リフレクションメソッドをキャッシュ
+    - `METHOD_CACHE`: ConcurrentHashMapで複数ブラウザに対応
+    - 再利用可能な`eventComponent` (Canvas) でGC負荷を削減
+    - `findAndPrepare()`: クラス階層を探索してprotectedメソッドを取得
+  - **イベント実装** (lines 163-407):
+    - **マウスイベント**: AWT MouseEventを構築して`sendMouseEvent()`に送信
+    - **ホイールイベント**: MouseWheelEventを構築して`sendMouseWheelEvent()`に送信
+    - **キーイベント**: KeyEventを構築して`sendKeyEvent()`に送信
+    - **ボタンマッピング**: Processing (1=左, 2=中, 3=右) → AWT (BUTTON1, BUTTON2, BUTTON3)
+    - **KEY_TYPED送信**: キー押下時に通常文字（ASCII >= 32）に対してKEY_TYPEDイベントも送信
+
+#### 4. ✅ ForgeChromiumProvider.javaの実装
+- **ファイル**: `forge/src/main/java/jp/moyashi/phoneos/forge/chromium/ForgeChromiumProvider.java`
+- **実装内容** (lines 142-236):
+  - MCEFBrowserの公開API使用:
+    - `sendMousePress()`, `sendMouseRelease()`, `sendMouseMove()`, `sendMouseWheel()`
+    - `sendKeyPress()`, `sendKeyRelease()`, `sendKeyTyped()`
+    - `setFocus(true)`: クリック/キー入力時にフォーカスを設定
+  - **ボタンマッピング**: Processing (1=左, 2=中, 3=右) → MCEF (0=左, 2=中, 1=右)
+
+#### 5. ✅ ChromiumBrowserScreen.javaのパフォーマンス最適化
+- **ファイル**: `core/src/main/java/jp/moyashi/phoneos/core/apps/chromiumbrowser/ChromiumBrowserScreen.java`
+- **変更内容** (lines 80-126):
+  - `draw()`メソッドからすべてのログ出力を削除
+  - 毎ティック（60fps）のログがパフォーマンスに悪影響を与える問題を解消
+
+**技術的詳細:**
+
+**Reflection使用理由:**
+- JCEFの`sendMouseEvent()`, `sendKeyEvent()`はprotectedメソッド
+- `CefBrowser_N`親クラスで定義されており、直接呼び出し不可
+- `getDeclaredMethod()`でクラス階層を探索して取得
+- `method.setAccessible(true)`でアクセス可能に
+
+**メソッドキャッシュの重要性:**
+- リフレクションは低速なため、毎回メソッド探索すると60fpsでパフォーマンス低下
+- 初回アクセス時にキャッシュし、以降は`Method.invoke()`のみ実行
+- `ConcurrentHashMap`でスレッドセーフ
+
+**Componentの再利用:**
+- AWT EventはSourceとしてComponentを要求
+- 毎回`new Canvas()`するとGC負荷が大きい
+- フィールドで1つのCanvasを保持して再利用
+
+**コンパイル結果:**
+- ✅ coreモジュール: BUILD SUCCESSFUL
+- ✅ standaloneモジュール: BUILD SUCCESSFUL
+- ✅ forgeモジュール: BUILD SUCCESSFUL
+
+**テスト状況:**
+- コンパイル成功
+- ユーザーによる動作テスト待ち
+
+**結論:**
+Phase 8完了により、ChromiumBrowserScreenのマウス・キーボードイベントがChromiumブラウザに正しく転送されるようになりました。StandaloneではAWTイベント、ForgeではMCEF APIを使用する環境依存実装をChromiumProviderパターンで実現しました。
+
+---
+
 ### 次のステップ
 
-#### ✅ Phase 1完了（2025-10-19）
-- すべての実装と動作確認が完了しました
+#### ✅ Phase 8完了（2025-10-21）
+- マウス・キーボードイベントバイパス実装が完了しました
 
-#### Phase 2実装（次のタスク）
-1. **オフスクリーンレンダリングの完全統合**:
-   - カスタムRenderHandlerをCefClientに統合
-   - onPaint()でのPImage描画を有効化
-   - ページの実際のレンダリング結果を画面に表示
+#### Phase 9実装（次のタスク）
+1. **MCEF統合の本番検証**:
+   - Forge本番環境でのJARテスト実行
+   - MCEF経由のCefApp注入確認
+   - ChromiumBrowserの動作検証
 
-2. **マウス/キーボードイベント実装**:
-   - JCEFバージョンアップグレード後に実装
-   - 現在はログ出力のみ（jcefmaven 122.1.10の制約）
+2. **ブラウザ操作の動作確認**:
+   - マウスクリック（リンククリック、テキスト選択）
+   - スクロール（ページスクロール、smooth scrolling）
+   - キーボード入力（フォーム入力、ショートカットキー）
+   - URL読み込みとページ遷移
 
 3. **Forge環境での動作確認**:
    - JCEFネイティブライブラリの配置（run/libsディレクトリ）

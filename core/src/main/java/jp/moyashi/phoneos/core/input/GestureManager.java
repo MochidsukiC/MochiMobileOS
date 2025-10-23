@@ -5,6 +5,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import jp.moyashi.phoneos.core.service.LoggerService;
+
 /**
  * Kernelレベルでジェスチャーを管理するマネージャークラス。
  * マウス/タッチイベントを解釈してジェスチャーイベントに変換し、
@@ -32,17 +34,29 @@ public class GestureManager {
     
     /** ドラッグ状態フラグ */
     private boolean isDragging;
+
+    /** レイテンシ計測しきい値（ログI/O負荷軽減のため高めに設定） */
+    private static final long STAGE_INFO_THRESHOLD_NS = 10_000_000L; // 10ms
+    private static final long STAGE_WARN_THRESHOLD_NS = 20_000_000L; // 20ms
+
+    /** ロガー */
+    private final LoggerService logger;
     
     /**
      * GestureManagerを作成する。
      */
     public GestureManager() {
+        this(null);
+    }
+
+    public GestureManager(LoggerService logger) {
+        this.logger = logger;
         this.listeners = new CopyOnWriteArrayList<>();
         this.isPressed = false;
         this.longPressDetected = false;
         this.isDragging = false;
-        
-        System.out.println("GestureManager: Kernel-level gesture system initialized");
+
+        debug("Gesture system initialized");
     }
     
     /**
@@ -55,14 +69,8 @@ public class GestureManager {
             listeners.add(listener);
             // 優先度順にソート
             listeners.sort(Comparator.comparingInt(GestureListener::getPriority).reversed());
-            System.out.println("GestureManager: Added gesture listener " + listener.getClass().getSimpleName() + " with priority " + listener.getPriority());
-            
-            // デバッグ: 現在の優先度順序を出力
-            System.out.println("GestureManager: Current listener order:");
-            for (int i = 0; i < listeners.size(); i++) {
-                GestureListener l = listeners.get(i);
-                System.out.println("  " + (i+1) + ". " + l.getClass().getSimpleName() + " (priority: " + l.getPriority() + ")");
-            }
+            debug("Added gesture listener " + listener.getClass().getSimpleName() + " (priority: " + listener.getPriority() + ")");
+            logListenerOrder("Current listener order");
         }
     }
     
@@ -73,7 +81,7 @@ public class GestureManager {
      */
     public void removeGestureListener(GestureListener listener) {
         if (listeners.remove(listener)) {
-            System.out.println("GestureManager: Removed gesture listener");
+            debug("Removed gesture listener " + listener.getClass().getSimpleName());
         }
     }
     
@@ -82,7 +90,7 @@ public class GestureManager {
      */
     public void clearGestureListeners() {
         listeners.clear();
-        System.out.println("GestureManager: Cleared all gesture listeners");
+        debug("Cleared all gesture listeners");
     }
     
     /**
@@ -91,14 +99,8 @@ public class GestureManager {
      */
     public void resortListeners() {
         listeners.sort(Comparator.comparingInt(GestureListener::getPriority).reversed());
-        System.out.println("GestureManager: Re-sorted listeners by priority");
-        
-        // デバッグ: 現在の優先度順序を出力
-        System.out.println("GestureManager: Updated listener order:");
-        for (int i = 0; i < listeners.size(); i++) {
-            GestureListener l = listeners.get(i);
-            System.out.println("  " + (i+1) + ". " + l.getClass().getSimpleName() + " (priority: " + l.getPriority() + ")");
-        }
+        debug("Re-sorted gesture listeners by priority");
+        logListenerOrder("Updated listener order");
     }
     
     /**
@@ -109,8 +111,8 @@ public class GestureManager {
      * @return イベントが処理された場合true
      */
     public boolean handleMousePressed(int x, int y) {
-        System.out.println("GestureManager: Mouse pressed at (" + x + ", " + y + ")");
-        
+        long stageStart = System.nanoTime();
+
         startX = currentX = x;
         startY = currentY = y;
         startTime = System.currentTimeMillis();
@@ -118,6 +120,7 @@ public class GestureManager {
         longPressDetected = false;
         isDragging = false;
 
+        logStage("mousePressed", "init", stageStart, System.nanoTime(), x, y);
         return false; // デフォルトでfalseを返す（ジェスチャーはまだ完了していない）
     }
     
@@ -129,19 +132,20 @@ public class GestureManager {
      */
     public void handleMouseDragged(int x, int y) {
         if (!isPressed) return;
-        
+
+        long stageStart = System.nanoTime();
+
         currentX = x;
         currentY = y;
-        
+
         int dragDistance = (int) Math.sqrt(Math.pow(x - startX, 2) + Math.pow(y - startY, 2));
-        
-        System.out.println("GestureManager: Mouse dragged to (" + x + ", " + y + "), distance: " + dragDistance);
-        
+        debugVerbose("Mouse dragged to (" + x + ", " + y + "), distance: " + dragDistance);
+
         if (!isDragging && dragDistance >= DRAG_THRESHOLD) {
             // ドラッグ開始
             isDragging = true;
             longPressDetected = false; // 長押しをキャンセル
-            
+
             GestureEvent dragStartEvent = new GestureEvent(GestureType.DRAG_START, startX, startY, x, y, startTime, System.currentTimeMillis());
             dispatchGestureEvent(dragStartEvent);
         } else if (isDragging) {
@@ -149,6 +153,8 @@ public class GestureManager {
             GestureEvent dragMoveEvent = new GestureEvent(GestureType.DRAG_MOVE, startX, startY, x, y, startTime, System.currentTimeMillis());
             dispatchGestureEvent(dragMoveEvent);
         }
+
+        logStage("mouseDragged", "dispatch", stageStart, System.nanoTime(), x, y);
     }
     
     /**
@@ -159,19 +165,19 @@ public class GestureManager {
      */
     public void handleMouseReleased(int x, int y) {
         if (!isPressed) return;
-        
-        System.out.println("GestureManager: Mouse released at (" + x + ", " + y + ")");
-        
+
+        long stageStart = System.nanoTime();
+
         currentX = x;
         currentY = y;
         long currentTime = System.currentTimeMillis();
         long duration = currentTime - startTime;
-        
+
         if (isDragging) {
             // ドラッグ終了
             GestureEvent dragEndEvent = new GestureEvent(GestureType.DRAG_END, startX, startY, x, y, startTime, currentTime);
             dispatchGestureEvent(dragEndEvent);
-            
+
             // スワイプ判定
             checkForSwipe(x, y, currentTime);
         } else if (!longPressDetected) {
@@ -186,10 +192,11 @@ public class GestureManager {
                 dispatchGestureEvent(tapEvent);
             }
         } else {
-            // 長押し検出済みの場合、追加のイベントは発生させない
-            System.out.println("GestureManager: Long press already detected, ignoring mouseReleased");
+            debug("Long press already detected, ignoring mouseReleased");
         }
-        
+
+        logStage("mouseReleased", "dispatch", stageStart, System.nanoTime(), x, y);
+
         // 状態リセット
         isPressed = false;
         isDragging = false;
@@ -210,7 +217,7 @@ public class GestureManager {
                 longPressDetected = true;
                 GestureEvent longPressEvent = new GestureEvent(GestureType.LONG_PRESS, startX, startY, currentX, currentY, startTime, currentTime);
                 dispatchGestureEvent(longPressEvent);
-                System.out.println("GestureManager: ✅ LONG_PRESS detected in update() at (" + startX + ", " + startY + ") after " + duration + "ms");
+                debug("LONG_PRESS detected in update() at (" + startX + ", " + startY + ") after " + duration + "ms");
             }
         }
     }
@@ -251,31 +258,39 @@ public class GestureManager {
      * @param event 配信するイベント
      */
     private void dispatchGestureEvent(GestureEvent event) {
-        System.out.println("GestureManager: Dispatching gesture: " + event + " to " + listeners.size() + " listeners");
-        
+        long dispatchStart = System.nanoTime();
+        int handledIndex = -1;
+
         for (int i = 0; i < listeners.size(); i++) {
             GestureListener listener = listeners.get(i);
+            long listenerStart = System.nanoTime();
             try {
-                System.out.println("GestureManager: Checking listener " + (i+1) + ": " + listener.getClass().getSimpleName() + " (priority: " + listener.getPriority() + ")");
-                
                 if (listener.isInBounds(event.getCurrentX(), event.getCurrentY())) {
-                    System.out.println("GestureManager: Listener " + listener.getClass().getSimpleName() + " is in bounds, calling onGesture");
-                    if (listener.onGesture(event)) {
-                        System.out.println("GestureManager: Gesture handled by " + listener.getClass().getSimpleName() + " - stopping dispatch");
-                        return; // イベントが処理された
-                    } else {
-                        System.out.println("GestureManager: Listener " + listener.getClass().getSimpleName() + " did not handle gesture, continuing");
+                    boolean handled = listener.onGesture(event);
+                    long listenerEnd = System.nanoTime();
+                    logStage("gesture", String.format("%s:%s", event.getType(), listener.getClass().getSimpleName()),
+                            listenerStart, listenerEnd, event.getCurrentX(), event.getCurrentY());
+                    if (handled) {
+                        handledIndex = i;
+                        break;
                     }
-                } else {
-                    System.out.println("GestureManager: Listener " + listener.getClass().getSimpleName() + " is not in bounds, skipping");
                 }
             } catch (Exception e) {
-                System.err.println("GestureManager: Error in gesture listener " + listener.getClass().getSimpleName() + ": " + e.getMessage());
+                if (logger != null) {
+                    logger.error("GestureManager", "Error in gesture listener " + listener.getClass().getSimpleName(), e);
+                }
                 e.printStackTrace();
             }
         }
-        
-        System.out.println("GestureManager: Gesture not handled by any listener");
+
+        if (logger != null) {
+            String msg = String.format("Dispatch gesture %s handledIndex=%d listeners=%d",
+                    event.getType(), handledIndex, listeners.size());
+            logger.debug("GestureManager", msg);
+        }
+
+        logStage("gesture", "dispatchTotal", dispatchStart, System.nanoTime(),
+                event.getCurrentX(), event.getCurrentY());
     }
     
     /**
@@ -292,7 +307,47 @@ public class GestureManager {
         long duration = currentTime - startTime;
         int distance = (int) Math.sqrt(Math.pow(currentX - startX, 2) + Math.pow(currentY - startY, 2));
         
-        return String.format("GestureManager: Pressed at (%d,%d), current (%d,%d), duration=%dms, distance=%dpx, longPress=%s, dragging=%s", 
+        return String.format("GestureManager: Pressed at (%d,%d), current (%d,%d), duration=%dms, distance=%dpx, longPress=%s, dragging=%s",
                            startX, startY, currentX, currentY, duration, distance, longPressDetected, isDragging);
+    }
+
+    private void logStage(String event, String stage, long startNs, long endNs, int x, int y) {
+        if (logger == null) {
+            return;
+        }
+        long duration = endNs - startNs;
+        if (duration <= STAGE_INFO_THRESHOLD_NS) {
+            return;
+        }
+        double ms = duration / 1_000_000.0;
+        String msg = String.format("%s %s latency=%.3fms coord=(%d,%d)", event, stage, ms, x, y);
+        if (duration >= STAGE_WARN_THRESHOLD_NS) {
+            logger.warn("GestureInput", msg);
+        } else {
+            logger.debug("GestureInput", msg);
+        }
+    }
+
+    private void debug(String message) {
+        if (logger != null) {
+            logger.debug("GestureManager", message);
+        }
+    }
+
+    private void debugVerbose(String message) {
+        if (logger != null) {
+            logger.debug("GestureManager", message);
+        }
+    }
+
+    private void logListenerOrder(String header) {
+        if (logger == null) {
+            return;
+        }
+        List<String> order = new ArrayList<>(listeners.size());
+        for (GestureListener l : listeners) {
+            order.add(l.getClass().getSimpleName() + "(priority=" + l.getPriority() + ")");
+        }
+        logger.debug("GestureManager", header + ": " + String.join(" -> ", order));
     }
 }

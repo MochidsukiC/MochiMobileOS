@@ -236,6 +236,35 @@ public interface Screen {
     }
 
     /**
+     * マウス移動イベントが発生した時に呼び出される（PGraphics版）。
+     * PGraphics統一アーキテクチャで使用する。
+     * このメソッドでホバーエフェクトやカーソル位置の更新を処理する。
+     * デフォルト実装は何もしない。
+     *
+     * @param g 描画・計算処理用のPGraphicsインスタンス
+     * @param mouseX マウス位置のx座標
+     * @param mouseY マウス位置のy座標
+     */
+    default void mouseMoved(PGraphics g, int mouseX, int mouseY) {
+        // デフォルト実装：何もしない
+    }
+
+    /**
+     * マウス移動イベントが発生した時に呼び出される（PApplet版）。
+     * 互換性のために残存。段階的にPGraphics版に移行予定。
+     *
+     * @deprecated Use {@link #mouseMoved(PGraphics, int, int)} instead. This method will be removed in a future version.
+     * @param p 描画・計算処理用のPAppletインスタンス
+     * @param mouseX マウス位置のx座標
+     * @param mouseY マウス位置のy座標
+     */
+    @Deprecated
+    default void mouseMoved(PApplet p, int mouseX, int mouseY) {
+        // デフォルト実装：PGraphics版を呼び出すブリッジ
+        mouseMoved(p.g, mouseX, mouseY);
+    }
+
+    /**
      * マウスホイールイベントが発生した時に呼び出される（PGraphics版）。
      * PGraphics統一アーキテクチャで使用する。
      * このメソッドでスクロール操作を処理する。

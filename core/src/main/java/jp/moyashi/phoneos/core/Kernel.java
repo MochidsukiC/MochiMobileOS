@@ -2,6 +2,9 @@ package jp.moyashi.phoneos.core;
 
 import jp.moyashi.phoneos.core.app.IApplication;
 import jp.moyashi.phoneos.core.service.*;
+import jp.moyashi.phoneos.core.service.chromium.ChromiumManager;
+import jp.moyashi.phoneos.core.service.chromium.ChromiumService;
+import jp.moyashi.phoneos.core.service.chromium.DefaultChromiumService;
 import jp.moyashi.phoneos.core.ui.Screen;
 import jp.moyashi.phoneos.core.ui.ScreenManager;
 import jp.moyashi.phoneos.core.ui.popup.PopupManager;
@@ -132,8 +135,10 @@ public class Kernel implements GestureListener {
     /** センサー管理サービス */
     private jp.moyashi.phoneos.core.service.sensor.SensorManager sensorManager;
 
-    /** Chromium統合管理サービス */
-    private jp.moyashi.phoneos.core.service.chromium.ChromiumManager chromiumManager;
+    /** Chromium統合サービス */
+    private ChromiumService chromiumService;
+    /** 旧アーキテクチャ互換用のChromiumManager */
+    private ChromiumManager chromiumManager;
 
     /** PGraphics描画バッファ（PGraphics統一アーキテクチャ） */
     private PGraphics graphics;
@@ -190,6 +195,9 @@ public class Kernel implements GestureListener {
 
     /** 現在開いているレイヤーのスタック（後から開いたものが末尾、つまり高い優先度） */
     private List<LayerType> layerStack;
+    private static final long INPUT_STAGE_DEBUG_THRESHOLD_NS = 1_000_000L;
+    private static final long INPUT_STAGE_WARN_THRESHOLD_NS = 5_000_000L;
+
     
     /** 長押し判定時間（ミリ秒） */
     private static final long LONG_PRESS_DURATION = 2000; // 2秒
@@ -205,6 +213,7 @@ public class Kernel implements GestureListener {
      */
     public void update() {
         frameCount++;
+        long startNs = System.nanoTime();
 
         // ESCキー長押し検出の更新
         if (escKeyPressed) {
@@ -226,17 +235,24 @@ public class Kernel implements GestureListener {
             ((jp.moyashi.phoneos.core.service.sensor.SensorManagerImpl) sensorManager).update();
         }
 
-        // ChromiumManagerのCEFメッセージループ処理
-        // これがないと、JCEF（Chromiumブラウザ）が完全に動作しない
-        // URL読み込み、onPaint()コールバック、イベント処理を駆動する
-        if (chromiumManager != null) {
-            chromiumManager.doMessageLoopWork();
+        long chromiumStartNs = System.nanoTime();
+        if (chromiumService != null) {
+            chromiumService.update();
+        }
+        long chromiumDurationNs = System.nanoTime() - chromiumStartNs;
+        if (chromiumDurationNs > 5_000_000L && logger != null) {
+            logger.debug("Kernel", String.format("ChromiumService.update() slow: %.2fms", chromiumDurationNs / 1_000_000.0));
         }
 
-        // 全てのスクリーン（バックグラウンドも含む）のtick()を呼び出し
-        // 注: 画面スタック内のScreenのtick()はScreenManagerが管理
         if (screenManager != null) {
             screenManager.tick();
+        }
+
+        long totalDurationNs = System.nanoTime() - startNs;
+        if (totalDurationNs > 12_000_000L && logger != null) {
+            logger.debug("Kernel", String.format("update() slow: %.2fms (Chromium %.2fms)",
+                    totalDurationNs / 1_000_000.0,
+                    chromiumDurationNs / 1_000_000.0));
         }
     }
 
@@ -337,51 +353,51 @@ public class Kernel implements GestureListener {
      * @param y マウスY座標
      */
     public void mousePressed(int x, int y) {
-        // スリープ中はすべてのマウスインタラクトを拒否
+        long startNs = System.nanoTime();
+        long stageStartNs = startNs;
+
         if (isSleeping) {
-            System.out.println("Kernel: mousePressed ignored - device is sleeping");
+            if (logger != null) {
+                logger.debug("Kernel", "mousePressed ignored - device is sleeping");
+            }
             return;
         }
 
         if (logger != null) {
             logger.debug("Kernel", "mousePressed at (" + x + ", " + y + ")");
         }
-        System.out.println("Kernel: mousePressed at (" + x + ", " + y + ")");
 
         try {
-            // ポップアップの処理を優先
             if (popupManager != null && popupManager.hasActivePopup()) {
                 boolean popupHandled = popupManager.handleMouseClick(x, y);
+                long stageEndNs = System.nanoTime();
+                logInputStage("mousePressed", "popup", stageStartNs, stageEndNs, x, y);
                 if (popupHandled) {
-                    if (logger != null) {
-                        logger.debug("Kernel", "Popup handled mousePressed, stopping propagation");
-                    }
-                    System.out.println("Kernel: Popup handled mousePressed, stopping propagation");
+                    logInputStage("mousePressed", "total", startNs, stageEndNs, x, y);
                     return;
                 }
+                stageStartNs = stageEndNs;
             }
 
-            // ジェスチャーマネージャーでの処理
             if (gestureManager != null) {
                 boolean gestureHandled = gestureManager.handleMousePressed(x, y);
+                long stageEndNs = System.nanoTime();
+                logInputStage("mousePressed", "gesture", stageStartNs, stageEndNs, x, y);
                 if (gestureHandled) {
-                    if (logger != null) {
-                        logger.debug("Kernel", "Gesture handled mousePressed, stopping propagation");
-                    }
-                    System.out.println("Kernel: Gesture handled mousePressed, stopping propagation");
+                    logInputStage("mousePressed", "total", startNs, stageEndNs, x, y);
                     return;
                 }
+                stageStartNs = stageEndNs;
             }
 
-            // スクリーンマネージャーでの処理（修飾キーの状態を事前に送信）
             if (screenManager != null) {
                 if (logger != null) {
                     logger.debug("Kernel", "Forwarding mousePressed to ScreenManager");
                 }
-                // マウスイベントの前に修飾キーの状態を更新
-                System.out.println("Kernel: mousePressed - propagating modifier keys (shift=" + shiftPressed + ", ctrl=" + ctrlPressed + ")");
                 screenManager.setModifierKeys(shiftPressed, ctrlPressed);
                 screenManager.mousePressed(x, y);
+                long stageEndNs = System.nanoTime();
+                logInputStage("mousePressed", "screen", stageStartNs, stageEndNs, x, y);
             }
         } catch (Exception e) {
             if (logger != null) {
@@ -389,6 +405,9 @@ public class Kernel implements GestureListener {
             }
             System.err.println("Kernel: mousePressed処理エラー: " + e.getMessage());
             e.printStackTrace();
+        } finally {
+            long endNs = System.nanoTime();
+            logInputStage("mousePressed", "total", startNs, endNs, x, y);
         }
     }
 
@@ -399,31 +418,36 @@ public class Kernel implements GestureListener {
      * @param y マウスY座標
      */
     public void mouseReleased(int x, int y) {
-        // スリープ中はすべてのマウスインタラクトを拒否
+        long startNs = System.nanoTime();
+        long stageStartNs = startNs;
+
         if (isSleeping) {
-            System.out.println("Kernel: mouseReleased ignored - device is sleeping");
+            if (logger != null) {
+                logger.debug("Kernel", "mouseReleased ignored - device is sleeping");
+            }
             return;
         }
 
         if (logger != null) {
             logger.debug("Kernel", "mouseReleased at (" + x + ", " + y + ")");
         }
-        System.out.println("Kernel: mouseReleased at (" + x + ", " + y + ")");
 
         try {
-            // ジェスチャーマネージャーでの処理
             if (gestureManager != null) {
                 gestureManager.handleMouseReleased(x, y);
+                long stageEndNs = System.nanoTime();
+                logInputStage("mouseReleased", "gesture", stageStartNs, stageEndNs, x, y);
+                stageStartNs = stageEndNs;
             }
 
-            // スクリーンマネージャーでの処理（修飾キーの状態を事前に送信）
             if (screenManager != null) {
                 if (logger != null) {
                     logger.debug("Kernel", "Forwarding mouseReleased to ScreenManager");
                 }
-                // マウスイベントの前に修飾キーの状態を更新
                 screenManager.setModifierKeys(shiftPressed, ctrlPressed);
                 screenManager.mouseReleased(x, y);
+                long stageEndNs = System.nanoTime();
+                logInputStage("mouseReleased", "screen", stageStartNs, stageEndNs, x, y);
             }
         } catch (Exception e) {
             if (logger != null) {
@@ -431,6 +455,9 @@ public class Kernel implements GestureListener {
             }
             System.err.println("Kernel: mouseReleased処理エラー: " + e.getMessage());
             e.printStackTrace();
+        } finally {
+            long endNs = System.nanoTime();
+            logInputStage("mouseReleased", "total", startNs, endNs, x, y);
         }
     }
 
@@ -442,32 +469,64 @@ public class Kernel implements GestureListener {
      * @param y マウスY座標
      */
     public void mouseDragged(int x, int y) {
-        // スリープ中はすべてのマウスインタラクトを拒否
+        long startNs = System.nanoTime();
+        long stageStartNs = startNs;
+
         if (isSleeping) {
-            System.out.println("Kernel: mouseDragged ignored - device is sleeping");
+            if (logger != null) {
+                logger.debug("Kernel", "mouseDragged ignored - device is sleeping");
+            }
             return;
         }
 
-        System.out.println("Kernel: mouseDragged at (" + x + ", " + y + ")");
-
         try {
-            // ポップアップの処理は現在mouseDraggedをサポートしていないため、スキップ
-
-            // ジェスチャーマネージャーでの処理（最重要）
             if (gestureManager != null) {
                 gestureManager.handleMouseDragged(x, y);
-                System.out.println("Kernel: Gesture processed mouseDragged");
+                long stageEndNs = System.nanoTime();
+                logInputStage("mouseDragged", "gesture", stageStartNs, stageEndNs, x, y);
+                stageStartNs = stageEndNs;
             }
 
-            // スクリーンマネージャーでの処理（修飾キーの状態を事前に送信）
             if (screenManager != null) {
-                // マウスイベントの前に修飾キーの状態を更新
                 screenManager.setModifierKeys(shiftPressed, ctrlPressed);
                 screenManager.mouseDragged(x, y);
+                long stageEndNs = System.nanoTime();
+                logInputStage("mouseDragged", "screen", stageStartNs, stageEndNs, x, y);
             }
         } catch (Exception e) {
             System.err.println("Kernel: mouseDragged処理エラー: " + e.getMessage());
             e.printStackTrace();
+        } finally {
+            long endNs = System.nanoTime();
+            logInputStage("mouseDragged", "total", startNs, endNs, x, y);
+        }
+    }
+
+    /**
+     * マウス移動処理（独立API）。
+     * ホバーエフェクトやカーソル位置の更新に使用。
+     *
+     * @param x マウスX座標
+     * @param y マウスY座標
+     */
+    public void mouseMoved(int x, int y) {
+        long startNs = System.nanoTime();
+
+        if (isSleeping) {
+            return;
+        }
+
+        try {
+            // ScreenManagerに転送
+            if (screenManager != null) {
+                screenManager.mouseMoved(x, y);
+            }
+        } catch (Exception e) {
+            System.err.println("Kernel: mouseMoved処理エラー: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            long endNs = System.nanoTime();
+            // mouseMoved()は頻繁に呼ばれるためログは出力しない
         }
     }
 
@@ -479,27 +538,25 @@ public class Kernel implements GestureListener {
      * @param delta スクロール量（正の値：下スクロール、負の値：上スクロール）
      */
     public void mouseWheel(int x, int y, float delta) {
-        // スリープ中はすべてのマウスインタラクトを拒否
+        long startNs = System.nanoTime();
+        long stageStartNs = startNs;
+
         if (isSleeping) {
-            System.out.println("Kernel: mouseWheel ignored - device is sleeping");
             if (logger != null) {
                 logger.debug("Kernel", "mouseWheel ignored - device is sleeping");
             }
             return;
         }
 
-        System.out.println("Kernel: mouseWheel at (" + x + ", " + y + ") delta=" + delta);
         if (logger != null) {
             logger.debug("Kernel", "mouseWheel at (" + x + ", " + y + ") delta=" + delta);
         }
 
         try {
-            // スクリーンマネージャーでの処理
             if (screenManager != null) {
                 screenManager.mouseWheel(x, y, delta);
-                if (logger != null) {
-                    logger.debug("Kernel", "mouseWheel forwarded to ScreenManager");
-                }
+                long stageEndNs = System.nanoTime();
+                logInputStage("mouseWheel", "screen", stageStartNs, stageEndNs, x, y);
             }
         } catch (Exception e) {
             System.err.println("Kernel: mouseWheel処理エラー: " + e.getMessage());
@@ -507,6 +564,27 @@ public class Kernel implements GestureListener {
                 logger.error("Kernel", "mouseWheel処理エラー", e);
             }
             e.printStackTrace();
+        } finally {
+            long endNs = System.nanoTime();
+            logInputStage("mouseWheel", "total", startNs, endNs, x, y);
+        }
+    }
+
+    private void logInputStage(String event, String stage, long startNs, long endNs, int x, int y) {
+        if (logger == null) {
+            return;
+        }
+        long durationNs = endNs - startNs;
+        if (durationNs <= INPUT_STAGE_DEBUG_THRESHOLD_NS) {
+            return;
+        }
+        double ms = durationNs / 1_000_000.0;
+        String message = String.format("%s %s latency=%.3fms coord=(%d,%d)",
+                event, stage, ms, x, y);
+        if (durationNs >= INPUT_STAGE_WARN_THRESHOLD_NS) {
+            logger.warn("KernelInput", message);
+        } else {
+            logger.debug("KernelInput", message);
         }
     }
 
@@ -837,7 +915,7 @@ public class Kernel implements GestureListener {
         popupManager = new PopupManager();
         
         System.out.println("  -> Kernelレベルジェスチャーマネージャー作成中...");
-        gestureManager = new GestureManager();
+        gestureManager = new GestureManager(logger);
         
         System.out.println("  -> コントロールセンター管理サービス作成中...");
         controlCenterManager = new ControlCenterManager();
@@ -894,23 +972,31 @@ public class Kernel implements GestureListener {
             webViewManager = null;
         }
 
-        // Chromium統合管理サービスの初期化
-        System.out.println("  -> ChromiumManager作成中...");
-        try {
-            chromiumManager = new jp.moyashi.phoneos.core.service.chromium.ChromiumManager(this);
-            chromiumManager.initialize();
-            System.out.println("  -> ChromiumManager初期化完了");
-            logger.info("Kernel", "ChromiumManager初期化完了");
-        } catch (Exception e) {
-            logger.error("Kernel", "ChromiumManagerの初期化に失敗しました", e);
-            System.err.println("  -> ChromiumManager初期化失敗: " + e.getClass().getName() + ": " + e.getMessage());
-            e.printStackTrace();
-            chromiumManager = null;
-        } catch (Error e) {
-            logger.error("Kernel", "ChromiumManagerの初期化中に致命的エラーが発生しました", e);
-            System.err.println("  -> ChromiumManager初期化失敗（致命的エラー）: " + e.getClass().getName() + ": " + e.getMessage());
-            e.printStackTrace();
-            chromiumManager = null;
+        System.out.println("  -> ChromiumService初期化中...");
+        chromiumManager = null;
+        if (chromiumService != null) {
+            try {
+                chromiumService.initialize(this);
+                if (chromiumService instanceof DefaultChromiumService) {
+                    ChromiumManager manager = ((DefaultChromiumService) chromiumService).getChromiumManager();
+                    if (manager != null) {
+                        chromiumManager = manager;
+                    }
+                }
+                if (logger != null) {
+                    logger.info("Kernel", "ChromiumService初期化完了");
+                }
+            } catch (Exception e) {
+                if (logger != null) {
+                    logger.error("Kernel", "ChromiumServiceの初期化に失敗しました", e);
+                }
+                e.printStackTrace();
+            }
+        } else {
+            System.out.println("  -> ChromiumServiceが設定されていないため、初期化をスキップします");
+            if (logger != null) {
+                logger.warn("Kernel", "ChromiumServiceが未設定のため、Chromium機能は無効です");
+            }
         }
 
         // パーミッション管理サービスの初期化
@@ -1170,11 +1256,11 @@ public class Kernel implements GestureListener {
             webViewManager.shutdown();
         }
 
-        // ChromiumManager のクリーンアップ
-        if (chromiumManager != null) {
-            System.out.println("Kernel: Shutting down ChromiumManager...");
-            chromiumManager.shutdown();
+        if (chromiumService != null) {
+            System.out.println("Kernel: Shutting down ChromiumService...");
+            chromiumService.shutdown();
         }
+        chromiumManager = null;
 
         // シャットダウンメッセージをPGraphicsバッファに描画
         if (graphics != null) {
@@ -1455,15 +1541,6 @@ public class Kernel implements GestureListener {
     }
 
     /**
-     * ChromiumManager サービスを取得する。
-     *
-     * @return ChromiumManagerインスタンス
-     */
-    public jp.moyashi.phoneos.core.service.chromium.ChromiumManager getChromiumManager() {
-        return chromiumManager;
-    }
-
-    /**
      * パーミッション管理サービスを取得する。
      *
      * @return PermissionManagerインスタンス
@@ -1488,6 +1565,21 @@ public class Kernel implements GestureListener {
      */
     public jp.moyashi.phoneos.core.service.clipboard.ClipboardManager getClipboardManager() {
         return clipboardManager;
+    }
+
+    public void setChromiumService(ChromiumService chromiumService) {
+        this.chromiumService = chromiumService;
+    }
+
+    public ChromiumService getChromiumService() {
+        return chromiumService;
+    }
+
+    /**
+     * 旧ChromiumManager APIを取得する（互換用）。
+     */
+    public ChromiumManager getChromiumManager() {
+        return chromiumManager;
     }
 
     /**
