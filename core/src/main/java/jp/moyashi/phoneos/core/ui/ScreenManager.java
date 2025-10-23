@@ -504,6 +504,24 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
     }
 
     /**
+     * 現在のスクリーンに委託してマウス移動イベントを処理する。
+     *
+     * @param mouseX マウス位置のx座標
+     * @param mouseY マウス位置のy座標
+     */
+    public void mouseMoved(int mouseX, int mouseY) {
+        // Block mouse events during animations
+        if (screenTransition.isAnimating()) {
+            return;
+        }
+
+        Screen currentScreen = getCurrentScreen();
+        if (currentScreen != null && currentPApplet != null) {
+            currentScreen.mouseMoved(currentPApplet, mouseX, mouseY);
+        }
+    }
+
+    /**
      * 現在のスクリーンに委託してマウスホイールイベントを処理する。
      *
      * @param mouseX マウス位置のx座標

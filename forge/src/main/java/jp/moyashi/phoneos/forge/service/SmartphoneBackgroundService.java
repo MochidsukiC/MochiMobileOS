@@ -1,6 +1,8 @@
 package jp.moyashi.phoneos.forge.service;
 
 import jp.moyashi.phoneos.core.Kernel;
+import jp.moyashi.phoneos.core.service.chromium.ChromiumService;
+import jp.moyashi.phoneos.core.service.chromium.DefaultChromiumService;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraftforge.api.distmarker.Dist;
@@ -112,8 +114,13 @@ public class SmartphoneBackgroundService {
         LOGGER.info("[SmartphoneBackgroundService] Creating shared kernel for world: " + worldId);
 
         try {
-            // Kernelインスタンスを作成
+            // Kernelインスタンスを作成（初期化はまだ）
             Kernel kernel = new Kernel();
+
+            // **重要**: ChromiumServiceを初期化前にカーネルへ注入する
+            LOGGER.info("[SmartphoneBackgroundService] Configuring ChromiumService with ForgeChromiumProvider before kernel initialization...");
+            ChromiumService chromiumService = new DefaultChromiumService(new jp.moyashi.phoneos.forge.chromium.ForgeChromiumProvider());
+            kernel.setChromiumService(chromiumService);
 
             // Minecraft環境用の初期化メソッドを使用（サイズは400x600: スタンドアロンと同じ）
             // ワールドIDを渡してデータを分離

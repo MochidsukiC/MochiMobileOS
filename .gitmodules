@@ -1,0 +1,3 @@
+[submodule "core/java-cef"]
+	path = core/java-cef
+	url = https://bitbucket.org/chromiumembedded/java-cef.git

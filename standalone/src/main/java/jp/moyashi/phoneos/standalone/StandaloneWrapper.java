@@ -1,6 +1,8 @@
 package jp.moyashi.phoneos.standalone;
 
 import jp.moyashi.phoneos.core.Kernel;
+import jp.moyashi.phoneos.core.service.chromium.ChromiumService;
+import jp.moyashi.phoneos.core.service.chromium.DefaultChromiumService;
 import processing.core.PApplet;
 import processing.core.PGraphics;
 
@@ -26,6 +28,12 @@ public class StandaloneWrapper extends PApplet {
 
     /** 画面高さ */
     private static final int SCREEN_HEIGHT = 600;
+
+    /** マウス移動スロットリング用 */
+    private long lastMouseMoveTimeMs = 0L;
+    private long lastMouseDragTimeMs = 0L;
+    private static final long MOUSE_MOVE_THROTTLE_MS = 200; // 5回/秒（大幅削減）
+    private static final long MOUSE_DRAG_THROTTLE_MS = 100; // 10回/秒
 
     /**
      * Processing設定メソッド。
@@ -58,15 +66,13 @@ public class StandaloneWrapper extends PApplet {
                     System.out.println("StandaloneWrapper: Input methods enabled on AWT component");
 
                     // AWTのMouseWheelListenerを直接登録（Processingのイベントが機能しないため）
-                    component.addMouseWheelListener(new java.awt.event.MouseWheelListener() {
-                        @Override
-                        public void mouseWheelMoved(java.awt.event.MouseWheelEvent e) {
-                            System.out.println("StandaloneWrapper: AWT mouseWheelMoved - wheelRotation: " + e.getWheelRotation() + ", x: " + mouseX + ", y: " + mouseY);
-                            if (kernel != null) {
-                                // wheelRotationは回転量（正の値：下スクロール、負の値：上スクロール）
-                                kernel.mouseWheel(mouseX, mouseY, e.getWheelRotation());
-                                System.out.println("StandaloneWrapper: mouseWheel forwarded to Kernel via AWT listener");
-                            }
+                    component.addMouseWheelListener(e -> {
+                        if (kernel != null) {
+                            long captureNs = System.nanoTime();
+                            long captureMs = System.currentTimeMillis();
+                            kernel.mouseWheel(mouseX, mouseY, e.getWheelRotation());
+                            long completeNs = System.nanoTime();
+                            logInputBridge("mouseWheel", captureNs, completeNs, captureMs, mouseX, mouseY);
                         }
                     });
                     System.out.println("StandaloneWrapper: MouseWheelListener registered on AWT component");
@@ -76,9 +82,20 @@ public class StandaloneWrapper extends PApplet {
             System.err.println("StandaloneWrapper: Failed to enable input methods: " + e.getMessage());
         }
 
-        // Kernelを作成し、PGraphics統一アーキテクチャで初期化
+        // Kernelを作成し、ChromiumServiceを注入してから初期化する
         kernel = new Kernel();
+        ChromiumService chromiumService = new DefaultChromiumService(new StandaloneChromiumProvider());
+        kernel.setChromiumService(chromiumService);
         kernel.initialize(this, SCREEN_WIDTH, SCREEN_HEIGHT);
+        // AWT EventQueue を計測するラッパーを登録
+        try {
+            java.awt.Toolkit.getDefaultToolkit().getSystemEventQueue().push(new InstrumentedEventQueue(kernel));
+            if (kernel.getLogger() != null) {
+                kernel.getLogger().info("StandaloneWrapper", "Instrumented AWT EventQueue installed");
+            }
+        } catch (Exception e) {
+            System.err.println("StandaloneWrapper: Failed to install InstrumentedEventQueue: " + e.getMessage());
+        }
 
         System.out.println("StandaloneWrapper: Kernel初期化完了");
     }
@@ -133,7 +150,11 @@ public class StandaloneWrapper extends PApplet {
     @Override
     public void mousePressed() {
         if (kernel != null) {
+            long captureNs = System.nanoTime();
+            long captureMs = System.currentTimeMillis();
             kernel.mousePressed(mouseX, mouseY);
+            long completeNs = System.nanoTime();
+            logInputBridge("mousePressed", captureNs, completeNs, captureMs, mouseX, mouseY);
         }
     }
 
@@ -143,19 +164,44 @@ public class StandaloneWrapper extends PApplet {
     @Override
     public void mouseReleased() {
         if (kernel != null) {
+            long captureNs = System.nanoTime();
+            long captureMs = System.currentTimeMillis();
             kernel.mouseReleased(mouseX, mouseY);
+            long completeNs = System.nanoTime();
+            logInputBridge("mouseReleased", captureNs, completeNs, captureMs, mouseX, mouseY);
         }
     }
 
     /**
      * PAppletマウスドラッグイベント → Kernel独立API変換。
      * ジェスチャー認識に重要な機能。
+     * スロットリング: 50ms間隔（20回/秒）でのみ送信し、
+     * AWTイベントキューの蓄積を防ぐ。
      */
     @Override
     public void mouseDragged() {
         if (kernel != null) {
-            // Kernelの独立mouseDragged APIを呼び出し
-            kernel.mouseDragged(mouseX, mouseY);
+            long now = System.currentTimeMillis();
+            if (now - lastMouseDragTimeMs >= MOUSE_DRAG_THROTTLE_MS) {
+                kernel.mouseDragged(mouseX, mouseY);
+                lastMouseDragTimeMs = now;
+            }
+        }
+    }
+
+    /**
+     * PAppletマウス移動イベント → Kernel独立API変換。
+     * スロットリング: 50ms間隔（20回/秒）でのみ送信し、
+     * AWTイベントキューの蓄積を防ぐ。
+     */
+    @Override
+    public void mouseMoved() {
+        if (kernel != null) {
+            long now = System.currentTimeMillis();
+            if (now - lastMouseMoveTimeMs >= MOUSE_MOVE_THROTTLE_MS) {
+                kernel.mouseMoved(mouseX, mouseY);
+                lastMouseMoveTimeMs = now;
+            }
         }
     }
 
@@ -278,5 +324,19 @@ public class StandaloneWrapper extends PApplet {
      */
     public Kernel getKernel() {
         return kernel;
+    }
+
+    private void logInputBridge(String eventName, long captureNs, long completeNs, long captureMs, int x, int y) {
+        if (kernel == null || kernel.getLogger() == null) {
+            return;
+        }
+        double latencyMs = (completeNs - captureNs) / 1_000_000.0;
+        String message = String.format(
+                "%s latency=%.3fms captured=%tT.%03d coord=(%d,%d)",
+                eventName,
+                latencyMs,
+                captureMs, (int) (captureMs % 1000),
+                x, y);
+        kernel.getLogger().debug("StandaloneInputBridge", message);
     }
 }

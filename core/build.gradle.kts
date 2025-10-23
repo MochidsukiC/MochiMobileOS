@@ -35,8 +35,11 @@ dependencies {
     // JSON processing library for layout persistence
     implementation("com.google.code.gson:gson:2.10.1")
 
-    // JCEF (Java Chromium Embedded Framework) for Chromium browser integration
-    implementation("me.friwi:jcefmaven:135.0.20")
+    // JCEF API (org.cef.*) はコンパイル時のみ必要（実行時は上位モジュールが提供）
+    // - Standalone環境: standalone moduleがjcefmaven:135.0.20を提供
+    // - Forge環境: MCEF MODがorg.cef.* API実装を提供
+    // coreモジュールはChromiumProviderインターフェースを通じて依存性注入を受ける
+    compileOnly("me.friwi:jcefmaven:135.0.20")
 
     // JavaFX for HTML/WebView integration (platform-specific)
     // TODO: これは旧BrowserAppで使用。ChromiumBrowserApp完成後に削除予定

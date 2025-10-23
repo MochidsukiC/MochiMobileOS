@@ -2,9 +2,9 @@ package jp.moyashi.phoneos.core.service.chromium;
 
 import jp.moyashi.phoneos.core.Kernel;
 import jp.moyashi.phoneos.core.service.chromium.httpm.HttpmSchemeHandlerFactory;
-import me.friwi.jcefmaven.MavenCefAppHandlerAdapter;
 import org.cef.CefApp;
 import org.cef.callback.CefSchemeRegistrar;
+import org.cef.handler.CefAppHandlerAdapter;
 
 /**
  * Chromium AppHandler。
@@ -14,10 +14,12 @@ import org.cef.callback.CefSchemeRegistrar;
  * - onRegisterCustomSchemes(): httpm:スキームを標準スキームとして登録
  * - onContextInitialized(): HttpmSchemeHandlerFactoryを登録
  *
+ * jcefmaven依存を削除し、org.cef.*のみに依存。
+ *
  * @author MochiOS Team
- * @version 1.0
+ * @version 2.0
  */
-public class ChromiumAppHandler extends MavenCefAppHandlerAdapter {
+public class ChromiumAppHandler extends CefAppHandlerAdapter {
 
     private final Kernel kernel;
 
@@ -27,6 +29,7 @@ public class ChromiumAppHandler extends MavenCefAppHandlerAdapter {
      * @param kernel Kernelインスタンス
      */
     public ChromiumAppHandler(Kernel kernel) {
+        super(new String[0]); // CefAppHandlerAdapterはString[]引数を要求する
         this.kernel = kernel;
     }
 
