@@ -1946,4 +1946,17 @@ public class LockScreen implements Screen, GestureListener {
     public void mouseReleased(PGraphics g, int mouseX, int mouseY) {
         // Default implementation - subclasses can override
     }
+
+    /**
+     * ロック画面はスペースキーでパターン入力画面を展開するため、
+     * 常にフォーカスされたコンポーネントがあるとみなす。
+     * これにより、スペースキーがホームボタンとして処理されず、
+     * LockScreen.keyPressed()に正しく転送される。
+     *
+     * @return 常にtrue
+     */
+    @Override
+    public boolean hasFocusedComponent() {
+        return true;
+    }
 }

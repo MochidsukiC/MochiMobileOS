@@ -375,8 +375,40 @@ public class StandaloneChromiumProvider implements ChromiumProvider {
         }
     }
 
+    /**
+     * ProcessingキーコードをAWTキーコードに変換する。
+     * Processingは独自のキーコード定義を持つため、AWT KeyEventに渡す前に変換が必要。
+     */
+    private int convertProcessingToAwtKeyCode(int processingKeyCode, char keyChar) {
+        // 特殊キーの変換
+        switch (processingKeyCode) {
+            case 8:   return java.awt.event.KeyEvent.VK_BACK_SPACE;  // Backspace
+            case 9:   return java.awt.event.KeyEvent.VK_TAB;         // Tab
+            case 10:  return java.awt.event.KeyEvent.VK_ENTER;       // Enter
+            case 16:  return java.awt.event.KeyEvent.VK_SHIFT;       // Shift
+            case 17:  return java.awt.event.KeyEvent.VK_CONTROL;     // Ctrl
+            case 18:  return java.awt.event.KeyEvent.VK_ALT;         // Alt
+            case 20:  return java.awt.event.KeyEvent.VK_CAPS_LOCK;   // CapsLock
+            case 27:  return java.awt.event.KeyEvent.VK_ESCAPE;      // Escape
+            case 32:  return java.awt.event.KeyEvent.VK_SPACE;       // Space
+            case 33:  return java.awt.event.KeyEvent.VK_PAGE_UP;     // PageUp
+            case 34:  return java.awt.event.KeyEvent.VK_PAGE_DOWN;   // PageDown
+            case 35:  return java.awt.event.KeyEvent.VK_END;         // End
+            case 36:  return java.awt.event.KeyEvent.VK_HOME;        // Home
+            case 37:  return java.awt.event.KeyEvent.VK_LEFT;        // Left arrow
+            case 38:  return java.awt.event.KeyEvent.VK_UP;          // Up arrow
+            case 39:  return java.awt.event.KeyEvent.VK_RIGHT;       // Right arrow
+            case 40:  return java.awt.event.KeyEvent.VK_DOWN;        // Down arrow
+            case 127: return java.awt.event.KeyEvent.VK_DELETE;      // Delete
+        }
+
+        // 文字キー（A-Z, 0-9等）はそのままでOK
+        // ProcessingとAWTで同じ値を使用している
+        return processingKeyCode;
+    }
+
     @Override
-    public void sendKeyPressed(org.cef.browser.CefBrowser browser, int keyCode, char keyChar) {
+    public void sendKeyPressed(org.cef.browser.CefBrowser browser, int keyCode, char keyChar, boolean ctrlPressed, boolean shiftPressed) {
         if (browser == null) {
             return;
         }
@@ -384,29 +416,47 @@ public class StandaloneChromiumProvider implements ChromiumProvider {
         try {
             BrowserMethodCache cache = getMethodCache(browser);
 
+            // 修飾子フラグを構築
+            int modifiers = 0;
+            if (ctrlPressed) {
+                modifiers |= java.awt.event.KeyEvent.CTRL_DOWN_MASK;
+            }
+            if (shiftPressed) {
+                modifiers |= java.awt.event.KeyEvent.SHIFT_DOWN_MASK;
+            }
+
+            // ProcessingキーコードをAWTキーコードに変換
+            int awtKeyCode = convertProcessingToAwtKeyCode(keyCode, keyChar);
+
             // KEY_PRESSED イベント
             java.awt.event.KeyEvent keyEvent = new java.awt.event.KeyEvent(
                 eventComponent,
                 java.awt.event.KeyEvent.KEY_PRESSED,
                 System.currentTimeMillis(),
-                0,  // modifiers
-                keyCode,
+                modifiers,  // 修飾子フラグを適用
+                awtKeyCode,  // 変換後のAWTキーコード
                 keyChar
             );
 
             cache.sendKeyEvent.invoke(browser, keyEvent);
 
             // KEY_TYPED イベントも送信（テキスト入力用）
-            if (keyChar != 0 && keyChar >= 32) {
-                java.awt.event.KeyEvent typedEvent = new java.awt.event.KeyEvent(
-                    eventComponent,
-                    java.awt.event.KeyEvent.KEY_TYPED,
-                    System.currentTimeMillis(),
-                    0,
-                    java.awt.event.KeyEvent.VK_UNDEFINED,  // KEY_TYPEDではVK_UNDEFINED
-                    keyChar
-                );
-                cache.sendKeyEvent.invoke(browser, typedEvent);
+            // 日本語IME対応: keyCharが有効な文字の場合は送信
+            // 制御キーショートカット（Ctrl押下時）は除外するが、IMEの中間文字は許可
+            if (keyChar != java.awt.event.KeyEvent.CHAR_UNDEFINED && !ctrlPressed) {
+                // 制御文字（0x00-0x1F, 0x7F）は除外するが、IMEの変換中の文字は許可
+                boolean isControlChar = (keyChar < 32 && keyChar != 0) || keyChar == 127;
+                if (!isControlChar) {
+                    java.awt.event.KeyEvent typedEvent = new java.awt.event.KeyEvent(
+                        eventComponent,
+                        java.awt.event.KeyEvent.KEY_TYPED,
+                        System.currentTimeMillis(),
+                        modifiers,
+                        java.awt.event.KeyEvent.VK_UNDEFINED,  // KEY_TYPEDではVK_UNDEFINED
+                        keyChar
+                    );
+                    cache.sendKeyEvent.invoke(browser, typedEvent);
+                }
             }
 
         } catch (Exception e) {
@@ -416,7 +466,7 @@ public class StandaloneChromiumProvider implements ChromiumProvider {
     }
 
     @Override
-    public void sendKeyReleased(org.cef.browser.CefBrowser browser, int keyCode, char keyChar) {
+    public void sendKeyReleased(org.cef.browser.CefBrowser browser, int keyCode, char keyChar, boolean ctrlPressed, boolean shiftPressed) {
         if (browser == null) {
             return;
         }
@@ -424,13 +474,25 @@ public class StandaloneChromiumProvider implements ChromiumProvider {
         try {
             BrowserMethodCache cache = getMethodCache(browser);
 
+            // 修飾子フラグを構築
+            int modifiers = 0;
+            if (ctrlPressed) {
+                modifiers |= java.awt.event.KeyEvent.CTRL_DOWN_MASK;
+            }
+            if (shiftPressed) {
+                modifiers |= java.awt.event.KeyEvent.SHIFT_DOWN_MASK;
+            }
+
+            // ProcessingキーコードをAWTキーコードに変換
+            int awtKeyCode = convertProcessingToAwtKeyCode(keyCode, keyChar);
+
             // KEY_RELEASED イベント
             java.awt.event.KeyEvent keyEvent = new java.awt.event.KeyEvent(
                 eventComponent,
                 java.awt.event.KeyEvent.KEY_RELEASED,
                 System.currentTimeMillis(),
-                0,  // modifiers
-                keyCode,
+                modifiers,  // 修飾子フラグを適用
+                awtKeyCode,  // 変換後のAWTキーコード
                 keyChar
             );
 

@@ -48,6 +48,7 @@ public class ChromiumBrowser {
     private String currentUrl = "";
     private boolean isLoading = false;
     private String currentTitle = "";
+    private volatile boolean webPageClicked = false; // Webページがクリックされたか（テキスト入力可能性）
 
     private final ConcurrentLinkedQueue<InputEvent> inputQueue = new ConcurrentLinkedQueue<>();
     private long lastInputLogNs = System.nanoTime();
@@ -77,6 +78,19 @@ public class ChromiumBrowser {
             @Override
             public void onTitleChange(CefBrowser browser, String title) {
                 currentTitle = title;
+            }
+
+            @Override
+            public boolean onConsoleMessage(CefBrowser browser, org.cef.CefSettings.LogSeverity level,
+                    String message, String source, int line) {
+                // JavaScriptからのテキスト入力フォーカス通知を受信
+                if (message != null && message.startsWith("[MochiOS:TextFocus]")) {
+                    String focusState = message.substring("[MochiOS:TextFocus]".length());
+                    webPageClicked = "true".equals(focusState);
+                    log("Text input focus changed: " + webPageClicked);
+                    return true; // メッセージを処理したのでtrueを返す
+                }
+                return false; // 他のコンソールメッセージは通常通り処理
             }
         });
 
@@ -114,6 +128,8 @@ public class ChromiumBrowser {
                     isLoading = true;
                     currentUrl = frame.getURL();
                     currentTitle = currentUrl;
+                    // 新しいページをロードする時、Webページクリック状態をリセット
+                    webPageClicked = false;
                 }
             }
 
@@ -125,6 +141,9 @@ public class ChromiumBrowser {
                     if (currentTitle == null || currentTitle.isBlank()) {
                         currentTitle = currentUrl;
                     }
+
+                    // ページロード完了時にテキスト入力フォーカス監視スクリプトを注入
+                    injectFocusDetectionScript(browser);
                 }
             }
 
@@ -237,17 +256,22 @@ public class ChromiumBrowser {
                     @Override
                     public void run() {
                         try {
-                            // 隠しJFrameを作成（軽量、装飾なし）
+                            // 隠しJFrameを作成（オフスクリーンレンダリング用）
                             hiddenFrame = new javax.swing.JFrame();
                             hiddenFrame.setUndecorated(true);
                             hiddenFrame.setType(javax.swing.JFrame.Type.UTILITY);
                             hiddenFrame.setDefaultCloseOperation(javax.swing.JFrame.DO_NOTHING_ON_CLOSE);
                             hiddenFrame.setSize(width, height);
+
+                            // 画面外に配置（レンダリング専用のため）
                             hiddenFrame.setLocation(-10000, -10000);
+
+                            // フォーカス取得を防ぐ（ProcessingウィンドウでIMEを使用するため）
+                            hiddenFrame.setFocusableWindowState(false);
+                            hiddenFrame.setAutoRequestFocus(false);
 
                             // 先にJFrameを表示（GraphicsConfiguration確定）
                             hiddenFrame.setVisible(true);
-
 
                             // 少し待機してからGLCanvasを追加（GraphicsConfiguration確定後）
                             try {
@@ -261,11 +285,17 @@ public class ChromiumBrowser {
                             panel.add(uiComponent, java.awt.BorderLayout.CENTER);
                             hiddenFrame.setContentPane(panel);
 
+                            // GLCanvasでIMEを無効化（ProcessingウィンドウでIMEを使用するため）
+                            uiComponent.enableInputMethods(false);
+                            uiComponent.setFocusable(false);
+
                             // 再度validate()を呼び出してUIを更新
                             hiddenFrame.validate();
 
                             // GLCanvasのサイズを明示的に設定
                             uiComponent.setSize(width, height);
+
+                            log("Hidden JFrame configured: focusable=false, IME disabled on GLCanvas");
 
                         } catch (Exception e) {
                             logError("Failed to setup hidden JFrame (invokeLater): " + e.getMessage());
@@ -282,12 +312,6 @@ public class ChromiumBrowser {
                 logError("Failed to setup hidden JFrame: " + e.getMessage());
                 e.printStackTrace();
             }
-        } else {
-            // MCEFなど、UIComponentをサポートしないプロバイダー
-
-            // MCEFでは、レンダリングは自動的に開始される
-            // wasResized()を呼び出してブラウザにサイズを通知
-            tryTriggerRendering();
         }
     }
 
@@ -343,6 +367,36 @@ public class ChromiumBrowser {
     }
 
     /**
+     * テキスト入力フォーカス検出スクリプトを注入する。
+     * Webページ内のテキスト入力フィールドのfocus/blurイベントを監視し、
+     * console.logでJava側に通知する。
+     */
+    private void injectFocusDetectionScript(CefBrowser browser) {
+        String script =
+            "(function() {" +
+            "  let mochiOS_hasTextFocus = false;" +
+            "  function updateFocusState() {" +
+            "    const el = document.activeElement;" +
+            "    const isTextInput = el && (" +
+            "      el.tagName === 'INPUT' && ['text', 'password', 'email', 'search', 'tel', 'url', 'number'].includes(el.type) ||" +
+            "      el.tagName === 'TEXTAREA' ||" +
+            "      el.isContentEditable" +
+            "    );" +
+            "    if (isTextInput !== mochiOS_hasTextFocus) {" +
+            "      mochiOS_hasTextFocus = isTextInput;" +
+            "      console.log('[MochiOS:TextFocus]' + isTextInput);" +
+            "    }" +
+            "  }" +
+            "  document.addEventListener('focusin', updateFocusState, true);" +
+            "  document.addEventListener('focusout', updateFocusState, true);" +
+            "  updateFocusState();" +
+            "})();";
+
+        browser.executeJavaScript(script, browser.getURL(), 0);
+        log("Text input focus detection script injected");
+    }
+
+    /**
      * 現在のURLを取得する。
      *
      * @return 現在のURL
@@ -367,6 +421,26 @@ public class ChromiumBrowser {
      */
     public boolean isLoading() {
         return isLoading;
+    }
+
+    /**
+     * Webページがクリックされたかを取得する。
+     * Webページ内をクリックした場合にtrueを返す。
+     * テキスト入力フィールドへのフォーカスの可能性を示す。
+     * スペースキーのホームボタン判定に使用される。
+     *
+     * @return Webページがクリックされた場合true
+     */
+    public boolean hasTextInputFocus() {
+        return webPageClicked;
+    }
+
+    /**
+     * Webページクリック状態をリセットする。
+     * 新しいページロード時に呼び出される。
+     */
+    public void resetWebPageClickState() {
+        webPageClicked = false;
     }
 
     /**
@@ -523,8 +597,8 @@ public class ChromiumBrowser {
 
         int processed = 0;
         int mouseMoveProcessed = 0;
-        int maxEventsPerFrame = 100; // イベント処理能力を大幅増加
-        int maxMouseMovePerFrame = 50; // マウス移動も増加
+        int maxEventsPerFrame = 200; // P2D GPU描画により高速処理可能
+        int maxMouseMovePerFrame = 150; // マウス移動も大幅増加（リアルタイム性重視）
 
         InputEvent event;
         while ((event = inputQueue.poll()) != null) {
@@ -537,7 +611,7 @@ public class ChromiumBrowser {
             }
 
             long latencyNs = System.nanoTime() - event.enqueueTimeNs;
-            event.dispatch(provider, browser);
+            event.dispatch(provider, browser, kernel, this);
             long processedNs = System.nanoTime();
             logInputLatency(event, processedNs, inputQueue.size());
 
@@ -583,18 +657,18 @@ public class ChromiumBrowser {
         // 全てのイベントをキューに入れて非同期処理
         // （同期処理によるUIブロックを回避）
 
-        // 適度なキューサイズ制限: YouTube動画再生時のバッファ詰まりを防ぐ
+        // 適度なキューサイズ制限: P2D GPU描画により高速処理可能
         int queueSize = inputQueue.size();
 
-        // マウス移動イベント：キューが50以上なら新規追加を完全拒否
+        // マウス移動イベント：キューが200以上なら新規追加を完全拒否（緩和）
         if (event.type == InputEvent.Type.MOUSE_MOVE) {
-            if (queueSize >= 50) {
+            if (queueSize >= 200) {
                 return; // 追加しない（ログも出さない）
             }
         }
 
-        // 重要なイベント（クリック、キー入力）：キューが150以上なら拒否
-        if (queueSize >= 150) {
+        // 重要なイベント（クリック、キー入力）：キューが500以上なら拒否（緩和）
+        if (queueSize >= 500) {
             if (kernel.getLogger() != null) {
                 kernel.getLogger().error("ChromiumBrowser",
                     "Emergency: Rejecting event type=" + event.type + " (queue size: " + queueSize + ")");
@@ -832,7 +906,7 @@ public class ChromiumBrowser {
             }
         }
 
-        void dispatch(ChromiumProvider provider, CefBrowser browser) {
+        void dispatch(ChromiumProvider provider, CefBrowser browser, Kernel kernel, ChromiumBrowser chromiumBrowser) {
             switch (type) {
                 case MOUSE_PRESS:
                     provider.sendMousePressed(browser, x, y, button);
@@ -847,10 +921,14 @@ public class ChromiumBrowser {
                     provider.sendMouseWheel(browser, x, y, wheelDelta);
                     break;
                 case KEY_PRESS:
-                    provider.sendKeyPressed(browser, keyCode, keyChar);
+                    boolean ctrlPressed = kernel != null && kernel.isCtrlPressed();
+                    boolean shiftPressed = kernel != null && kernel.isShiftPressed();
+                    provider.sendKeyPressed(browser, keyCode, keyChar, ctrlPressed, shiftPressed);
                     break;
                 case KEY_RELEASE:
-                    provider.sendKeyReleased(browser, keyCode, keyChar);
+                    boolean ctrlReleased = kernel != null && kernel.isCtrlPressed();
+                    boolean shiftReleased = kernel != null && kernel.isShiftPressed();
+                    provider.sendKeyReleased(browser, keyCode, keyChar, ctrlReleased, shiftReleased);
                     break;
             }
         }

@@ -29,20 +29,24 @@ public class StandaloneWrapper extends PApplet {
     /** 画面高さ */
     private static final int SCREEN_HEIGHT = 600;
 
-    /** マウス移動スロットリング用 */
-    private long lastMouseMoveTimeMs = 0L;
-    private long lastMouseDragTimeMs = 0L;
-    private static final long MOUSE_MOVE_THROTTLE_MS = 200; // 5回/秒（大幅削減）
-    private static final long MOUSE_DRAG_THROTTLE_MS = 100; // 10回/秒
 
     /**
      * Processing設定メソッド。
      * 画面サイズとその他の初期設定を行う。
+     *
+     * P2Dレンダラー使用理由:
+     * - デフォルトのJAVA2D（CPU描画）では動画再生時に`image()`がボトルネックとなる
+     * - P2D（JOGL/OpenGL GPU描画）により、Forgeと同様のGPU描画パスを実現
+     * - 動画再生時のAWTEventQueue遅延を回避
+     *
+     * IME対応:
+     * - P2DはNEWTウィンドウを使用し、標準ではIMEをサポートしない
+     * - AWTの隠しウィンドウを作成してIME入力を受け取り、CEFに転送する方式で対応
      */
     @Override
     public void settings() {
-        size(SCREEN_WIDTH, SCREEN_HEIGHT);
-        System.out.println("StandaloneWrapper: Processing窓口設定完了 (" + SCREEN_WIDTH + "x" + SCREEN_HEIGHT + ")");
+        size(SCREEN_WIDTH, SCREEN_HEIGHT, P2D);
+        System.out.println("StandaloneWrapper: Processing窓口設定完了 (" + SCREEN_WIDTH + "x" + SCREEN_HEIGHT + ", P2D renderer)");
     }
 
     /**
@@ -56,30 +60,124 @@ public class StandaloneWrapper extends PApplet {
         // IMEを有効化（日本語入力のインライン編集対応）
         try {
             if (surface != null) {
-                System.out.println("StandaloneWrapper: Enabling input methods for IME support");
+                System.out.println("StandaloneWrapper: Setting up input methods for IME support");
                 surface.setResizable(false); // ウィンドウサイズ固定
 
-                // Java AWTコンポーネントでIMEを有効化し、MouseWheelListenerを登録
-                java.awt.Component component = (java.awt.Component) surface.getNative();
-                if (component != null) {
-                    component.enableInputMethods(true);
-                    System.out.println("StandaloneWrapper: Input methods enabled on AWT component");
+                Object nativeWindow = surface.getNative();
+                System.out.println("StandaloneWrapper: Native window class: " + nativeWindow.getClass().getName());
 
-                    // AWTのMouseWheelListenerを直接登録（Processingのイベントが機能しないため）
+                // P2Dレンダラーの場合、NEWTのGLWindowを使用
+                // com.jogamp.newt.opengl.GLWindow はAWT Componentではないため、
+                // リフレクションでマウスリスナーを登録
+                if (nativeWindow.getClass().getName().equals("com.jogamp.newt.opengl.GLWindow")) {
+                    System.out.println("StandaloneWrapper: Detected NEWT GLWindow (P2D renderer)");
+
+                    // NEWTウィンドウでマウスホイールリスナーを登録
+                    try {
+                        Class<?> glWindowClass = nativeWindow.getClass();
+                        Class<?> mouseListenerClass = Class.forName("com.jogamp.newt.event.MouseListener");
+
+                        // MouseListenerインターフェースを実装する匿名クラスを作成
+                        Object mouseListener = java.lang.reflect.Proxy.newProxyInstance(
+                            glWindowClass.getClassLoader(),
+                            new Class<?>[] { mouseListenerClass },
+                            (proxy, method, args) -> {
+                                if (method.getName().equals("mouseWheelMoved") && args != null && args.length > 0) {
+                                    // MouseEventからwheel rotationを取得
+                                    Object mouseEvent = args[0];
+                                    try {
+                                        java.lang.reflect.Method getRotationMethod = mouseEvent.getClass().getMethod("getRotation");
+                                        float[] rotation = (float[]) getRotationMethod.invoke(mouseEvent);
+                                        if (rotation != null && rotation.length > 0 && kernel != null) {
+                                            kernel.mouseWheel(mouseX, mouseY, (int) rotation[1]);
+                                        }
+                                    } catch (Exception ex) {
+                                        // Silent failure
+                                    }
+                                }
+                                return null;
+                            }
+                        );
+
+                        // addMouseListener()を呼び出し
+                        java.lang.reflect.Method addMouseListenerMethod = glWindowClass.getMethod("addMouseListener", mouseListenerClass);
+                        addMouseListenerMethod.invoke(nativeWindow, mouseListener);
+                        System.out.println("StandaloneWrapper: NEWT MouseListener registered");
+
+                    } catch (Exception e) {
+                        System.err.println("StandaloneWrapper: Failed to register NEWT mouse listener: " + e.getMessage());
+                    }
+
+                    // CRITICAL: NEWTウィンドウでIMEを有効化
+                    // ProcessingのkeyTyped()はIME確定後の文字のみを受け取るため、
+                    // NEWTの低レベルAPIを使用してIMEサポートを有効化する
+                    try {
+                        // WindowImplを取得（NEWTの内部実装）
+                        Class<?> windowImplClass = Class.forName("jogamp.newt.WindowImpl");
+
+                        if (windowImplClass.isInstance(nativeWindow)) {
+                            // setInputMethodEnabled() メソッドを探す（存在する場合）
+                            try {
+                                java.lang.reflect.Method setInputMethodEnabledMethod =
+                                    nativeWindow.getClass().getMethod("setInputMethodEnabled", boolean.class);
+                                setInputMethodEnabledMethod.invoke(nativeWindow, true);
+                                System.out.println("StandaloneWrapper: IME enabled on NEWT window via setInputMethodEnabled()");
+                            } catch (NoSuchMethodException e) {
+                                // メソッドが存在しない場合、WindowImplのフィールドを直接操作
+                                System.out.println("StandaloneWrapper: setInputMethodEnabled() not found, trying field access...");
+
+                                // inputMethodEnabledフィールドを探す
+                                try {
+                                    java.lang.reflect.Field inputMethodEnabledField =
+                                        windowImplClass.getDeclaredField("inputMethodEnabled");
+                                    inputMethodEnabledField.setAccessible(true);
+                                    inputMethodEnabledField.set(nativeWindow, true);
+                                    System.out.println("StandaloneWrapper: IME enabled on NEWT window via field access");
+                                } catch (Exception fieldEx) {
+                                    System.err.println("StandaloneWrapper: Failed to enable IME via field: " + fieldEx.getMessage());
+                                }
+                            }
+                        }
+
+                        System.out.println("StandaloneWrapper: IME configuration completed for NEWT window");
+                        System.out.println("StandaloneWrapper: Note - IME input will work through Processing's keyTyped() events");
+
+                    } catch (Exception e) {
+                        System.err.println("StandaloneWrapper: Failed to enable IME on NEWT window: " + e.getMessage());
+                        System.out.println("StandaloneWrapper: Falling back to Processing's default keyTyped() handling");
+                    }
+
+                } else if (nativeWindow instanceof java.awt.Component) {
+                    // AWT Componentの場合（JAVA2Dレンダラー）
+                    System.out.println("StandaloneWrapper: Detected AWT Component");
+                    java.awt.Component component = (java.awt.Component) nativeWindow;
+
+                    // IMEを明示的に有効化
+                    component.enableInputMethods(true);
+
+                    // InputContextを取得してIMEが有効か確認
+                    java.awt.im.InputContext inputContext = component.getInputContext();
+                    if (inputContext != null) {
+                        System.out.println("StandaloneWrapper: InputContext available - IME should be working");
+                        System.out.println("StandaloneWrapper: InputContext locale: " + inputContext.getLocale());
+                    } else {
+                        System.err.println("StandaloneWrapper: WARNING - InputContext is null");
+                    }
+
+                    // AWTのMouseWheelListenerを登録
                     component.addMouseWheelListener(e -> {
                         if (kernel != null) {
-                            long captureNs = System.nanoTime();
-                            long captureMs = System.currentTimeMillis();
                             kernel.mouseWheel(mouseX, mouseY, e.getWheelRotation());
-                            long completeNs = System.nanoTime();
-                            logInputBridge("mouseWheel", captureNs, completeNs, captureMs, mouseX, mouseY);
                         }
                     });
-                    System.out.println("StandaloneWrapper: MouseWheelListener registered on AWT component");
+                    System.out.println("StandaloneWrapper: AWT MouseWheelListener registered");
+                } else {
+                    System.err.println("StandaloneWrapper: Unknown native window type: " + nativeWindow.getClass().getName());
                 }
             }
         } catch (Exception e) {
-            System.err.println("StandaloneWrapper: Failed to enable input methods: " + e.getMessage());
+            System.err.println("StandaloneWrapper: Failed to setup input methods: " + e.getMessage());
+            e.printStackTrace();
         }
 
         // Kernelを作成し、ChromiumServiceを注入してから初期化する
@@ -150,11 +248,7 @@ public class StandaloneWrapper extends PApplet {
     @Override
     public void mousePressed() {
         if (kernel != null) {
-            long captureNs = System.nanoTime();
-            long captureMs = System.currentTimeMillis();
             kernel.mousePressed(mouseX, mouseY);
-            long completeNs = System.nanoTime();
-            logInputBridge("mousePressed", captureNs, completeNs, captureMs, mouseX, mouseY);
         }
     }
 
@@ -164,44 +258,30 @@ public class StandaloneWrapper extends PApplet {
     @Override
     public void mouseReleased() {
         if (kernel != null) {
-            long captureNs = System.nanoTime();
-            long captureMs = System.currentTimeMillis();
             kernel.mouseReleased(mouseX, mouseY);
-            long completeNs = System.nanoTime();
-            logInputBridge("mouseReleased", captureNs, completeNs, captureMs, mouseX, mouseY);
         }
     }
 
     /**
      * PAppletマウスドラッグイベント → Kernel独立API変換。
      * ジェスチャー認識に重要な機能。
-     * スロットリング: 50ms間隔（20回/秒）でのみ送信し、
-     * AWTイベントキューの蓄積を防ぐ。
+     *
+     * P2D GPU描画により、すべてのマウスドラッグイベントを即座にKernelに転送。
      */
     @Override
     public void mouseDragged() {
         if (kernel != null) {
-            long now = System.currentTimeMillis();
-            if (now - lastMouseDragTimeMs >= MOUSE_DRAG_THROTTLE_MS) {
-                kernel.mouseDragged(mouseX, mouseY);
-                lastMouseDragTimeMs = now;
-            }
+            kernel.mouseDragged(mouseX, mouseY);
         }
     }
 
     /**
      * PAppletマウス移動イベント → Kernel独立API変換。
-     * スロットリング: 50ms間隔（20回/秒）でのみ送信し、
-     * AWTイベントキューの蓄積を防ぐ。
      */
     @Override
     public void mouseMoved() {
         if (kernel != null) {
-            long now = System.currentTimeMillis();
-            if (now - lastMouseMoveTimeMs >= MOUSE_MOVE_THROTTLE_MS) {
-                kernel.mouseMoved(mouseX, mouseY);
-                lastMouseMoveTimeMs = now;
-            }
+            kernel.mouseMoved(mouseX, mouseY);
         }
     }
 
@@ -324,19 +404,5 @@ public class StandaloneWrapper extends PApplet {
      */
     public Kernel getKernel() {
         return kernel;
-    }
-
-    private void logInputBridge(String eventName, long captureNs, long completeNs, long captureMs, int x, int y) {
-        if (kernel == null || kernel.getLogger() == null) {
-            return;
-        }
-        double latencyMs = (completeNs - captureNs) / 1_000_000.0;
-        String message = String.format(
-                "%s latency=%.3fms captured=%tT.%03d coord=(%d,%d)",
-                eventName,
-                latencyMs,
-                captureMs, (int) (captureMs % 1000),
-                x, y);
-        kernel.getLogger().debug("StandaloneInputBridge", message);
     }
 }

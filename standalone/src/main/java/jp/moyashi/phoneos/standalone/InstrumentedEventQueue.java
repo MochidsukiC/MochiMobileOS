@@ -8,18 +8,15 @@ import java.awt.EventQueue;
 
 /**
  * AWTイベントキューをラップして、イベント投入からディスパッチまでの
- * 遅延や処理時間をログに記録し、過剰なマウス移動イベントを破棄するクラス。
+ * 遅延や処理時間をログに記録するクラス。
  */
 class InstrumentedEventQueue extends EventQueue {
 
     private static final long DISPATCH_WARN_THRESHOLD_MS = 5000L; // 5秒
     private static final long ENQUEUE_WARN_THRESHOLD_MS = 2000L;  // 2秒
-    private static final long MOUSE_MOVE_MAX_LATENCY_MS = 100L;   // マウス移動イベントの最大許容遅延
 
     private final Kernel kernel;
     private final LoggerService logger;
-    private long droppedMouseMoveCount = 0;
-    private long lastMouseMoveLogMs = 0;
 
     InstrumentedEventQueue(Kernel kernel) {
         this.kernel = kernel;
@@ -38,28 +35,6 @@ class InstrumentedEventQueue extends EventQueue {
         long enqueueLatencyMs = -1L;
         if (eventWhenMs > 0) {
             enqueueLatencyMs = System.currentTimeMillis() - eventWhenMs;
-        }
-
-        // マウス移動イベントで遅延が大きい場合は破棄
-        if (event instanceof java.awt.event.MouseEvent) {
-            java.awt.event.MouseEvent me = (java.awt.event.MouseEvent) event;
-            if (me.getID() == java.awt.event.MouseEvent.MOUSE_MOVED ||
-                me.getID() == java.awt.event.MouseEvent.MOUSE_DRAGGED) {
-                if (enqueueLatencyMs > MOUSE_MOVE_MAX_LATENCY_MS) {
-                    droppedMouseMoveCount++;
-                    long now = System.currentTimeMillis();
-                    if (now - lastMouseMoveLogMs > 1000) { // 1秒ごとにログ
-                        if (logger != null) {
-                            logger.warn("AWTEventQueue",
-                                "Dropping stale mouse move events: dropped=" + droppedMouseMoveCount +
-                                " latency=" + enqueueLatencyMs + "ms");
-                        }
-                        lastMouseMoveLogMs = now;
-                        droppedMouseMoveCount = 0;
-                    }
-                    return; // イベントを破棄
-                }
-            }
         }
 
         if (enqueueLatencyMs >= ENQUEUE_WARN_THRESHOLD_MS) {
