@@ -556,14 +556,14 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
         if (key == ' ' || keyCode == 32) {
             Screen currentScreen = getCurrentScreen();
 
-            // ロック画面の場合は例外的にスペースキーを転送（解除フィールド表示のため）
-            if (currentScreen != null && currentScreen.getClass().getSimpleName().equals("LockScreen")) {
-                log("Space key on lock screen - forwarding to screen");
+            // テキスト入力フォーカスがある場合はスクリーンに転送
+            if (currentScreen != null && currentScreen.hasFocusedComponent()) {
+                log("Space key with focused component - forwarding to screen");
                 currentScreen.keyPressed(currentPApplet, key, keyCode);
                 return;
             }
 
-            // 通常のアプリケーション画面の場合はホーム画面に戻る
+            // フォーカスがない場合はホーム画面に戻る
             log("Space key detected - returning to home screen");
             navigateToHome();
             return;

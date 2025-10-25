@@ -221,13 +221,23 @@ public class ForgeChromiumProvider implements ChromiumProvider {
     }
 
     @Override
-    public void sendKeyPressed(org.cef.browser.CefBrowser browser, int keyCode, char keyChar) {
+    public void sendKeyPressed(org.cef.browser.CefBrowser browser, int keyCode, char keyChar, boolean ctrlPressed, boolean shiftPressed) {
         try {
             com.cinemamod.mcef.MCEFBrowser mcefBrowser = getMcefBrowser(browser);
             if (mcefBrowser == null) return;
-            mcefBrowser.sendKeyPress(keyCode, 0L, 0);
-            if (keyChar != 0 && keyChar >= 32) {
-                mcefBrowser.sendKeyTyped(keyChar, 0);
+
+            // 修飾子フラグを構築（MCEF APIに合わせる）
+            int modifiers = 0;
+            if (ctrlPressed) {
+                modifiers |= 2;  // CTRL_DOWN_MASK equivalent
+            }
+            if (shiftPressed) {
+                modifiers |= 1;  // SHIFT_DOWN_MASK equivalent
+            }
+
+            mcefBrowser.sendKeyPress(keyCode, 0L, modifiers);
+            if (keyChar != 0 && keyChar >= 32 && !ctrlPressed) {
+                mcefBrowser.sendKeyTyped(keyChar, modifiers);
             }
             mcefBrowser.setFocus(true);
         } catch (Exception e) {
@@ -236,11 +246,21 @@ public class ForgeChromiumProvider implements ChromiumProvider {
     }
 
     @Override
-    public void sendKeyReleased(org.cef.browser.CefBrowser browser, int keyCode, char keyChar) {
+    public void sendKeyReleased(org.cef.browser.CefBrowser browser, int keyCode, char keyChar, boolean ctrlPressed, boolean shiftPressed) {
         try {
             com.cinemamod.mcef.MCEFBrowser mcefBrowser = getMcefBrowser(browser);
             if (mcefBrowser == null) return;
-            mcefBrowser.sendKeyRelease(keyCode, 0L, 0);
+
+            // 修飾子フラグを構築
+            int modifiers = 0;
+            if (ctrlPressed) {
+                modifiers |= 2;  // CTRL_DOWN_MASK equivalent
+            }
+            if (shiftPressed) {
+                modifiers |= 1;  // SHIFT_DOWN_MASK equivalent
+            }
+
+            mcefBrowser.sendKeyRelease(keyCode, 0L, modifiers);
         } catch (Exception e) {
             System.err.println(TAG + " Failed to send key released: " + e.getMessage());
         }

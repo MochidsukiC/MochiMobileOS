@@ -31,7 +31,8 @@
       "Bash(cmd /c \"dir /b /o-d \"\"forge\\run\\logs\"\" 2>nul | head -5\")",
       "Bash(cmd /c \"type standalone\\src\\main\\java\\jp\\moyashi\\phoneos\\standalone\\Standalone.java\")",
       "Bash(gemini:*)",
-      "Bash(cmd /c \"clearBuild.bat && timeout /t 5 /nobreak > nul && gradlew.bat core:compileJava forge:compileJava --no-daemon --console=plain\")"
+      "Bash(cmd /c \"clearBuild.bat && timeout /t 5 /nobreak > nul && gradlew.bat core:compileJava forge:compileJava --no-daemon --console=plain\")",
+      "WebFetch(domain:sourceforge.net)"
     ],
     "deny": [],
     "ask": [],

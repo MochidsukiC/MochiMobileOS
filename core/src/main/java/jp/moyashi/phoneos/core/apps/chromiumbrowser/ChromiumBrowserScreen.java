@@ -519,8 +519,8 @@ public class ChromiumBrowserScreen implements Screen {
                 title = "タブ " + tabId;
             }
             BrowserTab tab = new BrowserTab(tabId, newBrowser, targetUrl, title);
-            // 動画再生時の遅延対策：常に10FPSに制限
-            newBrowser.setFrameRate(10);
+            // P2D GPU描画により高フレームレート対応可能
+            newBrowser.setFrameRate(60);
             tabs.add(tab);
             if (switchTo) {
                 setActiveTabIndex(tabs.size() - 1);
@@ -778,9 +778,42 @@ public class ChromiumBrowserScreen implements Screen {
                 addressText += key;
             }
         } else {
-            // WebViewにキーイベントを送信
+            // キーイベントバイパス: すべてのキーイベントをChromiumブラウザに転送
             ChromiumBrowser active = getActiveBrowser();
             if (active != null) {
+                boolean isCtrlPressed = kernel.isCtrlPressed();
+
+                // デバッグログ出力（主要なキーのみ）
+                if (isCtrlPressed) {
+                    // Ctrl+ショートカット
+                    switch (keyCode) {
+                        case 67:  // C - Copy
+                        case 86:  // V - Paste
+                        case 88:  // X - Cut
+                        case 65:  // A - Select All
+                        case 90:  // Z - Undo
+                        case 89:  // Y - Redo
+                        case 70:  // F - Find
+                        case 82:  // R - Reload
+                            log("Bypassing control key to Chromium: Ctrl+" + (char)keyCode);
+                            break;
+                    }
+                } else {
+                    // 基本的なキー（スペース、バックスペース、エンター）のログ
+                    switch (keyCode) {
+                        case 32:  // Space
+                            log("Bypassing Space to Chromium (keyChar=" + (int)key + ")");
+                            break;
+                        case 8:   // Backspace
+                            log("Bypassing Backspace to Chromium (keyChar=" + (int)key + ")");
+                            break;
+                        case 10:  // Enter
+                            log("Bypassing Enter to Chromium (keyChar=" + (int)key + ")");
+                            break;
+                    }
+                }
+
+                // すべてのキーイベントをブラウザに転送
                 active.sendKeyPressed(keyCode, key);
             }
         }
@@ -794,6 +827,35 @@ public class ChromiumBrowserScreen implements Screen {
         if (!addressBarFocused && active != null) {
             active.sendKeyReleased(keyCode, key);
         }
+    }
+
+    /**
+     * このスクリーンにフォーカスされたテキスト入力コンポーネントがあるかチェック。
+     * スペースキー処理の前にKernelから呼び出される。
+     *
+     * Chromiumブラウザでは、アドレスバーまたはWebView内のテキストフィールドに
+     * フォーカスがある可能性があるため、常にtrueを返す。
+     * これにより、スペースキーがホームボタンとして処理されず、
+     * Chromiumブラウザに正しく転送される。
+     *
+     * @return 常にtrue（Chromiumブラウザがアクティブな時はテキスト入力を優先）
+     */
+    @Override
+    public boolean hasFocusedComponent() {
+        // アドレスバーにフォーカスがある場合
+        if (addressBarFocused) {
+            return true;
+        }
+
+        // Webページ内のテキスト入力フィールドにフォーカスがある場合
+        // CefTextInputHandlerによって検出される
+        ChromiumBrowser activeBrowser = getActiveBrowser();
+        if (activeBrowser != null && activeBrowser.hasTextInputFocus()) {
+            return true;
+        }
+
+        // どちらでもない場合は、スペースキーでホーム画面に戻る
+        return false;
     }
 
     /**

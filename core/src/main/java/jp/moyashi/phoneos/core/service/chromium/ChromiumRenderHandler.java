@@ -33,16 +33,10 @@ public class ChromiumRenderHandler extends CefRenderHandlerAdapter {
     private PImage image;
     private final AtomicBoolean needsUpdate = new AtomicBoolean(false);
     private final Object imageLock = new Object();
-    private static final long PROFILE_INTERVAL_NS = 500_000_000L;
-    private long profileLastLogNs = System.nanoTime();
-    private long profileAccumNs = 0L;
-    private long profileMaxNs = 0L;
-    private long profileCount = 0L;
 
-    // フレームスキップ用（YouTube動画再生時のバッファ詰まりを防止）
+    // フレームスキップ用（過剰なフレーム更新を防止）
     private long lastPaintTimeNs = 0L;
-    private static final long MIN_PAINT_INTERVAL_NS = 100_000_000L; // 100ms = 10FPS（動画再生時の負荷軽減）
-    private long skippedFrames = 0L;
+    private static final long MIN_PAINT_INTERVAL_NS = 16_000_000L; // 16ms = 60FPS（P2D GPU描画対応）
 
     /**
      * ChromiumRenderHandlerを構築する。
@@ -81,15 +75,12 @@ public class ChromiumRenderHandler extends CefRenderHandlerAdapter {
     @Override
     public void onPaint(CefBrowser browser, boolean popup, Rectangle[] dirtyRects,
                         ByteBuffer buffer, int width, int height) {
-        long startNs = System.nanoTime();
-
-        // フレームスキップ：前回から33ms未満の場合はスキップ（30FPS制限）
-        // YouTube動画再生時のバッファ詰まりを防止
-        if (startNs - lastPaintTimeNs < MIN_PAINT_INTERVAL_NS) {
-            skippedFrames++;
+        // フレームスキップ：前回から16ms未満の場合はスキップ（60FPS制限）
+        long now = System.nanoTime();
+        if (now - lastPaintTimeNs < MIN_PAINT_INTERVAL_NS) {
             return; // スキップ
         }
-        lastPaintTimeNs = startNs;
+        lastPaintTimeNs = now;
 
         // サイズチェック
         if (width != this.width || height != this.height) {
@@ -123,28 +114,6 @@ public class ChromiumRenderHandler extends CefRenderHandlerAdapter {
 
             image.updatePixels();
             needsUpdate.set(true);
-        }
-
-        long durationNs = System.nanoTime() - startNs;
-        profileAccumNs += durationNs;
-        profileCount++;
-        if (durationNs > profileMaxNs) {
-            profileMaxNs = durationNs;
-        }
-
-        long now = System.nanoTime();
-        if (now - profileLastLogNs >= PROFILE_INTERVAL_NS && profileCount > 0 && kernel.getLogger() != null) {
-            double avgMs = (double) profileAccumNs / (double) profileCount / 1_000_000.0;
-            double maxMs = (double) profileMaxNs / 1_000_000.0;
-            kernel.getLogger().debug(
-                    "ChromiumRenderHandler",
-                    String.format("profiling: onPaint count=%d avg=%.3fms max=%.3fms skipped=%d",
-                            profileCount, avgMs, maxMs, skippedFrames));
-            profileLastLogNs = now;
-            profileAccumNs = 0L;
-            profileMaxNs = 0L;
-            profileCount = 0L;
-            skippedFrames = 0L;
         }
     }
 

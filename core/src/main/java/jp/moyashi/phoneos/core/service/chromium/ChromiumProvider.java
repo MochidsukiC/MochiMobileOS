@@ -173,8 +173,10 @@ public interface ChromiumProvider {
      * @param browser CefBrowserインスタンス
      * @param keyCode キーコード
      * @param keyChar キャラクター
+     * @param ctrlPressed Ctrlキーが押されているか
+     * @param shiftPressed Shiftキーが押されているか
      */
-    void sendKeyPressed(CefBrowser browser, int keyCode, char keyChar);
+    void sendKeyPressed(CefBrowser browser, int keyCode, char keyChar, boolean ctrlPressed, boolean shiftPressed);
 
     /**
      * キー離しイベントをブラウザに送信する。
@@ -182,6 +184,8 @@ public interface ChromiumProvider {
      * @param browser CefBrowserインスタンス
      * @param keyCode キーコード
      * @param keyChar キャラクター
+     * @param ctrlPressed Ctrlキーが押されているか
+     * @param shiftPressed Shiftキーが押されているか
      */
-    void sendKeyReleased(CefBrowser browser, int keyCode, char keyChar);
+    void sendKeyReleased(CefBrowser browser, int keyCode, char keyChar, boolean ctrlPressed, boolean shiftPressed);
 }
