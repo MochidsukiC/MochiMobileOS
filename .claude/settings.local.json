@@ -32,7 +32,9 @@
       "Bash(cmd /c \"type standalone\\src\\main\\java\\jp\\moyashi\\phoneos\\standalone\\Standalone.java\")",
       "Bash(gemini:*)",
       "Bash(cmd /c \"clearBuild.bat && timeout /t 5 /nobreak > nul && gradlew.bat core:compileJava forge:compileJava --no-daemon --console=plain\")",
-      "WebFetch(domain:sourceforge.net)"
+      "WebFetch(domain:sourceforge.net)",
+      "Bash(cmd /c \"dir /s /b \"\"C:\\Users\\dora2\\IdeaProjects\\MochiMobileOS\\core\\src\\main\\resources\\fonts\"\"\")",
+      "Bash(cmd /c:*)"
     ],
     "deny": [],
     "ask": [],

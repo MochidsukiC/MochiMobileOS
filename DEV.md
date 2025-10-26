@@ -606,6 +606,31 @@ LauncherApp, SettingsApp, CalculatorApp, AppStoreApp (UIのみ), NetworkApp (メ
       - マルチプレイヤー環境でVoiceMemoAppを使用して録音
       - 他のプレイヤーが話した声が録音に含まれることを確認
 6.  **PGraphicsアーキテクチャ移行 (Phase 8 - ✅ 100%完了)**: `core`モジュールのPGraphics統一化が完了。
+7.  **全角文字（日本語）がXマークで表示される問題（✅ 解決済み - 2025-10-26）**:
+    - **症状**: Forgeモジュールで全角文字がすべてXマークで表示される
+    - **根本原因**:
+      1. `Kernel.render()`メソッドでPGraphicsに対して`textFont(japaneseFont)`が呼び出されていなかった
+      2. Forge環境で複数のClassLoaderが使用されており、`getClass().getResourceAsStream()`だけではフォントファイルを読み込めなかった
+      3. **最重要**: `forge/build.gradle`のjar タスクで、coreモジュールのリソースファイル（.ttf等）がJARに含まれていなかった（`include '**/*.class'`のみ指定）
+    - **解決策**:
+      1. `Kernel.render()`で`graphics.textFont(japaneseFont)`を呼び出し（283-285行目）
+      2. `Kernel.loadJapaneseFont()`で複数のClassLoader（Kernelクラス、コンテキスト、システム）を試行するよう修正（1694-1729行目）
+      3. `forge/build.gradle`のjar タスクでリソースファイルを明示的にインクルード（209-214行目）:
+         ```gradle
+         from(project(':core').sourceSets.main.output) {
+             include '**/*.class'
+             include '**/*.ttf'  // フォントファイル
+             include '**/*.otf'
+             include '**/*.png'
+             include '**/*.jpg'
+             include '**/*.json'
+         }
+         ```
+    - **実装ファイル**:
+      - `core/src/main/java/jp/moyashi/phoneos/core/Kernel.java:283-285, 1694-1729`
+      - `forge/build.gradle:207-215`
+    - **ビルド結果**: ✅ BUILD SUCCESSFUL in 55s
+    - **検証結果**: ✅ 日本語が正しく表示されることを確認
     *   **完了済み**:
         - **インターフェース**: IApplication, Screen (完全移行、@Deprecated ブリッジ付き)
         - **画面クラス**: HomeScreen, CalculatorScreen, SettingsScreen, LockScreen, SimpleHomeScreen, AppLibraryScreen, BasicHomeScreen, SafeHomeScreen, AppLibraryScreen_Complete

@@ -200,12 +200,18 @@ minecraft {
 
 // Configure jar
 jar {
-    // Include core module classes in the jar
+    // Include core module classes AND resources in the jar
     // Note: org.cef.* packages are NOT excluded anymore
     // ChromiumProviderパターンにより、coreモジュールはcompileOnlyでjcefmavenを参照
     // Forge環境ではMCEFがorg.cef.* APIを提供し、ForgeChromiumProviderがCefAppを注入する
     from(project(':core').sourceSets.main.output) {
+        // Include both classes and resources (fonts, etc.)
         include '**/*.class'
+        include '**/*.ttf'
+        include '**/*.otf'
+        include '**/*.png'
+        include '**/*.jpg'
+        include '**/*.json'
     }
 
     // Include Processing library for runtime
