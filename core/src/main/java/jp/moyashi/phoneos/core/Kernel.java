@@ -279,6 +279,11 @@ public class Kernel implements GestureListener {
 
             try {
 
+            // 日本語フォントを適用（全角文字表示のため）
+            if (japaneseFont != null) {
+                graphics.textFont(japaneseFont);
+            }
+
             // まず背景を描画（重要：Screenが背景を描画しない場合のために）
             graphics.background(0, 0, 0); // 黒背景
 
@@ -1685,11 +1690,40 @@ public class Kernel implements GestureListener {
             if (logger != null) {
                 logger.debug("Kernel", "リソースからNoto Sans JP TTFファイルを読み込み中...");
             }
-            InputStream fontStream = getClass().getResourceAsStream("/fonts/NotoSansJP-Regular.ttf");
+
+            // 複数のClassLoaderを試してリソースを読み込む（Forge環境対応）
+            InputStream fontStream = null;
+            String fontPath = "/fonts/NotoSansJP-Regular.ttf";
+
+            // 1. KernelクラスのClassLoaderから試す
+            fontStream = getClass().getResourceAsStream(fontPath);
+            if (fontStream != null && logger != null) {
+                logger.debug("Kernel", "Kernelクラスのクラスローダーからフォントを読み込みました");
+            }
+
+            // 2. コンテキストClassLoaderから試す
+            if (fontStream == null) {
+                ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+                if (contextClassLoader != null) {
+                    fontStream = contextClassLoader.getResourceAsStream(fontPath.substring(1)); // 先頭の"/"を除去
+                    if (fontStream != null && logger != null) {
+                        logger.debug("Kernel", "コンテキストクラスローダーからフォントを読み込みました");
+                    }
+                }
+            }
+
+            // 3. システムClassLoaderから試す
+            if (fontStream == null) {
+                fontStream = ClassLoader.getSystemResourceAsStream(fontPath.substring(1)); // 先頭の"/"を除去
+                if (fontStream != null && logger != null) {
+                    logger.debug("Kernel", "システムクラスローダーからフォントを読み込みました");
+                }
+            }
 
             if (fontStream == null) {
                 if (logger != null) {
-                    logger.error("Kernel", "フォントファイルが見つかりません: /fonts/NotoSansJP-Regular.ttf");
+                    logger.error("Kernel", "フォントファイルが見つかりません: " + fontPath);
+                    logger.error("Kernel", "試行したクラスローダー: Kernelクラス、コンテキスト、システム");
                 }
                 return null;
             }
