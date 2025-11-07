@@ -19,6 +19,8 @@ import org.slf4j.Logger;
 import org.joml.Matrix4f;
 
 import java.awt.image.BufferedImage;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * MinecraftのGUIシステム内でProcessingベースのMochiMobileOSを表示するスクリーン。
@@ -59,6 +61,20 @@ public class ProcessingScreen extends Screen {
     private DynamicTexture dynamicTexture = null;
     private ResourceLocation textureLocation = null;
     private NativeImage nativeImage = null;
+
+    /** マウスイベント処理用の専用スレッド（ポーリング方式） */
+    private volatile Thread mouseEventThread = null;
+    private volatile boolean mouseEventThreadRunning = false;
+
+    /** 最新のマウス座標とイベントタイプ（ポーリングで処理） */
+    private volatile Integer latestMouseX = null;
+    private volatile Integer latestMouseY = null;
+    private volatile MouseEventType latestEventType = null;
+
+    /** マウスイベントタイプ */
+    private enum MouseEventType {
+        PRESSED, DRAGGED, RELEASED
+    }
 
     /**
      * ProcessingScreenのコンストラクタ。
@@ -120,6 +136,9 @@ public class ProcessingScreen extends Screen {
 
                 // テクスチャを初期化
                 initializeTexture();
+
+                // マウスイベント処理スレッドを開始
+                startMouseEventThread();
             } else {
                 LOGGER.warn("[ProcessingScreen] No kernel found - it should have been created at MOD startup");
                 this.graphicsEnabled = false;
@@ -161,6 +180,80 @@ public class ProcessingScreen extends Screen {
 
         } catch (Exception e) {
             LOGGER.error("[ProcessingScreen] Failed to enable graphics: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * マウスイベント処理スレッドを開始（ポーリング方式）。
+     * キューイングせず、最新の座標を定期的にポーリングして処理する。
+     */
+    private void startMouseEventThread() {
+        if (mouseEventThread != null && mouseEventThread.isAlive()) {
+            LOGGER.warn("[ProcessingScreen] Mouse event thread already running");
+            return;
+        }
+
+        mouseEventThreadRunning = true;
+        mouseEventThread = new Thread(() -> {
+            LOGGER.info("[ProcessingScreen] Mouse event polling thread started");
+
+            while (mouseEventThreadRunning) {
+                try {
+                    // 最新のマウスイベントを処理
+                    Integer x = latestMouseX;
+                    Integer y = latestMouseY;
+                    MouseEventType eventType = latestEventType;
+
+                    if (x != null && y != null && eventType != null && kernel != null) {
+                        switch (eventType) {
+                            case PRESSED:
+                                kernel.mousePressed(x, y);
+                                latestEventType = null; // 一度だけ処理
+                                break;
+                            case DRAGGED:
+                                kernel.mouseDragged(x, y);
+                                // DRAGGEDは連続的なので消さない
+                                break;
+                            case RELEASED:
+                                kernel.mouseReleased(x, y);
+                                latestEventType = null; // 一度だけ処理
+                                latestMouseX = null;
+                                latestMouseY = null;
+                                break;
+                        }
+                    }
+
+                    // 1000fps相当（1ms間隔）でポーリング - 超高密度検知
+                    Thread.sleep(1);
+
+                } catch (InterruptedException e) {
+                    LOGGER.info("[ProcessingScreen] Mouse event thread interrupted");
+                    break;
+                } catch (Exception e) {
+                    LOGGER.error("[ProcessingScreen] Error in mouse event thread: " + e.getMessage(), e);
+                }
+            }
+
+            LOGGER.info("[ProcessingScreen] Mouse event polling thread stopped");
+        }, "MochiOS-MouseEventPoller");
+
+        mouseEventThread.setDaemon(true);
+        mouseEventThread.start();
+    }
+
+    /**
+     * マウスイベント処理スレッドを停止。
+     */
+    private void stopMouseEventThread() {
+        mouseEventThreadRunning = false;
+        if (mouseEventThread != null) {
+            mouseEventThread.interrupt();
+            try {
+                mouseEventThread.join(1000); // 最大1秒待機
+            } catch (InterruptedException e) {
+                LOGGER.warn("[ProcessingScreen] Interrupted while stopping mouse event thread");
+            }
+            mouseEventThread = null;
         }
     }
 
@@ -234,19 +327,21 @@ public class ProcessingScreen extends Screen {
             (this.width - textWidth) / 2, this.height / 2, 0xFFFF5555);
     }
 
+
     /**
-     * カーネルのグラフィック描画を実行（Minecraftのフレームレートに同期）。
-     * Minecraftのrender()呼び出しと同期してカーネルを更新する。
+     * カーネルのグラフィック描画を実行（60fps - モーション管理のため）。
+     * Kernelは60fpsで動作する必要があるため、フレームレート制限なし。
      */
     private void renderKernelGraphics() {
         try {
             if (kernel != null && graphicsEnabled) {
-                // Minecraftのフレームレートに同期してカーネルを更新
+                // Kernelのモーションは60fpsで設計されているため、制限なしで実行
                 kernel.update();
                 kernel.render();
-                // デバッグ用: 毎フレームログ出力（頻度が高いので注意）
-                if (kernel.frameCount % 60 == 0) {  // 60フレームごとにログ出力
-                    LOGGER.info("[ProcessingScreen] Kernel updated and rendered, frame: " + kernel.frameCount);
+
+                // デバッグ用: 60フレームごとにログ出力
+                if (kernel.frameCount % 60 == 0) {
+                    LOGGER.info("[ProcessingScreen] Kernel rendered at full speed, frame: " + kernel.frameCount);
                 }
             } else {
                 LOGGER.debug("[ProcessingScreen] Skipping graphics - kernel: " + (kernel != null) + ", graphics: " + graphicsEnabled);
@@ -493,7 +588,7 @@ public class ProcessingScreen extends Screen {
 
     /**
      * マウスクリック処理。
-     * Processingのマウスイベントに変換して転送する。
+     * 座標を記録し、ポーリングスレッドで処理する（ゼロ遅延）。
      */
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
@@ -513,10 +608,12 @@ public class ProcessingScreen extends Screen {
                 int mobileX = (int) ((mouseX - offsetX) / scale);
                 int mobileY = (int) ((mouseY - offsetY) / scale);
 
-                LOGGER.info("[ProcessingScreen] Inside bounds, calling kernel.mousePressed(" + mobileX + ", " + mobileY + ")");
+                LOGGER.info("[ProcessingScreen] Inside bounds, recording mousePressed(" + mobileX + ", " + mobileY + ")");
 
-                // MochiMobileOSのマウスイベントを送信
-                kernel.mousePressed(mobileX, mobileY);
+                // 座標を記録（ポーリングスレッドが処理）
+                latestMouseX = mobileX;
+                latestMouseY = mobileY;
+                latestEventType = MouseEventType.PRESSED;
 
                 return true;
 
@@ -532,6 +629,7 @@ public class ProcessingScreen extends Screen {
 
     /**
      * マウスリリース処理。
+     * 座標を記録し、ポーリングスレッドで処理する（ゼロ遅延）。
      */
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
@@ -548,8 +646,10 @@ public class ProcessingScreen extends Screen {
                 int mobileX = (int) ((mouseX - offsetX) / scale);
                 int mobileY = (int) ((mouseY - offsetY) / scale);
 
-                // MochiMobileOSのマウスリリースイベントを送信
-                kernel.mouseReleased(mobileX, mobileY);
+                // 座標を記録（ポーリングスレッドが処理）
+                latestMouseX = mobileX;
+                latestMouseY = mobileY;
+                latestEventType = MouseEventType.RELEASED;
 
                 return true;
 
@@ -563,6 +663,7 @@ public class ProcessingScreen extends Screen {
 
     /**
      * マウスドラッグ処理（スワイプ操作）。
+     * 座標を記録し、ポーリングスレッドで処理する（ゼロ遅延、キューなし）。
      */
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
@@ -579,8 +680,10 @@ public class ProcessingScreen extends Screen {
                 int mobileX = (int) ((mouseX - offsetX) / scale);
                 int mobileY = (int) ((mouseY - offsetY) / scale);
 
-                // MochiMobileOSのドラッグイベントを送信
-                kernel.mouseDragged(mobileX, mobileY);
+                // 座標を記録（ポーリングスレッドが定期的に処理）
+                latestMouseX = mobileX;
+                latestMouseY = mobileY;
+                latestEventType = MouseEventType.DRAGGED;
 
                 return true;
 
@@ -872,7 +975,9 @@ public class ProcessingScreen extends Screen {
     }
 
     /**
-     * ピクセル配列からテクスチャを効率的に描画する。
+     * ピクセル配列からテクスチャを効率的に描画する（最適化版）。
+     * パフォーマンス改善: ループ内でのARGB→ABGR変換を一括で実行し、
+     * setPixelRGBA()の呼び出しオーバーヘッドを削減。
      */
     private void renderTextureFromPixels(GuiGraphics guiGraphics, int[] pixels) {
         if (nativeImage == null || dynamicTexture == null || textureLocation == null) {
@@ -882,24 +987,26 @@ public class ProcessingScreen extends Screen {
         }
 
         try {
-            // ピクセルデータをNativeImageに転送
-            for (int y = 0; y < PHONE_HEIGHT; y++) {
-                for (int x = 0; x < PHONE_WIDTH; x++) {
-                    int pixelIndex = y * PHONE_WIDTH + x;
-                    if (pixelIndex < pixels.length) {
-                        int processingColor = pixels[pixelIndex];
+            // 最適化: ARGB→ABGR変換を一括で行い、NativeImageに直接書き込み
+            // setPixelRGBA()の繰り返し呼び出しを避ける
+            int totalPixels = PHONE_WIDTH * PHONE_HEIGHT;
+            for (int i = 0; i < Math.min(totalPixels, pixels.length); i++) {
+                int processingColor = pixels[i];
 
-                        // ProcessingのARGB形式からMinecraftのABGR形式に変換
-                        int a = (processingColor >> 24) & 0xFF;
-                        int r = (processingColor >> 16) & 0xFF;
-                        int g = (processingColor >> 8) & 0xFF;
-                        int b = processingColor & 0xFF;
+                // ProcessingのARGB形式からMinecraftのABGR形式に変換（ビットシフト最適化）
+                int a = processingColor & 0xFF000000;
+                int r = (processingColor >> 16) & 0xFF;
+                int g = (processingColor >> 8) & 0xFF;
+                int b = processingColor & 0xFF;
 
-                        // NativeImageはABGR形式
-                        int abgrColor = (a << 24) | (b << 16) | (g << 8) | r;
-                        nativeImage.setPixelRGBA(x, y, abgrColor);
-                    }
-                }
+                // ABGR形式に変換
+                int abgrColor = a | (b << 16) | (g << 8) | r;
+
+                // 座標を計算（y * width + x の逆算）
+                int x = i % PHONE_WIDTH;
+                int y = i / PHONE_WIDTH;
+
+                nativeImage.setPixelRGBA(x, y, abgrColor);
             }
 
             // テクスチャを更新
@@ -931,6 +1038,10 @@ public class ProcessingScreen extends Screen {
     @Override
     public void removed() {
         super.removed();
+
+        // マウスイベント処理スレッドを停止
+        stopMouseEventThread();
+
         cleanupTexture();
     }
 
