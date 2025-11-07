@@ -34,7 +34,8 @@
       "Bash(cmd /c \"clearBuild.bat && timeout /t 5 /nobreak > nul && gradlew.bat core:compileJava forge:compileJava --no-daemon --console=plain\")",
       "WebFetch(domain:sourceforge.net)",
       "Bash(cmd /c \"dir /s /b \"\"C:\\Users\\dora2\\IdeaProjects\\MochiMobileOS\\core\\src\\main\\resources\\fonts\"\"\")",
-      "Bash(cmd /c:*)"
+      "Bash(cmd /c:*)",
+      "Bash(dir:*)"
     ],
     "deny": [],
     "ask": [],

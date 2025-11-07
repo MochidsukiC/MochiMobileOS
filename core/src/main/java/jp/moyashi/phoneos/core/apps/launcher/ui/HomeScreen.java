@@ -441,7 +441,8 @@ public class HomeScreen implements Screen, GestureListener {
     public void mouseDragged(PGraphics g, int mouseX, int mouseY) {
         // GestureManagerシステムが有効な場合は何もしない
         // 実際のドラッグ処理は onGesture -> handleDragMove で実行される
-        System.out.println("HomeScreen: mouseDragged called - delegating to GestureManager");
+        // パフォーマンス改善: 頻繁に呼ばれるのでログ出力を抑制
+        // System.out.println("HomeScreen: mouseDragged called - delegating to GestureManager");
     }
 
     /**
@@ -2007,7 +2008,10 @@ public class HomeScreen implements Screen, GestureListener {
     
     @Override
     public boolean onGesture(GestureEvent event) {
-        System.out.println("HomeScreen: Received gesture: " + event);
+        // パフォーマンス改善: DRAG_MOVEイベントは非常に頻繁なのでログを抑制
+        if (event.getType() != GestureType.DRAG_MOVE) {
+            System.out.println("HomeScreen: Received gesture: " + event);
+        }
         
         switch (event.getType()) {
             case TAP:
@@ -2366,7 +2370,8 @@ public class HomeScreen implements Screen, GestureListener {
             dragY = constrainDragPosition(dragX, dragY)[1];
 
             draggedShortcut.setDragPosition(dragX, dragY);
-            System.out.println("HomeScreen: Updating icon drag position to (" + dragX + ", " + dragY + ")");
+            // パフォーマンス改善: 過剰なコンソール出力を抑制
+            // System.out.println("HomeScreen: Updating icon drag position to (" + dragX + ", " + dragY + ")");
 
             // 画面端での自動ページスライドを実装
             handleEdgeAutoSlide(event.getCurrentX(), event.getCurrentY());

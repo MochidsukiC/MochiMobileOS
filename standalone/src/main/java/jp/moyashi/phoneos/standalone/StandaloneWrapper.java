@@ -23,6 +23,9 @@ public class StandaloneWrapper extends PApplet {
     /** MochiMobileOSのカーネルインスタンス */
     private Kernel kernel;
 
+    /** IME入力レイヤー（P2DレンダラーでIME入力を可能にする） */
+    private IMEInputLayer imeInputLayer;
+
     /** 画面幅 */
     private static final int SCREEN_WIDTH = 400;
 
@@ -195,6 +198,29 @@ public class StandaloneWrapper extends PApplet {
             System.err.println("StandaloneWrapper: Failed to install InstrumentedEventQueue: " + e.getMessage());
         }
 
+        // IME入力レイヤーを初期化（P2DレンダラーでIME入力を可能にする）
+        try {
+            // ProcessingウィンドウのAWTコンポーネントを取得
+            java.awt.Frame[] frames = java.awt.Frame.getFrames();
+            java.awt.Frame processingFrame = null;
+            for (java.awt.Frame frame : frames) {
+                if (frame.isVisible() && frame.getWidth() == SCREEN_WIDTH && frame.getHeight() == SCREEN_HEIGHT) {
+                    processingFrame = frame;
+                    break;
+                }
+            }
+
+            if (processingFrame != null) {
+                imeInputLayer = new IMEInputLayer(kernel, processingFrame);
+                System.out.println("StandaloneWrapper: IMEInputLayer initialized");
+            } else {
+                System.err.println("StandaloneWrapper: Could not find Processing Frame for IMEInputLayer");
+            }
+        } catch (Exception e) {
+            System.err.println("StandaloneWrapper: Failed to initialize IMEInputLayer: " + e.getMessage());
+            e.printStackTrace();
+        }
+
         System.out.println("StandaloneWrapper: Kernel初期化完了");
     }
 
@@ -229,6 +255,21 @@ public class StandaloneWrapper extends PApplet {
                 fill(255);
                 textAlign(CENTER, CENTER);
                 text("Kernel Graphics Not Available", width/2, height/2);
+            }
+
+            // IME入力レイヤーの表示/非表示を制御
+            if (imeInputLayer != null && kernel.getScreenManager() != null) {
+                // 現在のScreenがテキスト入力フォーカスを持っている場合、IME入力レイヤーを表示
+                jp.moyashi.phoneos.core.ui.Screen currentScreen = kernel.getScreenManager().getCurrentScreen();
+                boolean needsIME = currentScreen != null && currentScreen.hasFocusedComponent();
+
+                if (needsIME && !imeInputLayer.isVisible()) {
+                    // IME入力レイヤーを画面下部に表示
+                    imeInputLayer.show(10, SCREEN_HEIGHT - 50, SCREEN_WIDTH - 20, 30);
+                } else if (!needsIME && imeInputLayer.isVisible()) {
+                    // フォーカスがなくなったら非表示
+                    imeInputLayer.hide();
+                }
             }
 
         } catch (Exception e) {

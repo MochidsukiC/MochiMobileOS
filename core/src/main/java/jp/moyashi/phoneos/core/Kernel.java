@@ -158,6 +158,10 @@ public class Kernel implements GestureListener {
     /** レンダリング同期用ロック */
     private final Object renderLock = new Object();
 
+    /** ピクセルキャッシュ（パフォーマンス改善） */
+    private int[] pixelsCache = null;
+    private volatile boolean pixelsCacheDirty = true;
+
     /** ワールドID（データ分離用） */
     private String worldId = null;
 
@@ -273,6 +277,9 @@ public class Kernel implements GestureListener {
                 // これにより、GPU処理が大幅に削減される
                 return;
             }
+
+            // ピクセルキャッシュを無効化（新しい描画が行われる）
+            pixelsCacheDirty = true;
 
             // PGraphicsバッファへの描画開始
             graphics.beginDraw();
@@ -758,18 +765,41 @@ public class Kernel implements GestureListener {
     }
 
     /**
-     * PGraphicsバッファのピクセル配列を取得（独立API）。
+     * PGraphicsバッファのピクセル配列を取得（独立API・キャッシュ付き）。
      * forge等でピクセルレベルでの処理が必要な場合に使用。
+     * パフォーマンス改善: キャッシュを使用してロック競合とコピーコストを削減。
      *
      * @return ピクセル配列
      */
     public int[] getPixels() {
+        // キャッシュが有効な場合は即座に返す（ロック不要）
+        if (!pixelsCacheDirty && pixelsCache != null) {
+            return pixelsCache;
+        }
+
+        // キャッシュが無効な場合のみロックを取得
         synchronized (renderLock) {
             if (graphics == null) {
                 return new int[width * height];
             }
+
+            // ダブルチェック: 他のスレッドが既に更新した可能性
+            if (!pixelsCacheDirty && pixelsCache != null) {
+                return pixelsCache;
+            }
+
             graphics.loadPixels();
-            return graphics.pixels.clone();
+
+            // キャッシュ配列を初期化または再利用
+            if (pixelsCache == null || pixelsCache.length != graphics.pixels.length) {
+                pixelsCache = new int[graphics.pixels.length];
+            }
+
+            // 配列をコピー（clone()より高速なSystem.arraycopy()を使用）
+            System.arraycopy(graphics.pixels, 0, pixelsCache, 0, graphics.pixels.length);
+            pixelsCacheDirty = false;
+
+            return pixelsCache;
         }
     }
 

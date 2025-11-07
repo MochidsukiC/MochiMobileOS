@@ -35,6 +35,10 @@ public class GestureManager {
     /** ドラッグ状態フラグ */
     private boolean isDragging;
 
+    /** ドラッグイベントスロットリング用（1000fps相当 = 1ms間隔） - 超高密度検知 */
+    private static final long DRAG_EVENT_INTERVAL_NS = 1_000_000L; // 1ms
+    private long lastDragEventTime = 0;
+
     /** レイテンシ計測しきい値（ログI/O負荷軽減のため高めに設定） */
     private static final long STAGE_INFO_THRESHOLD_NS = 10_000_000L; // 10ms
     private static final long STAGE_WARN_THRESHOLD_NS = 20_000_000L; // 20ms
@@ -139,7 +143,8 @@ public class GestureManager {
         currentY = y;
 
         int dragDistance = (int) Math.sqrt(Math.pow(x - startX, 2) + Math.pow(y - startY, 2));
-        debugVerbose("Mouse dragged to (" + x + ", " + y + "), distance: " + dragDistance);
+        // 過剰なログ出力を抑制（パフォーマンス改善）
+        // debugVerbose("Mouse dragged to (" + x + ", " + y + "), distance: " + dragDistance);
 
         if (!isDragging && dragDistance >= DRAG_THRESHOLD) {
             // ドラッグ開始
@@ -148,10 +153,16 @@ public class GestureManager {
 
             GestureEvent dragStartEvent = new GestureEvent(GestureType.DRAG_START, startX, startY, x, y, startTime, System.currentTimeMillis());
             dispatchGestureEvent(dragStartEvent);
+            lastDragEventTime = stageStart; // スロットリング用タイムスタンプ更新
         } else if (isDragging) {
-            // ドラッグ中
-            GestureEvent dragMoveEvent = new GestureEvent(GestureType.DRAG_MOVE, startX, startY, x, y, startTime, System.currentTimeMillis());
-            dispatchGestureEvent(dragMoveEvent);
+            // ドラッグ中 - イベントスロットリング（60fps相当）
+            // 前回のイベントから16ms以上経過した場合のみDRAG_MOVEイベントを発火
+            if (stageStart - lastDragEventTime >= DRAG_EVENT_INTERVAL_NS) {
+                GestureEvent dragMoveEvent = new GestureEvent(GestureType.DRAG_MOVE, startX, startY, x, y, startTime, System.currentTimeMillis());
+                dispatchGestureEvent(dragMoveEvent);
+                lastDragEventTime = stageStart;
+            }
+            // スロットリングによりイベントが間引かれても、座標は常に最新に保つ
         }
 
         logStage("mouseDragged", "dispatch", stageStart, System.nanoTime(), x, y);
