@@ -45,10 +45,18 @@ public class Switch extends BaseComponent implements Clickable {
         super(x, y, 200, 30);
         this.label = label;
         this.on = false;
-        this.onColor = 0xFF4A90E2;
-        this.offColor = 0xFF999999;
-        this.knobColor = 0xFFFFFFFF;
-        this.labelColor = 0xFF000000;
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        if (theme != null) {
+            this.onColor = theme.colorPrimary();
+            this.offColor = 0xFF999999;
+            this.knobColor = 0xFFFFFFFF;
+            this.labelColor = theme.colorOnSurface();
+        } else {
+            this.onColor = 0xFF4A90E2;
+            this.offColor = 0xFF999999;
+            this.knobColor = 0xFFFFFFFF;
+            this.labelColor = 0xFF000000;
+        }
     }
 
     /**
@@ -70,6 +78,13 @@ public class Switch extends BaseComponent implements Clickable {
         if (!visible) return;
 
         g.pushStyle();
+
+        // テーマを毎フレーム同期（動的切替対応）
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        if (theme != null) {
+            this.onColor = theme.colorPrimary();
+            this.labelColor = theme.colorOnSurface();
+        }
 
         // アニメーション更新
         updateAnimation();

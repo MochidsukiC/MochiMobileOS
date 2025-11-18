@@ -57,15 +57,26 @@ public class Label extends BaseComponent {
 
         g.pushStyle();
 
+        // テーマ反映（未指定時の既定色/サイズ）
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        int useTextColor = textColor;
+        float useTextSize = textSize;
+        if (theme != null) {
+            // 既定テキスト色に onSurface を採用
+            if (useTextColor == 0xFF000000) {
+                useTextColor = theme.colorOnSurface();
+            }
+        }
+
         // フォント設定
         if (font != null) {
             g.textFont(font);
         }
 
         // テキスト設定
-        g.fill(enabled ? textColor : 0xFF999999);
+        g.fill(enabled ? useTextColor : 0xFF999999);
         g.textAlign(horizontalAlign, verticalAlign);
-        g.textSize(textSize);
+        g.textSize(useTextSize);
 
         // 描画位置の計算
         float drawX = x;

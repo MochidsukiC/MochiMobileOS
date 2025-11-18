@@ -41,9 +41,16 @@ public class Checkbox extends BaseComponent implements Clickable {
         super(x, y, 200, 25);
         this.label = label;
         this.checked = false;
-        this.boxColor = 0xFF666666;
-        this.checkedColor = 0xFF4A90E2;
-        this.labelColor = 0xFF000000;
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        if (theme != null) {
+            this.boxColor = theme.colorBorder();
+            this.checkedColor = theme.colorPrimary();
+            this.labelColor = theme.colorOnSurface();
+        } else {
+            this.boxColor = 0xFF666666;
+            this.checkedColor = 0xFF4A90E2;
+            this.labelColor = 0xFF000000;
+        }
         this.boxSize = 18;
     }
 
@@ -66,6 +73,14 @@ public class Checkbox extends BaseComponent implements Clickable {
         if (!visible) return;
 
         g.pushStyle();
+
+        // テーマ同期
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        if (theme != null) {
+            this.labelColor = theme.colorOnSurface();
+            this.boxColor = theme.colorBorder();
+            this.checkedColor = theme.colorPrimary();
+        }
 
         // アニメーション更新
         updateAnimation();

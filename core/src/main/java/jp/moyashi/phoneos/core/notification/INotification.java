@@ -1,6 +1,7 @@
 package jp.moyashi.phoneos.core.notification;
 
 import processing.core.PApplet;
+import processing.core.PGraphics;
 
 /**
  * 通知アイテムのインターフェース。
@@ -67,15 +68,29 @@ public interface INotification {
     int getPriority();
     
     /**
-     * 通知を描画する。
-     * 
+     * 通知を描画する（PApplet版）。
+     *
      * @param p Processing描画コンテキスト
      * @param x 描画開始X座標
      * @param y 描画開始Y座標
      * @param width 描画幅
      * @param height 描画高さ
+     * @deprecated PGraphics版のdrawメソッドを使用してください
      */
+    @Deprecated
     void draw(PApplet p, float x, float y, float width, float height);
+
+    /**
+     * 通知を描画する（PGraphics版）。
+     * PGraphics統一アーキテクチャで使用する。
+     *
+     * @param g Processing描画コンテキスト
+     * @param x 描画開始X座標
+     * @param y 描画開始Y座標
+     * @param width 描画幅
+     * @param height 描画高さ
+     */
+    void draw(PGraphics g, float x, float y, float width, float height);
     
     /**
      * 通知がクリックされた時の処理。

@@ -35,7 +35,12 @@
       "WebFetch(domain:sourceforge.net)",
       "Bash(cmd /c \"dir /s /b \"\"C:\\Users\\dora2\\IdeaProjects\\MochiMobileOS\\core\\src\\main\\resources\\fonts\"\"\")",
       "Bash(cmd /c:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(tee:*)",
+      "Bash(python:*)",
+      "Bash(timeout /t 5 /nobreak)",
+      "Bash(timeout /t 2 /nobreak)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": [],

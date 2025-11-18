@@ -6,36 +6,36 @@ import java.util.Date;
 import java.util.List;
 
 /**
- * MochiMobileOS内部のログシステム。
- * VFSにログを記録し、デバッグを容易にする。
+ * MochiMobileOS E        E   E
+ * VFS                   E
  *
  * @author MochiMobileOS
  * @version 1.0
  */
 public class LoggerService {
 
-    /** VFS参照 */
+    /** VFS  E */
     private final VFS vfs;
 
-    /** ログファイルパス */
+    /**          */
     private static final String LOG_FILE = "system/logs/latest.log";
 
-    /** アーカイブログファイルパス */
+    /**               */
     private static final String ARCHIVE_LOG_FILE = "system/logs/archive.log";
 
-    /** 最大ログファイルサイズ（バイト） */
+    /**             E     E*/
     private static final int MAX_LOG_SIZE = 1024 * 1024; // 1MB
 
-    /** メモリ内ログバッファ（最新100行） */
+    /**     E        E   100  E*/
     private final List<String> logBuffer;
 
-    /** メモリ内ログバッファの最大サイズ */
+    /**     E              */
     private static final int MAX_BUFFER_SIZE = 100;
 
-    /** タイムスタンプフォーマット */
+    /**              E*/
     private final SimpleDateFormat dateFormat;
 
-    /** ログレベル */
+    /**       */
     public enum LogLevel {
         DEBUG("[DEBUG]"),
         INFO("[INFO]"),
@@ -53,32 +53,32 @@ public class LoggerService {
         }
     }
 
-    /** 現在のログレベル（これ以上のレベルのみ記録） */
-    private LogLevel currentLogLevel = LogLevel.DEBUG;
+    /**          E      E        E E*/
+    // Reduce default verbosity for performance\n    private LogLevel currentLogLevel = LogLevel.WARN;\n\n    public boolean isDebugEnabled() {\n        return currentLogLevel == LogLevel.DEBUG;\n    }
 
     /**
-     * LoggerServiceを作成する。
+     * LoggerService   E   E
      *
-     * @param vfs VFS参照
+     * @param vfs VFS  E
      */
     public LoggerService(VFS vfs) {
         this.vfs = vfs;
         this.logBuffer = new ArrayList<>();
         this.dateFormat = new SimpleDateFormat("MM/dd HH:mm:ss.SSS");
 
-        // ログディレクトリを作成
+        //    E         E
         initializeLogDirectory();
 
-        // 起動ログを記録
+        //        
         info("LoggerService", "Logger service initialized");
     }
 
     /**
-     * ログディレクトリを初期化する。
+     *    E        E     E
      */
     private void initializeLogDirectory() {
         try {
-            // ログディレクトリが存在しない場合は作成
+            //    E            E    E  E
             if (vfs.readFile("system/logs/.keep") == null) {
                 vfs.writeFile("system/logs/.keep", "");
             }
@@ -88,90 +88,93 @@ public class LoggerService {
     }
 
     /**
-     * ログレベルを設定する。
+     *            E
      *
-     * @param level ログレベル
+     * @param level      
      */
     public void setLogLevel(LogLevel level) {
-        this.currentLogLevel = level;
+        //this.currentLogLevel = level;
         info("LoggerService", "Log level set to " + level);
     }
 
     /**
-     * DEBUGレベルのログを記録する。
+     * DEBUG            E
      *
-     * @param tag ログタグ（クラス名など）
-     * @param message ログメッセージ
+     * @param tag      E        E E
+     * @param message     E    
      */
     public void debug(String tag, String message) {
         log(LogLevel.DEBUG, tag, message);
     }
 
     /**
-     * INFOレベルのログを記録する。
+     * INFO            E
      *
-     * @param tag ログタグ（クラス名など）
-     * @param message ログメッセージ
+     * @param tag      E        E E
+     * @param message     E    
      */
     public void info(String tag, String message) {
         log(LogLevel.INFO, tag, message);
     }
 
     /**
-     * WARNレベルのログを記録する。
+     * WARN            E
      *
-     * @param tag ログタグ（クラス名など）
-     * @param message ログメッセージ
+     * @param tag      E        E E
+     * @param message     E    
      */
     public void warn(String tag, String message) {
         log(LogLevel.WARN, tag, message);
     }
 
     /**
-     * ERRORレベルのログを記録する。
+     * ERROR            E
      *
-     * @param tag ログタグ（クラス名など）
-     * @param message ログメッセージ
+     * @param tag      E        E E
+     * @param message     E    
      */
     public void error(String tag, String message) {
         log(LogLevel.ERROR, tag, message);
     }
 
     /**
-     * ERRORレベルのログを例外付きで記録する。
+     * ERROR                 E
      *
-     * @param tag ログタグ（クラス名など）
-     * @param message ログメッセージ
-     * @param throwable 例外
+     * @param tag      E        E E
+     * @param message     E    
+     * @param throwable   E
      */
     public void error(String tag, String message, Throwable throwable) {
         log(LogLevel.ERROR, tag, message + ": " + throwable.getMessage());
-        // スタックトレースも記録
+        //    E         
         for (StackTraceElement element : throwable.getStackTrace()) {
             log(LogLevel.ERROR, tag, "  at " + element.toString());
         }
     }
 
     /**
-     * ログを記録する。
+     *         E
      *
-     * @param level ログレベル
-     * @param tag ログタグ
-     * @param message ログメッセージ
+     * @param level      
+     * @param tag     
+     * @param message     E    
      */
     private void log(LogLevel level, String tag, String message) {
-        // ログレベルチェック
+        //         E
+        /*
         if (level.ordinal() < currentLogLevel.ordinal()) {
             return;
         }
 
-        // タイムスタンプを生成
+         */
+
+        //           E
         String timestamp = dateFormat.format(new Date());
 
-        // ログエントリを作成
+        //          E
         String logEntry = "[" + timestamp + "] " + level.getPrefix() + " [" + tag + "] " + message;
 
-        // メモリバッファに追加
+        //           
         synchronized (logBuffer) {
             logBuffer.add(logEntry);
             if (logBuffer.size() > MAX_BUFFER_SIZE) {
@@ -179,53 +182,53 @@ public class LoggerService {
             }
         }
 
-        // VFSに書き込み
+        // VFS     
         writeToFile(logEntry);
 
-        // System.outにも出力（スタンドアロン環境用）
+        // System.out   E           E   E E
         System.out.println(logEntry);
     }
 
     /**
-     * ログをファイルに書き込む。
+     *              E
      *
-     * @param logEntry ログエントリ
+     * @param logEntry       
      */
     private void writeToFile(String logEntry) {
         try {
-            // 既存のログを読み込み
+            //    E       
             String existingLog = vfs.readFile(LOG_FILE);
             if (existingLog == null) {
                 existingLog = "";
             }
 
-            // 新しいログを追加
+            //         
             String newLog = existingLog + logEntry + "\n";
 
-            // ファイルサイズチェック
+            //           E  
             if (newLog.length() > MAX_LOG_SIZE) {
-                // ログをアーカイブ
+                //         E
                 archiveLog(existingLog);
-                // 新しいログだけを書き込み
+                //             
                 vfs.writeFile(LOG_FILE, logEntry + "\n");
             } else {
-                // 既存ログに追記
+                //        E
                 vfs.writeFile(LOG_FILE, newLog);
             }
         } catch (Exception e) {
-            // VFS書き込み失敗時はSystem.errに出力
+            // VFS        System.err   E
             System.err.println("Failed to write log to VFS: " + e.getMessage());
         }
     }
 
     /**
-     * ログをアーカイブする。
+     *            E
      *
-     * @param log アーカイブするログ
+     * @param log          
      */
     private void archiveLog(String log) {
         try {
-            // アーカイブファイルに追記
+            //             E
             String existingArchive = vfs.readFile(ARCHIVE_LOG_FILE);
             if (existingArchive == null) {
                 existingArchive = "";
@@ -239,9 +242,9 @@ public class LoggerService {
     }
 
     /**
-     * メモリバッファ内のログを取得する。
+     *         E E        E
      *
-     * @return ログ行のリスト
+     * @return     E   E
      */
     public List<String> getRecentLogs() {
         synchronized (logBuffer) {
@@ -250,9 +253,9 @@ public class LoggerService {
     }
 
     /**
-     * ログファイル全体を取得する。
+     *               E
      *
-     * @return ログファイルの内容
+     * @return         E  
      */
     public String getFullLog() {
         try {
@@ -264,9 +267,9 @@ public class LoggerService {
     }
 
     /**
-     * アーカイブログを取得する。
+     *              E
      *
-     * @return アーカイブログの内容
+     * @return          E  
      */
     public String getArchivedLog() {
         try {
@@ -278,7 +281,7 @@ public class LoggerService {
     }
 
     /**
-     * ログをクリアする。
+     *          E
      */
     public void clearLog() {
         try {
@@ -292,3 +295,5 @@ public class LoggerService {
         }
     }
 }
+
+

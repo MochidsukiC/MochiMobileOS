@@ -30,7 +30,8 @@ public class BasicHomeScreen implements Screen {
     
     // Colors
     private final int backgroundColor = 0x1E1E1E;
-    private final int textColor = 0xFFFFFF;
+    // Use theme onSurface when available
+    private int textColor = 0xFFFFFFFF;
     private final int accentColor = 0x4A90E2;
     
     public BasicHomeScreen(Kernel kernel) {
@@ -137,7 +138,7 @@ public class BasicHomeScreen implements Screen {
     private void drawAppGrid(PGraphics g) {
         if (apps.isEmpty()) {
             // No apps message
-            g.fill(textColor, 150);
+            { int c=textColor; g.fill((c>>16)&0xFF, (c>>8)&0xFF, c&0xFF, 150); }
             g.textAlign(g.CENTER, g.CENTER);
             g.textSize(16);
             g.text("No apps available", g.width/2, g.height/2);
@@ -176,14 +177,16 @@ public class BasicHomeScreen implements Screen {
             g.rect(x + 12, y + 12, ICON_SIZE - 24, ICON_SIZE - 24, 8);
 
             // App initial (white text)
-            g.fill(255, 255, 255); // White
+            var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+            int onSurface = theme != null ? theme.colorOnSurface() : 0xFF111111;
+            { int c=onSurface; g.fill((c>>16)&0xFF, (c>>8)&0xFF, c&0xFF); }
             g.textAlign(g.CENTER, g.CENTER);
             g.textSize(18);
             String initial = app.getName().substring(0, 1).toUpperCase();
             g.text(initial, x + ICON_SIZE/2, y + ICON_SIZE/2 - 2);
 
             // App name (white text)
-            g.fill(255, 255, 255); // White
+            { int c=onSurface; g.fill((c>>16)&0xFF, (c>>8)&0xFF, c&0xFF); }
             g.textSize(10);
             g.textAlign(g.CENTER, g.TOP);
             String name = app.getName();
@@ -216,7 +219,7 @@ public class BasicHomeScreen implements Screen {
         g.rect(0, navY, g.width, 80);
 
         // App Library hint
-        g.fill(textColor, 150);
+        { int c=textColor; g.fill((c>>16)&0xFF, (c>>8)&0xFF, c&0xFF, 150); }
         g.textAlign(g.CENTER, g.CENTER);
         g.textSize(12);
         g.text("Tap here for App Library", g.width/2, navY + 25);

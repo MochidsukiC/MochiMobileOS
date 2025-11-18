@@ -22,7 +22,7 @@ public class ScreenTransition {
     }
     
     /** Animation duration in milliseconds */
-    private static final long ANIMATION_DURATION = 300; // 300ms like iOS
+    private long animationDurationMs = 300; // default 300ms like iOS
     
     /** Current animation state */
     private AnimationState currentState;
@@ -151,10 +151,11 @@ public class ScreenTransition {
         long elapsed = currentTime - animationStartTime;
         
         // Calculate linear progress
-        float linearProgress = Math.min((float) elapsed / ANIMATION_DURATION, 1.0f);
+        float linearProgress = Math.min((float) elapsed / Math.max(1, animationDurationMs), 1.0f);
         
         // Apply easing function (ease-out-quart for iOS-like feel)
-        this.progress = easeOutQuart(linearProgress);
+        // Use cubic ease-out for consistency
+        this.progress = 1.0f - (float) Math.pow(1.0f - linearProgress, 3);
         
         // Debug logging
         if (elapsed % 50 == 0 || linearProgress >= 1.0f) { // Log every ~50ms or at completion
@@ -163,7 +164,7 @@ public class ScreenTransition {
         
         // Check if animation is complete
         if (linearProgress >= 1.0f) {
-            System.out.println("ScreenTransition: Animation completing - elapsed=" + elapsed + "ms, duration=" + ANIMATION_DURATION + "ms");
+            System.out.println("ScreenTransition: Animation completing - elapsed=" + elapsed + "ms, duration=" + animationDurationMs + "ms");
             completeAnimation();
         }
     }
@@ -314,9 +315,8 @@ public class ScreenTransition {
      * @param t Linear progress (0.0 to 1.0)
      * @return Eased progress (0.0 to 1.0)
      */
-    private float easeOutQuart(float t) {
-        return 1.0f - (float) Math.pow(1.0f - t, 4);
-    }
+    // kept for potential future use
+    private float easeOutQuart(float t) { return 1.0f - (float) Math.pow(1.0f - t, 4); }
     
     /**
      * Checks if an animation is currently playing.
@@ -383,5 +383,12 @@ public class ScreenTransition {
      */
     public void setAnimationCallback(AnimationCallback callback) {
         this.animationCallback = callback;
+    }
+
+    /**
+     * Sets animation duration in milliseconds.
+     */
+    public void setAnimationDurationMs(long durationMs) {
+        this.animationDurationMs = Math.max(1, durationMs);
     }
 }

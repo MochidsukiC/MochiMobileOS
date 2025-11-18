@@ -39,9 +39,16 @@ public class RadioButton extends BaseComponent implements Clickable {
         super(x, y, 200, 25);
         this.label = label;
         this.selected = false;
-        this.circleColor = 0xFF666666;
-        this.selectedColor = 0xFF4A90E2;
-        this.labelColor = 0xFF000000;
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        if (theme != null) {
+            this.circleColor = theme.colorBorder();
+            this.selectedColor = theme.colorPrimary();
+            this.labelColor = theme.colorOnSurface();
+        } else {
+            this.circleColor = 0xFF666666;
+            this.selectedColor = 0xFF4A90E2;
+            this.labelColor = 0xFF000000;
+        }
         this.circleSize = 18;
     }
 
@@ -50,6 +57,14 @@ public class RadioButton extends BaseComponent implements Clickable {
         if (!visible) return;
 
         g.pushStyle();
+
+        // テーマ同期
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        if (theme != null) {
+            this.labelColor = theme.colorOnSurface();
+            this.circleColor = theme.colorBorder();
+            this.selectedColor = theme.colorPrimary();
+        }
 
         // アニメーション更新
         updateAnimation();

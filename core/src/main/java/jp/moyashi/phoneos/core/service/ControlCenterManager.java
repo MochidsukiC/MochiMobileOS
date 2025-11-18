@@ -22,6 +22,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public class ControlCenterManager implements GestureListener {
     
+    private static final boolean DEBUG_GESTURE_LOG = Boolean.getBoolean("mochi.debugGesture");
+    
     /** コントロールセンターアイテムのリスト（スレッドセーフ） */
     private final List<IControlCenterItem> items;
     
@@ -288,16 +290,45 @@ public class ControlCenterManager implements GestureListener {
             panelY = (int)animatedY;
         }
 
-        // パネル背景描画 (ビジュアル改善)
-        g.fill(40, 45, 55, 240); // モダンなダークブルーグレーに戻す
+        // テーマに基づくパネル背景描画 (ビジュアル改善)
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        float tl = theme != null ? theme.radiusLg() : 20;
+
+        // 背景スクラム（暗幕）で背面を落としてパネルを浮かせる（さらに強め）
+        g.fill(0, 0, 0, 140);
         g.noStroke();
-        g.rect(0, panelY, panelWidth, panelHeight, 20, 20, 0, 0); // 角を丸める
+        g.rect(0, 0, (int)screenWidth, (int)screenHeight);
+
+        // 影（エレベーション）
+        // TODO: 低電力モード(ui.performance.low_power)時は影レベルの引き下げ/省略を検討
+        jp.moyashi.phoneos.core.ui.effects.Elevation.drawRectShadow(g, 0, panelY, panelWidth, panelHeight, tl, 4);
+        int surface = theme != null ? theme.colorSurface() : 0xFF28303A;
+        int r = (surface>>16)&0xFF, gr = (surface>>8)&0xFF, b = surface&0xFF;
+        g.fill(r, gr, b, 245);
+        g.noStroke();
+        g.rect(0, panelY, panelWidth, panelHeight, tl, tl, 0, 0);
+
+        // ライトモードでは面をさらにグレー寄りに見せるため黒の薄いオーバーレイを重ねる
+        if (theme == null || theme.getMode() == jp.moyashi.phoneos.core.ui.theme.ThemeEngine.Mode.LIGHT) {
+            g.noStroke();
+            g.fill(0, 0, 0, 28);
+            g.rect(0, panelY, panelWidth, panelHeight, tl, tl, 0, 0);
+        }
+
+        // 上端ボーダーで分離
+        int borderCol = theme != null ? theme.colorBorder() : 0xFF444444;
+        g.stroke((borderCol>>16)&0xFF, (borderCol>>8)&0xFF, borderCol&0xFF);
+        g.strokeWeight(1);
+        g.line(0, panelY, panelWidth, panelY);
 
         // --- レイアウト変更：タイトルを一番上に配置 ---
 
-        // タイトル領域
-        int titleY = panelY + 20;
-        g.fill(255, 255, 255);
+        // タイトル領域とレイアウト定数
+        final int PADDING = 16;
+        final int GAP = 12;
+        int titleY = panelY + PADDING;
+        int textCol = theme != null ? theme.colorOnSurface() : 0xFFFFFFFF;
+        g.fill((textCol>>16)&0xFF, (textCol>>8)&0xFF, textCol&0xFF);
         g.textAlign(PApplet.CENTER, PApplet.TOP);
         g.textSize(18);
         g.text("コントロールセンター", screenWidth / 2, titleY);
@@ -307,26 +338,35 @@ public class ControlCenterManager implements GestureListener {
         int handleWidth = 60;
         int handleHeight = 5;
         int handleX = (int)(screenWidth - handleWidth) / 2;
-        g.fill(200, 205, 215);
+        int handle = theme != null ? theme.colorBorder() : 0xFFC8CDD7;
+        g.fill((handle>>16)&0xFF, (handle>>8)&0xFF, handle&0xFF);
         g.rect(handleX, handleY, handleWidth, handleHeight, 2.5f);
 
         // アイテムグリッド描画 (ハンドルの下に配置)
         int startY = handleY + 25; // 位置を調整
         int cols = 3;
-        int itemWidth = (panelWidth - 40) / cols;
-        int itemHeight = 80;
-        int margin = 10;
+        int itemHeight = 88;
+        int itemWidth = (panelWidth - (PADDING * 2) - (GAP * (cols - 1))) / cols;
 
         for (int i = 0; i < items.size(); i++) {
             int col = i % cols;
             int row = i / cols;
-            int itemX = 20 + col * itemWidth;
-            int itemY = startY + row * (itemHeight + margin);
+            int itemX = PADDING + col * (itemWidth + GAP);
+            int itemY = startY + row * (itemHeight + GAP);
 
             if (itemY + itemHeight > panelY + panelHeight - 20) break;
 
+            // 背景スロット（カード）
+            int slotW = itemWidth;
+            int slotH = itemHeight;
+            jp.moyashi.phoneos.core.ui.effects.Elevation.drawRectShadow(g, itemX, itemY, slotW, slotH, 10, 1);
+            g.fill((surface>>16)&0xFF, (surface>>8)&0xFF, surface&0xFF, 245);
+            g.stroke((borderCol>>16)&0xFF, (borderCol>>8)&0xFF, borderCol&0xFF);
+            g.strokeWeight(1);
+            g.rect(itemX, itemY, slotW, slotH, 10);
+
             // アイテム描画
-            items.get(i).draw(g, itemX, itemY, itemWidth - margin, itemHeight);
+            items.get(i).draw(g, itemX, itemY, itemWidth, itemHeight);
         }
 
         // 設定復元
@@ -622,7 +662,12 @@ public class ControlCenterManager implements GestureListener {
      */
     private void updateAnimation() {
         if (Math.abs(animationProgress - targetAnimationProgress) > 0.01f) {
-            animationProgress += (targetAnimationProgress - animationProgress) * ANIMATION_SPEED;
+            float speed = ANIMATION_SPEED;
+            // Reduce Motion対応: 進行を早める
+            speed = (coordinateTransform != null) ? speed : speed; // keep
+            // SettingsManagerから読み取り
+            // Kernel参照は持っていないため省略。NotificationManager側と同様に将来拡張。
+            animationProgress += (targetAnimationProgress - animationProgress) * speed;
         } else {
             animationProgress = targetAnimationProgress;
         }
@@ -636,6 +681,12 @@ public class ControlCenterManager implements GestureListener {
      */
     public float getAnimationProgress() {
         return animationProgress;
+    }
+
+    private void debugGesture(String message) {
+        if (DEBUG_GESTURE_LOG) {
+            System.out.println("ControlCenterManager: " + message);
+        }
     }
     
     /**
@@ -709,8 +760,8 @@ public class ControlCenterManager implements GestureListener {
             return false;
         }
         
-        System.out.println("ControlCenterManager: Processing gesture - " + event.getType() + " at (" + 
-                          event.getCurrentX() + ", " + event.getCurrentY() + ")");
+        debugGesture("Processing gesture - " + event.getType() + " at (" +
+                event.getCurrentX() + ", " + event.getCurrentY() + ")");
         
         // ジェスチャータイプに応じた処理
         switch (event.getType()) {
@@ -732,7 +783,7 @@ public class ControlCenterManager implements GestureListener {
             case DRAG_END:
                 // ドラッグ終了時にフラグをリセット
                 isDragScrolling = false;
-                System.out.println("ControlCenterManager: Drag ended, resetting scroll state");
+                debugGesture("Drag ended, resetting scroll state");
                 return true; // イベントを消費
                 
             case SWIPE_UP:
@@ -857,7 +908,7 @@ public class ControlCenterManager implements GestureListener {
     public boolean isInBounds(int x, int y) {
         // コントロールセンターが表示中の場合、画面全体をカバー
         boolean inBounds = this.isVisible && animationProgress > 0.1f;
-        System.out.println("ControlCenterManager.isInBounds(" + x + ", " + y + ") = " + inBounds + " (visible=" + isVisible + ", animProgress=" + animationProgress + ", priority=" + getPriority() + ")");
+        debugGesture("isInBounds(" + x + ", " + y + ") = " + inBounds + " (visible=" + isVisible + ", animProgress=" + animationProgress + ", priority=" + getPriority() + ")");
         return inBounds;
     }
 }

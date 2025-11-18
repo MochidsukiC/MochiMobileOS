@@ -33,9 +33,16 @@ public class Panel extends BaseComponent implements Container {
     public Panel(float x, float y, float width, float height) {
         super(x, y, width, height);
         this.children = new ArrayList<>();
-        this.backgroundColor = 0xFFFFFFFF;
-        this.borderColor = 0xFFCCCCCC;
-        this.cornerRadius = 5;
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        if (theme != null) {
+            this.backgroundColor = theme.colorSurface();
+            this.borderColor = theme.colorBorder();
+            this.cornerRadius = theme.radiusMd();
+        } else {
+            this.backgroundColor = 0xFFFFFFFF;
+            this.borderColor = 0xFFCCCCCC;
+            this.cornerRadius = 5;
+        }
         this.borderWidth = 1;
         this.padding = 10;
     }
@@ -45,6 +52,14 @@ public class Panel extends BaseComponent implements Container {
         if (!visible) return;
 
         g.pushStyle();
+
+        // 動的切替に追従
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        if (theme != null) {
+            this.backgroundColor = theme.colorSurface();
+            this.borderColor = theme.colorBorder();
+            this.cornerRadius = theme.radiusMd();
+        }
 
         // 背景
         g.fill(backgroundColor);

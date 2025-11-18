@@ -37,7 +37,9 @@ public class HardwareTestScreen implements Screen {
         g.background(20, 25, 35);
 
         // タイトル（固定ヘッダー）
-        g.fill(255, 255, 255);
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        int onSurface = theme != null ? theme.colorOnSurface() : 0xFF111111;
+        { int c=onSurface; g.fill((c>>16)&0xFF, (c>>8)&0xFF, c&0xFF); }
         g.textAlign(PApplet.CENTER, PApplet.TOP);
         g.textSize(20);
         g.text("🔧 Hardware Test", 200, 20);

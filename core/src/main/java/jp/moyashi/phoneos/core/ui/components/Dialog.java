@@ -26,10 +26,18 @@ public class Dialog extends Panel {
         this.title = title;
         this.message = message;
 
-        setBackgroundColor(0xFFFFFFFF);
-        setBorderColor(0xFF666666);
-        setBorderWidth(2);
-        setCornerRadius(10);
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        if (theme != null) {
+            setBackgroundColor(theme.colorSurface());
+            setBorderColor(theme.colorBorder());
+            setBorderWidth(2);
+            setCornerRadius(theme.radiusMd());
+        } else {
+            setBackgroundColor(0xFFFFFFFF);
+            setBorderColor(0xFF666666);
+            setBorderWidth(2);
+            setCornerRadius(10);
+        }
 
         // ボタン作成
         float buttonWidth = 80;
@@ -37,14 +45,12 @@ public class Dialog extends Panel {
         float buttonY = y + height - buttonHeight - 15;
 
         okButton = new Button(x + width - buttonWidth - 15, buttonY, buttonWidth, buttonHeight, "OK");
-        okButton.setBackgroundColor(0xFF4A90E2);
         okButton.setOnClickListener(() -> {
             if (onOkListener != null) onOkListener.run();
             setVisible(false);
         });
 
         cancelButton = new Button(x + width - buttonWidth * 2 - 25, buttonY, buttonWidth, buttonHeight, "Cancel");
-        cancelButton.setBackgroundColor(0xFF999999);
         cancelButton.setOnClickListener(() -> {
             if (onCancelListener != null) onCancelListener.run();
             setVisible(false);
@@ -73,19 +79,25 @@ public class Dialog extends Panel {
         // タイトルとメッセージ
         g.pushStyle();
 
+        // テーマテキスト色
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        int onSurface = theme != null ? theme.colorOnSurface() : 0xFF000000;
+        int onSurfaceSec = theme != null ? theme.colorOnSurfaceSecondary() : 0xFF333333;
+
         // タイトル
-        g.fill(0xFF000000);
+        g.fill(onSurface);
         g.textAlign(PApplet.CENTER, PApplet.TOP);
         g.textSize(18);
         g.text(title, x + width / 2, y + 15);
 
         // 区切り線
-        g.stroke(0xFFCCCCCC);
+        int border = theme != null ? theme.colorBorder() : 0xFFCCCCCC;
+        g.stroke(border);
         g.strokeWeight(1);
         g.line(x + 10, y + 50, x + width - 10, y + 50);
 
         // メッセージ
-        g.fill(0xFF333333);
+        g.fill(onSurfaceSec);
         g.textAlign(PApplet.CENTER, PApplet.TOP);
         g.textSize(14);
         drawWrappedText(g, message, x + 20, y + 65, width - 40);

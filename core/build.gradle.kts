@@ -40,15 +40,6 @@ dependencies {
     // - Forge環境: MCEF MODがorg.cef.* API実装を提供
     // coreモジュールはChromiumProviderインターフェースを通じて依存性注入を受ける
     compileOnly("me.friwi:jcefmaven:135.0.20")
-
-    // JavaFX for HTML/WebView integration (platform-specific)
-    // TODO: これは旧BrowserAppで使用。ChromiumBrowserApp完成後に削除予定
-    implementation("org.openjfx:javafx-base:17.0.2:$platform")
-    implementation("org.openjfx:javafx-graphics:17.0.2:$platform")
-    implementation("org.openjfx:javafx-controls:17.0.2:$platform")
-    implementation("org.openjfx:javafx-web:17.0.2:$platform")
-    implementation("org.openjfx:javafx-swing:17.0.2:$platform")
-    implementation("org.openjfx:javafx-media:17.0.2:$platform")
 }
 
 tasks.withType<JavaCompile> {

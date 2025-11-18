@@ -44,12 +44,23 @@ public class Button extends BaseComponent implements Clickable {
         super(x, y, width, height);
         this.text = text;
         this.icon = null;
-        this.backgroundColor = 0xFF4A90E2; // デフォルト青
-        this.textColor = 0xFFFFFFFF; // 白
-        this.borderColor = 0xFF3A7BC8;
-        this.hoverColor = 0xFF5AA0F2;
-        this.pressColor = 0xFF3A80D2;
-        this.cornerRadius = 5;
+        // テーマから初期色を取得（なければ従来の既定値）
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        if (theme != null) {
+            this.backgroundColor = theme.colorPrimary();
+            this.textColor = theme.colorOnPrimary();
+            this.borderColor = theme.colorPrimary();
+            this.hoverColor = theme.colorHover();
+            this.pressColor = theme.colorPressed();
+            this.cornerRadius = theme.radiusSm();
+        } else {
+            this.backgroundColor = 0xFF4A90E2; // 既定青
+            this.textColor = 0xFFFFFFFF; // 白
+            this.borderColor = 0xFF3A7BC8;
+            this.hoverColor = 0xFF5AA0F2;
+            this.pressColor = 0xFF3A80D2;
+            this.cornerRadius = 5;
+        }
     }
 
     /**
@@ -73,15 +84,25 @@ public class Button extends BaseComponent implements Clickable {
 
         g.pushStyle();
 
+        // 毎フレームテーマを反映（動的切替対応）
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        if (theme != null) {
+            // 明示的に上書きされていない前提で、ボタン既定色をテーマに同期
+            this.borderColor = theme.colorPrimary();
+            this.cornerRadius = theme.radiusSm();
+            // base/hover/press/textは状態に応じて下で使用
+        }
+
         // アニメーション更新
         updateAnimation();
 
         // 背景色の決定
         int currentColor = backgroundColor;
         if (pressed) {
-            currentColor = pressColor;
+            currentColor = theme != null ? theme.colorPressed() : pressColor;
         } else if (hovered && enabled) {
-            currentColor = lerpColor(g, backgroundColor, hoverColor, animationProgress);
+            int hov = theme != null ? theme.colorHover() : hoverColor;
+            currentColor = lerpColor(g, backgroundColor, hov, animationProgress);
         }
 
         // 無効状態の場合はグレーアウト
@@ -128,7 +149,8 @@ public class Button extends BaseComponent implements Clickable {
             float startX = contentX - totalWidth / 2;
 
             g.image(icon, startX, contentY - iconSize / 2, iconSize, iconSize);
-            g.fill(enabled ? textColor : 0xFFCCCCCC);
+            int tCol = this.textColor;
+            g.fill(enabled ? tCol : 0xFFCCCCCC);
             g.textAlign(PApplet.LEFT, PApplet.CENTER);
             g.textSize(14);
             g.text(text, startX + iconSize + spacing, contentY);
@@ -138,7 +160,8 @@ public class Button extends BaseComponent implements Clickable {
             g.image(icon, contentX - iconSize / 2, contentY - iconSize / 2, iconSize, iconSize);
         } else if (text != null && !text.isEmpty()) {
             // テキストのみ
-            g.fill(enabled ? textColor : 0xFFCCCCCC);
+            int tCol = this.textColor;
+            g.fill(enabled ? tCol : 0xFFCCCCCC);
             g.textAlign(PApplet.CENTER, PApplet.CENTER);
             g.textSize(14);
             g.text(text, contentX, contentY);
