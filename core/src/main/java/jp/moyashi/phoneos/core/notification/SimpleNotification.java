@@ -109,15 +109,21 @@ public class SimpleNotification implements INotification {
     public void draw(PGraphics g, float x, float y, float width, float height) {
         if (isDismissed) return;
 
-        // 背景
-        int bgAlpha = isRead ? 100 : 150;
-        g.fill(60, 60, 70, bgAlpha);
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        int surface = theme != null ? theme.colorSurface() : 0xFF3C3C46;
+        int onSurface = theme != null ? theme.colorOnSurface() : 0xFFFFFFFF;
+        int onSurfaceSec = theme != null ? theme.colorOnSurfaceSecondary() : 0xFFB4B4B4;
+        int primary = theme != null ? theme.colorPrimary() : 0xFF4682B4;
+
+        // 背景（未読は少し濃く）
+        int a = isRead ? 120 : 180;
+        g.fill((surface>>16)&0xFF, (surface>>8)&0xFF, surface&0xFF, a);
         g.noStroke();
-        g.rect(x, y, width, height, 8);
+        g.rect(x, y, width, height, theme != null ? theme.radiusSm() : 8);
 
         // 未読インジケーター
         if (!isRead) {
-            g.fill(70, 130, 200);
+            g.fill((primary>>16)&0xFF, (primary>>8)&0xFF, primary&0xFF);
             g.rect(x + 4, y + 4, 3, height - 8, 1);
         }
 
@@ -135,19 +141,20 @@ public class SimpleNotification implements INotification {
         float textWidth = width - (textX - x) - DISMISS_BUTTON_SIZE - 8;
 
         // 送信者とタイムスタンプ
-        g.fill(180, 180, 180);
+        g.fill((onSurfaceSec>>16)&0xFF, (onSurfaceSec>>8)&0xFF, onSurfaceSec&0xFF);
         g.textAlign(PApplet.LEFT, PApplet.TOP);
         g.textSize(10);
         String timeStr = TIME_FORMAT.format(new Date(timestamp));
         g.text(sender + " • " + timeStr, textX, y + 6);
 
         // タイトル
-        g.fill(255, 255, 255);
+        g.fill((onSurface>>16)&0xFF, (onSurface>>8)&0xFF, onSurface&0xFF);
         g.textSize(12);
         g.text(truncateText(g, title, textWidth), textX, y + 20);
 
         // 内容
-        g.fill(200, 200, 200);
+        int body = onSurfaceSec;
+        g.fill((body>>16)&0xFF, (body>>8)&0xFF, body&0xFF);
         g.textSize(10);
         String wrappedContent = wrapText(g, content, textWidth, 2);
         g.text(wrappedContent, textX, y + 36);
@@ -223,11 +230,14 @@ public class SimpleNotification implements INotification {
      * 削除ボタンを描画する（PGraphics版）。
      */
     private void drawDismissButton(PGraphics g, float x, float y) {
-        g.fill(150, 150, 150, 100);
-        g.rect(x, y, DISMISS_BUTTON_SIZE, DISMISS_BUTTON_SIZE, 4);
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        int border = theme != null ? theme.colorBorder() : 0xFF999999;
+        int onSurface = theme != null ? theme.colorOnSurface() : 0xFFE0E0E0;
+        g.fill((border>>16)&0xFF, (border>>8)&0xFF, border&0xFF, 80);
+        g.rect(x, y, DISMISS_BUTTON_SIZE, DISMISS_BUTTON_SIZE, theme != null ? theme.radiusSm() : 4);
 
         // X マーク
-        g.stroke(200, 200, 200);
+        g.stroke((onSurface>>16)&0xFF, (onSurface>>8)&0xFF, onSurface&0xFF);
         g.strokeWeight(1.5f);
         float margin = 6;
         g.line(x + margin, y + margin,

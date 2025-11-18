@@ -66,7 +66,7 @@ public class NoteEditScreen implements Screen {
         headerLabel = new Label(20, HEADER_HEIGHT / 2 - 10, 360, 20, "メモ編集");
         headerLabel.setTextSize(18);
         headerLabel.setHorizontalAlign(PApplet.LEFT);
-        headerLabel.setTextColor(0xFFFFFFFF);
+        { var t=jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme(); if (t!=null) headerLabel.setTextColor(t.colorOnSurface()); }
         if (kernel.getJapaneseFont() != null) {
             headerLabel.setFont(kernel.getJapaneseFont());
         }
@@ -117,7 +117,7 @@ public class NoteEditScreen implements Screen {
         copyButton.setBackgroundColor(0xFF64B464);
         copyButton.setHoverColor(0xFF74C474);
         copyButton.setPressColor(0xFF54A454);
-        copyButton.setTextColor(0xFFFFFFFF);
+        { var t=jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme(); if (t!=null) copyButton.setTextColor(t.colorOnSurface()); }
         copyButton.setCornerRadius(5);
         copyButton.setOnClickListener(this::copyToClipboard);
 

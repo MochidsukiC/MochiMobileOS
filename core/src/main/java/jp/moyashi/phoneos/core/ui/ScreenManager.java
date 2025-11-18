@@ -205,9 +205,13 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
                 log("Skipped APPLICATION layer addition for animation - kernel=" + (kernel != null) + ", isLauncher=" + isLauncher);
             }
 
-            // アニメーションを開始
+            // アニメーションを開始（Reduce Motion対応の継続時間）
             log("Setting target dimensions: " + currentPApplet.width + "x" + currentPApplet.height);
             screenTransition.setTargetDimensions(0, 0, currentPApplet.width, currentPApplet.height);
+            if (kernel != null && kernel.getSettingsManager() != null) {
+                long dur = jp.moyashi.phoneos.core.ui.effects.Motion.durationAdjusted(300, kernel.getSettingsManager());
+                screenTransition.setAnimationDurationMs(dur);
+            }
 
             log("Starting zoom-in animation...");
             screenTransition.startZoomIn(iconX, iconY, iconSize, iconImage);
@@ -288,8 +292,12 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
                 log("New top screen moved to foreground (animation): " + newTopScreen.getScreenTitle());
             }
 
-            // アニメーションを開始
+            // アニメーションを開始（Reduce Motion対応の継続時間）
             screenTransition.startZoomOut(iconX, iconY, iconSize, iconImage, screenCapture);
+            if (kernel != null && kernel.getSettingsManager() != null) {
+                long dur = jp.moyashi.phoneos.core.ui.effects.Motion.durationAdjusted(300, kernel.getSettingsManager());
+                screenTransition.setAnimationDurationMs(dur);
+            }
 
             log("Popped screen with zoom-out animation - " + poppedScreen.getScreenTitle());
             return poppedScreen;

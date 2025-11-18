@@ -48,10 +48,18 @@ public class Slider extends BaseComponent implements Clickable {
         this.maxValue = maxValue;
         this.value = Math.max(minValue, Math.min(maxValue, initialValue));
         this.vertical = false;
-        this.trackColor = 0xFFCCCCCC;
-        this.fillColor = 0xFF4A90E2;
-        this.knobColor = 0xFFFFFFFF;
-        this.labelColor = 0xFF000000;
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        if (theme != null) {
+            this.trackColor = theme.colorBorder();
+            this.fillColor = theme.colorPrimary();
+            this.knobColor = 0xFFFFFFFF;
+            this.labelColor = theme.colorOnSurface();
+        } else {
+            this.trackColor = 0xFFCCCCCC;
+            this.fillColor = 0xFF4A90E2;
+            this.knobColor = 0xFFFFFFFF;
+            this.labelColor = 0xFF000000;
+        }
         this.label = "";
     }
 
@@ -72,10 +80,18 @@ public class Slider extends BaseComponent implements Clickable {
         this.maxValue = maxValue;
         this.value = Math.max(minValue, Math.min(maxValue, initialValue));
         this.vertical = vertical;
-        this.trackColor = 0xFFCCCCCC;
-        this.fillColor = 0xFF4A90E2;
-        this.knobColor = 0xFFFFFFFF;
-        this.labelColor = 0xFF000000;
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        if (theme != null) {
+            this.trackColor = theme.colorBorder();
+            this.fillColor = theme.colorPrimary();
+            this.knobColor = 0xFFFFFFFF;
+            this.labelColor = theme.colorOnSurface();
+        } else {
+            this.trackColor = 0xFFCCCCCC;
+            this.fillColor = 0xFF4A90E2;
+            this.knobColor = 0xFFFFFFFF;
+            this.labelColor = 0xFF000000;
+        }
         this.label = "";
     }
 
@@ -84,6 +100,14 @@ public class Slider extends BaseComponent implements Clickable {
         if (!visible) return;
 
         g.pushStyle();
+
+        // 動的切替対応
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        if (theme != null) {
+            this.trackColor = theme.colorBorder();
+            this.fillColor = theme.colorPrimary();
+            this.labelColor = theme.colorOnSurface();
+        }
 
         if (vertical) {
             drawVertical(g);

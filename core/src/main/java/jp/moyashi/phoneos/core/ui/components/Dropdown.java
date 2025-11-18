@@ -34,10 +34,18 @@ public class Dropdown extends BaseComponent implements Clickable {
     public Dropdown(float x, float y, float width) {
         super(x, y, width, 35);
         this.items = new ArrayList<>();
-        this.backgroundColor = 0xFFFFFFFF;
-        this.itemBackgroundColor = 0xFFF5F5F5;
-        this.selectedBackgroundColor = 0xFF4A90E2;
-        this.textColor = 0xFF000000;
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        if (theme != null) {
+            this.backgroundColor = theme.colorSurface();
+            this.itemBackgroundColor = theme.colorSurface();
+            this.selectedBackgroundColor = theme.colorPrimary();
+            this.textColor = theme.colorOnSurface();
+        } else {
+            this.backgroundColor = 0xFFFFFFFF;
+            this.itemBackgroundColor = 0xFFF5F5F5;
+            this.selectedBackgroundColor = 0xFF4A90E2;
+            this.textColor = 0xFF000000;
+        }
     }
 
     @Override
@@ -58,8 +66,12 @@ public class Dropdown extends BaseComponent implements Clickable {
     }
 
     private void drawMainButton(PGraphics g) {
+        // テーマ同期
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        int border = theme != null ? theme.colorBorder() : 0xFFCCCCCC;
+        int onSurface = theme != null ? theme.colorOnSurface() : textColor;
         g.fill(backgroundColor);
-        g.stroke(0xFFCCCCCC);
+        g.stroke(border);
         g.strokeWeight(1);
         g.rect(x, y, width, height, 5);
 
@@ -68,13 +80,13 @@ public class Dropdown extends BaseComponent implements Clickable {
             ? items.get(selectedIndex)
             : "選択してください";
 
-        g.fill(textColor);
+        g.fill(onSurface);
         g.textAlign(PApplet.LEFT, PApplet.CENTER);
         g.textSize(14);
         g.text(text, x + 10, y + height / 2);
 
         // ドロップダウン矢印
-        g.fill(0xFF666666);
+        g.fill(onSurface);
         float arrowX = x + width - 20;
         float arrowY = y + height / 2;
         drawTriangle(g, arrowX, arrowY, 8, expanded ? -1 : 1);
@@ -85,8 +97,11 @@ public class Dropdown extends BaseComponent implements Clickable {
         float listHeight = items.size() * itemHeight;
 
         // 背景
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        int border = theme != null ? theme.colorBorder() : 0xFFCCCCCC;
+        int onSurface = theme != null ? theme.colorOnSurface() : textColor;
         g.fill(backgroundColor);
-        g.stroke(0xFFCCCCCC);
+        g.stroke(border);
         g.strokeWeight(1);
         g.rect(x, listY, width, listHeight, 5);
 
@@ -98,7 +113,7 @@ public class Dropdown extends BaseComponent implements Clickable {
             g.noStroke();
             g.rect(x, itemY, width, itemHeight);
 
-            g.fill(i == selectedIndex ? 0xFFFFFFFF : textColor);
+            g.fill(i == selectedIndex ? 0xFFFFFFFF : onSurface);
             g.textAlign(PApplet.LEFT, PApplet.CENTER);
             g.textSize(14);
             g.text(items.get(i), x + 10, itemY + itemHeight / 2);

@@ -47,10 +47,18 @@ public class ListView extends BaseComponent implements Scrollable {
     public ListView(float x, float y, float width, float height) {
         super(x, y, width, height);
         this.items = new ArrayList<>();
-        this.backgroundColor = 0xFFFFFFFF;
-        this.itemBackgroundColor = 0xFFF5F5F5;
-        this.selectedBackgroundColor = 0xFF4A90E2;
-        this.textColor = 0xFF000000;
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        if (theme != null) {
+            this.backgroundColor = theme.colorSurface();
+            this.itemBackgroundColor = theme.colorSurface();
+            this.selectedBackgroundColor = theme.colorPrimary();
+            this.textColor = theme.colorOnSurface();
+        } else {
+            this.backgroundColor = 0xFFFFFFFF;
+            this.itemBackgroundColor = 0xFFF5F5F5;
+            this.selectedBackgroundColor = 0xFF4A90E2;
+            this.textColor = 0xFF000000;
+        }
     }
 
     @Override
@@ -58,6 +66,15 @@ public class ListView extends BaseComponent implements Scrollable {
         if (!visible) return;
 
         g.pushStyle();
+
+        // テーマ更新
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        if (theme != null) {
+            this.backgroundColor = theme.colorSurface();
+            this.itemBackgroundColor = theme.colorSurface();
+            this.selectedBackgroundColor = theme.colorPrimary();
+            this.textColor = theme.colorOnSurface();
+        }
 
         // 背景
         g.fill(backgroundColor);
@@ -100,7 +117,9 @@ public class ListView extends BaseComponent implements Scrollable {
         g.text(item.text, x + 10, itemY + itemHeight / 2);
 
         // 区切り線
-        g.stroke(0xFFE0E0E0);
+        var themeLocal = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        int border = themeLocal != null ? themeLocal.colorBorder() : 0xFFE0E0E0;
+        g.stroke(border);
         g.strokeWeight(1);
         g.line(x, itemY + itemHeight, x + width, itemY + itemHeight);
     }

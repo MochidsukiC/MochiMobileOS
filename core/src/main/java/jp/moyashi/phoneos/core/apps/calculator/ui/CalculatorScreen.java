@@ -54,7 +54,7 @@ public class CalculatorScreen implements Screen {
         displayLabel.setTextSize(32);
         displayLabel.setHorizontalAlign(PApplet.RIGHT);
         displayLabel.setVerticalAlign(PApplet.CENTER);
-        displayLabel.setTextColor(0xFFFFFFFF);
+        { var t=jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme(); if (t!=null) displayLabel.setTextColor(t.colorOnSurface()); }
         if (kernel != null && kernel.getJapaneseFont() != null) {
             displayLabel.setFont(kernel.getJapaneseFont());
         }
@@ -62,7 +62,7 @@ public class CalculatorScreen implements Screen {
         // 戻るボタン
         backButton = new Button(10, 10, 60, 25, "< Back");
         backButton.setBackgroundColor(0xFF505050);
-        backButton.setTextColor(0xFFFFFFFF);
+        { var t=jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme(); if (t!=null) backButton.setTextColor(t.colorOnSurface()); }
         backButton.setCornerRadius(3);
         backButton.setOnClickListener(this::goBack);
 
@@ -107,7 +107,7 @@ public class CalculatorScreen implements Screen {
                 }
 
                 btn.setBorderColor(0xFF000000);
-                btn.setTextColor(0xFFFFFFFF);
+                { var t=jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme(); if (t!=null) btn.setTextColor(t.colorOnSurface()); }
                 btn.setCornerRadius(8);
 
                 // フォント設定

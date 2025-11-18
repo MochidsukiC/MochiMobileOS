@@ -66,11 +66,23 @@ public class AppLibraryScreen implements Screen, GestureListener {
     private static final long LONG_PRESS_DURATION = 200; // 200ms for testing (was 500ms)
     private static final int DRAG_TOLERANCE = 15; // Pixel tolerance for drag during long press
     
+    // Search/hover state
+    private boolean searchFocused = false;
+    private String searchQuery = "";
+    private java.util.List<IApplication> visibleApps = null;
+    private int hoveredIndex = -1;
+    private int pressedIndex = -1;
+    
     /** App list item configuration */
-    private static final int ITEM_HEIGHT = 80;
-    private static final int ITEM_PADDING = 10;
+    private static final int ITEM_HEIGHT = 88;
+    private static final int ITEM_PADDING = 16;
     private static final int ICON_SIZE = 48;
-    private static final int LIST_START_Y = 60;
+    // 検索ボックスを追加したためヘッダー領域を拡大
+    private static final int LIST_START_Y = 112;
+    private static final int SEARCH_X = 12;
+    private static final int SEARCH_Y = 70; // ヘッダー冁E
+    private static final int SEARCH_W = 400 - 24;
+    private static final int SEARCH_H = 26;
     
     /**
      * Constructs a new AppLibraryScreen instance.
@@ -79,14 +91,25 @@ public class AppLibraryScreen implements Screen, GestureListener {
      */
     public AppLibraryScreen(Kernel kernel) {
         this.kernel = kernel;
-        this.backgroundColor = 0x0F0F0F; // Darker than home screen
-        this.textColor = 0xFFFFFF;       // White text
-        this.accentColor = 0x4A90E2;     // Blue accent
+        var themeInit = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        if (themeInit != null) {
+            this.backgroundColor = themeInit.colorBackground();
+            this.textColor = themeInit.colorOnSurface();
+            this.accentColor = themeInit.colorPrimary();
+        } else {
+            this.backgroundColor = 0x0F0F0F; // Darker than home screen
+            this.textColor = 0xFFFFFF;       // White text
+            this.accentColor = 0x4A90E2;     // Blue accent
+        }
         this.isInitialized = false;
         this.scrollOffset = 0;
         this.homeScreen = null;
         this.showingContextMenu = false;
         this.isPressed = false;
+        this.searchFocused = false;
+        this.searchQuery = "";
+        this.hoveredIndex = -1;
+        this.pressedIndex = -1;
         
         System.out.println("AppLibraryScreen: App library screen created");
     }
@@ -140,11 +163,20 @@ public class AppLibraryScreen implements Screen, GestureListener {
         // Check for long press in draw loop (more reliable than event system)
         checkLongPress();
 
-        // Draw background
-        g.background(backgroundColor);
+        // Theme sync
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        if (theme != null) {
+            backgroundColor = theme.colorBackground();
+            textColor = theme.colorOnSurface();
+            accentColor = theme.colorPrimary();
+        }
 
-        // Draw header
+        // Draw background
+        int bg = backgroundColor; g.background((bg>>16)&0xFF, (bg>>8)&0xFF, bg&0xFF);
+
+        // Draw header + search box
         drawHeader(g);
+        drawSearchBox(g);
 
         // Draw app list
         drawAppList(g);
@@ -181,6 +213,11 @@ public class AppLibraryScreen implements Screen, GestureListener {
      */
     @Override
     public void mousePressed(PGraphics g, int mouseX, int mouseY) {
+        // Search box focus
+        if (mouseY >= SEARCH_Y && mouseY <= SEARCH_Y + SEARCH_H && mouseX >= SEARCH_X && mouseX <= SEARCH_X + SEARCH_W) {
+            searchFocused = true;
+            return;
+        }
 
         // Check if click is in header area (back navigation)
         if (mouseY < LIST_START_Y) {
@@ -211,6 +248,13 @@ public class AppLibraryScreen implements Screen, GestureListener {
 
         // Check if click is on an app item
         IApplication clickedApp = getAppAtPosition(mouseX, mouseY);
+        // pressed index
+        if (mouseY >= LIST_START_Y) {
+            int idx = (mouseY + scrollOffset - LIST_START_Y) / ITEM_HEIGHT;
+            pressedIndex = idx;
+        } else {
+            pressedIndex = -1;
+        }
         if (clickedApp != null) {
             longPressedApp = clickedApp;
 
@@ -280,6 +324,9 @@ public class AppLibraryScreen implements Screen, GestureListener {
 
         isPressed = false;
 
+        // clear press visual
+        pressedIndex = -1;
+
         long currentTime = System.currentTimeMillis();
         long pressDuration = currentTime - touchStartTime;
 
@@ -288,7 +335,7 @@ public class AppLibraryScreen implements Screen, GestureListener {
             // Short press - launch app
             System.out.println("AppLibraryScreen: Short press detected, launching app: " + longPressedApp.getName());
             
-            // アイコン位置を計算
+            // アイコン位置を計箁E
             int itemIndex = getAppIndex(longPressedApp);
             if (itemIndex >= 0) {
                 int itemY = LIST_START_Y + (itemIndex * ITEM_HEIGHT) - scrollOffset;
@@ -326,7 +373,7 @@ public class AppLibraryScreen implements Screen, GestureListener {
      * This is more reliable than relying on mouseReleased timing.
      */
     private void checkLongPress() {
-        // デバッグ：5フレームに1回状態を出力
+        // デバッグ用にフレームに1回状態を出力
         if (isPressed && System.currentTimeMillis() % 100 < 20) {
             System.out.println("AppLibraryScreen: checkLongPress() - isPressed=" + isPressed + 
                               ", longPressedApp=" + (longPressedApp != null ? longPressedApp.getName() : "null") + 
@@ -337,7 +384,7 @@ public class AppLibraryScreen implements Screen, GestureListener {
             long currentTime = System.currentTimeMillis();
             long pressDuration = currentTime - touchStartTime;
             
-            // デバッグ：進行状況を表示
+            // デバッグ用に進行状況を表示
             if (pressDuration % 100 < 20) {
                 System.out.println("AppLibraryScreen: Long press progress: " + pressDuration + "ms / " + LONG_PRESS_DURATION + "ms");
             }
@@ -345,7 +392,7 @@ public class AppLibraryScreen implements Screen, GestureListener {
             if (pressDuration >= LONG_PRESS_DURATION) {
                 // Long press detected!
                 showingContextMenu = true;
-                System.out.println("AppLibraryScreen: ✅✅✅ LONG PRESS DETECTED in draw loop for " + longPressedApp.getName() + " after " + pressDuration + "ms ✅✅✅");
+                System.out.println("AppLibraryScreen: ✅🔥 LONG PRESS DETECTED in draw loop for " + longPressedApp.getName() + " after " + pressDuration + "ms ✅🔥");
                 System.out.println("AppLibraryScreen: Setting showingContextMenu = " + showingContextMenu);
             }
         }
@@ -396,13 +443,13 @@ public class AppLibraryScreen implements Screen, GestureListener {
             allApps = kernel.getAppLoader().getLoadedApps();
             System.out.println("AppLibraryScreen: Loaded " + allApps.size() + " applications");
             
-            // デバッグ: ロードされたアプリの詳細を表示
+            // デバッグ用: ロードされたアプリの詳細を表示
             for (int i = 0; i < allApps.size(); i++) {
                 IApplication app = allApps.get(i);
                 System.out.println("  " + (i+1) + ". " + app.getName() + " (" + app.getApplicationId() + ") - " + app.getDescription());
             }
             
-            // もしアプリが1つもない場合、再スキャンを実行
+            // もしアプリぁEつもなぁE��合、�Eスキャンを実衁E
             if (allApps.isEmpty()) {
                 System.out.println("AppLibraryScreen: No apps found, triggering rescan...");
                 kernel.getAppLoader().refreshApps();
@@ -419,7 +466,12 @@ public class AppLibraryScreen implements Screen, GestureListener {
      */
     private void drawHeader(PGraphics g) {
         // Header background
-        g.fill(0x1A1A1A);
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        int surface = theme != null ? theme.colorSurface() : 0xFF1A1A1A;
+        int border = theme != null ? theme.colorBorder() : 0xFF333333;
+        // subtle elevation
+        jp.moyashi.phoneos.core.ui.effects.Elevation.drawRectShadow(g, 0, 0, 400, LIST_START_Y, 8, 2);
+        g.fill((surface>>16)&0xFF, (surface>>8)&0xFF, surface&0xFF);
         g.noStroke();
         g.rect(0, 0, 400, LIST_START_Y);
 
@@ -439,15 +491,42 @@ public class AppLibraryScreen implements Screen, GestureListener {
         // App count
         g.textAlign(g.RIGHT, g.CENTER);
         g.textSize(12);
-        g.fill(textColor, 150);
+        { int c=textColor; g.fill((c>>16)&0xFF, (c>>8)&0xFF, c&0xFF, 150); }
         if (allApps != null) {
             g.text(allApps.size() + " apps", 380, 30);
         }
 
         // Separator line
-        g.stroke(0x333333);
+        g.stroke((border>>16)&0xFF, (border>>8)&0xFF, border&0xFF);
         g.strokeWeight(1);
         g.line(0, LIST_START_Y - 1, 400, LIST_START_Y - 1);
+    }
+
+    private void drawSearchBox(PGraphics g) {
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        int border = theme != null ? theme.colorBorder() : 0xFF3A3A3A;
+        int surface = theme != null ? theme.colorSurface() : 0xFF202020;
+        int onSurface = theme != null ? theme.colorOnSurface() : 0xFFFFFFFF;
+
+        g.fill((surface>>16)&0xFF, (surface>>8)&0xFF, surface&0xFF);
+        g.stroke((border>>16)&0xFF, (border>>8)&0xFF, border&0xFF);
+        g.strokeWeight(searchFocused ? 2 : 1);
+        g.rect(SEARCH_X, SEARCH_Y, SEARCH_W, SEARCH_H, 8);
+
+        g.fill((onSurface>>16)&0xFF, (onSurface>>8)&0xFF, onSurface&0xFF, searchQuery.isEmpty() ? 120 : 255);
+        g.textAlign(g.LEFT, g.CENTER);
+        g.textSize(12);
+        String display = searchQuery.isEmpty() ? "Search apps" : searchQuery;
+        g.text(display, SEARCH_X + 10, SEARCH_Y + SEARCH_H/2f);
+
+        if (searchFocused && (System.currentTimeMillis() / 500) % 2 == 0) {
+            float tw = g.textWidth(searchQuery);
+            float cx = SEARCH_X + 10 + tw + 1;
+            g.stroke((onSurface>>16)&0xFF, (onSurface>>8)&0xFF, onSurface&0xFF);
+            g.strokeWeight(1);
+            g.line(cx, SEARCH_Y + 6, cx, SEARCH_Y + SEARCH_H - 6);
+            g.noStroke();
+        }
     }
     
     /**
@@ -458,19 +537,20 @@ public class AppLibraryScreen implements Screen, GestureListener {
     private void drawAppList(PGraphics g) {
         if (allApps == null || allApps.isEmpty()) {
             // No apps message
-            g.fill(textColor, 150);
+            { int c=textColor; g.fill((c>>16)&0xFF, (c>>8)&0xFF, c&0xFF, 150); }
             g.textAlign(g.CENTER, g.CENTER);
             g.textSize(16);
             g.text("No applications installed", 200, 300);
             return;
         }
 
+        ensureVisibleApps();
+
         // Calculate visible area
         int visibleHeight = 600 - LIST_START_Y - 40; // 40px for navigation hint
-        int visibleItems = visibleHeight / ITEM_HEIGHT;
 
         // Draw visible app items
-        for (int i = 0; i < allApps.size(); i++) {
+        for (int i = 0; i < visibleApps.size(); i++) {
             int itemY = LIST_START_Y + (i * ITEM_HEIGHT) - scrollOffset;
 
             // Skip items outside visible area
@@ -478,7 +558,7 @@ public class AppLibraryScreen implements Screen, GestureListener {
                 continue;
             }
 
-            IApplication app = allApps.get(i);
+            IApplication app = visibleApps.get(i);
             drawAppItem(g, app, itemY, i);
         }
     }
@@ -492,10 +572,29 @@ public class AppLibraryScreen implements Screen, GestureListener {
      * @param index The index of the item in the list
      */
     private void drawAppItem(PGraphics g, IApplication app, int y, int index) {
-        // Item background (alternate colors for better visibility)
-        g.fill(index % 2 == 0 ? 0x1E1E1E : 0x2A2A2A);
+        // Item background (theme surface、奁E��行に薁E��オーバ�Eレイ)
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        int surface = theme != null ? theme.colorSurface() : 0xFF1E1E1E;
+        g.fill((surface>>16)&0xFF, (surface>>8)&0xFF, surface&0xFF);
         g.noStroke();
         g.rect(0, y, 400, ITEM_HEIGHT);
+        if ((index % 2) == 1) {
+            g.fill(255,255,255,12);
+            g.rect(0, y, 400, ITEM_HEIGHT);
+        }
+
+        // Hover/Pressed overlay
+        if (theme != null) {
+            if (index == pressedIndex) {
+                int pr = theme.colorPressed();
+                g.fill((pr>>16)&0xFF, (pr>>8)&0xFF, pr&0xFF, 60);
+                g.rect(0, y, 400, ITEM_HEIGHT);
+            } else if (index == hoveredIndex) {
+                int hv = theme.colorHover();
+                g.fill((hv>>16)&0xFF, (hv>>8)&0xFF, hv&0xFF, 40);
+                g.rect(0, y, 400, ITEM_HEIGHT);
+            }
+        }
 
         // App icon placeholder
         g.fill(accentColor);
@@ -527,12 +626,13 @@ public class AppLibraryScreen implements Screen, GestureListener {
         g.fill(textColor, 100);
         g.textAlign(g.RIGHT, g.CENTER);
         g.textSize(10);
-        g.text("v" + app.getVersion(), 390, y + ITEM_HEIGHT / 2);
+        g.text("v" + app.getVersion(), (400 - ITEM_PADDING), y + ITEM_HEIGHT / 2);
 
         // Separator line
-        g.stroke(0x333333);
+        int border = theme != null ? theme.colorBorder() : 0xFF333333;
+        g.stroke((border>>16)&0xFF, (border>>8)&0xFF, border&0xFF);
         g.strokeWeight(1);
-        g.line(ITEM_PADDING, y + ITEM_HEIGHT - 1, 390, y + ITEM_HEIGHT - 1);
+        g.line(ITEM_PADDING, y + ITEM_HEIGHT - 1, (400 - ITEM_PADDING), y + ITEM_HEIGHT - 1);
     }
     
     /**
@@ -543,13 +643,16 @@ public class AppLibraryScreen implements Screen, GestureListener {
     private void drawScrollIndicator(PGraphics g) {
         if (allApps == null) return;
 
-        int totalHeight = allApps.size() * ITEM_HEIGHT;
+        ensureVisibleApps();
+        int totalHeight = visibleApps.size() * ITEM_HEIGHT;
         int visibleHeight = 600 - LIST_START_Y - 40;
 
         if (totalHeight <= visibleHeight) return;
 
         // Scroll bar background
-        g.fill(0x333333);
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        int border = theme != null ? theme.colorBorder() : 0xFF333333;
+        g.fill((border>>16)&0xFF, (border>>8)&0xFF, border&0xFF);
         g.noStroke();
         g.rect(395, LIST_START_Y, 5, visibleHeight);
 
@@ -568,7 +671,7 @@ public class AppLibraryScreen implements Screen, GestureListener {
      * @param g The PGraphics instance for drawing
      */
     private void drawNavigationHint(PGraphics g) {
-        g.fill(textColor, 100);
+        { int c=textColor; g.fill((c>>16)&0xFF, (c>>8)&0xFF, c&0xFF, 100); }
         g.textAlign(g.CENTER, g.CENTER);
         g.textSize(12);
         g.text("Tap an app to launch • Tap header to go back", 200, 580);
@@ -585,15 +688,12 @@ public class AppLibraryScreen implements Screen, GestureListener {
         if (allApps == null || y < LIST_START_Y) {
             return null;
         }
-        
+        ensureVisibleApps();
         int adjustedY = y + scrollOffset - LIST_START_Y;
         int itemIndex = adjustedY / ITEM_HEIGHT;
-        
-        if (itemIndex >= 0 && itemIndex < allApps.size()) {
-            IApplication app = allApps.get(itemIndex);
-            return app;
+        if (itemIndex >= 0 && visibleApps != null && itemIndex < visibleApps.size()) {
+            return visibleApps.get(itemIndex);
         }
-        
         return null;
     }
     
@@ -604,11 +704,64 @@ public class AppLibraryScreen implements Screen, GestureListener {
      */
     private boolean needsScrolling() {
         if (allApps == null) return false;
-        
-        int totalHeight = allApps.size() * ITEM_HEIGHT;
+        ensureVisibleApps();
+        int totalHeight = visibleApps.size() * ITEM_HEIGHT;
         int visibleHeight = 600 - LIST_START_Y - 40;
-        
         return totalHeight > visibleHeight;
+    }
+
+    private void ensureVisibleApps() {
+        if (allApps == null) { visibleApps = java.util.Collections.emptyList(); return; }
+        if (searchQuery == null || searchQuery.isEmpty()) { visibleApps = allApps; return; }
+        String q = searchQuery.toLowerCase();
+        java.util.ArrayList<IApplication> list = new java.util.ArrayList<>();
+        for (IApplication app : allApps) {
+            String name = app.getName() != null ? app.getName().toLowerCase() : "";
+            if (name.contains(q)) list.add(app);
+        }
+        visibleApps = list;
+    }
+
+    @Override
+    public void mouseMoved(PGraphics g, int mouseX, int mouseY) {
+        if (mouseY >= LIST_START_Y) {
+            ensureVisibleApps();
+            int idx = (mouseY + scrollOffset - LIST_START_Y) / ITEM_HEIGHT;
+            if (idx >= 0 && visibleApps != null && idx < visibleApps.size()) {
+                hoveredIndex = idx;
+            } else {
+                hoveredIndex = -1;
+            }
+        } else {
+            hoveredIndex = -1;
+        }
+    }
+
+    @Override
+    public void mouseWheel(PGraphics g, int mouseX, int mouseY, float delta) {
+        ensureVisibleApps();
+        int totalHeight = visibleApps != null ? visibleApps.size() * ITEM_HEIGHT : 0;
+        int visibleHeight = 600 - LIST_START_Y - 40;
+        int maxOffset = Math.max(0, totalHeight - visibleHeight);
+        scrollOffset += (int)(delta * 20);
+        if (scrollOffset < 0) scrollOffset = 0;
+        if (scrollOffset > maxOffset) scrollOffset = maxOffset;
+    }
+
+    @Override
+    public void keyPressed(PGraphics g, char key, int keyCode) {
+        if (!searchFocused) return;
+        if (keyCode == 8) { // Backspace
+            if (!searchQuery.isEmpty()) searchQuery = searchQuery.substring(0, searchQuery.length()-1);
+            return;
+        }
+        if (keyCode == 27) { // ESC
+            searchFocused = false;
+            return;
+        }
+        if (key >= 32 && key != 127 && key != 65535) {
+            searchQuery += key;
+        }
     }
     
     /**
@@ -712,8 +865,8 @@ public class AppLibraryScreen implements Screen, GestureListener {
     }
     
     /**
-     * アプリをホーム画面に追加する。
-     * 
+     * アプリをホーム画面に追加する
+     *
      * @param app 追加するアプリケーション
      */
     private void addAppToHome(IApplication app) {
@@ -740,18 +893,18 @@ public class AppLibraryScreen implements Screen, GestureListener {
                 }
                 
                 if (!added) {
-                    // 全てのページが満員の場合、新しいページを作成
+                    // 全てのペ�Eジが満員の場合、新しいペ�Eジを作�E
                     HomePage newPage = new HomePage();
                     Shortcut newShortcut = new Shortcut(app);
                     if (newPage.addShortcut(newShortcut)) {
                         homePages.add(newPage);
-                        System.out.println("AppLibraryScreen: " + app.getName() + "を新しいページに追加しました");
+                        System.out.println("AppLibraryScreen: " + app.getName() + "を新しいペ�Eジに追加しました");
                         added = true;
                     }
                 }
                 
                 if (added) {
-                    // レイアウトを保存
+                    // レイアウトを保孁E
                     if (kernel.getLayoutManager() != null) {
                         kernel.getLayoutManager().saveLayout(homePages);
                         System.out.println("AppLibraryScreen: レイアウトを保存しました");
@@ -770,7 +923,7 @@ public class AppLibraryScreen implements Screen, GestureListener {
     }
     
     /**
-     * コンテキストメニューを描画する。
+     * コンテキストメニューを描画する
      *
      * @param g 描画用のPGraphicsインスタンス
      */
@@ -778,46 +931,46 @@ public class AppLibraryScreen implements Screen, GestureListener {
         System.out.println("AppLibraryScreen: drawContextMenu() called, longPressedApp=" + (longPressedApp != null ? longPressedApp.getName() : "null"));
 
         if (longPressedApp == null) {
-            System.out.println("AppLibraryScreen: ❌ Cannot draw context menu - longPressedApp is null");
+            System.out.println("AppLibraryScreen: ❁ECannot draw context menu - longPressedApp is null");
             return;
         }
 
         System.out.println("AppLibraryScreen: 🎨 Drawing context menu overlay and box...");
 
-        // 半透明の背景オーバーレイ
+        // 半透�Eの背景オーバ�Eレイ
         g.fill(0, 0, 0, 150);
         g.noStroke();
         g.rect(0, 0, g.width, g.height);
 
-        // コンテキストメニューのボックス
+        // コンチE��ストメニューのボックス
         int menuWidth = 200;
         int menuHeight = 80;
         int menuX = (g.width - menuWidth) / 2;
         int menuY = (g.height - menuHeight) / 2;
 
-        g.fill(backgroundColor + 0x202020); // 少し明るい背景
+        g.fill(backgroundColor + 0x202020); // 少し明るぁE��景
         g.stroke(accentColor);
         g.strokeWeight(2);
         g.rect(menuX, menuY, menuWidth, menuHeight, 8);
 
-        // メニューアイテム: "ホーム画面に追加"
+        // メニューアイチE��: "ホ�Eム画面に追加"
         g.fill(textColor);
         g.textAlign(g.CENTER, g.CENTER);
         g.textSize(16);
-        g.text("ホーム画面に追加", menuX + menuWidth/2, menuY + menuHeight/2);
+        g.text("ホ�Eム画面に追加", menuX + menuWidth/2, menuY + menuHeight/2);
 
-        // 選択された App 名
+        // 選択された App 吁E
         g.fill(accentColor);
         g.textSize(12);
         g.text(longPressedApp.getName(), menuX + menuWidth/2, menuY + 20);
     }
     
     /**
-     * "ホーム画面に追加"ボタンがクリックされたかどうかを確認する。
+     * "ホ�Eム画面に追加"ボタンがクリチE��されたかどぁE��を確認する、E
      * 
-     * @param mouseX マウスX座標
-     * @param mouseY マウスY座標
-     * @return クリックされた場合true
+     * @param mouseX マウスX座樁E
+     * @param mouseY マウスY座樁E
+     * @return クリチE��された場吁Erue
      */
     private boolean isClickingAddToHome(int mouseX, int mouseY) {
         int menuWidth = 200;
@@ -830,19 +983,19 @@ public class AppLibraryScreen implements Screen, GestureListener {
     }
     
     /**
-     * メニュー外をクリックしたかどうかを確認する。
-     * 
+     * メニュー外をクリックしたかどうかを確認する
+     *
      * @param mouseX マウスX座標
      * @param mouseY マウスY座標
-     * @return メニュー外をクリックした場合true
+     * @return メニュー外をクリックした場合はtrue
      */
     private boolean isClickingOutsideMenu(int mouseX, int mouseY) {
         return !isClickingAddToHome(mouseX, mouseY);
     }
     
     /**
-     * アプリのコンテキストメニューを新しいポップアップAPIで表示する。
-     * 
+     * アプリのコンテキストメニューを新しいポップアップAPIで表示する
+     *
      * @param app 対象のアプリケーション
      */
     private void showContextMenuForApp(IApplication app) {
@@ -905,31 +1058,31 @@ public class AppLibraryScreen implements Screen, GestureListener {
     
     @Override
     public int getPriority() {
-        return 100; // 高優先度（ポップアップより低い）
+        return 100; // 高優先度�E��EチE�EアチE�Eより低い�E�E
     }
     
     /**
-     * タップジェスチャーを処理する。
+     * タチE�Eジェスチャーを�E琁E��る、E
      * 
-     * @param x X座標
-     * @param y Y座標
-     * @return 処理した場合true
+     * @param x X座樁E
+     * @param y Y座樁E
+     * @return 処琁E��た場吁Erue
      */
     private boolean handleTap(int x, int y) {
         System.out.println("AppLibraryScreen: Handling tap at (" + x + ", " + y + ")");
         
-        // ヘッダー領域のタップ（戻る）
+        // ヘッダー領域のタチE�E�E�戻る！E
         if (y < LIST_START_Y) {
             goBack();
             return true;
         }
         
-        // アプリアイテムのタップ（起動）
+        // アプリアイチE��のタチE�E�E�起動！E
         IApplication tappedApp = getAppAtPosition(x, y);
         if (tappedApp != null) {
             System.out.println("AppLibraryScreen: Launching app with animation: " + tappedApp.getName());
             
-            // アイコン位置を計算
+            // アイコン位置を計箁E
             int itemIndex = getAppIndex(tappedApp);
             System.out.println("AppLibraryScreen: getAppIndex returned " + itemIndex + " for " + tappedApp.getName());
             if (itemIndex >= 0) {
@@ -951,11 +1104,11 @@ public class AppLibraryScreen implements Screen, GestureListener {
     }
     
     /**
-     * 長押しジェスチャーを処理する。
+     * 長押しジェスチャーを�E琁E��る、E
      * 
-     * @param x X座標
-     * @param y Y座標
-     * @return 処理した場合true
+     * @param x X座樁E
+     * @param y Y座樁E
+     * @return 処琁E��た場吁Erue
      */
     private boolean handleLongPress(int x, int y) {
         System.out.println("AppLibraryScreen: Handling long press at (" + x + ", " + y + ")");
@@ -965,10 +1118,10 @@ public class AppLibraryScreen implements Screen, GestureListener {
             return false;
         }
         
-        // アプリアイテムの長押し（コンテキストメニュー）
+        // アプリアイチE��の長押し（コンチE��ストメニュー�E�E
         IApplication longPressedApp = getAppAtPosition(x, y);
         if (longPressedApp != null) {
-            System.out.println("AppLibraryScreen: ✅ Long press detected for " + longPressedApp.getName() + " - showing popup via GestureManager");
+            System.out.println("AppLibraryScreen: ✁ELong press detected for " + longPressedApp.getName() + " - showing popup via GestureManager");
             showContextMenuForApp(longPressedApp);
             return true;
         }
@@ -977,20 +1130,20 @@ public class AppLibraryScreen implements Screen, GestureListener {
     }
     
     /**
-     * 左スワイプジェスチャーを処理する。
+     * 左スワイプジェスチャーを�E琁E��る、E
      * 
-     * @return 処理した場合true
+     * @return 処琁E��た場吁Erue
      */
     private boolean handleSwipeLeft() {
         System.out.println("AppLibraryScreen: Left swipe detected");
-        // 必要に応じて実装（ページング等）
+        // 忁E��に応じて実裁E���Eージング等！E
         return false;
     }
     
     /**
-     * 右スワイプジェスチャーを処理する。
+     * 右スワイプジェスチャーを�E琁E��る、E
      * 
-     * @return 処理した場合true
+     * @return 処琁E��た場吁Erue
      */
     private boolean handleSwipeRight() {
         System.out.println("AppLibraryScreen: Right swipe detected - going back");
@@ -999,10 +1152,10 @@ public class AppLibraryScreen implements Screen, GestureListener {
     }
     
     /**
-     * アプリのリスト内インデックスを取得する。
+     * アプリのリスト�EインチE��クスを取得する、E
      * 
      * @param app 検索対象のアプリケーション
-     * @return アプリのインデックス、見つからない場合は-1
+     * @return アプリのインチE��クス、見つからなぁE��合�E-1
      */
     private int getAppIndex(IApplication app) {
         if (allApps == null || app == null) {
@@ -1017,17 +1170,12 @@ public class AppLibraryScreen implements Screen, GestureListener {
         return -1;
     }
 
-    /**
-     * Adds keyPressed support for PGraphics (empty implementation, can be overridden)
-     */
-    @Override
-    public void keyPressed(PGraphics g, char key, int keyCode) {
-        // Default implementation - subclasses can override
-    }
+    
 
     /**
-     * ホーム画面のページ一覧を取得するためのゲッターメソッド。
-     * これはHomeScreenクラスに追加する必要があります。
+     * ホ�Eム画面のペ�Eジ一覧を取得するため�EゲチE��ーメソチE��、E
+     * これはHomeScreenクラスに追加する忁E��があります、E
      */
-    // ホーム画面からページリストを取得するため、HomeScreenクラスにもgetterメソッドを追加する必要があります
+    // ホ�Eム画面からペ�Eジリストを取得するため、HomeScreenクラスにもgetterメソチE��を追加する忁E��がありまぁE
 }
+

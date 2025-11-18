@@ -71,6 +71,7 @@ public class HomeScreen implements Screen, GestureListener {
     private boolean isDragging;
     private int dragOffsetX;
     private int dragOffsetY;
+    private boolean isAppLibraryScrolling;
     
     /** Page swiping and animation */
     private float swipeStartX;
@@ -83,8 +84,8 @@ public class HomeScreen implements Screen, GestureListener {
     private float animationProgress = 0.0f;
     private int targetPageIndex = 0;
     private long animationStartTime = 0;
-    private float startOffset = 0.0f; // アニメーション開始時のオフセット
-    private int animationBasePageIndex = 0; // アニメーション中の基準ページ（固定）
+    private float startOffset = 0.0f; // アニメーション開始時のオフセチE
+    private int animationBasePageIndex = 0; // アニメーション中の基準EージE固定）
     private static final long ANIMATION_DURATION = 500; // 500ms for smoother animation
     
     /** Grid configuration for app shortcuts */
@@ -95,6 +96,8 @@ public class HomeScreen implements Screen, GestureListener {
     
     /** App library navigation area */
     private static final int NAV_AREA_HEIGHT = 100;
+    private static final int APP_LIBRARY_LIST_START_Y = 110;
+    private static final int APP_LIBRARY_BOTTOM_PADDING = 20;
     
     /**
      * Constructs a new HomeScreen instance.
@@ -103,9 +106,16 @@ public class HomeScreen implements Screen, GestureListener {
      */
     public HomeScreen(Kernel kernel) {
         this.kernel = kernel;
-        this.backgroundColor = 0x1E1E1E; // Dark theme background
-        this.textColor = 0xFFFFFF;       // White text
-        this.accentColor = 0x4A90E2;     // Blue accent
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        if (theme != null) {
+            this.backgroundColor = theme.colorBackground();
+            this.textColor = theme.colorOnSurface();
+            this.accentColor = theme.colorPrimary();
+        } else {
+            this.backgroundColor = 0x1E1E1E; // fallback
+            this.textColor = 0xFFFFFF;
+            this.accentColor = 0x4A90E2;
+        }
         this.isInitialized = false;
         this.homePages = new ArrayList<>();
         this.currentPageIndex = 0;
@@ -114,6 +124,7 @@ public class HomeScreen implements Screen, GestureListener {
         this.draggedShortcut = null;
         this.isDragging = false;
         this.isSwipingPages = false;
+        this.isAppLibraryScrolling = false;
         this.pageTransitionOffset = 0.0f;
         this.isAnimating = false;
         this.targetPageIndex = 0;
@@ -145,7 +156,7 @@ public class HomeScreen implements Screen, GestureListener {
      */
     public void setup(PGraphics g) {
         if (isInitialized) {
-            System.out.println("⚠️ HomeScreen: setup() called again - skipping duplicate initialization");
+            System.out.println("⚠EEHomeScreen: setup() called again - skipping duplicate initialization");
             return;
         }
 
@@ -157,7 +168,7 @@ public class HomeScreen implements Screen, GestureListener {
             try {
                 loadBackgroundImage();
             } catch (Exception e) {
-                System.err.println("❌ HomeScreen: Failed to load background image: " + e.getMessage());
+                System.err.println("❁EHomeScreen: Failed to load background image: " + e.getMessage());
                 e.printStackTrace();
             }
 
@@ -169,7 +180,7 @@ public class HomeScreen implements Screen, GestureListener {
                 totalShortcuts += page.getShortcutCount();
             }
 
-            System.out.println("✅ HomeScreen: Initialization complete!");
+            System.out.println("✁EHomeScreen: Initialization complete!");
             System.out.println("    • Pages created: " + homePages.size());
             System.out.println("    • Total shortcuts: " + totalShortcuts);
             System.out.println("    • Grid size: " + GRID_COLS + "x" + GRID_ROWS + " per page");
@@ -188,9 +199,9 @@ public class HomeScreen implements Screen, GestureListener {
                 System.out.println("HomeScreen: Registered gesture listener");
             }
         } catch (Exception e) {
-            System.err.println("❌ HomeScreen: Critical error during setup: " + e.getMessage());
+            System.err.println("❁EHomeScreen: Critical error during setup: " + e.getMessage());
             e.printStackTrace();
-            // 緊急時は少なくとも1つの空ページを確保
+            // 緊急時E少なくとめEつの空ペEジを確俁E
             if (homePages.isEmpty()) {
                 homePages.add(new HomePage("Emergency"));
             }
@@ -218,34 +229,31 @@ public class HomeScreen implements Screen, GestureListener {
      */
     public void draw(PGraphics g) {
         try {
-            // DEBUG: Log state on first few frames
-            if (kernel.frameCount <= 5) {
-                System.out.println("[HomeScreen.draw()] Frame " + kernel.frameCount +
-                    ": homePages.size=" + homePages.size() +
-                    ", currentPageIndex=" + currentPageIndex);
-                if (!homePages.isEmpty()) {
-                    HomePage page = homePages.get(currentPageIndex);
-                    System.out.println("  Current page shortcuts: " + page.getShortcutCount());
-                }
+            // 毎フレームチEEマ更新EE動Eり替え対応）
+            var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+            if (theme != null) {
+                this.backgroundColor = theme.colorBackground();
+                this.textColor = theme.colorOnSurface();
+                this.accentColor = theme.colorPrimary();
             }
-
-            // ページタイプに応じた背景処理
+            // DEBUGログは無効化（パフォーマンス向上EためEE
+            // ペEジタイプに応じた背景処理
             HomePage currentPage = getCurrentPage();
-            if (currentPage != null && currentPage.isAppLibraryPage()) {
-                // AppLibraryページ用の背景
-                g.background(42, 42, 42); // ダークグレー
+            int bg = backgroundColor;
+            int br = (bg>>16)&0xFF, gr = (bg>>8)&0xFF, bb = bg&0xFF;
+            if (backgroundImage != null && (currentPage == null || !currentPage.isAppLibraryPage())) {
+                g.background(br, gr, bb);
+                g.image(backgroundImage, 0, 0, 400, 600);
             } else {
-                // 通常ページ用の背景
-                if (backgroundImage != null) {
-                    g.background(30, 30, 30); // ベース背景色
-                    g.image(backgroundImage, 0, 0, 400, 600);
-                } else {
-                    g.background(30, 30, 30);
-                }
+                g.background(br, gr, bb);
             }
 
             // Update page transition animation
             updatePageAnimation();
+
+            // Live follow from gesture manager
+            // TODO: syncLivePageDragFromGesture() - method not found, commented out for now
+            // syncLivePageDragFromGesture();
 
             // Check edge auto-slide timer continuously during drag
             updateEdgeAutoSlideTimer();
@@ -263,7 +271,7 @@ public class HomeScreen implements Screen, GestureListener {
             drawPageIndicators(g);
 
         } catch (Exception e) {
-            System.err.println("❌ HomeScreen: Draw error (PGraphics) - " + e.getMessage());
+            System.err.println("❁EHomeScreen: Draw error (PGraphics) - " + e.getMessage());
             e.printStackTrace();
             // Fallback drawing
             g.background(255, 0, 0);
@@ -310,6 +318,7 @@ public class HomeScreen implements Screen, GestureListener {
         longPressTriggered = false;
         swipeStartX = mouseX;
         isSwipingPages = false;
+        isAppLibraryScrolling = false;
 
         // Check if click is in navigation area (app library), but not in control center area
         // Control center area starts at 90% of screen height (540px), nav area ends at 500px
@@ -318,7 +327,7 @@ public class HomeScreen implements Screen, GestureListener {
             return;
         }
 
-        // Check if click is on a shortcut (座標変換を考慮)
+        // Check if click is on a shortcut (座標変換を老EEE)
         Shortcut clickedShortcut = getShortcutAtPositionWithTransform(mouseX, mouseY);
         if (clickedShortcut != null) {
             if (isEditing) {
@@ -341,8 +350,8 @@ public class HomeScreen implements Screen, GestureListener {
         } else {
             // Empty area - could be page swipe or long press for edit mode
             if (isEditing) {
-                // 編集モード中に空のスペースをクリックした場合は編集モード終了を予約
-                // 実際の処理はGestureManagerのTAPイベントで実行される
+                // 編雁EEEード中に空のスペEスをクリチEEEした場合E編雁EEEード終了EE予紁E
+                // 実際の処理EEGestureManagerのTAPイベントで実行される
                 System.out.println("HomeScreen: Empty space clicked in edit mode - will exit on TAP");
             } else {
                 // Start monitoring for long press to enter edit mode
@@ -375,21 +384,21 @@ public class HomeScreen implements Screen, GestureListener {
     }
     
     /**
-     * 座標変換を考慮した削除ボタンクリック判定。
+     * 座標変換を老EEEした削除ボタンクリチEEE判定、
      * 
      * @param mouseX マウスX座標（絶対座標）
      * @param mouseY マウスY座標（絶対座標）
-     * @param shortcut 対象のショートカット
-     * @return 削除ボタンをクリックした場合true
+     * @param shortcut 対象のショートカチEEE
+     * @return 削除ボタンをクリチEEEした場合rue
      */
     private boolean isClickingDeleteButtonWithTransform(int mouseX, int mouseY, Shortcut shortcut) {
         if (!isEditing) return false;
         
-        // 現在の座標変換オフセットを計算
+        // 現在の座標変換オフセチEEEを計箁E
         int basePageForOffset = isAnimating ? animationBasePageIndex : currentPageIndex;
         float totalOffset = -basePageForOffset * 400 + pageTransitionOffset;
         
-        // ショートカットがどのページにあるかを特定
+        // ショートカチEEEがどのペEジにあるかを特定
         int shortcutPageIndex = -1;
         for (int i = 0; i < homePages.size(); i++) {
             HomePage page = homePages.get(i);
@@ -401,7 +410,7 @@ public class HomeScreen implements Screen, GestureListener {
         
         if (shortcutPageIndex == -1) return false;
         
-        // ページ内でのショートカット座標を計算
+        // ペEジ冁EEEのショートカチEEE座標を計箁E
         int startY = 80;
         int gridWidth = GRID_COLS * (ICON_SIZE + ICON_SPACING) - ICON_SPACING;
         int startX = (400 - gridWidth) / 2;
@@ -409,7 +418,7 @@ public class HomeScreen implements Screen, GestureListener {
         int iconX = startX + shortcut.getGridX() * (ICON_SIZE + ICON_SPACING);
         int iconY = startY + shortcut.getGridY() * (ICON_SIZE + ICON_SPACING + 20);
         
-        // 画面上での削除ボタン位置を計算（座標変換を考慮）
+        // 画面上での削除ボタン位置を計算（座標変換を老EEEEEEE
         float screenDeleteX = totalOffset + shortcutPageIndex * 400 + iconX + ICON_SIZE - 8;
         float screenDeleteY = iconY + 8;
         
@@ -439,9 +448,9 @@ public class HomeScreen implements Screen, GestureListener {
      * @param mouseY The y-coordinate of the mouse drag
      */
     public void mouseDragged(PGraphics g, int mouseX, int mouseY) {
-        // GestureManagerシステムが有効な場合は何もしない
-        // 実際のドラッグ処理は onGesture -> handleDragMove で実行される
-        // パフォーマンス改善: 頻繁に呼ばれるのでログ出力を抑制
+        // GestureManagerシスチEEEが有効な場合E何もしなぁE
+        // 実際のドラチEEE処理EE onGesture -> handleDragMove で実行される
+        // パフォーマンス改喁E 頻繁に呼ばれるのでログ出力を抑制
         // System.out.println("HomeScreen: mouseDragged called - delegating to GestureManager");
     }
 
@@ -468,11 +477,11 @@ public class HomeScreen implements Screen, GestureListener {
      * @param mouseY The y-coordinate of the mouse release
      */
     public void mouseReleased(PGraphics g, int mouseX, int mouseY) {
-        // GestureManagerシステムが有効な場合は基本的に何もしない
-        // 実際の処理は onGesture -> handleDragEnd, handleLongPress で実行される
+        // GestureManagerシスチEEEが有効な場合E基本皁EEE何もしなぁE
+        // 実際の処理EE onGesture -> handleDragEnd, handleLongPress で実行される
         System.out.println("HomeScreen: mouseReleased called - delegating to GestureManager");
 
-        // 念のため状態をリセット（安全措置）
+        // 念のため状態をリセチEEEEEE安E措置EEEE
         resetDragState();
         isSwipingPages = false;
     }
@@ -489,11 +498,11 @@ public class HomeScreen implements Screen, GestureListener {
         isDragging = true;
         shortcut.setDragging(true);
         
-        // 座標変換を考慮してショートカットの画面上位置を計算
+        // 座標変換を老EEEしてショートカチEEEの画面上位置を計箁E
         int basePageForOffset = isAnimating ? animationBasePageIndex : currentPageIndex;
         float totalOffset = -basePageForOffset * 400 + pageTransitionOffset;
         
-        // ショートカットがどのページにあるかを特定
+        // ショートカチEEEがどのペEジにあるかを特定
         int shortcutPageIndex = -1;
         for (int i = 0; i < homePages.size(); i++) {
             HomePage page = homePages.get(i);
@@ -504,7 +513,7 @@ public class HomeScreen implements Screen, GestureListener {
         }
         
         if (shortcutPageIndex != -1) {
-            // ページ内でのショートカット座標を計算
+            // ペEジ冁EEEのショートカチEEE座標を計箁E
             int startY = 80;
             int gridWidth = GRID_COLS * (ICON_SIZE + ICON_SPACING) - ICON_SPACING;
             int startX = (400 - gridWidth) / 2;
@@ -512,13 +521,13 @@ public class HomeScreen implements Screen, GestureListener {
             int localShortcutX = startX + shortcut.getGridX() * (ICON_SIZE + ICON_SPACING);
             int shortcutY = startY + shortcut.getGridY() * (ICON_SIZE + ICON_SPACING + 20);
             
-            // 画面上でのショートカット位置を計算（座標変換を考慮）
+            // 画面上でのショートカチEEE位置を計算（座標変換を老EEEEEEE
             int screenShortcutX = (int) (totalOffset + shortcutPageIndex * 400 + localShortcutX);
             
             dragOffsetX = mouseX - screenShortcutX;
             dragOffsetY = mouseY - shortcutY;
         } else {
-            // フォールバック: 従来の計算
+            // フォールバック: 従来の計箁E
             int startY = 80;
             int gridWidth = GRID_COLS * (ICON_SIZE + ICON_SPACING) - ICON_SPACING;
             int startX = (400 - gridWidth) / 2;
@@ -544,14 +553,14 @@ public class HomeScreen implements Screen, GestureListener {
 
         System.out.println("HomeScreen: [DROP] Handling shortcut drop at (" + mouseX + ", " + mouseY + ") on page " + currentPageIndex);
 
-        // アニメーション中の場合はドロップを遅延実行
+        // アニメーション中の場合EドロチEEEを遅延実衁E
         if (isAnimating) {
             System.out.println("HomeScreen: [DROP] Animation in progress, scheduling drop for later");
             scheduleDelayedDrop(mouseX, mouseY);
             return;
         }
 
-        // 即座にドロップを実行
+        // 即座にドロチEEEを実衁E
         executeDrop(mouseX, mouseY, draggedShortcut);
     }
 
@@ -563,41 +572,41 @@ public class HomeScreen implements Screen, GestureListener {
 
         HomePage currentPage = getCurrentPage();
         if (currentPage != null) {
-            // 現在のページからショートカットを削除
+            // 現在のペEジからショートカチEEEを削除
             currentPage.removeShortcut(draggedShortcut);
 
-            // 次のページを取得または作成
+            // 次のペEジを取得またE作E
             int nextPageIndex = currentPageIndex + 1;
             if (nextPageIndex >= homePages.size()) {
-                // 新しいページを作成
+                // 新しいペEジを作E
                 addNewPage();
             }
 
-            // 次のページに移動
+            // 次のペEジに移勁E
             HomePage nextPage = homePages.get(nextPageIndex);
             if (nextPage != null && !nextPage.isAppLibraryPage()) {
-                // 次のページの最初の空きスロットに追加
+                // 次のペEジの最初E空きスロチEEEに追加
                 int[] emptySlot = findFirstEmptySlot(nextPage);
                 if (emptySlot != null) {
                     draggedShortcut.setGridPosition(emptySlot[0], emptySlot[1]);
                     nextPage.addShortcut(draggedShortcut);
 
-                    // 次のページに自動的にスライド
+                    // 次のペEジに自動的にスライチE
                     startPageTransition(nextPageIndex);
 
-                    System.out.println("HomeScreen: ショートカットを次のページに移動しました");
+                    System.out.println("HomeScreen: ショートカチEEEを次のペEジに移動しました");
 
-                    // レイアウトを自動保存
+                    // レイアウトを自動保孁E
                     saveCurrentLayout();
                 } else {
-                    // 次のページがフルの場合、さらに新しいページを作成
+                    // 次のペEジがフルの場合、さらに新しいペEジを作E
                     addNewPage();
                     HomePage newPage = homePages.get(homePages.size() - 1);
                     draggedShortcut.setGridPosition(0, 0);
                     newPage.addShortcut(draggedShortcut);
                     startPageTransition(homePages.size() - 1);
 
-                    System.out.println("HomeScreen: 新しいページを作成してショートカットを移動しました");
+                    System.out.println("HomeScreen: 新しいペEジを作EしてショートカチEEEを移動しました");
                     saveCurrentLayout();
                 }
             }
@@ -693,15 +702,15 @@ public class HomeScreen implements Screen, GestureListener {
         HomePage currentPage = getCurrentPage();
         if (currentPage != null) {
             currentPage.removeShortcut(shortcut);
-            System.out.println("HomeScreen: ショートカット削除: " + shortcut.getDisplayName());
+            System.out.println("HomeScreen: ショートカチEEE削除: " + shortcut.getDisplayName());
             
-            // レイアウトを自動保存
+            // レイアウトを自動保孁E
             saveCurrentLayout();
         }
     }
     
     /**
-     * 現在のレイアウトをLayoutManagerに保存する。
+     * 現在のレイアウトをLayoutManagerに保存する、
      */
     private void saveCurrentLayout() {
         if (kernel != null && kernel.getLayoutManager() != null && homePages != null) {
@@ -745,11 +754,11 @@ public class HomeScreen implements Screen, GestureListener {
     }
     
     /**
-     * 背景画像を読み込む。
+     * 背景画像を読み込む、
      */
     private void loadBackgroundImage() {
         try {
-            // TODO: PGraphics統一アーキテクチャに対応した画像読み込み機能を実装
+            // TODO: PGraphics統一アーキチEEEチャに対応した画像読み込み機Eを実裁E
             // 現在はbackgroundImageをnullのままにして、色背景を使用
             System.out.println("HomeScreen: Background image loading disabled in PGraphics architecture - using color background");
             backgroundImage = null;
@@ -770,18 +779,18 @@ public class HomeScreen implements Screen, GestureListener {
     }
     
     /**
-     * ホームページのリストを取得する。
-     * AppLibraryScreenからアクセスするために使用される。
+     * ホEムペEジのリストを取得する、
+     * AppLibraryScreenからアクセスするために使用される、
      * 
-     * @return ホームページのリスト
+     * @return ホEムペEジのリスチE
      */
     public List<HomePage> getHomePages() {
         return homePages;
     }
     
     /**
-     * 最初のページ（メインホームページ）に移動する。
-     * スペースキーによるホームナビゲーション用。
+     * 最初EペEジEEEメインホEムペEジEEEに移動する、
+     * スペEスキーによるホEムナビゲーション用、
      */
     public void navigateToFirstPage() {
         System.out.println("HomeScreen: Navigating to first page");
@@ -794,8 +803,8 @@ public class HomeScreen implements Screen, GestureListener {
     }
     
     /**
-     * ホームページを初期化し、保存されたレイアウトを読み込むかアプリを配置する。
-     * まず保存されたレイアウトの読み込みを試行し、存在しない場合はデフォルトレイアウトを作成する。
+     * ホEムペEジをE期化し、保存されたレイアウトを読み込むかアプリをE置する、
+     * まず保存されたレイアウトE読み込みを試行し、存在しなぁEEE合EチEEEォルトレイアウトを作Eする、
      */
     private void initializeHomePages() {
         try {
@@ -812,34 +821,34 @@ public class HomeScreen implements Screen, GestureListener {
                 if (savedLayout != null && !savedLayout.isEmpty()) {
                     homePages.addAll(savedLayout);
                     layoutLoaded = true;
-                    System.out.println("HomeScreen: 保存されたレイアウトを復元しました (" + homePages.size() + "ページ)");
+                    System.out.println("HomeScreen: 保存されたレイアウトを復允EEEました (" + homePages.size() + "ペEジ)");
                 } else {
-                    System.out.println("HomeScreen: 保存されたレイアウトが見つかりません、デフォルトレイアウトを作成");
+                    System.out.println("HomeScreen: 保存されたレイアウトが見つかりません、デフォルトレイアウトを作E");
                 }
             }
             */
-            System.out.println("HomeScreen: デフォルトレイアウトを作成中...");
+            System.out.println("HomeScreen: チEEEォルトレイアウトを作E中...");
 
 
-            // 保存されたレイアウトがない場合はデフォルトレイアウトを作成
+            // 保存されたレイアウトがなぁEEE合EチEEEォルトレイアウトを作E
             if (!layoutLoaded) {
                 createDefaultLayout();
             }
             
-            // AppLibraryページの重複を防ぐ（厳密なチェック）
+            // AppLibraryペEジの重褁EEE防ぐ（厳寁EEEチェチEEEEEEE
             long appLibraryCount = homePages.stream()
                 .filter(page -> page.getPageType() == HomePage.PageType.APP_LIBRARY)
                 .count();
                 
-            System.out.println("HomeScreen: 現在のAppLibraryページ数: " + appLibraryCount);
+            System.out.println("HomeScreen: 現在のAppLibraryペEジ数: " + appLibraryCount);
             
             if (appLibraryCount == 0) {
                 createAppLibraryPage();
-                System.out.println("HomeScreen: AppLibraryページを新規追加しました");
+                System.out.println("HomeScreen: AppLibraryペEジを新規追加しました");
             } else if (appLibraryCount > 1) {
-                // 重複がある場合は修正
-                System.out.println("HomeScreen: ⚠️ AppLibraryページが重複しています(" + appLibraryCount + "個) - 修正中...");
-                // 最初のもの以外を削除
+                // 重褁EEEある場合E修正
+                System.out.println("HomeScreen: ⚠EEEEAppLibraryペEジが重褁EEEてぁEEEぁE" + appLibraryCount + "倁E - 修正中...");
+                // 最初EもE以外を削除
                 List<HomePage> toRemove = new ArrayList<>();
                 boolean foundFirst = false;
                 for (HomePage page : homePages) {
@@ -852,17 +861,17 @@ public class HomeScreen implements Screen, GestureListener {
                     }
                 }
                 homePages.removeAll(toRemove);
-                System.out.println("HomeScreen: ✅ " + toRemove.size() + "個の重複AppLibraryページを削除しました");
+                System.out.println("HomeScreen: ✁E" + toRemove.size() + "個E重複AppLibraryペEジを削除しました");
             } else {
                 System.out.println("HomeScreen: AppLibraryページは既に存在します");
             }
-            
+
             System.out.println("HomeScreen: " + homePages.size() + "ページでホーム画面を初期化完了");
             
         } catch (Exception e) {
-            System.err.println("HomeScreen: initializeHomePages でクリティカルエラー: " + e.getMessage());
+            System.err.println("HomeScreen: initializeHomePages でクリチEカルエラー: " + e.getMessage());
             e.printStackTrace();
-            // 緊急時は少なくとも1つの空ページを確保
+            // 緊急時E少なくとめEつの空ペEジを確俁E
             if (homePages.isEmpty()) {
                 homePages.add(new HomePage("Emergency"));
             }
@@ -870,10 +879,10 @@ public class HomeScreen implements Screen, GestureListener {
     }
     
     /**
-     * デフォルトのレイアウトを作成し、利用可能なアプリを配置する。
+     * チEEEォルトEレイアウトを作Eし、利用可能なアプリをE置する、
      */
     private void createDefaultLayout() {
-        // 最初のページを作成
+        // 最初EペEジを作E
         HomePage firstPage = new HomePage("Home");
         homePages.add(firstPage);
         
@@ -881,7 +890,7 @@ public class HomeScreen implements Screen, GestureListener {
             try {
                 List<IApplication> loadedApps = kernel.getAppLoader().getLoadedApps();
                 if (loadedApps != null) {
-                    // ランチャー以外のロード済みアプリを追加
+                    // ランチャー以外Eロード済みアプリを追加
                     List<IApplication> availableApps = new ArrayList<>();
                     for (IApplication app : loadedApps) {
                         if (app != null && !"jp.moyashi.phoneos.core.apps.launcher".equals(app.getApplicationId())) {
@@ -893,13 +902,13 @@ public class HomeScreen implements Screen, GestureListener {
                     for (IApplication app : availableApps) {
                         try {
                             if (currentPage.isFull()) {
-                                // 現在のページが満員の場合は新しいページを作成
+                                // 現在のペEジが満員の場合E新しいペEジを作E
                                 currentPage = new HomePage();
                                 homePages.add(currentPage);
                             }
                             currentPage.addShortcut(app);
                         } catch (Exception e) {
-                            System.err.println("HomeScreen: ページへのアプリ追加エラー: " + e.getMessage());
+                            System.err.println("HomeScreen: ペEジへのアプリ追加エラー: " + e.getMessage());
                         }
                     }
                 }
@@ -907,31 +916,31 @@ public class HomeScreen implements Screen, GestureListener {
                 System.err.println("HomeScreen: AppLoaderアクセスエラー: " + e.getMessage());
             }
         } else {
-            System.out.println("HomeScreen: KernelまたはAppLoaderがnull - 空のページを作成");
+            System.out.println("HomeScreen: KernelまたEAppLoaderがnull - 空のペEジを作E");
         }
         
-        // デフォルトレイアウトを保存
+        // チEEEォルトレイアウトを保孁E
         if (kernel != null && kernel.getLayoutManager() != null) {
             kernel.getLayoutManager().saveLayout(homePages);
-            System.out.println("HomeScreen: デフォルトレイアウトを保存しました");
+            System.out.println("HomeScreen: チEEEォルトレイアウトを保存しました");
         }
     }
     
     /**
-     * AppLibraryページを作成し、全アプリケーションを設定する。
+     * AppLibraryペEジを作Eし、アプリケーションを設定する、
      */
     private void createAppLibraryPage() {
-        System.out.println("HomeScreen: AppLibraryページを作成中...");
+        System.out.println("HomeScreen: AppLibraryペEジを作E中...");
         
-        // AppLibraryページを作成
+        // AppLibraryペEジを作E
         HomePage appLibraryPage = new HomePage(HomePage.PageType.APP_LIBRARY, "App Library");
         
-        // 全アプリケーションを取得してAppLibraryページに設定
+        // 全アプリケーションを取得してAppLibraryペEジに設定
         if (kernel != null && kernel.getAppLoader() != null) {
             try {
                 List<IApplication> allApps = kernel.getAppLoader().getLoadedApps();
                 if (allApps != null) {
-                    // ランチャー以外のアプリを取得
+                    // ランチャー以外Eアプリを取征E
                     List<IApplication> availableApps = new ArrayList<>();
                     for (IApplication app : allApps) {
                         if (app != null && !"jp.moyashi.phoneos.core.apps.launcher".equals(app.getApplicationId())) {
@@ -942,14 +951,14 @@ public class HomeScreen implements Screen, GestureListener {
                     System.out.println("HomeScreen: AppLibraryページに " + availableApps.size() + " 個のアプリを設定");
                 }
             } catch (Exception e) {
-                System.err.println("HomeScreen: AppLibraryページ作成エラー: " + e.getMessage());
+                System.err.println("HomeScreen: AppLibraryペEジ作Eエラー: " + e.getMessage());
             }
         }
         
-        // ページリストに追加
+        // ペEジリストに追加
         homePages.add(appLibraryPage);
-        System.out.println("HomeScreen: AppLibraryページを追加しました");
-        System.out.println("HomeScreen: 総ページ数: " + homePages.size() + ", AppLibraryページインデックス: " + (homePages.size() - 1));
+        System.out.println("HomeScreen: AppLibraryペEジを追加しました");
+        System.out.println("HomeScreen: 総Eージ数: " + homePages.size() + ", AppLibraryペEジインチEEEクス: " + (homePages.size() - 1));
     }
     
     /**
@@ -959,7 +968,13 @@ public class HomeScreen implements Screen, GestureListener {
      */
     private void drawStatusBar(PGraphics g) {
         try {
-            g.fill(textColor, 180); // Semi-transparent text
+            // チEEEマ色
+            var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+            int onSurface = theme != null ? theme.colorOnSurface() : textColor;
+            int success = theme != null ? theme.colorSuccess() : 0xFF4CAF50;
+            int warning = theme != null ? theme.colorWarning() : 0xFFFF9800;
+
+            { int c=onSurface; g.fill((c>>16)&0xFF, (c>>8)&0xFF, c&0xFF, 180); } // Semi-transparent text
             g.textAlign(g.LEFT, g.TOP);
             g.textSize(12);
             
@@ -985,17 +1000,17 @@ public class HomeScreen implements Screen, GestureListener {
                                  currentPage.getPageName() != null ? currentPage.getPageName() : 
                                  "Page " + (currentPageIndex + 1);
                                  
-                g.fill(255, 255, 255, 150);
+                { int c=onSurface; g.fill((c>>16)&0xFF, (c>>8)&0xFF, c&0xFF, 150); }
                 g.textAlign(g.CENTER, g.TOP);
                 g.textSize(11);
                 g.text(pageName, 200, 15);
             }
-            
+
             // Status indicator
             if (isInitialized) {
-                g.fill(76, 175, 80); // Green if ready (0x4CAF50 -> RGB)
+                g.fill((success>>16)&0xFF, (success>>8)&0xFF, success&0xFF);
             } else {
-                g.fill(255, 152, 0); // Orange if not (0xFF9800 -> RGB)
+                g.fill((warning>>16)&0xFF, (warning>>8)&0xFF, warning&0xFF);
             }
             g.noStroke();
             g.ellipse(370, 20, 8, 8);
@@ -1011,30 +1026,34 @@ public class HomeScreen implements Screen, GestureListener {
     }
     
     /**
-     * アニメーションの進行度を更新する。
+     * アニメーションの進行度を更新する、
      */
     private void updatePageAnimation() {
         if (!isAnimating) {
             return;
         }
-        
+
         long currentTime = System.currentTimeMillis();
         long elapsed = currentTime - animationStartTime;
-        
-        if (elapsed >= ANIMATION_DURATION) {
+        long effectiveDuration = ANIMATION_DURATION;
+        if (kernel != null && kernel.getSettingsManager() != null) {
+            effectiveDuration = jp.moyashi.phoneos.core.ui.effects.Motion.durationAdjusted((int)ANIMATION_DURATION, kernel.getSettingsManager());
+        }
+
+        if (elapsed >= effectiveDuration) {
             // アニメーション完了
             completePageTransition();
         } else {
             // アニメーション進行中 - イージング関数を適用
-            float t = (float) elapsed / ANIMATION_DURATION;
-            animationProgress = easeOutCubic(t);
+            float t = (float) elapsed / (float)Math.max(1L, effectiveDuration);
+            animationProgress = jp.moyashi.phoneos.core.ui.effects.Motion.easeOutCubic(t);
             
-            // ページオフセットを計算
+            // ペEジオフセチEEEを計箁E
             if (targetPageIndex == animationBasePageIndex) {
-                // 元のページに戻るアニメーション - ドラッグ位置から0に戻る
+                // 允EEEペEジに戻るアニメーション - ドラチEEE位置から0に戻めE
                 pageTransitionOffset = startOffset * (1.0f - animationProgress);
             } else {
-                // ページ切り替えアニメーション - 開始位置から目標位置への補間
+                // ペEジ刁EEE替えアニメーション - 開始位置から目標位置への補間
                 float targetOffset = (animationBasePageIndex - targetPageIndex) * 400;
                 pageTransitionOffset = startOffset + (targetOffset - startOffset) * animationProgress;
                 System.out.println("🎬 Animation: basePage=" + animationBasePageIndex + " to targetPage=" + targetPageIndex + 
@@ -1044,10 +1063,10 @@ public class HomeScreen implements Screen, GestureListener {
     }
     
     /**
-     * イージング関数（ease-out quad - より穏やか）
+     * イージング関数EEEEase-out quad - より穏やか）
      * 
-     * @param t 進行度 (0.0 ～ 1.0)
-     * @return イージング適用後の値
+     * @param t 進行度 (0.0 EEEE1.0)
+     * @return イージング適用後E値
      */
     private float easeOutCubic(float t) {
         // ease-out quadratic - より自然で穏やかな動き
@@ -1055,16 +1074,16 @@ public class HomeScreen implements Screen, GestureListener {
     }
     
     /**
-     * ページ切り替えアニメーションを完了する。
+     * ペEジ刁EEE替えアニメーションを完了EEる、
      */
     private void completePageTransition() {
-        // アニメーション完了時にページインデックスを更新し、座標系をリセット
+        // アニメーション完了EEにペEジインチEEEクスを更新し、座標系をリセチEEE
         System.out.println("🎬 Completing transition: currentPage=" + currentPageIndex + " -> targetPage=" + targetPageIndex);
         
-        // ページインデックスを目標に更新
+        // ペEジインチEEEクスを目標に更新
         currentPageIndex = targetPageIndex;
         
-        // 座標系をリセット
+        // 座標系をリセチEEE
         pageTransitionOffset = 0.0f;
         isAnimating = false;
         animationProgress = 0.0f;
@@ -1072,26 +1091,26 @@ public class HomeScreen implements Screen, GestureListener {
         
         System.out.println("🎬 Page transition completed to page " + currentPageIndex + ", offset reset to 0");
 
-        // アニメーション完了後に遅延されたドロップを実行
+        // アニメーション完了EEに遁EEEされたドロチEEEを実衁E
         executePendingDrop();
     }
     
     /**
-     * ページ切り替えアニメーションを開始する。
+     * ペEジ刁EEE替えアニメーションを開始する、
      * 
-     * @param newPageIndex 目標ページインデックス
+     * @param newPageIndex 目標EージインチEEEクス
      */
     private void startPageTransition(int newPageIndex) {
         if (newPageIndex == currentPageIndex || isAnimating) {
-            return; // 同じページまたはアニメーション中は無視
+            return; // 同じペEジまたEアニメーション中は無要E
         }
         
         targetPageIndex = newPageIndex;
         isAnimating = true;
         animationStartTime = System.currentTimeMillis();
         animationProgress = 0.0f;
-        startOffset = pageTransitionOffset; // 現在のオフセットを保存
-        animationBasePageIndex = currentPageIndex; // 座標計算の基準ページを固定
+        startOffset = pageTransitionOffset; // 現在のオフセチEEEを保孁E
+        animationBasePageIndex = currentPageIndex; // 座標計算E基準Eージを固定
         
         System.out.println("🎬 Starting page transition from " + currentPageIndex + " to " + targetPageIndex + " with startOffset=" + startOffset + ", basePageIndex=" + animationBasePageIndex);
     }
@@ -1113,11 +1132,11 @@ public class HomeScreen implements Screen, GestureListener {
             return;
         }
         
-        // 座標変換でページ切り替えアニメーションを実現
+        // 座標変換でペEジ刁EEE替えアニメーションを実現
         g.pushMatrix();
 
-        // ページ全体のオフセットを適用
-        // アニメーション中は基準ページ（animationBasePageIndex）を使用してジャンプを防ぐ
+        // ペEジ全体EオフセチEEEを適用
+        // アニメーション中は基準EージEEEEnimationBasePageIndexEEEを使用してジャンプを防ぁE
         int basePageForOffset = isAnimating ? animationBasePageIndex : currentPageIndex;
         float totalOffset = -basePageForOffset * 400 + pageTransitionOffset;
         g.translate(totalOffset, 0);
@@ -1126,10 +1145,10 @@ public class HomeScreen implements Screen, GestureListener {
             System.out.println("🎨 Drawing with basePageIndex=" + basePageForOffset + ", pageTransitionOffset=" + pageTransitionOffset + ", totalOffset=" + totalOffset);
         }
         
-        // 全ページを横に並べて描画
+        // 全ペEジを横に並べて描画
         for (int i = 0; i < homePages.size(); i++) {
             g.pushMatrix();
-            g.translate(i * 400, 0); // 各ページを400px間隔で配置
+            g.translate(i * 400, 0); // 合EEージめE00px間隔で配置
             
             HomePage page = homePages.get(i);
             if (page.isAppLibraryPage()) {
@@ -1143,30 +1162,30 @@ public class HomeScreen implements Screen, GestureListener {
         
         g.popMatrix();
 
-        // ドラッグ中のアイコンを最上位レイヤー（変換なし）で描画
+        // ドラチEEE中のアイコンを最上位レイヤーEEE変換なし）で描画
         if (isDragging && draggedShortcut != null) {
             drawDraggedShortcut(g, draggedShortcut);
         }
     }
     
     /**
-     * マウス座標をページ座標系に変換する。
+     * マウス座標をペEジ座標系に変換する、
      * 
-     * @param mouseX マウスX座標
-     * @param mouseY マウスY座標
-     * @return [変換後X座標, 変換後Y座標, ページインデックス]
+     * @param mouseX マウスX座樁E
+     * @param mouseY マウスY座樁E
+     * @return [変換後X座樁E 変換後Y座樁E ペEジインチEEEクス]
      */
     private int[] transformMouseCoordinates(int mouseX, int mouseY) {
-        // 現在の変換行列を考慮してマウス座標を変換
+        // 現在の変換行Eを老EEEしてマウス座標を変換
         float totalOffset = -currentPageIndex * 400 + pageTransitionOffset;
         float transformedX = mouseX - totalOffset;
         
-        // どのページ上のクリックかを判定
+        // どのペEジ上EクリチEEEかを判定
         int targetPageIndex = (int) (transformedX / 400);
         if (targetPageIndex < 0) targetPageIndex = 0;
         if (targetPageIndex >= homePages.size()) targetPageIndex = homePages.size() - 1;
         
-        // ページ内座標に変換
+        // ペEジ冁EEE標に変換
         float pageX = transformedX - (targetPageIndex * 400);
         
         return new int[]{(int) pageX, mouseY, targetPageIndex};
@@ -1179,7 +1198,7 @@ public class HomeScreen implements Screen, GestureListener {
      * @param page The page to draw
      */
     private void drawNormalPage(PGraphics g, HomePage page) {
-        // 通常のページ描画処理
+        // 通常のペEジ描画処理
         int startY = 80; // Below status bar
         int gridWidth = GRID_COLS * (ICON_SIZE + ICON_SPACING) - ICON_SPACING;
         int startX = (400 - gridWidth) / 2; // Center the grid
@@ -1204,8 +1223,8 @@ public class HomeScreen implements Screen, GestureListener {
             drawShortcut(g, shortcut, x, y);
         }
         
-        // ドラッグ中のショートカットは最上位レイヤーで描画するため、ここではスキップ
-        // (drawPagesWithTransitionの最後で描画される)
+        // ドラチEEE中のショートカチEEEは最上位レイヤーで描画するため、ここではスキチEEE
+        // (drawPagesWithTransitionの最後で描画されめE
         
         // Draw drop target indicators if dragging
         if (isDragging) {
@@ -1215,16 +1234,18 @@ public class HomeScreen implements Screen, GestureListener {
     
     
     /**
-     * AppLibraryページを描画する。
+     * AppLibraryペEジを描画する、
      * 
      * @param p The PApplet instance for drawing
-     * @param appLibraryPage AppLibraryページ
+     * @param appLibraryPage AppLibraryペEジ
      */
     private void drawAppLibraryPage(PGraphics g, HomePage appLibraryPage) {
         System.out.println("🎨 HomeScreen: drawAppLibraryPage() called - drawing AppLibrary content");
-        
-        // AppLibraryタイトルを描画
-        g.fill(255, 255, 255); // 白色テキスト (0xFFFFFF -> RGB)
+
+        // AppLibraryタイトルを描画Eテーマ色EE
+        var themeAL = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        int onSurfaceAL = themeAL != null ? themeAL.colorOnSurface() : 0xFF111111;
+        { int c=onSurfaceAL; g.fill((c>>16)&0xFF, (c>>8)&0xFF, c&0xFF); }
         g.textAlign(g.CENTER, g.TOP);
         g.textSize(18);
         System.out.println("🎨 Drawing title: 'App Library' at (200, 70) with size 18, color RGB(255,255,255)");
@@ -1235,7 +1256,7 @@ public class HomeScreen implements Screen, GestureListener {
         List<IApplication> apps = appLibraryPage.getAllApplications();
         System.out.println("🎨 AppLibrary apps count: " + apps.size());
         if (apps.isEmpty()) {
-            g.fill(255, 255, 255, 150); // textColor with alpha -> RGB
+            { int c=onSurfaceAL; g.fill((c>>16)&0xFF, (c>>8)&0xFF, c&0xFF, 150); }
             g.textAlign(g.CENTER, g.CENTER);
             g.textSize(14);
             g.text("No apps available", 200, 300);
@@ -1245,11 +1266,11 @@ public class HomeScreen implements Screen, GestureListener {
         
         int startY = 110; // タイトルの下から開始
         int listHeight = 600 - startY - NAV_AREA_HEIGHT - 20; // 利用可能な高さ
-        int itemHeight = 70; // 各アプリアイテムの高さ
+        int itemHeight = 70; // 合EEプリアイチEEEの高さ
         int scrollOffset = appLibraryPage.getScrollOffset();
         System.out.println("🎨 Drawing " + apps.size() + " apps starting at Y=" + startY + ", scrollOffset=" + scrollOffset);
         
-        // スクロール可能エリアを設定（クリッピング）
+        // スクロール可能エリアを設定（クリチEEEングEEEE
         g.pushMatrix();
         
         // アプリリストを描画
@@ -1257,7 +1278,7 @@ public class HomeScreen implements Screen, GestureListener {
             IApplication app = apps.get(i);
             int itemY = startY + i * itemHeight - scrollOffset;
             
-            // 表示エリア外のアイテムはスキップ
+            // 表示エリア外EアイチEEEはスキチEEE
             if (itemY + itemHeight < startY || itemY > startY + listHeight) {
                 continue;
             }
@@ -1274,41 +1295,51 @@ public class HomeScreen implements Screen, GestureListener {
     }
     
     /**
-     * AppLibraryのアプリアイテムを描画する。
+     * AppLibraryのアプリアイチEEEを描画する、
      * 
      * @param p The PApplet instance for drawing
      * @param app 描画するアプリケーション
-     * @param x アイテムのX座標
-     * @param y アイテムのY座標
-     * @param width アイテムの幅
-     * @param height アイテムの高さ
+     * @param x アイチEEEのX座樁E
+     * @param y アイチEEEのY座樁E
+     * @param width アイチEEEの幁E
+     * @param height アイチEEEの高さ
      */
     private void drawAppLibraryItem(PGraphics g, IApplication app, int x, int y, int width, int height) {
-        // アイテムの背景
-        g.fill(58, 58, 58, 100); // 0x3A3A3A -> RGB with alpha
-        g.noStroke();
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        int surface = theme != null ? theme.colorSurface() : 0xFFFFFFFF;
+        int border = theme != null ? theme.colorBorder() : 0xFFDDDDDD;
+        int onSurface = theme != null ? theme.colorOnSurface() : 0xFF111111;
+        int onSurfaceSec = theme != null ? theme.colorOnSurfaceSecondary() : 0xFF666666;
+
+        // カード背景EEE薁EEEE
+        jp.moyashi.phoneos.core.ui.effects.Elevation.drawRectShadow(g, x, y, width, height, 8, 1);
+        g.fill((surface>>16)&0xFF, (surface>>8)&0xFF, surface&0xFF);
+        g.stroke((border>>16)&0xFF, (border>>8)&0xFF, border&0xFF);
+        g.strokeWeight(1);
         g.rect(x, y, width, height, 8);
 
-        // アプリアイコン
-        g.fill(74, 144, 226); // accentColor (0x4A90E2) -> RGB
+        // アプリアイコンのプレースホルダはアクセント色
+        int acc = theme != null ? theme.colorPrimary() : 0xFF4A90E2;
+        g.noStroke();
+        g.fill((acc>>16)&0xFF, (acc>>8)&0xFF, acc&0xFF);
         g.rect(x + 10, y + 10, 50, 50, 8);
 
-        // アプリ名の最初の文字
-        g.fill(255, 255, 255); // textColor -> RGB
+        // アプリ名E最初E斁EE
+        { int c=onSurface; g.fill((c>>16)&0xFF, (c>>8)&0xFF, c&0xFF); }
         g.textAlign(g.CENTER, g.CENTER);
         g.textSize(24);
         String initial = app.getName().substring(0, 1).toUpperCase();
         g.text(initial, x + 35, y + 35);
 
-        // アプリ名
-        g.fill(255, 255, 255); // textColor -> RGB
+        // アプリ合
+        { int c=onSurface; g.fill((c>>16)&0xFF, (c>>8)&0xFF, c&0xFF); }
         g.textAlign(g.LEFT, g.CENTER);
         g.textSize(16);
         g.text(app.getName(), x + 75, y + 25);
 
-        // アプリ説明（あれば）
+        // アプリ説明（あれEEE
         if (app.getDescription() != null && !app.getDescription().isEmpty()) {
-            g.fill(255, 255, 255, 150); // textColor with alpha -> RGB
+            { int c=onSurfaceSec; g.fill((c>>16)&0xFF, (c>>8)&0xFF, c&0xFF, 200); }
             g.textSize(12);
             String description = app.getDescription();
             if (description.length() > 40) {
@@ -1317,37 +1348,37 @@ public class HomeScreen implements Screen, GestureListener {
             g.text(description, x + 75, y + 45);
         }
         
-        // 長押し時の「ホーム画面に追加」ボタンを描画
-        // （実装は後で追加）
+        // 長押し時の「Eーム画面に追加」Eタンを描画
+        // EEE実裁EEE後で追加EEEE
     }
     
     /**
-     * スクロールインジケーターを描画する。
+     * スクロールインジケーターを描画する、
      * 
      * @param p The PApplet instance for drawing
-     * @param appLibraryPage AppLibraryページ
-     * @param listStartY リスト開始Y座標
-     * @param listHeight リストの高さ
-     * @param itemHeight アイテム高さ
+     * @param appLibraryPage AppLibraryペEジ
+     * @param listStartY リスト開始Y座樁E
+     * @param listHeight リストE高さ
+     * @param itemHeight アイチEEE高さ
      */
     private void drawScrollIndicator(PGraphics g, HomePage appLibraryPage, int listStartY, int listHeight, int itemHeight) {
         List<IApplication> apps = appLibraryPage.getAllApplications();
         int totalHeight = apps.size() * itemHeight;
         int scrollOffset = appLibraryPage.getScrollOffset();
         
-        // スクロールバーの位置とサイズを計算
+        // スクロールバEの位置とサイズを計箁E
         float scrollbarHeight = Math.max(20, (float) listHeight * listHeight / totalHeight);
         float scrollbarY = listStartY + (float) scrollOffset * listHeight / totalHeight;
         
-        // スクロールバーを描画
+        // スクロールバEを描画
         g.fill(255, 255, 255, 100); // textColor with alpha -> RGB
         g.noStroke();
         g.rect(385, (int) scrollbarY, 6, (int) scrollbarHeight, 3);
     }
     
     /**
-     * ドラッグ中のショートカットを絶対座標で描画する。
-     * 座標変換の影響を受けずにマウス位置に正確に追従する。
+     * ドラチEEE中のショートカチEEEを絶対座標で描画する、
+     * 座標変換の影響を受けずにマウス位置に正確に追従する、
      * 
      * @param p The PApplet instance for drawing
      * @param shortcut The dragged shortcut
@@ -1358,12 +1389,12 @@ public class HomeScreen implements Screen, GestureListener {
         int x = (int) shortcut.getDragX();
         int y = (int) shortcut.getDragY();
         
-        // ドロップシャドウを描画
+        // ドロチEEEシャドウを描画
         g.fill(0, 0, 0, 100);
         g.noStroke();
         g.rect(x + 4, y + 4, ICON_SIZE, ICON_SIZE, 12);
 
-        // アイコンの背景を描画（半透明）
+        // アイコンの背景を描画EEE半透EEEEE
         g.fill(255, 255, 255, 220);
         g.stroke(85, 85, 85);
         g.strokeWeight(2);
@@ -1375,22 +1406,22 @@ public class HomeScreen implements Screen, GestureListener {
             drawAppIcon(g, app, x + ICON_SIZE/2, y + ICON_SIZE/2);
         }
 
-        // アプリ名を描画（ドラッグ中も同じスタイル）
+        // アプリ名を描画EEEドラチEEE中も同じスタイルEEEE
         g.noStroke();
-        g.textAlign(g.CENTER, g.TOP); // 中央配置、上詰め
-        g.textSize(11); // メインのアイコンと同じフォントサイズ
+        g.textAlign(g.CENTER, g.TOP); // 中央配置、上詰めE
+        g.textSize(8); // メインのアイコンと同じフォントサイズ
         
         String displayName = shortcut.getDisplayName();
         if (displayName.length() > 10) {
             displayName = displayName.substring(0, 9) + "...";
         }
         
-        // テキストの影を追加（ドラッグ中も可読性向上）
-        g.fill(0, 0, 0, 120); // 少し濃い影
+        // チEEEストE影を追加EEEドラチEEE中も可読性向上）
+        g.fill(0, 0, 0, 120); // 少し濁EEE影
         g.text(displayName, x + ICON_SIZE/2 + 1, y + ICON_SIZE + 9);
 
-        // メインテキストを描画
-        g.fill(255, 255, 255); // 白色テキスト
+        // メインチEEEストを描画
+        g.fill(255, 255, 255); // 白色チEEEスチE
         g.text(displayName, x + ICON_SIZE/2, y + ICON_SIZE + 8);
     }
     
@@ -1433,14 +1464,19 @@ public class HomeScreen implements Screen, GestureListener {
     private void drawShortcut(PGraphics g, Shortcut shortcut, int x, int y) {
         IApplication app = shortcut.getApplication();
         
-        // ドラッグ中のショートカットは専用メソッドで描画されるため、ここでは描画しない
+        // ドラチEEE中のショートカチEEEは専用メソチEEEで描画されるため、ここでは描画しなぁE
         if (shortcut.isDragging()) {
             return;
         }
         
-        // Draw app icon background
-        g.fill(255);
-        g.stroke(0x555555);
+        // Draw app icon tile (theme-aware)
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        int surface = theme != null ? theme.colorSurface() : 0xFFFFFFFF;
+        int border = theme != null ? theme.colorBorder() : 0xFFCCCCCC;
+        // subtle shadow to separate from light background
+        jp.moyashi.phoneos.core.ui.effects.Elevation.drawRectShadow(g, x, y, ICON_SIZE, ICON_SIZE, 12, 2);
+        g.fill((surface>>16)&0xFF, (surface>>8)&0xFF, surface&0xFF);
+        g.stroke((border>>16)&0xFF, (border>>8)&0xFF, border&0xFF);
         g.strokeWeight(1);
         g.rect(x, y, ICON_SIZE, ICON_SIZE, 12);
         
@@ -1462,22 +1498,20 @@ public class HomeScreen implements Screen, GestureListener {
         }
         
         // Draw app name below the icon
-        g.fill(255, 255, 255); // 白色テキストで視認性向上
+        int onSurface = theme != null ? theme.colorOnSurface() : 0xFF111111;
+        { int c=onSurface; g.fill((c>>16)&0xFF, (c>>8)&0xFF, c&0xFF); }
         g.noStroke();
-        g.textAlign(g.CENTER, g.TOP); // 中央配置、上詰め
-        g.textSize(11); // 適切なフォントサイズ
+        g.textAlign(g.CENTER, g.TOP); // 中央配置、上詰めE       g.textSize(8); // 適刁EEEフォントサイズ
         
         String displayName = shortcut.getDisplayName();
         if (displayName.length() > 10) {
             displayName = displayName.substring(0, 9) + "...";
         }
         
-        // テキストの影を追加して可読性向上
-        g.fill(0, 0, 0, 100); // 半透明の黒い影
+        // subtle shadow for readability on light backgrounds
+        g.fill(0, 0, 0, 60);
         g.text(displayName, x + ICON_SIZE/2 + 1, y + ICON_SIZE + 9);
-        
-        // メインテキストを描画
-        g.fill(255, 255, 255); // 白色テキスト
+        { int c=onSurface; g.fill((c>>16)&0xFF, (c>>8)&0xFF, c&0xFF); }
         g.text(displayName, x + ICON_SIZE/2, y + ICON_SIZE + 8);
     }
     
@@ -1497,18 +1531,6 @@ public class HomeScreen implements Screen, GestureListener {
         }
 
         processing.core.PImage icon = app.getIcon();
-
-        // If icon is null, create a white default icon
-        if (icon == null) {
-            icon = g.get(0, 0, 1, 1); // Get a 1x1 pixel to create a base PImage
-            icon.resize(64, 64);
-            icon.loadPixels();
-            // Fill all pixels with white
-            for (int i = 0; i < icon.pixels.length; i++) {
-                icon.pixels[i] = 0xFFFFFFFF; // White color
-            }
-            icon.updatePixels();
-        }
 
         if (icon != null) {
             // SECURITY FIX: Force crop/resize any icon to 64x64 to prevent oversized icons from covering the screen
@@ -1540,14 +1562,17 @@ public class HomeScreen implements Screen, GestureListener {
         } else {
             // Fallback to placeholder if icon is null
             g.rectMode(PGraphics.CENTER);
+            // use accent color tile
             g.fill(accentColor);
             g.noStroke();
             g.rect(centerX, centerY, 40, 40, 8);
 
             // Draw app initial
-            g.fill(textColor);
+            var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+            int onSurface = theme != null ? theme.colorOnSurface() : 0xFF111111;
+            { int c=onSurface; g.fill((c>>16)&0xFF, (c>>8)&0xFF, c&0xFF); }
             g.textAlign(g.CENTER, g.CENTER);
-            g.textSize(20);
+            g.textSize(12);
             if (app.getName() != null && !app.getName().isEmpty()) {
                 String initial = app.getName().substring(0, 1).toUpperCase();
                 g.text(initial, centerX, centerY - 2);
@@ -1563,14 +1588,23 @@ public class HomeScreen implements Screen, GestureListener {
      */
     private void drawNavigationArea(PGraphics g) {
         int navY = 600 - NAV_AREA_HEIGHT;
-        
+
         // Draw navigation background
-        g.fill(0x2A2A2A);
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        int surface = theme != null ? theme.colorSurface() : 0xFF2A2A2A;
+        int onSurface = theme != null ? theme.colorOnSurface() : textColor;
+        g.fill((surface>>16)&0xFF, (surface>>8)&0xFF, surface&0xFF);
         g.noStroke();
         g.rect(0, navY, 400, NAV_AREA_HEIGHT);
-        
+
+        // Top border
+        int border = theme != null ? theme.colorBorder() : 0xFF444444;
+        g.stroke((border>>16)&0xFF, (border>>8)&0xFF, border&0xFF);
+        g.strokeWeight(1);
+        g.line(0, navY, 400, navY);
+
         // Draw app library access hint
-        g.fill(textColor, 150);
+        g.fill((onSurface>>16)&0xFF, (onSurface>>8)&0xFF, onSurface&0xFF, 150);
         g.textAlign(g.CENTER, g.CENTER);
         g.textSize(14);
         g.text("App Library", 200, navY + 30);
@@ -1586,7 +1620,7 @@ public class HomeScreen implements Screen, GestureListener {
         
         // Draw swipe indicator for pages if multiple pages exist
         if (homePages.size() > 1) {
-            g.stroke(textColor, 100);
+            { int c=onSurface; g.stroke((c>>16)&0xFF, (c>>8)&0xFF, c&0xFF, 100); }
             g.strokeWeight(1);
             g.noFill();
             
@@ -1613,53 +1647,55 @@ public class HomeScreen implements Screen, GestureListener {
         if (homePages.size() <= 1) {
             return; // Don't show indicators for single page
         }
-        
-        int dotY = 600 - NAV_AREA_HEIGHT - 25; // 少し上に移動
+
+        int dotY = 600 - NAV_AREA_HEIGHT - 25; // 少し上に移勁E
         int dotSize = 10;
         int activeDotSize = 14;
         int spacing = 20;
         int totalWidth = homePages.size() * spacing - (spacing - dotSize);
         int startX = (400 - totalWidth) / 2;
-        
-        // 背景の半透明エリア
-        g.fill(0, 0, 0, 100);
+
+        // 背景の半透Eエリア
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        int onSurface = theme != null ? theme.colorOnSurface() : 0xFFFFFFFF;
+        int border = theme != null ? theme.colorBorder() : 0xFF444444;
+        int primary = theme != null ? theme.colorPrimary() : accentColor;
+        g.fill((border>>16)&0xFF, (border>>8)&0xFF, border&0xFF, 60);
         g.noStroke();
         g.rect(startX - 15, dotY - 10, totalWidth + 30, 20, 10);
-        
+
         for (int i = 0; i < homePages.size(); i++) {
             int dotX = startX + i * spacing;
-            
+
             if (i == currentPageIndex) {
-                // 現在のページ - 大きく明るく
-                g.fill(74, 144, 226); // アクセントカラー (accentColor RGB)
+                // 現在のペEジ - 大きく明るぁE                g.fill((primary>>16)&0xFF, (primary>>8)&0xFF, primary&0xFF);
                 g.noStroke();
                 g.ellipse(dotX, dotY, activeDotSize, activeDotSize);
-                
-                // 外側のリング
+
+                // 外Eのリング
                 g.noFill();
-                g.stroke(74, 144, 226, 150);
+                g.stroke((primary>>16)&0xFF, (primary>>8)&0xFF, primary&0xFF, 150);
                 g.strokeWeight(2);
                 g.ellipse(dotX, dotY, activeDotSize + 4, activeDotSize + 4);
             } else {
-                // 他のページ - 小さく薄く
-                g.fill(255, 255, 255, 120);
+                // 他EペEジ - 小さく薄ぁE                g.fill((onSurface>>16)&0xFF, (onSurface>>8)&0xFF, onSurface&0xFF, 120);
                 g.noStroke();
                 g.ellipse(dotX, dotY, dotSize, dotSize);
             }
         }
         
-        // AppLibraryページには特別なアイコン
+        // AppLibraryペEジには特別なアイコン
         for (int i = 0; i < homePages.size(); i++) {
             HomePage page = homePages.get(i);
             if (page.isAppLibraryPage()) {
                 int dotX = startX + i * spacing;
                 
-                // AppLibraryアイコン（グリッド風）
+                // AppLibraryアイコンEEEグリチEEE風EEEE
                 g.stroke(i == currentPageIndex ? 255 : 200);
                 g.strokeWeight(1);
                 g.noFill();
                 
-                // 小さな3x3グリッド
+                // 小さな3x3グリチEEE
                 int gridSize = 6;
                 for (int row = 0; row < 3; row++) {
                     for (int col = 0; col < 3; col++) {
@@ -1728,27 +1764,27 @@ public class HomeScreen implements Screen, GestureListener {
     }
     
     /**
-     * マウス座標を座標変換後の座標に変換し、適切なページでショートカットを検索する。
+     * マウス座標を座標変換後E座標に変換し、E刁EEEペEジでショートカチEEEを検索する、
      * 
      * @param mouseX マウスX座標（絶対座標）
      * @param mouseY マウスY座標（絶対座標）
-     * @return 該当位置のショートカット、または null
+     * @return 該当位置のショートカチEEE、またE null
      */
     private Shortcut getShortcutAtPositionWithTransform(int mouseX, int mouseY) {
-        // 現在の座標変換オフセットを計算
+        // 現在の座標変換オフセチEEEを計箁E
         int basePageForOffset = isAnimating ? animationBasePageIndex : currentPageIndex;
         float totalOffset = -basePageForOffset * 400 + pageTransitionOffset;
         
-        // マウス座標を変換後の座標系に調整
+        // マウス座標を変換後E座標系に調整
         float transformedX = mouseX - totalOffset;
         
-        // どのページ範囲にいるかを判定
+        // どのペEジ篁EEEにぁEEEかを判定
         int pageIndex = (int) Math.floor(transformedX / 400);
         
-        // ページ範囲内でのローカル座標を計算
+        // ペEジ篁EEE冁EEEのローカル座標を計箁E
         int localX = (int) (transformedX - pageIndex * 400);
         
-        // ページインデックスが有効範囲内かチェック
+        // ペEジインチEEEクスが有効篁EEE冁EEEチェチEEE
         if (pageIndex >= 0 && pageIndex < homePages.size()) {
             HomePage targetPage = homePages.get(pageIndex);
             return getShortcutAtPosition(localX, mouseY, targetPage);
@@ -1763,7 +1799,7 @@ public class HomeScreen implements Screen, GestureListener {
     private void openAppLibrary() {
         System.out.println("HomeScreen: Navigating to integrated App Library page");
         
-        // AppLibraryページ（最後のページ）に切り替え
+        // AppLibraryペEジEEE最後EペEジEEEに刁EEE替ぁE
         if (!homePages.isEmpty()) {
             int appLibraryPageIndex = homePages.size() - 1;
             if (appLibraryPageIndex != currentPageIndex && !isAnimating) {
@@ -1782,7 +1818,7 @@ public class HomeScreen implements Screen, GestureListener {
 
         if (kernel != null && kernel.getScreenManager() != null && kernel.getServiceManager() != null) {
             try {
-                // ServiceManager経由でアプリを起動（既存インスタンスを再利用または新規作成）
+                // ServiceManager経由でアプリを起動（既存インスタンスをE利用またE新規作EEEEE
                 Screen appScreen = kernel.getServiceManager().launchApp(app.getApplicationId());
                 if (appScreen != null) {
                     kernel.getScreenManager().pushScreen(appScreen);
@@ -1797,7 +1833,7 @@ public class HomeScreen implements Screen, GestureListener {
     }
     
     /**
-     * アニメーション付きでアプリケーションを起動する
+     * アニメーション付きでアプリケーションを起動すめE
      */
     private void launchApplicationWithAnimation(IApplication app, float iconX, float iconY, float iconSize) {
         System.out.println("HomeScreen: Launching app with animation: " + app.getName());
@@ -1805,7 +1841,7 @@ public class HomeScreen implements Screen, GestureListener {
 
         if (kernel != null && kernel.getScreenManager() != null && kernel.getServiceManager() != null) {
             try {
-                // ServiceManager経由でアプリを起動（既存インスタンスを再利用または新規作成）
+                // ServiceManager経由でアプリを起動（既存インスタンスをE利用またE新規作EEEEE
                 Screen appScreen = kernel.getServiceManager().launchApp(app.getApplicationId());
                 if (appScreen == null) {
                     System.err.println("HomeScreen: ServiceManager returned null screen for " + app.getName());
@@ -1867,14 +1903,14 @@ public class HomeScreen implements Screen, GestureListener {
         System.out.println("HomeScreen: Edit mode " + (isEditing ? "enabled" : "disabled"));
 
         if (isEditing) {
-            // 編集モード開始時に空のページを最後に追加
+            // 編雁EEEード開始時に空のペEジを最後に追加
             addEmptyPageIfNeeded();
         } else {
-            // 編集モード終了時にはドラッグ状態をリセット
+            // 編雁EEEード終了EEにはドラチEEE状態をリセチEEE
             resetDragState();
             System.out.println("HomeScreen: Reset drag state on edit mode exit");
 
-            // 編集モード終了時に空のページを削除
+            // 編雁EEEード終了EEに空のペEジを削除
             removeEmptyPagesAtEnd();
         }
     }
@@ -1895,25 +1931,25 @@ public class HomeScreen implements Screen, GestureListener {
         System.out.println("HomeScreen: addEmptyPageIfNeeded() called");
         System.out.println("HomeScreen: Total pages: " + homePages.size());
 
-        // 最後のページが空でない場合、または最後がAppLibraryページの場合は空ページを追加
+        // 最後EペEジが空でなぁEEE合、またE最後がAppLibraryペEジの場合E空ペEジを追加
         if (homePages.isEmpty()) {
             System.out.println("HomeScreen: No pages exist, adding first page");
             addNewPage();
             return;
         }
 
-        // AppLibraryページの前に空ページを挿入するロジックに変更
+        // AppLibraryペEジの前に空ペEジを挿入するロジチEEEに変更
         int insertIndex = homePages.size();
         HomePage lastPage = homePages.get(homePages.size() - 1);
 
         System.out.println("HomeScreen: Last page type: " + (lastPage.isAppLibraryPage() ? "APP_LIBRARY" : "NORMAL"));
         System.out.println("HomeScreen: Last page shortcuts count: " + lastPage.getShortcuts().size());
 
-        // AppLibraryページがある場合は、その前に挿入
+        // AppLibraryペEジがある場合E、その前に挿入
         if (lastPage.isAppLibraryPage()) {
-            insertIndex = homePages.size() - 1; // AppLibraryページの前に挿入
+            insertIndex = homePages.size() - 1; // AppLibraryペEジの前に挿入
 
-            // AppLibraryページの前のページが空でない場合のみ空ページを追加
+            // AppLibraryペEジの前EペEジが空でなぁEEE合Eみ空ペEジを追加
             if (insertIndex > 0) {
                 HomePage secondToLastPage = homePages.get(insertIndex - 1);
                 if (!secondToLastPage.getShortcuts().isEmpty()) {
@@ -1924,13 +1960,13 @@ public class HomeScreen implements Screen, GestureListener {
                     System.out.println("HomeScreen: Page before AppLibrary is already empty, no need to add");
                 }
             } else {
-                // AppLibraryページが最初のページの場合（通常はない）
+                // AppLibraryペEジが最初EペEジの場合（通常はなぁEEEE
                 HomePage newPage = new HomePage();
                 homePages.add(0, newPage);
                 System.out.println("HomeScreen: Added empty page before AppLibrary at index 0");
             }
         } else {
-            // 最後のページが通常ページで空でない場合、空ページを追加
+            // 最後EペEジが通常ペEジで空でなぁEEE合、空ペEジを追加
             if (!lastPage.getShortcuts().isEmpty()) {
                 addNewPage();
                 System.out.println("HomeScreen: Added empty page at end");
@@ -1947,37 +1983,37 @@ public class HomeScreen implements Screen, GestureListener {
         System.out.println("HomeScreen: removeEmptyPagesAtEnd() called");
         System.out.println("HomeScreen: Total pages before cleanup: " + homePages.size());
 
-        // AppLibraryページを除いた通常ページの中で、後ろから空のページを削除
+        // AppLibraryペEジを除ぁEEE通常ペEジの中で、後ろから空のペEジを削除
         boolean removedAny = false;
         for (int i = homePages.size() - 1; i >= 0; i--) {
             HomePage page = homePages.get(i);
 
-            // AppLibraryページはスキップ
+            // AppLibraryペEジはスキチEEE
             if (page.isAppLibraryPage()) {
                 System.out.println("HomeScreen: Skipping AppLibrary page at index " + i);
                 continue;
             }
 
-            // 空のページを削除
+            // 空のペEジを削除
             if (page.getShortcuts().isEmpty()) {
                 homePages.remove(i);
                 removedAny = true;
                 System.out.println("HomeScreen: Removed empty page at index " + i);
 
-                // 現在のページが削除された場合は調整
+                // 現在のペEジが削除された場合E調整
                 if (currentPageIndex >= homePages.size()) {
                     currentPageIndex = Math.max(0, homePages.size() - 1);
                     System.out.println("HomeScreen: Adjusted current page index to " + currentPageIndex);
                 }
 
-                // 現在のページインデックスが削除されたページ以降の場合は調整
+                // 現在のペEジインチEEEクスが削除されたEージ以降E場合E調整
                 if (currentPageIndex > i) {
                     currentPageIndex--;
                     System.out.println("HomeScreen: Decremented current page index to " + currentPageIndex);
                 }
             } else {
-                // 空でないページが見つかったら、以降の削除は停止
-                // （ただしAppLibraryページは除外）
+                // 空でなぁEEEージが見つかったら、以降E削除は停止
+                // EEEただしAppLibraryペEジは除外）
                 System.out.println("HomeScreen: Found non-empty page at index " + i + ", stopping cleanup");
                 break;
             }
@@ -2008,7 +2044,7 @@ public class HomeScreen implements Screen, GestureListener {
     
     @Override
     public boolean onGesture(GestureEvent event) {
-        // パフォーマンス改善: DRAG_MOVEイベントは非常に頻繁なのでログを抑制
+        // パフォーマンス改喁E DRAG_MOVEイベントE非常に頻繁なのでログを抑制
         if (event.getType() != GestureType.DRAG_MOVE) {
             System.out.println("HomeScreen: Received gesture: " + event);
         }
@@ -2039,13 +2075,13 @@ public class HomeScreen implements Screen, GestureListener {
                 return handleSwipeUp(event);
                 
             default:
-                return false; // 処理しないジェスチャー
+                return false; // 処理EEなぁEEEェスチャー
         }
     }
     
     @Override
     public boolean isInBounds(int x, int y) {
-        // HomeScreenが現在のスクリーンの場合のみ処理
+        // HomeScreenが現在のスクリーンの場合Eみ処理
         return kernel != null && 
                kernel.getScreenManager() != null && 
                kernel.getScreenManager().getCurrentScreen() == this;
@@ -2057,11 +2093,11 @@ public class HomeScreen implements Screen, GestureListener {
     }
     
     /**
-     * タップジェスチャーを処理する。
+     * タチEEEジェスチャーをE理EEる、
      * 
-     * @param x X座標
-     * @param y Y座標
-     * @return 処理した場合true
+     * @param x X座樁E
+     * @param y Y座樁E
+     * @return 処理EEた場合rue
      */
     private boolean handleTap(int x, int y) {
         System.out.println("HomeScreen: Handling tap at (" + x + ", " + y + ")");
@@ -2072,7 +2108,7 @@ public class HomeScreen implements Screen, GestureListener {
         int pageY = coords[1];
         int targetPageIndex = coords[2];
         
-        // 対象ページが範囲外の場合は無視
+        // 対象ペEジが篁EEE外E場合E無要E
         if (targetPageIndex < 0 || targetPageIndex >= homePages.size()) {
             return false;
         }
@@ -2080,35 +2116,35 @@ public class HomeScreen implements Screen, GestureListener {
         HomePage targetPage = homePages.get(targetPageIndex);
         System.out.println("HomeScreen: Transformed tap to page " + targetPageIndex + " at (" + pageX + ", " + pageY + ")");
         
-        // AppLibraryページの場合の特別処理
+        // AppLibraryペEジの場合E特別処理
         if (targetPage.isAppLibraryPage()) {
             return handleAppLibraryTap(pageX, pageY, targetPage);
         }
         
-        // ナビゲーションエリア（下部）のタップでApp Libraryを開く（コントロールセンター領域を除く）
+        // ナビゲーションエリアEEE下部EEEEEタチEEEでApp Libraryを開く（コントロールセンター領域を除く）
         if (pageY > (600 - NAV_AREA_HEIGHT) && pageY < 540) {
             openAppLibrary();
             return true;
         }
         
-        // 対象ページが現在のページでない場合はページ切り替え
+        // 対象ペEジが現在のペEジでなぁEEE合EペEジ刁EEE替ぁE
         if (targetPageIndex != currentPageIndex && !isAnimating) {
             startPageTransition(targetPageIndex);
             return true;
         }
         
-        // ショートカットのタップ処理（現在のページのみ）
+        // ショートカチEEEのタチEEE処理EE現在のペEジのみEEEE
         if (targetPageIndex == currentPageIndex) {
             Shortcut tappedShortcut = getShortcutAtPosition(pageX, pageY, targetPage);
             if (tappedShortcut != null) {
                 if (isEditing) {
-                    // 編集モードでは削除ボタンかアイコンかをチェック
+                    // 編雁EEEードでは削除ボタンかアイコンかをチェチEEE
                     if (isClickingDeleteButton(pageX, pageY, tappedShortcut)) {
                         removeShortcut(tappedShortcut);
                     }
                 } else {
-                    // 通常モードではアプリ起動（アニメーション付き）
-                    // ショートカットの画面上での位置を計算
+                    // 通常モードではアプリ起動（アニメーション付きEEEE
+                    // ショートカチEEEの画面上での位置を計箁E
                     HomePage currentPage = homePages.get(targetPageIndex);
                     int startX = (400 - (GRID_COLS * (ICON_SIZE + ICON_SPACING) - ICON_SPACING)) / 2;
                     int startY = 80;
@@ -2120,7 +2156,7 @@ public class HomeScreen implements Screen, GestureListener {
             }
         }
         
-        // 編集モード中に空のスペースをタップした場合は編集モードを終了
+        // 編雁EEEード中に空のスペEスをタチEEEした場合E編雁EEEードを終了
         if (isEditing) {
             System.out.println("HomeScreen: Tapped empty space in edit mode - exiting edit mode");
             toggleEditMode();
@@ -2131,30 +2167,30 @@ public class HomeScreen implements Screen, GestureListener {
     }
     
     /**
-     * AppLibraryページでのタップを処理する。
+     * AppLibraryペEジでのタチEEEをE理EEる、
      * 
-     * @param x X座標
-     * @param y Y座標
-     * @param appLibraryPage AppLibraryページ
-     * @return 処理した場合true
+     * @param x X座樁E
+     * @param y Y座樁E
+     * @param appLibraryPage AppLibraryペEジ
+     * @return 処理EEた場合rue
      */
     private boolean handleAppLibraryTap(int x, int y, HomePage appLibraryPage) {
-        // ナビゲーションエリア（下部）のタップは無視
+        // ナビゲーションエリアEEE下部EEEEEタチEEEは無要E
         if (y > (600 - NAV_AREA_HEIGHT)) {
             return false;
         }
         
-        // アプリリストの範囲内かチェック
+        // アプリリストE篁EEE冁EEEチェチEEE
         int startY = 110;
         int listHeight = 600 - startY - NAV_AREA_HEIGHT - 20;
         int itemHeight = 70;
         
         if (y >= startY && y <= startY + listHeight) {
-            // タップされたアプリケーションを取得
+            // タチEEEされたアプリケーションを取征E
             IApplication tappedApp = appLibraryPage.getApplicationAtPosition(x, y, startY, itemHeight);
             if (tappedApp != null) {
-                System.out.println("HomeScreen: AppLibraryでアプリをタップ: " + tappedApp.getName());
-                // アイコン位置を計算（AppLibraryアイテム用）
+                System.out.println("HomeScreen: AppLibraryでアプリをタチEEE: " + tappedApp.getName());
+                // アイコン位置を計算）ppLibraryアイチEEE用EEEE
                 float iconX = 20 + 32; // ITEM_PADDING + ICON_SIZE/2
                 float iconY = startY + ((y - startY) / itemHeight) * itemHeight + itemHeight / 2;
                 launchApplicationWithAnimation(tappedApp, iconX, iconY, 32); // AppLibraryのアイコンサイズは32
@@ -2166,11 +2202,11 @@ public class HomeScreen implements Screen, GestureListener {
     }
     
     /**
-     * 長押しジェスチャーを処理する。
+     * 長押しジェスチャーをE理EEる、
      * 
-     * @param x X座標
-     * @param y Y座標
-     * @return 処理した場合true
+     * @param x X座樁E
+     * @param y Y座樁E
+     * @return 処理EEた場合rue
      */
     private boolean handleLongPress(int x, int y) {
         System.out.println("HomeScreen: Handling long press at (" + x + ", " + y + ")");
@@ -2181,19 +2217,19 @@ public class HomeScreen implements Screen, GestureListener {
         int pageY = coords[1];
         int targetPageIndex = coords[2];
         
-        // 対象ページが範囲外の場合は無視
+        // 対象ペEジが篁EEE外E場合E無要E
         if (targetPageIndex < 0 || targetPageIndex >= homePages.size()) {
             return false;
         }
         
         HomePage targetPage = homePages.get(targetPageIndex);
         
-        // AppLibraryページの場合の特別処理
+        // AppLibraryペEジの場合E特別処理
         if (targetPage.isAppLibraryPage()) {
             return handleAppLibraryLongPress(pageX, pageY, targetPage);
         }
         
-        // 現在のページでの長押しのみ編集モード切り替え
+        // 現在のペEジでの長押しEみ編雁EEEードEり替ぁE
         if (targetPageIndex == currentPageIndex && !isEditing) {
             toggleEditMode();
             return true;
@@ -2203,29 +2239,29 @@ public class HomeScreen implements Screen, GestureListener {
     }
     
     /**
-     * AppLibraryページでの長押しを処理する。
+     * AppLibraryペEジでの長押しを処理EEる、
      * 
-     * @param x X座標
-     * @param y Y座標
-     * @param appLibraryPage AppLibraryページ
-     * @return 処理した場合true
+     * @param x X座樁E
+     * @param y Y座樁E
+     * @param appLibraryPage AppLibraryペEジ
+     * @return 処理EEた場合rue
      */
     private boolean handleAppLibraryLongPress(int x, int y, HomePage appLibraryPage) {
-        // ナビゲーションエリア（下部）の長押しは無視
+        // ナビゲーションエリアEEE下部EEEEE長押しE無要E
         if (y > (600 - NAV_AREA_HEIGHT)) {
             return false;
         }
         
-        // アプリリストの範囲内かチェック
+        // アプリリストE篁EEE冁EEEチェチEEE
         int startY = 110;
         int listHeight = 600 - startY - NAV_AREA_HEIGHT - 20;
         int itemHeight = 70;
         
         if (y >= startY && y <= startY + listHeight) {
-            // 長押しされたアプリケーションを取得
+            // 長押しされたアプリケーションを取征E
             IApplication longPressedApp = appLibraryPage.getApplicationAtPosition(x, y, startY, itemHeight);
             if (longPressedApp != null) {
-                System.out.println("HomeScreen: AppLibraryで長押し: " + longPressedApp.getName());
+                System.out.println("HomeScreen: AppLibraryで長押ぁE " + longPressedApp.getName());
                 showAddToHomePopup(longPressedApp, x, y);
                 return true;
             }
@@ -2235,40 +2271,40 @@ public class HomeScreen implements Screen, GestureListener {
     }
     
     /**
-     * 「ホーム画面に追加」ポップアップを表示する。
+     * 「Eーム画面に追加」EチEEEアチEEEを表示する、
      * 
      * @param app 対象のアプリケーション
-     * @param x ポップアップ表示位置X
-     * @param y ポップアップ表示位置Y
+     * @param x ポップアチEEE表示位置X
+     * @param y ポップアチEEE表示位置Y
      */
     private void showAddToHomePopup(IApplication app, int x, int y) {
         if (kernel != null && kernel.getPopupManager() != null) {
-            System.out.println("HomeScreen: ✅ ポップアップマネージャーが利用可能");
+            System.out.println("HomeScreen: ✁EポップアチEEEマネージャーが利用可能");
             
-            // 簡単なコンテキストメニューポップアップを作成
+            // 簡単なコンチEEEストメニューポップアチEEEを作E
             String message = "「" + app.getName() + "」をホーム画面に追加しますか？";
             
-            // ポップアップマネージャーに実装されたポップアップシステムを使用
-            // （実際の実装はPopupManagerの仕様に依存）
+            // ポップアチEEEマネージャーに実裁EEEれたポップアチEEEシスチEEEを使用
+            // EEE実際の実裁EEEPopupManagerの仕様に依存）
             System.out.println("HomeScreen: 🎯 「ホーム画面に追加」ポップアップ表示予定");
-            System.out.println("    • アプリ名: " + app.getName());
+            System.out.println("    • アプリ合 " + app.getName());
             System.out.println("    • 位置: (" + x + ", " + y + ")");
-            System.out.println("    • メッセージ: " + message);
+            System.out.println("    • メチEEEージ: " + message);
             
-            // PopupManagerの実装に応じてここでポップアップを表示
-            // 現在はログ出力のみ（実際のポップアップ実装は別途必要）
+            // PopupManagerの実裁EEE応じてここでポップアチEEEを表示
+            // 現在はログ出力EみEEE実際のポップアチEEE実裁EEE別途忁EEEEEEE
         } else {
-            System.err.println("HomeScreen: ❌ PopupManagerが利用できません");
+            System.err.println("HomeScreen: ❁EPopupManagerが利用できません");
         }
     }
     
     /**
-     * 左スワイプジェスチャーを処理する。
+     * 左スワイプジェスチャーをE理EEる、
      * 
-     * @return 処理した場合true
+     * @return 処理EEた場合rue
      */
     private boolean handleSwipeLeft() {
-        // 編集モード中でもページスワイプを有効化（ドラッグ中は無効）
+        // 編雁EEEード中でもEージスワイプを有効化（ドラチEEE中は無効EEEE
         if (isEditing && isDragging) {
             System.out.println("HomeScreen: Left swipe ignored - dragging shortcut in edit mode");
             return false;
@@ -2283,12 +2319,12 @@ public class HomeScreen implements Screen, GestureListener {
     }
     
     /**
-     * 右スワイプジェスチャーを処理する。
+     * 右スワイプジェスチャーをE理EEる、
      * 
-     * @return 処理した場合true
+     * @return 処理EEた場合rue
      */
     private boolean handleSwipeRight() {
-        // 編集モード中でもページスワイプを有効化（ドラッグ中は無効）
+        // 編雁EEEード中でもEージスワイプを有効化（ドラチEEE中は無効EEEE
         if (isEditing && isDragging) {
             System.out.println("HomeScreen: Right swipe ignored - dragging shortcut in edit mode");
             return false;
@@ -2303,114 +2339,124 @@ public class HomeScreen implements Screen, GestureListener {
     }
     
     /**
-     * 上スワイプジェスチャーを処理する。
+     * 上スワイプジェスチャーをE理EEる、
      * 
-     * @return 処理した場合true
+     * @return 処理EEた場合rue
      */
     private boolean handleSwipeUp(GestureEvent event) {
-        // 画面下部（高さの90%以上）からのスワイプアップはKernelのコントロールセンター用に予約
+        // 画面下部EEE高さの90%以上）からEスワイプアチEEEはKernelのコントロールセンター用に予紁E
         if (event.getStartY() >= 600 * 0.9f) {
             System.out.println("HomeScreen: Bottom swipe up detected - letting Kernel handle control center");
-            return false; // Kernelに処理を委譲
+            return false; // Kernelに処理EE委譲
         }
         
-        // 画面の中央部からのスワイプアップでApp Libraryを開く
+        // 画面の中央部からのスワイプアチEEEでApp Libraryを開ぁE
         System.out.println("HomeScreen: Up swipe detected - opening integrated App Library");
         openAppLibrary();
         return true;
     }
     
     /**
-     * ドラッグ開始ジェスチャーを処理する。
+     * ドラチEEE開始ジェスチャーをE理EEる、
      * 
      * @param event ジェスチャーイベント
-     * @return 処理した場合true
+     * @return 処理EEた場合rue
      */
     private boolean handleDragStart(GestureEvent event) {
         HomePage currentPage = getCurrentPage();
         if (currentPage != null && currentPage.isAppLibraryPage()) {
-            // AppLibraryページでのドラッグはスクロール開始
-            return handleAppLibraryScrollStart(event);
+            if (shouldHandleAppLibraryScroll(event)) {
+                isAppLibraryScrolling = true;
+                return handleAppLibraryScrollStart(event);
+            } else {
+                isAppLibraryScrolling = false;
+            }
+        } else {
+            isAppLibraryScrolling = false;
         }
         
-        // 編集モードでのアイコンドラッグを優先的に処理
+        // 編雁EEEードでのアイコンドラチEEEを優先的に処理
         if (isEditing) {
             Shortcut clickedShortcut = getShortcutAtPositionWithTransform(event.getStartX(), event.getStartY());
             if (clickedShortcut != null) {
-                // アイコンドラッグを開始
+                // アイコンドラチEEEを開始
                 startDragging(clickedShortcut, event.getStartX(), event.getStartY());
                 System.out.println("HomeScreen: Started icon drag for " + clickedShortcut.getDisplayName());
-                return true; // アイコンドラッグが優先される
+                return true; // アイコンドラチEEEが優先される
             }
         }
         
-        return false; // ページスワイプ用のドラッグ処理は handleDragMove で実装
+        return false; // ペEジスワイプ用のドラチEEE処理EE handleDragMove で実裁E
     }
     
     /**
-     * ドラッグ移動ジェスチャーを処理する。
+     * ドラチEEE移動ジェスチャーをE理EEる、
      * 
      * @param event ジェスチャーイベント
-     * @return 処理した場合true
+     * @return 処理EEた場合rue
      */
     private boolean handleDragMove(GestureEvent event) {
         HomePage currentPage = getCurrentPage();
         if (currentPage != null && currentPage.isAppLibraryPage()) {
-            // AppLibraryページでのドラッグはスクロール
-            return handleAppLibraryScroll(event);
+            if (isAppLibraryScrolling || shouldHandleAppLibraryScroll(event)) {
+                isAppLibraryScrolling = true;
+                return handleAppLibraryScroll(event);
+            }
+        } else {
+            isAppLibraryScrolling = false;
         }
         
-        // アイコンドラッグが進行中の場合は、それを優先
+        // アイコンドラチEEEが進行中の場合E、それを優允E
         if (isDragging && draggedShortcut != null) {
             int dragX = event.getCurrentX() - dragOffsetX;
             int dragY = event.getCurrentY() - dragOffsetY;
 
-            // ドラッグ座標の境界チェックと調整
+            // ドラチEEE座標E墁EEEチェチEEEと調整
             dragX = constrainDragPosition(dragX, dragY)[0];
             dragY = constrainDragPosition(dragX, dragY)[1];
 
             draggedShortcut.setDragPosition(dragX, dragY);
-            // パフォーマンス改善: 過剰なコンソール出力を抑制
+            // パフォーマンス改喁E 過剰なコンソール出力を抑制
             // System.out.println("HomeScreen: Updating icon drag position to (" + dragX + ", " + dragY + ")");
 
-            // 画面端での自動ページスライドを実装
+            // 画面端での自動Eージスライドを実裁E
             handleEdgeAutoSlide(event.getCurrentX(), event.getCurrentY());
 
-            return true; // アイコンドラッグが優先
+            return true; // アイコンドラチEEEが優允E
         }
         
-        // 編集モードでもページスワイプを有効化（ショートカットドラッグ中は無効）
+        // 編雁EEEードでもEージスワイプを有効化（ショートカチEEEドラチEEE中は無効EEEE
         if (isEditing && isDragging) {
-            return false; // ショートカットドラッグ中はページドラッグを無効
+            return false; // ショートカチEEEドラチEEE中はペEジドラチEEEを無効
         }
 
-        // 通常モードおよび編集モード（ショートカットドラッグ中以外）でページ切り替えドラッグを処理
+        // 通常モードおよE編雁EEEード（ショートカチEEEドラチEEE中以外）でペEジ刁EEE替えドラチEEEをE理
         return handlePageDrag(event);
     }
     
     /**
-     * ページドラッグを処理する（リアルタイムページ移動）。
+     * ペEジドラチEEEをE理EEる（リアルタイムペEジ移動）、
      * 
      * @param event ジェスチャーイベント
-     * @return 処理した場合true
+     * @return 処理EEた場合rue
      */
     private boolean handlePageDrag(GestureEvent event) {
         if (isAnimating) {
-            return false; // アニメーション中はドラッグを無視
+            return false; // アニメーション中はドラチEEEを無要E
         }
         
         int deltaX = event.getCurrentX() - event.getStartX();
         
-        // 水平ドラッグのみをページ移動として扱う
-        if (Math.abs(deltaX) > 10) { // 10px以上のドラッグで反応
-            // ページオフセットを計算（画面幅の範囲内で制限）
+        // 水平ドラチEEEのみをEージ移動として扱ぁE
+        if (Math.abs(deltaX) > 10) { // 10px以上EドラチEEEで反忁E
+            // ペEジオフセチEEEを計算（画面幁EEE篁EEE冁EEE制限）
             pageTransitionOffset = Math.max(-400, Math.min(400, deltaX));
             
-            // 端ページでの制限
+            // 端ペEジでの制陁E
             if (currentPageIndex == 0 && pageTransitionOffset > 0) {
-                pageTransitionOffset *= 0.3f; // バウンス効果
+                pageTransitionOffset *= 0.3f; // バウンス効极E
             } else if (currentPageIndex == homePages.size() - 1 && pageTransitionOffset < 0) {
-                pageTransitionOffset *= 0.3f; // バウンス効果
+                pageTransitionOffset *= 0.3f; // バウンス効极E
             }
             
             return true;
@@ -2420,85 +2466,89 @@ public class HomeScreen implements Screen, GestureListener {
     }
     
     /**
-     * ドラッグ終了ジェスチャーを処理する。
+     * ドラチEEE終了EEェスチャーをE理EEる、
      * 
      * @param event ジェスチャーイベント
-     * @return 処理した場合true
+     * @return 処理EEた場合rue
      */
     private boolean handleDragEnd(GestureEvent event) {
         HomePage currentPage = getCurrentPage();
         if (currentPage != null && currentPage.isAppLibraryPage()) {
-            // AppLibraryページでのドラッグ終了はスクロール終了
-            return handleAppLibraryScrollEnd(event);
+            if (isAppLibraryScrolling) {
+                isAppLibraryScrolling = false;
+                return handleAppLibraryScrollEnd(event);
+            }
+        } else {
+            isAppLibraryScrolling = false;
         }
         
-        // アイコンドラッグの終了処理
+        // アイコンドラチEEEの終了EE理
         if (isDragging && draggedShortcut != null) {
             System.out.println("HomeScreen: Ending icon drag");
             handleShortcutDrop(event.getCurrentX(), event.getCurrentY());
 
-            // 画面端スライド状態をリセット
+            // 画面端スライド状態をリセチEEE
             resetEdgeSlideState();
 
             return true;
         }
         
-        // 編集モードでもページスワイプを有効化（ショートカットドラッグ中は無効）
+        // 編雁EEEードでもEージスワイプを有効化（ショートカチEEEドラチEEE中は無効EEEE
         if (isEditing && isDragging) {
-            return false; // ショートカットドラッグ中はページドラッグ終了を無効
+            return false; // ショートカチEEEドラチEEE中はペEジドラチEEE終了EE無効
         }
 
-        // 通常モードおよび編集モード（ショートカットドラッグ中以外）でページドラッグ終了を処理
+        // 通常モードおよE編雁EEEード（ショートカチEEEドラチEEE中以外）でペEジドラチEEE終了EE処理
         return handlePageDragEnd(event);
     }
     
     /**
-     * ページドラッグ終了を処理する。
+     * ペEジドラチEEE終了EE処理EEる、
      * 
      * @param event ジェスチャーイベント
-     * @return 処理した場合true
+     * @return 処理EEた場合rue
      */
     private boolean handlePageDragEnd(GestureEvent event) {
         if (Math.abs(pageTransitionOffset) < 50) {
-            // ドラッグ距離が短い場合は元のページに戻る
+            // ドラチEEE距離が短ぁEEE合E允EEEペEジに戻めE
             startReturnToCurrentPage();
             return true;
         }
         
-        // ドラッグ距離が十分な場合はページ切り替え
+        // ドラチEEE距離が十刁EEE場合EペEジ刁EEE替ぁE
         if (pageTransitionOffset > 50 && currentPageIndex > 0) {
-            // 右にドラッグ - 前のページ
+            // 右にドラチEEE - 前EペEジ
             startPageTransition(currentPageIndex - 1);
             return true;
         } else if (pageTransitionOffset < -50 && currentPageIndex < homePages.size() - 1) {
-            // 左にドラッグ - 次のページ
+            // 左にドラチEEE - 次のペEジ
             startPageTransition(currentPageIndex + 1);
             return true;
         } else {
-            // 端ページまたは条件を満たさない場合は元に戻る
+            // 端ペEジまたE条件を満たさなぁEEE合E允EEE戻めE
             startReturnToCurrentPage();
             return true;
         }
     }
     
     /**
-     * 現在のページに戻るアニメーションを開始する。
+     * 現在のペEジに戻るアニメーションを開始する、
      */
     private void startReturnToCurrentPage() {
         targetPageIndex = currentPageIndex;
         isAnimating = true;
         animationStartTime = System.currentTimeMillis();
         animationProgress = 0.0f;
-        startOffset = pageTransitionOffset; // 現在のオフセットを保存
-        animationBasePageIndex = currentPageIndex; // 座標計算の基準ページを固定
+        startOffset = pageTransitionOffset; // 現在のオフセチEEEを保孁E
+        animationBasePageIndex = currentPageIndex; // 座標計算E基準Eージを固定
         System.out.println("🎬 Starting return animation to current page " + currentPageIndex + ", startOffset=" + startOffset + ", basePageIndex=" + animationBasePageIndex);
     }
     
     /**
-     * AppLibraryページでのスクロール開始を処理する。
+     * AppLibraryペEジでのスクロール開始を処理EEる、
      * 
      * @param event ジェスチャーイベント
-     * @return 処理した場合true
+     * @return 処理EEた場合rue
      */
     private boolean handleAppLibraryScrollStart(GestureEvent event) {
         System.out.println("HomeScreen: AppLibrary scroll started");
@@ -2506,25 +2556,25 @@ public class HomeScreen implements Screen, GestureListener {
     }
     
     /**
-     * AppLibraryページでのスクロールを処理する。
+     * AppLibraryペEジでのスクロールをE理EEる、
      * 
      * @param event ジェスチャーイベント
-     * @return 処理した場合true
+     * @return 処理EEた場合rue
      */
     private boolean handleAppLibraryScroll(GestureEvent event) {
         HomePage currentPage = getCurrentPage();
-        if (currentPage == null) return false;
+        if (currentPage == null || !currentPage.isAppLibraryPage()) return false;
         
-        // 垂直ドラッグのみをスクロールとして扱う
+        // 垂直ドラチEEEのみをスクロールとして扱ぁE
         int deltaY = event.getCurrentY() - event.getStartY();
         
-        // 現在のスクロールオフセットを調整
+        // 現在のスクロールオフセチEEEを調整
         int currentScrollOffset = currentPage.getScrollOffset();
-        int newScrollOffset = currentScrollOffset - deltaY; // 下方向ドラッグで上方向スクロール
+        int newScrollOffset = currentScrollOffset - deltaY; // 下方向ドラチEEEで上方向スクロール
         
-        // スクロール範囲を制限
-        int startY = 110;
-        int listHeight = 600 - startY - NAV_AREA_HEIGHT - 20;
+        // スクロール篁EEEを制陁E
+        int startY = APP_LIBRARY_LIST_START_Y;
+        int listHeight = SCREEN_HEIGHT - startY - NAV_AREA_HEIGHT - APP_LIBRARY_BOTTOM_PADDING;
         int itemHeight = 70;
         List<IApplication> apps = currentPage.getAllApplications();
         int maxScrollOffset = Math.max(0, apps.size() * itemHeight - listHeight);
@@ -2537,35 +2587,58 @@ public class HomeScreen implements Screen, GestureListener {
     }
     
     /**
-     * AppLibraryページでのスクロール終了を処理する。
+     * AppLibraryペEジでのスクロール終了EE処理EEる、
      *
      * @param event ジェスチャーイベント
-     * @return 処理した場合true
+     * @return 処理EEた場合rue
      */
     private boolean handleAppLibraryScrollEnd(GestureEvent event) {
         System.out.println("HomeScreen: AppLibrary scroll ended");
+        isAppLibraryScrolling = false;
         return true;
+    }
+
+    private boolean shouldHandleAppLibraryScroll(GestureEvent event) {
+        if (homePages == null || homePages.isEmpty()) {
+            return false;
+        }
+
+        int[] coords = transformMouseCoordinates(event.getStartX(), event.getStartY());
+        int pageIndex = Math.max(0, Math.min(homePages.size() - 1, coords[2]));
+        HomePage targetPage = homePages.get(pageIndex);
+        if (targetPage == null || !targetPage.isAppLibraryPage()) {
+            return false;
+        }
+
+        return isWithinAppLibraryScrollZone(coords[1]);
+    }
+
+    private boolean isWithinAppLibraryScrollZone(int pageY) {
+        int listStart = APP_LIBRARY_LIST_START_Y;
+        int listEnd = SCREEN_HEIGHT - NAV_AREA_HEIGHT - APP_LIBRARY_BOTTOM_PADDING;
+        return pageY >= listStart && pageY <= listEnd;
     }
 
     // Edge auto-slide functionality variables
     private long edgeSlideTimer = 0;
     private boolean isEdgeSliding = false;
-    private static final int EDGE_SLIDE_ZONE = 30; // ピクセル数での端検出ゾーン
+    private static final int EDGE_SLIDE_ZONE = 30; // ピクセル数での端検Eゾーン
     private static final long EDGE_SLIDE_DELAY = 500; // ミリ秒での自動スライド遅延
-    private static final int SCREEN_WIDTH = 400; // 画面幅 (HomeScreenの標準幅)
+    private static final int SCREEN_WIDTH = 400; // 画面幁E(HomeScreenの標準幁E
+    private static final int SCREEN_HEIGHT = 600;
 
     /**
-     * ドラッグ中のショートカットが画面端にある場合、自動的にページスライドを実行する。
+     * ドラチEEE中のショートカチEEEが画面端にある場合、動的にペEジスライドを実行する、
      *
-     * @param currentX 現在のマウス/タッチのX座標
-     * @param currentY 現在のマウス/タッチのY座標
+     * @param currentX 現在のマウス/タチEEEのX座樁E
+     * @param currentY 現在のマウス/タチEEEのY座樁E
      */
     private void handleEdgeAutoSlide(int currentX, int currentY) {
         if (isAnimating) {
-            return; // すでにアニメーション中の場合は何もしない
+            return; // すでにアニメーション中の場合E何もしなぁE
         }
 
-        // 最後のドラッグ座標を記録（継続的なチェック用）
+        // 最後EドラチEEE座標を記録EEE継続的なチェチEEE用EEEE
         lastDragX = currentX;
         lastDragY = currentY;
 
@@ -2573,41 +2646,41 @@ public class HomeScreen implements Screen, GestureListener {
         boolean inLeftEdge = currentX < EDGE_SLIDE_ZONE;
         boolean inRightEdge = currentX > (SCREEN_WIDTH - EDGE_SLIDE_ZONE);
 
-        // 画面端に入ったかチェック
+        // 画面端に入ったかチェチEEE
         if (inLeftEdge || inRightEdge) {
             if (!isEdgeSliding) {
-                // 初回の端検出
+                // 初回の端検E
                 isEdgeSliding = true;
                 edgeSlideTimer = currentTime;
                 System.out.println("HomeScreen: [Move] Edge slide zone entered at X=" + currentX +
                                  (inLeftEdge ? " (LEFT)" : " (RIGHT)") + " - Timer started");
             } else {
-                // 既に端にいる場合は経過時間を表示
+                // 既に端にぁEEE場合E経過時間を表示
                 long elapsed = currentTime - edgeSlideTimer;
                 System.out.println("HomeScreen: [Move] Still in edge zone at X=" + currentX +
                                  " - Elapsed: " + elapsed + "ms / " + EDGE_SLIDE_DELAY + "ms");
 
                 if (elapsed >= EDGE_SLIDE_DELAY) {
-                    // 十分な時間が経過したので自動スライドを実行
+                    // 十EEな時間が経過したので自動スライドを実衁E
                     if (inLeftEdge && currentPageIndex > 0) {
-                        // 左端なので前のページに移動
+                        // 左端なので前EペEジに移勁E
                         System.out.println("HomeScreen: [Move] Auto-sliding to previous page (LEFT edge)");
                         slideToPage(currentPageIndex - 1, true);
                         resetEdgeSlideState();
                     } else if (inRightEdge && currentPageIndex < homePages.size() - 1) {
-                        // 右端なので次のページに移動
+                        // 右端なので次のペEジに移勁E
                         System.out.println("HomeScreen: [Move] Auto-sliding to next page (RIGHT edge)");
                         slideToPage(currentPageIndex + 1, true);
                         resetEdgeSlideState();
                     } else {
-                        // 端ページの場合は何もしない
+                        // 端ペEジの場合E何もしなぁE
                         System.out.println("HomeScreen: [Move] Already at edge page, no auto-slide");
                         resetEdgeSlideState();
                     }
                 }
             }
         } else {
-            // 画面端を離れたのでリセット
+            // 画面端を離れたのでリセチEEE
             if (isEdgeSliding) {
                 System.out.println("HomeScreen: [Move] Left edge slide zone at X=" + currentX + " - Timer reset");
                 resetEdgeSlideState();
@@ -2616,29 +2689,29 @@ public class HomeScreen implements Screen, GestureListener {
     }
 
     /**
-     * 画面端スライドの状態をリセットする。
+     * 画面端スライドE状態をリセチEEEする、
      */
     private void resetEdgeSlideState() {
         isEdgeSliding = false;
         edgeSlideTimer = 0;
     }
 
-    // 最後に記録したマウス/タッチ座標（継続的なエッジチェック用）
+    // 最後に記録したマウス/タチEEE座標（継続的なエチEEEチェチEEE用EEEE
     private int lastDragX = 0;
     private int lastDragY = 0;
 
-    // 遅延ドロップ処理用の変数
+    // 遁EEEドロチEEE処理EEの変数
     private boolean hasPendingDrop = false;
     private int pendingDropX = 0;
     private int pendingDropY = 0;
     private Shortcut pendingDropShortcut = null;
 
     /**
-     * 描画ループ中にエッジ自動スライドのタイマーを継続的にチェックする。
-     * ドラッグ中で画面端に滞在している場合、時間経過で自動スライドを実行する。
+     * 描画ループ中にエチEEE自動スライドEタイマEを継続的にチェチEEEする、
+     * ドラチEEE中で画面端に滞在してぁEEE場合、時間経過で自動スライドを実行する、
      */
     private void updateEdgeAutoSlideTimer() {
-        // ドラッグ中かつエッジスライド中の場合のみチェック
+        // ドラチEEE中かつエチEEEスライド中の場合EみチェチEEE
         if (!isDragging || !isEdgeSliding || draggedShortcut == null || isAnimating) {
             return;
         }
@@ -2647,23 +2720,23 @@ public class HomeScreen implements Screen, GestureListener {
         boolean inLeftEdge = lastDragX < EDGE_SLIDE_ZONE;
         boolean inRightEdge = lastDragX > (SCREEN_WIDTH - EDGE_SLIDE_ZONE);
 
-        // 画面端に滞在している場合のみ継続チェック
+        // 画面端に滞在してぁEEE場合Eみ継続チェチEEE
         if ((inLeftEdge || inRightEdge) && currentTime - edgeSlideTimer >= EDGE_SLIDE_DELAY) {
             System.out.println("HomeScreen: [Timer] Edge auto-slide triggered at X=" + lastDragX +
                              " after " + (currentTime - edgeSlideTimer) + "ms");
 
             if (inLeftEdge && currentPageIndex > 0) {
-                // 左端なので前のページに移動
+                // 左端なので前EペEジに移勁E
                 System.out.println("HomeScreen: [Timer] Auto-sliding to previous page (LEFT edge)");
                 slideToPage(currentPageIndex - 1, true);
                 resetEdgeSlideState();
             } else if (inRightEdge && currentPageIndex < homePages.size() - 1) {
-                // 右端なので次のページに移動
+                // 右端なので次のペEジに移勁E
                 System.out.println("HomeScreen: [Timer] Auto-sliding to next page (RIGHT edge)");
                 slideToPage(currentPageIndex + 1, true);
                 resetEdgeSlideState();
             } else {
-                // 端ページの場合は何もしない
+                // 端ペEジの場合E何もしなぁE
                 System.out.println("HomeScreen: [Timer] Already at edge page, no auto-slide");
                 resetEdgeSlideState();
             }
@@ -2671,18 +2744,18 @@ public class HomeScreen implements Screen, GestureListener {
     }
 
     /**
-     * 指定したページにスライドする。
-     * ドラッグ継続中でも呼び出せるようにする。
+     * 持EEEしたEEージにスライドする、
+     * ドラチEEE継続中でも呼び出せるようにする、
      *
-     * @param pageIndex 移動先のページインデックス
-     * @param maintainDrag ドラッグ状態を維持するかどうか
+     * @param pageIndex 移動EのペEジインチEEEクス
+     * @param maintainDrag ドラチEEE状態を維持するかどぁEEE
      */
     private void slideToPage(int pageIndex, boolean maintainDrag) {
         if (pageIndex < 0 || pageIndex >= homePages.size() || pageIndex == currentPageIndex) {
             return;
         }
 
-        // ドラッグ中のショートカットの情報を保存
+        // ドラチEEE中のショートカチEEEの報EEを保孁E
         Shortcut savedDraggedShortcut = null;
         int savedDragOffsetX = 0, savedDragOffsetY = 0;
         boolean wasDragging = isDragging && draggedShortcut != null;
@@ -2694,7 +2767,7 @@ public class HomeScreen implements Screen, GestureListener {
             System.out.println("HomeScreen: Saving drag state for shortcut: " + savedDraggedShortcut.getDisplayName());
         }
 
-        // ページ切り替えを実行
+        // ペEジ刁EEE替えを実衁E
         currentPageIndex = pageIndex;
         targetPageIndex = pageIndex;
         isAnimating = true;
@@ -2706,14 +2779,14 @@ public class HomeScreen implements Screen, GestureListener {
 
         System.out.println("HomeScreen: Sliding to page " + pageIndex + " (maintainDrag=" + maintainDrag + ")");
 
-        // ドラッグ状態を復元
+        // ドラチEEE状態を復允E
         if (wasDragging && maintainDrag && savedDraggedShortcut != null) {
             draggedShortcut = savedDraggedShortcut;
             dragOffsetX = savedDragOffsetX;
             dragOffsetY = savedDragOffsetY;
             isDragging = true;
 
-            // ページ切り替え後にドラッグ位置を画面内の安全な場所に調整
+            // ペEジ刁EEE替え後にドラチEEE位置を画面冁EEE安Eな場所に調整
             adjustDragPositionAfterSlide();
 
             System.out.println("HomeScreen: Restored drag state for shortcut: " + draggedShortcut.getDisplayName());
@@ -2721,40 +2794,40 @@ public class HomeScreen implements Screen, GestureListener {
     }
 
     /**
-     * ページスライド後のドラッグ位置を画面内の安全な場所に調整する。
-     * 画面端でスライドが発生した場合、ショートカットを画面内の適切な位置に配置する。
+     * ペEジスライド後EドラチEEE位置を画面冁EEE安Eな場所に調整する、
+     * 画面端でスライドが発生した場合、ショートカチEEEを画面冁EEE適刁EEE位置に配置する、
      */
     private void adjustDragPositionAfterSlide() {
         if (draggedShortcut == null) {
             return;
         }
 
-        // 現在のドラッグ位置を取得
+        // 現在のドラチEEE位置を取征E
         float currentDragX = draggedShortcut.getDragX();
         float currentDragY = draggedShortcut.getDragY();
 
-        // 画面境界
-        final int MARGIN = 10; // 画面端からの安全マージン
+        // 画面墁EEE
+        final int MARGIN = 10; // 画面端からの安EマEジン
         final int MIN_X = MARGIN;
         final int MAX_X = SCREEN_WIDTH - ICON_SIZE - MARGIN;
-        final int MIN_Y = 80; // ステータスバー下
-        final int MAX_Y = 600 - NAV_AREA_HEIGHT - ICON_SIZE - MARGIN; // ナビゲーションエリア上
+        final int MIN_Y = 80; // スチEEEタスバE丁E
+        final int MAX_Y = 600 - NAV_AREA_HEIGHT - ICON_SIZE - MARGIN; // ナビゲーションエリア丁E
 
         float adjustedX = currentDragX;
         float adjustedY = currentDragY;
 
-        // 左端からのスライドの場合、右側の安全な位置に移動
+        // 左端からのスライドE場合、右側の安Eな位置に移勁E
         if (currentDragX < EDGE_SLIDE_ZONE) {
-            adjustedX = EDGE_SLIDE_ZONE + 20; // 端検出ゾーンから少し内側
+            adjustedX = EDGE_SLIDE_ZONE + 20; // 端検Eゾーンから少し冁EEE
             System.out.println("HomeScreen: Adjusting drag X from " + currentDragX + " to " + adjustedX + " (left edge slide)");
         }
-        // 右端からのスライドの場合、左側の安全な位置に移動
+        // 右端からのスライドE場合、左側の安Eな位置に移勁E
         else if (currentDragX > (SCREEN_WIDTH - EDGE_SLIDE_ZONE)) {
-            adjustedX = SCREEN_WIDTH - EDGE_SLIDE_ZONE - 20; // 端検出ゾーンから少し内側
+            adjustedX = SCREEN_WIDTH - EDGE_SLIDE_ZONE - 20; // 端検Eゾーンから少し冁EEE
             System.out.println("HomeScreen: Adjusting drag X from " + currentDragX + " to " + adjustedX + " (right edge slide)");
         }
 
-        // Y座標の境界チェック
+        // Y座標E墁EEEチェチEEE
         if (adjustedY < MIN_Y) {
             adjustedY = MIN_Y;
             System.out.println("HomeScreen: Adjusting drag Y from " + currentDragY + " to " + adjustedY + " (top boundary)");
@@ -2763,7 +2836,7 @@ public class HomeScreen implements Screen, GestureListener {
             System.out.println("HomeScreen: Adjusting drag Y from " + currentDragY + " to " + adjustedY + " (bottom boundary)");
         }
 
-        // X座標の最終境界チェック（念のため）
+        // X座標E最終墁EEEチェチEEEEE念のためEEEE
         if (adjustedX < MIN_X) {
             adjustedX = MIN_X;
             System.out.println("HomeScreen: Final X adjustment from " + currentDragX + " to " + adjustedX + " (left boundary)");
@@ -2775,7 +2848,7 @@ public class HomeScreen implements Screen, GestureListener {
         // 調整された座標を設定
         draggedShortcut.setDragPosition((int)adjustedX, (int)adjustedY);
 
-        // lastDragX/Yも更新（継続的なエッジチェック用）
+        // lastDragX/Yも更新EEE継続的なエチEEEチェチEEE用EEEE
         lastDragX = (int)adjustedX;
         lastDragY = (int)adjustedY;
 
@@ -2783,18 +2856,18 @@ public class HomeScreen implements Screen, GestureListener {
     }
 
     /**
-     * ドラッグ座標を画面境界内に制限する。
+     * ドラチEEE座標を画面墁EEE冁EEE制限する、
      *
-     * @param dragX 元のドラッグX座標
-     * @param dragY 元のドラッグY座標
-     * @return 制限後の座標 [adjustedX, adjustedY]
+     * @param dragX 允EEEドラチEEEX座樁E
+     * @param dragY 允EEEドラチEEEY座樁E
+     * @return 制限後E座樁E[adjustedX, adjustedY]
      */
     private int[] constrainDragPosition(int dragX, int dragY) {
-        // 画面境界（通常のドラッグ用）
-        final int MIN_X = -10; // 少し画面外まで許可（エッジ検出のため）
-        final int MAX_X = SCREEN_WIDTH + 10; // 少し画面外まで許可（エッジ検出のため）
-        final int MIN_Y = 80; // ステータスバー下
-        final int MAX_Y = 600 - NAV_AREA_HEIGHT - 10; // ナビゲーションエリア上
+        // 画面墁EEEEE通常のドラチEEE用EEEE
+        final int MIN_X = -10; // 少し画面外まで許可EEEエチEEE検EのためEEEE
+        final int MAX_X = SCREEN_WIDTH + 10; // 少し画面外まで許可EEEエチEEE検EのためEEEE
+        final int MIN_Y = 80; // スチEEEタスバE丁E
+        final int MAX_Y = 600 - NAV_AREA_HEIGHT - 10; // ナビゲーションエリア丁E
 
         int adjustedX = Math.max(MIN_X, Math.min(MAX_X, dragX));
         int adjustedY = Math.max(MIN_Y, Math.min(MAX_Y, dragY));
@@ -2803,9 +2876,9 @@ public class HomeScreen implements Screen, GestureListener {
     }
 
     /**
-     * 全ページからショートカットを削除する（ページ間移動時の重複防止）。
+     * 全ペEジからショートカチEEEを削除するEEEEEージ間移動時の重褁EEE止EEE、
      *
-     * @param shortcut 削除するショートカット
+     * @param shortcut 削除するショートカチEEE
      */
     private void removeShortcutFromAllPages(Shortcut shortcut) {
         if (shortcut == null) return;
@@ -2822,10 +2895,10 @@ public class HomeScreen implements Screen, GestureListener {
     }
 
     /**
-     * アニメーション中にドロップが発生した場合、アニメーション完了後に実行するようスケジュールする。
+     * アニメーション中にドロチEEEが発生した場合、アニメーション完了EEに実行するよぁEEEケジュールする、
      *
-     * @param mouseX ドロップのX座標
-     * @param mouseY ドロップのY座標
+     * @param mouseX ドロチEEEのX座樁E
+     * @param mouseY ドロチEEEのY座樁E
      */
     private void scheduleDelayedDrop(int mouseX, int mouseY) {
         hasPendingDrop = true;
@@ -2837,22 +2910,22 @@ public class HomeScreen implements Screen, GestureListener {
                           (pendingDropShortcut != null ? pendingDropShortcut.getDisplayName() : "null") +
                           "' at (" + mouseX + ", " + mouseY + ")");
 
-        // ドラッグ状態をいったんクリア（ただし、遅延ドロップのためにショートカット情報は保持）
+        // ドラチEEE状態をぁEEEたんクリアEEEただし、E延ドロチEEEのためにショートカチEEE報EEは保持EEEE
         isDragging = false;
     }
 
     /**
-     * アニメーション完了後に遅延されたドロップを実行する。
+     * アニメーション完了EEに遁EEEされたドロチEEEを実行する、
      */
     private void executePendingDrop() {
         if (hasPendingDrop && pendingDropShortcut != null) {
             System.out.println("HomeScreen: [DROP] Executing pending drop for shortcut '" +
                               pendingDropShortcut.getDisplayName() + "' at (" + pendingDropX + ", " + pendingDropY + ")");
 
-            // 遅延ドロップの実行
+            // 遁EEEドロチEEEの実衁E
             executeDrop(pendingDropX, pendingDropY, pendingDropShortcut);
 
-            // 遅延ドロップ状態をリセット
+            // 遁EEEドロチEEE状態をリセチEEE
             hasPendingDrop = false;
             pendingDropX = 0;
             pendingDropY = 0;
@@ -2861,11 +2934,11 @@ public class HomeScreen implements Screen, GestureListener {
     }
 
     /**
-     * 実際のドロップ処理を実行する（即座実行と遅延実行で共通）。
+     * 実際のドロチEEE処理EE実行する（即座実行と遁EEE実行で共通）、
      *
-     * @param mouseX ドロップのX座標
-     * @param mouseY ドロップのY座標
-     * @param shortcut ドロップするショートカット
+     * @param mouseX ドロチEEEのX座樁E
+     * @param mouseY ドロチEEEのY座樁E
+     * @param shortcut ドロチEEEするショートカチEEE
      */
     private void executeDrop(int mouseX, int mouseY, Shortcut shortcut) {
         if (shortcut == null) return;
@@ -2880,24 +2953,24 @@ public class HomeScreen implements Screen, GestureListener {
             if (targetPage != null) {
                 System.out.println("HomeScreen: [EXECUTE] Target page: " + currentPageIndex + ", Grid position: (" + gridPos[0] + ", " + gridPos[1] + ")");
 
-                // 安全な配置処理：先に配置を試行し、成功した場合のみ他のページから削除
+                // 安Eな配置処理EEEEに配置を試行し、功した場合Eみ他EペEジから削除
                 boolean placed = safelyPlaceShortcut(shortcut, targetPage, gridPos[0], gridPos[1]);
 
                 if (placed) {
-                    System.out.println("HomeScreen: [EXECUTE] ショートカット '" + shortcut.getDisplayName() +
-                                     "' をページ " + currentPageIndex + " の (" + gridPos[0] + ", " + gridPos[1] + ") に配置しました");
+                    System.out.println("HomeScreen: [EXECUTE] ショートカチEEE '" + shortcut.getDisplayName() +
+                                     "' をEージ " + currentPageIndex + " の (" + gridPos[0] + ", " + gridPos[1] + ") に配置しました");
                     saveCurrentLayout();
                 } else {
-                    System.out.println("HomeScreen: [EXECUTE] ショートカット配置失敗 - フォールバック処理を実行");
+                    System.out.println("HomeScreen: [EXECUTE] ショートカット配置失敗 - フォールバック処理実行");
 
-                    // 配置失敗時は最初の空きスロットに配置
+                    // 配置失敗時は最初E空きスロチEEEに配置
                     int[] emptySlot = findFirstEmptySlot(targetPage);
                     if (emptySlot != null && safelyPlaceShortcut(shortcut, targetPage, emptySlot[0], emptySlot[1])) {
-                        System.out.println("HomeScreen: [EXECUTE] フォールバック: 空きスロット (" + emptySlot[0] + ", " + emptySlot[1] + ") に配置しました");
+                        System.out.println("HomeScreen: [EXECUTE] フォールバック: 空きスロチEEE (" + emptySlot[0] + ", " + emptySlot[1] + ") に配置しました");
                         saveCurrentLayout();
                     } else {
                         System.out.println("HomeScreen: [EXECUTE] エラー: 配置可能な空きスロットがありません - ショートカットを元の場所に戻します");
-                        // 最悪の場合は元の場所に戻す（削除を防ぐ）
+                        // 最悪の場合E允EEE場所に戻す（削除を防ぐ）
                         restoreShortcutToSafePage(shortcut);
                     }
                 }
@@ -2909,14 +2982,14 @@ public class HomeScreen implements Screen, GestureListener {
     }
 
     /**
-     * ショートカットを安全に配置する。
-     * 他のページから削除する前に、まず目標ページに配置できることを確認する。
+     * ショートカチEEEを安Eに配置する、
+     * 他EペEジから削除する前に、まず目標Eージに配置できることを確認する、
      *
-     * @param shortcut 配置するショートカット
-     * @param targetPage 目標ページ
-     * @param gridX 目標グリッドX座標
-     * @param gridY 目標グリッドY座標
-     * @return 配置に成功した場合true
+     * @param shortcut 配置するショートカチEEE
+     * @param targetPage 目標Eージ
+     * @param gridX 目標グリチEEEX座樁E
+     * @param gridY 目標グリチEEEY座樁E
+     * @return 配置に成功した場合rue
      */
     private boolean safelyPlaceShortcut(Shortcut shortcut, HomePage targetPage, int gridX, int gridY) {
         if (shortcut == null || targetPage == null) {
@@ -2926,20 +2999,20 @@ public class HomeScreen implements Screen, GestureListener {
         System.out.println("HomeScreen: [SAFE_PLACE] Attempting to place shortcut '" + shortcut.getDisplayName() +
                           "' at (" + gridX + ", " + gridY + ") on page " + currentPageIndex);
 
-        // ショートカットが既にターゲットページにある場合は通常のmoveShortcutを使用
+        // ショートカチEEEが既にターゲチEEEペEジにある場合E通常のmoveShortcutを使用
         if (targetPage.getShortcuts().contains(shortcut)) {
             System.out.println("HomeScreen: [SAFE_PLACE] Shortcut already on target page, using moveShortcut");
             return targetPage.moveShortcut(shortcut, gridX, gridY);
         }
 
-        // ショートカットが他のページにある場合
-        // 1. まず、目標位置が空いているかチェック
+        // ショートカチEEEが他EペEジにある場合
+        // 1. まず、目標位置が空ぁEEEぁEEEかチェチEEE
         if (!targetPage.isPositionEmpty(gridX, gridY)) {
             System.out.println("HomeScreen: [SAFE_PLACE] Target position is occupied");
             return false;
         }
 
-        // 2. 他のページから削除
+        // 2. 他EペEジから削除
         HomePage sourcePageFound = null;
         for (HomePage page : homePages) {
             if (page.getShortcuts().contains(shortcut)) {
@@ -2957,11 +3030,11 @@ public class HomeScreen implements Screen, GestureListener {
             }
         }
 
-        // 3. ターゲットページに追加
+        // 3. ターゲチEEEペEジに追加
         boolean added = targetPage.addShortcut(shortcut, gridX, gridY);
         if (!added) {
             System.out.println("HomeScreen: [SAFE_PLACE] Failed to add to target page - restoring to source page");
-            // 追加に失敗した場合は元のページに戻す
+            // 追加に失敗した場合E允EEEペEジに戻ぁE
             if (sourcePageFound != null) {
                 int[] emptySlot = findFirstEmptySlot(sourcePageFound);
                 if (emptySlot != null) {
@@ -2977,18 +3050,18 @@ public class HomeScreen implements Screen, GestureListener {
     }
 
     /**
-     * ショートカットを安全な場所に復元する（配置失敗時のフォールバック）。
+     * ショートカチEEEを安Eな場所に復允EEEる（E置失敗時のフォールバックEEE、
      *
-     * @param shortcut 復元するショートカット
+     * @param shortcut 復允EEEるショートカチEEE
      */
     private void restoreShortcutToSafePage(Shortcut shortcut) {
         if (shortcut == null) return;
 
         System.out.println("HomeScreen: [RESTORE] Restoring shortcut '" + shortcut.getDisplayName() + "' to safe page");
 
-        // 最初のページで空きスロットを探す
+        // 最初EペEジで空きスロチEEEを探ぁE
         for (HomePage page : homePages) {
-            if (page.isAppLibraryPage()) continue; // AppLibraryページはスキップ
+            if (page.isAppLibraryPage()) continue; // AppLibraryペEジはスキチEEE
 
             int[] emptySlot = findFirstEmptySlot(page);
             if (emptySlot != null) {

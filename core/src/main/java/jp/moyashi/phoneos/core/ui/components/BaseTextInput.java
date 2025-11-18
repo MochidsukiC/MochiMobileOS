@@ -74,13 +74,24 @@ public abstract class BaseTextInput extends BaseComponent implements Focusable, 
         super(x, y, width, height);
         this.text = "";
         this.placeholder = "";
-        this.backgroundColor = 0xFFFFFFFF;
-        this.focusedBackgroundColor = 0xFFFFFFC8;
-        this.textColor = 0xFF000000;
-        this.placeholderColor = 0xFF999999;
-        this.borderColor = 0xFFCCCCCC;
-        this.focusedBorderColor = 0xFF4A90E2;
-        this.cornerRadius = 5;
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        if (theme != null) {
+            this.backgroundColor = theme.colorSurface();
+            this.focusedBackgroundColor = theme.colorSurface();
+            this.textColor = theme.colorOnSurface();
+            this.placeholderColor = 0xFF999999;
+            this.borderColor = theme.colorBorder();
+            this.focusedBorderColor = theme.colorPrimary();
+            this.cornerRadius = theme.radiusSm();
+        } else {
+            this.backgroundColor = 0xFFFFFFFF;
+            this.focusedBackgroundColor = 0xFFFFFFC8;
+            this.textColor = 0xFF000000;
+            this.placeholderColor = 0xFF999999;
+            this.borderColor = 0xFFCCCCCC;
+            this.focusedBorderColor = 0xFF4A90E2;
+            this.cornerRadius = 5;
+        }
         this.cursorPosition = 0;
         this.font = null;
     }
@@ -129,6 +140,17 @@ public abstract class BaseTextInput extends BaseComponent implements Focusable, 
         this.lastGraphics = g;
 
         g.pushStyle();
+
+        // 動的切替に追従
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        if (theme != null) {
+            this.borderColor = theme.colorBorder();
+            this.focusedBorderColor = theme.colorPrimary();
+            this.backgroundColor = theme.colorSurface();
+            this.focusedBackgroundColor = theme.colorSurface();
+            this.textColor = theme.colorOnSurface();
+            this.cornerRadius = theme.radiusSm();
+        }
 
         // 背景色
         int bgColor = focused ? focusedBackgroundColor : backgroundColor;

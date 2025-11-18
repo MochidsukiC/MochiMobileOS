@@ -77,39 +77,80 @@ public class ToggleItem implements IControlCenterItem {
     }
 
     private void drawBackground(PGraphics g, float x, float y, float w, float h) {
-        if (!enabled) {
-            g.fill(100, 100, 100, 100);
-        } else if (isOn) {
-            int alpha = (int) (50 + 100 * animationProgress);
-            g.fill(100, 150, 255, alpha);
-        } else {
-            g.fill(200, 200, 200, 80);
-        }
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        int surface = theme != null ? theme.colorSurface() : 0xFFFFFFFF;
+        int border  = theme != null ? theme.colorBorder()  : 0xFFDDDDDD;
+        int acc     = theme != null ? theme.colorPrimary() : 0xFF4A90E2;
+        int radius  = theme != null ? theme.radiusMd() : 12;
+
+        // base card: スロット（ControlCenter側）の上に重なるため、少し濃いめ＋半透明で差層を作る
+        int sr = (surface>>16)&0xFF, sg = (surface>>8)&0xFF, sb = surface&0xFF;
+        // 8%ほど暗く（クランプ）
+        sr = Math.max(0, (int)(sr * 0.92f));
+        sg = Math.max(0, (int)(sg * 0.92f));
+        sb = Math.max(0, (int)(sb * 0.92f));
         g.noStroke();
-        g.rect(x, y, w, h, 12);
-        if (enabled) {
-            g.stroke(isOn ? 80 : 150);
-            g.strokeWeight(1);
-            g.noFill();
-            g.rect(x, y, w, h, 12);
+        g.fill(sr, sg, sb, enabled ? 220 : 180);
+        g.rect(x, y, w, h, radius);
+
+        // border
+        g.stroke((border>>16)&0xFF, (border>>8)&0xFF, border&0xFF);
+        g.strokeWeight(1);
+        g.noFill();
+        g.rect(x, y, w, h, radius);
+
+        // ON highlight overlay (low alpha accent)
+        if (enabled && isOn) {
+            int ar = (acc>>16)&0xFF, ag = (acc>>8)&0xFF, ab = acc&0xFF;
+            int a = Math.min(120, 28 + (int)(52 * animationProgress));
+            try {
+                if (theme != null && theme.getTone() == jp.moyashi.phoneos.core.ui.theme.ThemeEngine.Tone.LIGHT &&
+                    theme.getFamily() == jp.moyashi.phoneos.core.ui.theme.ThemeEngine.Mode.GREEN) {
+                    a = Math.min(96, 20 + (int)(40 * animationProgress)); // Greenライト時は控えめ
+                }
+            } catch (Throwable ignored) {}
+            g.noStroke();
+            g.fill(ar, ag, ab, a);
+            g.rect(x, y, w, h, radius);
         }
     }
 
     private void drawBackground(PApplet p, float x, float y, float w, float h) {
-        if (!enabled) {
-            p.fill(100, 100, 100, 100);
-        } else if (isOn) {
-            int alpha = (int) (50 + 100 * animationProgress);
-            p.fill(100, 150, 255, alpha);
-        } else {
-            p.fill(200, 200, 200, 80);
-        }
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        int surface = theme != null ? theme.colorSurface() : 0xFFFFFFFF;
+        int border  = theme != null ? theme.colorBorder()  : 0xFFDDDDDD;
+        int acc     = theme != null ? theme.colorPrimary() : 0xFF4A90E2;
+        int radius  = theme != null ? theme.radiusMd() : 12;
+
+        // base card（少し濃いめ＋半透明）
+        int sr = (surface>>16)&0xFF, sg = (surface>>8)&0xFF, sb = surface&0xFF;
+        sr = Math.max(0, (int)(sr * 0.92f));
+        sg = Math.max(0, (int)(sg * 0.92f));
+        sb = Math.max(0, (int)(sb * 0.92f));
         p.noStroke();
-        p.rect(x, y, w, h, 12);
-        p.stroke(enabled ? 150 : 100);
+        p.fill(sr, sg, sb, enabled ? 220 : 180);
+        p.rect(x, y, w, h, radius);
+
+        // border
+        p.stroke((border>>16)&0xFF, (border>>8)&0xFF, border&0xFF);
         p.strokeWeight(1);
         p.noFill();
-        p.rect(x, y, w, h, 12);
+        p.rect(x, y, w, h, radius);
+
+        // ON highlight overlay
+        if (enabled && isOn) {
+            int ar = (acc>>16)&0xFF, ag = (acc>>8)&0xFF, ab = acc&0xFF;
+            int a = Math.min(120, 28 + (int)(52 * animationProgress));
+            try {
+                if (theme != null && theme.getTone() == jp.moyashi.phoneos.core.ui.theme.ThemeEngine.Tone.LIGHT &&
+                    theme.getFamily() == jp.moyashi.phoneos.core.ui.theme.ThemeEngine.Mode.GREEN) {
+                    a = Math.min(96, 20 + (int)(40 * animationProgress));
+                }
+            } catch (Throwable ignored) {}
+            p.noStroke();
+            p.fill(ar, ag, ab, a);
+            p.rect(x, y, w, h, radius);
+        }
     }
 
     private void drawIcon(PGraphics g, float x, float y, float w, float h) {
@@ -120,11 +161,15 @@ public class ToggleItem implements IControlCenterItem {
         if (icon != null) {
             g.image(icon, iconX, iconY, iconSize, iconSize);
         } else {
-            g.fill(255, 255, 255, enabled ? 200 : 100);
-            g.rect(iconX, iconY, iconSize, iconSize, 4);
-            g.fill(isOn ? 100 : 150);
+            var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+            int acc = theme != null ? theme.colorPrimary() : 0xFF4A90E2;
+            int onP = theme != null ? theme.colorOnPrimary() : 0xFFFFFFFF;
+            g.noStroke();
+            g.fill((acc>>16)&0xFF, (acc>>8)&0xFF, acc&0xFF, enabled ? 220 : 140);
+            g.rect(iconX, iconY, iconSize, iconSize, 6);
+            g.fill((onP>>16)&0xFF, (onP>>8)&0xFF, onP&0xFF);
             g.textAlign(PApplet.CENTER, PApplet.CENTER);
-            g.textSize(iconSize * 0.4f);
+            g.textSize(iconSize * 0.45f);
             g.text(id.substring(0, 1).toUpperCase(), iconX + iconSize / 2, iconY + iconSize / 2);
         }
     }
@@ -135,19 +180,29 @@ public class ToggleItem implements IControlCenterItem {
         float iconY = y + h * 0.1f;
 
         if (icon != null) {
-            p.tint(enabled ? 255 : 100);
+            p.tint(enabled ? 255 : 120);
             p.image(icon, iconX, iconY, iconSize, iconSize);
             p.noTint();
         } else {
-            p.fill(enabled ? (isOn ? 255 : 150) : 100);
+            var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+            int acc = theme != null ? theme.colorPrimary() : 0xFF4A90E2;
+            int onP = theme != null ? theme.colorOnPrimary() : 0xFFFFFFFF;
             p.noStroke();
-            p.ellipse(iconX + iconSize / 2, iconY + iconSize / 2, iconSize * 0.8f, iconSize * 0.8f);
+            p.fill((acc>>16)&0xFF, (acc>>8)&0xFF, acc&0xFF, enabled ? 220 : 140);
+            p.rect(iconX, iconY, iconSize, iconSize, 6);
+            p.fill((onP>>16)&0xFF, (onP>>8)&0xFF, onP&0xFF);
+            p.textAlign(PApplet.CENTER, PApplet.CENTER);
+            p.textSize(iconSize * 0.45f);
+            p.text(id.substring(0, 1).toUpperCase(), iconX + iconSize / 2, iconY + iconSize / 2);
         }
     }
 
     private void drawLabel(PGraphics g, float x, float y, float w, float h) {
         float labelY = y + h * 0.5f;
-        g.fill(255, 255, 255, enabled ? 255 : 150);
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        int onSurface = theme != null ? theme.colorOnSurface() : 0xFF111111;
+        int textCol = enabled ? onSurface : 0xFF999999;
+        g.fill((textCol>>16)&0xFF, (textCol>>8)&0xFF, textCol&0xFF);
         g.textAlign(PApplet.CENTER, PApplet.CENTER);
         g.textSize(12);
         g.text(displayName, x + w / 2, labelY);
@@ -155,7 +210,10 @@ public class ToggleItem implements IControlCenterItem {
 
     private void drawLabel(PApplet p, float x, float y, float w, float h) {
         float labelY = y + h * 0.5f;
-        p.fill(enabled ? 255 : 150);
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        int onSurface = theme != null ? theme.colorOnSurface() : 0xFF111111;
+        int textCol = enabled ? onSurface : 0xFF999999;
+        p.fill((textCol>>16)&0xFF, (textCol>>8)&0xFF, textCol&0xFF);
         p.textAlign(PApplet.CENTER, PApplet.CENTER);
         p.textSize(12);
         p.text(displayName, x + w / 2, labelY);
@@ -167,14 +225,20 @@ public class ToggleItem implements IControlCenterItem {
         float switchX = x + (w - switchWidth) / 2;
         float switchY = y + h - switchHeight - (h * 0.1f);
 
-        g.fill(isOn ? 100 : 80, isOn ? 200 : 100, isOn ? 255 : 120, enabled ? 200 : 100);
+        var theme2 = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        int acc2 = theme2 != null ? theme2.colorPrimary() : 0xFF4A90E2;
+        int off = 0xFFB0B0B0;
+        int r = (isOn ? (acc2>>16)&0xFF : (off>>16)&0xFF);
+        int gC = (isOn ? (acc2>>8)&0xFF : (off>>8)&0xFF);
+        int b = (isOn ? acc2&0xFF : off&0xFF);
+        g.fill(r, gC, b, enabled ? 220 : 140);
         g.rect(switchX, switchY, switchWidth, switchHeight, switchHeight / 2);
 
         float knobSize = switchHeight * 0.8f;
         float knobX = switchX + (switchWidth - knobSize - 4) * animationProgress + 2;
         float knobY = switchY + (switchHeight - knobSize) / 2;
 
-        g.fill(255, 255, 255, enabled ? 255 : 150);
+        g.fill(255, 255, 255, enabled ? 255 : 180);
         g.ellipse(knobX + knobSize / 2, knobY + knobSize / 2, knobSize, knobSize);
     }
 
@@ -184,12 +248,13 @@ public class ToggleItem implements IControlCenterItem {
         float switchX = x + (w - switchWidth) / 2;
         float switchY = y + h - switchHeight - (h * 0.1f);
 
-        if (isOn) {
-            int green = (int) (100 + 155 * animationProgress);
-            p.fill(100, green, 100);
-        } else {
-            p.fill(150, 150, 150);
-        }
+        var theme3 = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        int acc = theme3 != null ? theme3.colorPrimary() : 0xFF4A90E2;
+        int off2 = 0xFFB0B0B0;
+        int r2 = (isOn ? (acc>>16)&0xFF : (off2>>16)&0xFF);
+        int g2 = (isOn ? (acc>>8)&0xFF : (off2>>8)&0xFF);
+        int b2 = (isOn ? acc&0xFF : off2&0xFF);
+        p.fill(r2, g2, b2, enabled ? 220 : 140);
         p.noStroke();
         p.rect(switchX, switchY, switchWidth, switchHeight, switchHeight / 2);
 
@@ -197,7 +262,7 @@ public class ToggleItem implements IControlCenterItem {
         float knobX = switchX + 2 + (switchWidth - knobSize - 4) * animationProgress;
         float knobY = switchY + 2;
 
-        p.fill(enabled ? 255 : 200);
+        p.fill(255, 255, 255, enabled ? 255 : 200);
         p.ellipse(knobX + knobSize / 2, knobY + knobSize / 2, knobSize, knobSize);
     }
 

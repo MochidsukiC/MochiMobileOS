@@ -38,7 +38,7 @@ public class SafeHomeScreen implements Screen {
     
     // 色設定
     private final int backgroundColor = 0x1E1E1E;
-    private final int textColor = 0xFFFFFF;
+    private int textColor = 0xFFFFFFFF;
     private final int accentColor = 0x4A90E2;
     
     // グリッド設定  
@@ -168,7 +168,7 @@ public class SafeHomeScreen implements Screen {
             }
 
             // Draw navigation instructions
-            g.fill(textColor, 150);
+            { int c=textColor; g.fill((c>>16)&0xFF, (c>>8)&0xFF, c&0xFF, 150); }
             g.textSize(12);
             if (isDragging) {
                 int deltaX = dragCurrentX - dragStartX;
@@ -223,7 +223,9 @@ public class SafeHomeScreen implements Screen {
                     int y = startY + shortcut.getGridY() * (ICON_SIZE + ICON_SPACING + 15);
 
                     // Draw icon background
-                    g.fill(0x333333);
+                    var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+                    int border = theme != null ? theme.colorBorder() : 0xFF333333;
+                    g.fill((border>>16)&0xFF, (border>>8)&0xFF, border&0xFF);
                     g.stroke(0x555555);
                     g.strokeWeight(1);
                     g.rect(x, y, ICON_SIZE, ICON_SIZE, 8);
@@ -488,14 +490,16 @@ public class SafeHomeScreen implements Screen {
             g.rect(x + 12, y + 12, ICON_SIZE - 24, ICON_SIZE - 24, 8);
 
             // App initial (white text)
-            g.fill(255, 255, 255);
+            var theme2 = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+            int onSurface = theme2 != null ? theme2.colorOnSurface() : 0xFF111111;
+            { int c=onSurface; g.fill((c>>16)&0xFF, (c>>8)&0xFF, c&0xFF); }
             g.textAlign(g.CENTER, g.CENTER);
             g.textSize(18);
             String initial = app.getName().substring(0, 1).toUpperCase();
             g.text(initial, x + ICON_SIZE/2, y + ICON_SIZE/2 - 2);
 
             // App name (white text)
-            g.fill(255, 255, 255);
+            { int c=onSurface; g.fill((c>>16)&0xFF, (c>>8)&0xFF, c&0xFF); }
             g.textSize(10);
             g.textAlign(g.CENTER, g.TOP);
             String name = app.getName();

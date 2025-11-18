@@ -15,7 +15,6 @@ import jp.moyashi.phoneos.core.input.GestureType;
 import jp.moyashi.phoneos.core.apps.launcher.LauncherApp;
 import jp.moyashi.phoneos.core.apps.settings.SettingsApp;
 import jp.moyashi.phoneos.core.apps.calculator.CalculatorApp;
-import jp.moyashi.phoneos.core.apps.browser.BrowserApp;
 import jp.moyashi.phoneos.core.ui.LayerManager;
 import jp.moyashi.phoneos.core.coordinate.CoordinateTransform;
 import processing.core.PApplet;
@@ -50,6 +49,9 @@ public class Kernel implements GestureListener {
     
     /** 設定管理サービス */
     private SettingsManager settingsManager;
+
+    /** テーマエンジン（デザイントークン生成） */
+    private jp.moyashi.phoneos.core.ui.theme.ThemeEngine themeEngine;
     
     /** システムクロックサービス */
     private SystemClock systemClock;
@@ -119,9 +121,6 @@ public class Kernel implements GestureListener {
 
     /** ハードウェアバイパスAPI - SIM情報 */
     private jp.moyashi.phoneos.core.service.hardware.SIMInfo simInfo;
-
-    /** HTML/WebView統合サービス */
-    private jp.moyashi.phoneos.core.service.webview.WebViewManager webViewManager;
 
     /** パーミッション管理サービス */
     private jp.moyashi.phoneos.core.service.permission.PermissionManager permissionManager;
@@ -292,7 +291,11 @@ public class Kernel implements GestureListener {
             }
 
             // まず背景を描画（重要：Screenが背景を描画しない場合のために）
-            graphics.background(0, 0, 0); // 黒背景
+            int bg = themeEngine != null ? themeEngine.colorBackground() : 0xFF000000;
+            int br = (bg >> 16) & 0xFF;
+            int bgc = (bg >> 8) & 0xFF;
+            int bb = bg & 0xFF;
+            graphics.background(br, bgc, bb);
 
             // スクリーンマネージャーによる通常描画
             if (screenManager != null) {
@@ -314,7 +317,9 @@ public class Kernel implements GestureListener {
                 }
             } else {
                 // ScreenManagerが未初期化の場合の表示
-                graphics.background(30, 30, 30); // ダークグレー背景
+                // テーマ背景
+                int tbg = themeEngine != null ? themeEngine.colorBackground() : 0xFF1E1E1E;
+                graphics.background((tbg>>16)&0xFF, (tbg>>8)&0xFF, (tbg)&0xFF);
                 graphics.fill(255, 255, 255);
                 graphics.textAlign(PApplet.CENTER, PApplet.CENTER);
                 graphics.textSize(16);
@@ -931,7 +936,12 @@ public class Kernel implements GestureListener {
         }
 
         System.out.println("  -> 設定マネージャー作成中...");
-        settingsManager = new SettingsManager();
+        settingsManager = new SettingsManager(vfs);
+
+        // テーマエンジン初期化（設定を購読し即時反映）
+        System.out.println("  -> テーマエンジン作成中...");
+        themeEngine = new jp.moyashi.phoneos.core.ui.theme.ThemeEngine(settingsManager);
+        jp.moyashi.phoneos.core.ui.theme.ThemeContext.setTheme(themeEngine);
         
         System.out.println("  -> システムクロック作成中...");
         systemClock = new SystemClock();
@@ -985,27 +995,6 @@ public class Kernel implements GestureListener {
         speakerSocket = new jp.moyashi.phoneos.core.service.hardware.DefaultSpeakerSocket();
         icSocket = new jp.moyashi.phoneos.core.service.hardware.DefaultICSocket();
         simInfo = new jp.moyashi.phoneos.core.service.hardware.DefaultSIMInfo();
-
-        // HTML/WebView統合サービスの初期化
-        System.out.println("  -> WebViewManager作成中...");
-        try {
-            webViewManager = new jp.moyashi.phoneos.core.service.webview.WebViewManager(this, width, height);
-            webViewManager.initialize();
-            System.out.println("  -> WebViewManager初期化完了");
-            logger.info("Kernel", "WebViewManager初期化完了");
-        } catch (Exception e) {
-            // JavaFXが利用できない環境（Forge MODなど）でのエラーを処理
-            logger.error("Kernel", "WebViewManagerの初期化に失敗しました。JavaFXが利用できない環境の可能性があります", e);
-            System.err.println("  -> WebViewManager初期化失敗: " + e.getClass().getName() + ": " + e.getMessage());
-            e.printStackTrace();
-            webViewManager = null; // nullに設定して、利用不可を明示
-        } catch (Error e) {
-            // NoClassDefFoundError等のエラーも捕捉
-            logger.error("Kernel", "WebViewManagerの初期化中に致命的エラーが発生しました", e);
-            System.err.println("  -> WebViewManager初期化失敗（致命的エラー）: " + e.getClass().getName() + ": " + e.getMessage());
-            e.printStackTrace();
-            webViewManager = null;
-        }
 
         System.out.println("  -> ChromiumService初期化中...");
         chromiumManager = null;
@@ -1083,14 +1072,8 @@ public class Kernel implements GestureListener {
         jp.moyashi.phoneos.core.apps.voicememo.VoiceMemoApp voiceMemoApp = new jp.moyashi.phoneos.core.apps.voicememo.VoiceMemoApp();
         appLoader.registerApplication(voiceMemoApp);
 
-        jp.moyashi.phoneos.core.apps.htmlcalculator.CalculatorHTMLApp calculatorHTMLApp = new jp.moyashi.phoneos.core.apps.htmlcalculator.CalculatorHTMLApp();
-        appLoader.registerApplication(calculatorHTMLApp);
-
         jp.moyashi.phoneos.core.apps.note.NoteApp noteApp = new jp.moyashi.phoneos.core.apps.note.NoteApp();
         appLoader.registerApplication(noteApp);
-
-        BrowserApp browserApp = new BrowserApp();
-        appLoader.registerApplication(browserApp);
 
         jp.moyashi.phoneos.core.apps.chromiumbrowser.ChromiumBrowserApp chromiumBrowserApp = new jp.moyashi.phoneos.core.apps.chromiumbrowser.ChromiumBrowserApp();
         appLoader.registerApplication(chromiumBrowserApp);
@@ -1104,9 +1087,7 @@ public class Kernel implements GestureListener {
         calculatorApp.onInitialize(this);
         networkApp.onInitialize(this);
         hardwareTestApp.onInitialize(this);
-        calculatorHTMLApp.onInitialize(this);
         noteApp.onInitialize(this);
-        browserApp.onInitialize(this);
         chromiumBrowserApp.onInitialize(this);
 
         // スクリーンマネージャーを初期化してランチャーを初期画面に設定
@@ -1285,12 +1266,6 @@ public class Kernel implements GestureListener {
             serviceManager.shutdown();
         }
 
-        // WebViewManager のクリーンアップ
-        if (webViewManager != null) {
-            System.out.println("Kernel: Shutting down WebViewManager...");
-            webViewManager.shutdown();
-        }
-
         if (chromiumService != null) {
             System.out.println("Kernel: Shutting down ChromiumService...");
             chromiumService.shutdown();
@@ -1337,6 +1312,14 @@ public class Kernel implements GestureListener {
      */
     public SettingsManager getSettingsManager() {
         return settingsManager;
+    }
+
+    /**
+     * テーマエンジンを取得する。
+     * @return ThemeEngine
+     */
+    public jp.moyashi.phoneos.core.ui.theme.ThemeEngine getThemeEngine() {
+        return themeEngine;
     }
     
     /**
@@ -1564,15 +1547,6 @@ public class Kernel implements GestureListener {
      */
     public jp.moyashi.phoneos.core.service.hardware.SIMInfo getSIMInfo() {
         return simInfo;
-    }
-
-    /**
-     * WebViewManager サービスを取得する。
-     *
-     * @return WebViewManagerインスタンス
-     */
-    public jp.moyashi.phoneos.core.service.webview.WebViewManager getWebViewManager() {
-        return webViewManager;
     }
 
     /**

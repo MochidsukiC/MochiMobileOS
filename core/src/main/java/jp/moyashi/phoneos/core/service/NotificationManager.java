@@ -318,20 +318,43 @@ public class NotificationManager implements GestureListener {
 
         // 通知センターパネルの寸法と位置を計算
         panelWidth = (int)screenWidth;
-        panelHeight = (int)(screenHeight * 0.5f);
+        panelHeight = (int)(screenHeight * NOTIFICATION_CENTER_HEIGHT_RATIO);
 
         // アニメーション進行度に基づいて位置を計算
         float animatedY = -panelHeight + (panelHeight * animationProgress);
         int panelY = (int)animatedY;
 
-        // パネル背景描画
-        g.fill(40, 45, 55, 240);
+        // 背景スクラム（暗幕）で背面を落としてパネルを浮かせる（やや強め）
+        g.fill(0, 0, 0, 130);
         g.noStroke();
-        g.rect(0, panelY, panelWidth, panelHeight);
+        g.rect(0, 0, (int)screenWidth, (int)screenHeight);
+
+        // 影（エレベーション）
+        // TODO: 低電力モード(ui.performance.low_power)時は影を省略するなどの最適化を検討
+        jp.moyashi.phoneos.core.ui.effects.Elevation.drawRectShadow(g, 0, panelY, panelWidth, panelHeight, 16, 3);
+
+        // テーマに基づくパネル背景描画
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        int panelBg = theme != null ? theme.colorSurface() : 0xFF282C34;
+        int a = 230; // 透過でオーバーレイ感
+        int r = (panelBg >> 16) & 0xFF;
+        int gr = (panelBg >> 8) & 0xFF;
+        int b = panelBg & 0xFF;
+        g.fill(r, gr, b, a);
+        g.noStroke();
+        g.rect(0, panelY, panelWidth, panelHeight, 16);
+
+        // ライトモード時のみ、面をややグレー寄りに見せる黒の薄いオーバーレイ
+        if (theme == null || theme.getMode() == jp.moyashi.phoneos.core.ui.theme.ThemeEngine.Mode.LIGHT) {
+            g.noStroke();
+            g.fill(0, 0, 0, 26);
+            g.rect(0, panelY, panelWidth, panelHeight, 16);
+        }
 
         // タイトル領域
         int titleY = panelY + 15;
-        g.fill(255, 255, 255);
+        int textCol = theme != null ? theme.colorOnSurface() : 0xFFFFFFFF;
+        g.fill((textCol>>16)&0xFF, (textCol>>8)&0xFF, textCol&0xFF);
         g.textAlign(PApplet.CENTER, PApplet.TOP);
         g.textSize(18);
         g.text("通知", screenWidth / 2, titleY);
@@ -340,21 +363,41 @@ public class NotificationManager implements GestureListener {
         int startY = titleY + 40;
         int notificationHeight = 60;
         int margin = 10;
+        int available = panelHeight - (startY - panelY) - 30; // 下部のハンドル等の余白を考慮
+        if (available < 0) available = 0;
 
         if (notifications.isEmpty()) {
-            g.fill(180, 185, 195);
+            int sec = theme != null ? theme.colorOnSurfaceSecondary() : 0xFFB4BAC3;
+            g.fill((sec>>16)&0xFF, (sec>>8)&0xFF, sec&0xFF);
             g.textAlign(PApplet.CENTER, PApplet.CENTER);
             g.textSize(14);
             g.text("通知はありません", screenWidth / 2, startY + notificationHeight / 2);
         } else {
+            // 収容可能数を計算（はみ出し防止）
+            int capacity = notificationHeight > 0 ? Math.max(0, available / notificationHeight) : 0;
+            int size = Math.min(Math.min(maxVisibleNotifications, capacity), notifications.size());
+
+            // クリップ領域を設定
+            try { g.clip(0, startY, panelWidth, Math.max(0, available)); } catch (Exception ignore) {}
+
             int currentY = startY;
-            for (int i = Math.max(0, notifications.size() - maxVisibleNotifications); i < notifications.size(); i++) {
+            for (int i = notifications.size() - size; i < notifications.size(); i++) {
+                if (i < 0) continue;
                 INotification notification = notifications.get(i);
-                if (notification instanceof SimpleNotification) {
-                    ((SimpleNotification) notification).draw(g, margin, currentY, panelWidth - (margin * 2), notificationHeight - margin);
+                try {
+                    if (notification instanceof SimpleNotification) {
+                        (notification).draw(g, margin, currentY, panelWidth - (margin * 2), notificationHeight - margin);
+                    } else {
+                        notification.draw(g, margin, currentY, panelWidth - (margin * 2), notificationHeight - margin);
+                    }
+                } catch (Exception e) {
+                    System.err.println("NotificationManager: Error drawing notification: " + e.getMessage());
                 }
                 currentY += notificationHeight;
             }
+
+            // クリップ解除
+            try { g.noClip(); } catch (Exception ignore) {}
         }
 
         // ハンドル描画
@@ -363,7 +406,8 @@ public class NotificationManager implements GestureListener {
         int handleX = (int)(screenWidth - handleWidth) / 2;
         int handleY = panelY + panelHeight - 15;
 
-        g.fill(160, 165, 175);
+        int handle = theme != null ? theme.colorBorder() : 0xFFA0A5AF;
+        g.fill((handle>>16)&0xFF, (handle>>8)&0xFF, handle&0xFF);
         g.rect(handleX, handleY, handleWidth, handleHeight, 2);
 
         // 設定復元
@@ -412,7 +456,8 @@ public class NotificationManager implements GestureListener {
      * 背景オーバーレイを描画する（画面全体を暗くする効果）。
      */
     private void drawBackgroundOverlay(PApplet p) {
-        int alpha = (int) (80 * animationProgress);
+        // 画面全体の暗幕をやや強めに（ライト時の白飛びを抑制）
+        int alpha = (int) (130 * animationProgress);
         p.fill(0, 0, 0, alpha);
         p.noStroke();
         p.rect(0, 0, screenWidth, screenHeight);
@@ -503,8 +548,8 @@ public class NotificationManager implements GestureListener {
             return;
         }
         
-        // クリッピングマスクを設定（スクロール領域）
-        p.pushMatrix();
+        // クリッピング（スクロール領域に限定）
+        try { p.clip((int)NOTIFICATION_MARGIN, (int)startY, (int)(screenWidth - 2*NOTIFICATION_MARGIN), (int)availableHeight); } catch (Exception ignore) {}
         
         float currentY = startY - scrollOffset + NOTIFICATION_MARGIN;
         
@@ -531,7 +576,7 @@ public class NotificationManager implements GestureListener {
             currentY += NOTIFICATION_HEIGHT + NOTIFICATION_MARGIN;
         }
         
-        p.popMatrix();
+        try { p.noClip(); } catch (Exception ignore) {}
     }
     
     /**
@@ -556,8 +601,15 @@ public class NotificationManager implements GestureListener {
      * アニメーション進行度を更新する。
      */
     private void updateAnimation() {
+        // Reduce Motion対応: 進行を早める
+        boolean reduce = false;
+        if (kernel != null && kernel.getSettingsManager() != null) {
+            reduce = kernel.getSettingsManager().getBooleanSetting("ui.motion.reduce", false);
+        }
+        float speed = reduce ? (ANIMATION_SPEED * 2.5f) : ANIMATION_SPEED;
+        // TODO: 低電力モード(ui.performance.low_power)時にさらなる簡略化（速度上げ/アニメ省略）を検討
         if (Math.abs(animationProgress - targetAnimationProgress) > 0.01f) {
-            animationProgress += (targetAnimationProgress - animationProgress) * ANIMATION_SPEED;
+            animationProgress += (targetAnimationProgress - animationProgress) * speed;
         } else {
             animationProgress = targetAnimationProgress;
         }
@@ -574,61 +626,50 @@ public class NotificationManager implements GestureListener {
         if (animationProgress <= 0.1f) {
             return false;
         }
-        
+
         float panelHeight = screenHeight * NOTIFICATION_CENTER_HEIGHT_RATIO;
         float panelY = -panelHeight + panelHeight * animationProgress;
-        
-        // 通知センターパネル外のタップで閉じる
-        if (event.getCurrentY() > panelY + panelHeight - 20) {
-            System.out.println("NotificationManager: Tapped outside panel, hiding notification center");
-            hide();
-            return true;
-        }
-        
-        // 上向きスワイプで閉じる（ただし、通知エリア内でスクロール可能な場合は除く）
-        if (event.getType() == GestureType.SWIPE_UP) {
-            float notificationAreaStart = panelY + 60;
-            float notificationAreaHeight = panelHeight - 80;
-            
-            // 通知エリア内でスクロールが可能な場合はスクロール処理を優先
-            if (event.getCurrentY() >= notificationAreaStart && 
-                event.getCurrentY() <= notificationAreaStart + notificationAreaHeight &&
-                maxScrollOffset > 0) {
-                // スクロール処理に委譲（後続の処理で処理される）
-                // ここでは何もしない
-            } else {
-                // 通知エリア外や、スクロールが不要な場合は通知センターを閉じる
-                System.out.println("NotificationManager: Swipe up detected outside scroll area, hiding notification center");
+
+        // パネル内かどうかを判定
+        boolean isInsidePanel = event.getCurrentY() >= panelY &&
+                                event.getCurrentY() <= panelY + panelHeight;
+
+        // パネル外をタップした場合は閉じる（TAP、LONG_PRESSのみ）
+        if (!isInsidePanel) {
+            if (event.getType() == GestureType.TAP ||
+                event.getType() == GestureType.LONG_PRESS ||
+                event.getType() == GestureType.DRAG_START) {
+                System.out.println("NotificationManager: Tapped outside panel, hiding notification center");
                 hide();
                 return true;
             }
+            // その他のジェスチャー（SWIPE、DRAG_MOVEなど）もパネル外であれば消費
+            return true;
         }
-        
-        // ヘッダーエリアのクリック処理
+
+        // 以下、パネル内の処理
+
+        // ヘッダーエリアのクリック処理（パネル上端から60pxまで）
         if (event.getCurrentY() >= panelY && event.getCurrentY() <= panelY + 60) {
-            return handleHeaderClick(event, panelY);
+            // TAPまたはLONG_PRESSの場合のみボタン処理を実行
+            if (event.getType() == GestureType.TAP || event.getType() == GestureType.LONG_PRESS) {
+                handleHeaderClick(event, panelY);
+            }
+            // ヘッダーエリア内のすべてのジェスチャーを消費
+            return true;
         }
-        
-        // 通知エリアでのスクロール処理 - SwipeジェスチャーとDragの両方に対応
+
+        // 通知エリアの範囲を計算
         float notificationAreaStart = panelY + 60;
         float notificationAreaHeight = panelHeight - 80;
-        boolean inNotificationArea = event.getCurrentY() >= notificationAreaStart && 
-                                   event.getCurrentY() <= notificationAreaStart + notificationAreaHeight;
-        
-        if ((event.getType() == GestureType.DRAG_MOVE || 
-             event.getType() == GestureType.SWIPE_UP || 
-             event.getType() == GestureType.SWIPE_DOWN) && 
-             maxScrollOffset > 0 && inNotificationArea) {
-            
-            if (event.getType() == GestureType.DRAG_MOVE) {
-                // ドラッグ中のスムーズなスクロール
-                float deltaY = event.getCurrentY() - event.getStartY();
-                scrollOffset = Math.max(0, Math.min(scrollOffset - deltaY * 1.2f, maxScrollOffset));
-                System.out.println("NotificationManager: Drag scroll, offset: " + scrollOffset);
-                return true;
-            } else if (event.getType() == GestureType.SWIPE_UP) {
+        boolean inNotificationArea = event.getCurrentY() >= notificationAreaStart &&
+                                     event.getCurrentY() <= notificationAreaStart + notificationAreaHeight;
+
+        // 通知エリアでのスクロール処理
+        if (inNotificationArea && maxScrollOffset > 0) {
+            if (event.getType() == GestureType.SWIPE_UP) {
                 // 上向きスワイプで下にスクロール（通知を上に移動）
-                float scrollAmount = 80.0f; // iOSライクなスクロール量
+                float scrollAmount = 80.0f;
                 scrollOffset = Math.min(maxScrollOffset, scrollOffset + scrollAmount);
                 System.out.println("NotificationManager: Swipe up scroll, offset: " + scrollOffset);
                 return true;
@@ -638,13 +679,32 @@ public class NotificationManager implements GestureListener {
                 scrollOffset = Math.max(0, scrollOffset - scrollAmount);
                 System.out.println("NotificationManager: Swipe down scroll, offset: " + scrollOffset);
                 return true;
+            } else if (event.getType() == GestureType.DRAG_MOVE) {
+                // ドラッグ中のスムーズなスクロール
+                float deltaY = event.getCurrentY() - event.getStartY();
+                scrollOffset = Math.max(0, Math.min(scrollOffset - deltaY * 1.2f, maxScrollOffset));
+                System.out.println("NotificationManager: Drag scroll, offset: " + scrollOffset);
+                return true;
             }
         }
-        
-        // 通知のクリック処理
-        return handleNotificationClick(event, panelY);
+
+        // 上向きスワイプで閉じる（通知エリア外、またはスクロール不要な場合）
+        if (event.getType() == GestureType.SWIPE_UP &&
+            (!inNotificationArea || maxScrollOffset <= 0)) {
+            System.out.println("NotificationManager: Swipe up detected, hiding notification center");
+            hide();
+            return true;
+        }
+
+        // 通知のクリック処理（TAPまたはLONG_PRESSの場合）
+        if (event.getType() == GestureType.TAP || event.getType() == GestureType.LONG_PRESS) {
+            handleNotificationClick(event, panelY);
+        }
+
+        // パネル内のすべてのイベントを消費して、下のレイヤーへの貫通を防ぐ
+        return true;
     }
-    
+
     /**
      * ヘッダーエリアのクリックを処理する。
      */
@@ -755,14 +815,24 @@ public class NotificationManager implements GestureListener {
     
     /**
      * 指定された座標が通知センターの範囲内かどうかを確認する。
-     * 
+     *
      * @param x X座標
      * @param y Y座標
      * @return 通知センターが表示中で範囲内の場合true
      */
     @Override
     public boolean isInBounds(int x, int y) {
-        // 通知センターが表示中の場合、画面全体をカバー
-        return this.isVisible && animationProgress > 0.1f;
+        // 非表示の場合は範囲外
+        if (!this.isVisible || animationProgress <= 0.1f) {
+            return false;
+        }
+
+        // パネルの位置と高さを計算
+        float panelHeight = screenHeight * NOTIFICATION_CENTER_HEIGHT_RATIO;
+        float panelY = -panelHeight + panelHeight * animationProgress;
+
+        // 通知センターが表示中の場合、画面全体をカバー（背景の暗幕を含む）
+        // パネル外をタップすると閉じるため、画面全体でイベントをキャプチャする必要がある
+        return true;
     }
 }

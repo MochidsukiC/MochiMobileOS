@@ -35,6 +35,7 @@ import java.time.format.DateTimeFormatter;
  * @version 1.0
  */
 public class LockScreen implements Screen, GestureListener {
+    private static final boolean DEBUG_GESTURE_LOG = Boolean.getBoolean("mochi.debugGesture");
     
     /** OSカーネルへの参照 */
     private final Kernel kernel;
@@ -178,6 +179,12 @@ public class LockScreen implements Screen, GestureListener {
         this.patternAnimating = false;
         
         System.out.println("LockScreen: ロック画面を初期化しました");
+    }
+
+    private void debugGesture(String message) {
+        if (DEBUG_GESTURE_LOG) {
+            System.out.println("LockScreen: " + message);
+        }
     }
     
     /**
@@ -1420,9 +1427,9 @@ public class LockScreen implements Screen, GestureListener {
         // ロック画面がアクティブで、コントロールセンターが表示されていない場合のみtrue
         boolean inBounds = lockManager.isLocked() && !controlCenterVisible;
         
-        System.out.println("LockScreen.isInBounds(" + x + ", " + y + ") = " + inBounds + 
-                          " (locked=" + lockManager.isLocked() + ", controlCenterVisible=" + controlCenterVisible + 
-                          ", priority=" + getPriority() + ")");
+        debugGesture("isInBounds(" + x + ", " + y + ") = " + inBounds +
+                " (locked=" + lockManager.isLocked() + ", controlCenterVisible=" + controlCenterVisible +
+                ", priority=" + getPriority() + ")");
         
         return inBounds;
     }
