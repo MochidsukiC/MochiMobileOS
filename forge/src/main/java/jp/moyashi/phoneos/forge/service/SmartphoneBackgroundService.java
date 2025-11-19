@@ -286,6 +286,24 @@ public class SmartphoneBackgroundService {
                 ((jp.moyashi.phoneos.forge.hardware.ForgeSIMInfo) sharedKernel.getSIMInfo()).updatePlayer(player);
             }
 
+            // 天候情報をセンサーマネージャーに設定
+            jp.moyashi.phoneos.core.service.sensor.SensorManager sensorManager = sharedKernel.getSensorManager();
+            if (sensorManager != null) {
+                ClientLevel level = mc.level;
+                if (level != null) {
+                    boolean isRaining = level.isRaining();
+                    boolean isThundering = level.isThundering();
+
+                    // 湿度センサーを更新
+                    float humidity = isRaining ? 100.0f : 40.0f;
+                    sensorManager.setSimulatedSensorValues(jp.moyashi.phoneos.core.service.sensor.Sensor.TYPE_RELATIVE_HUMIDITY, new float[]{humidity});
+
+                    // 光センサーを更新（雷の場合は暗くする）
+                    float lightLevel = isThundering ? 5.0f : 15.0f;
+                    sensorManager.setSimulatedSensorValues(jp.moyashi.phoneos.core.service.sensor.Sensor.TYPE_LIGHT, new float[]{lightLevel});
+                }
+            }
+
         } catch (Exception e) {
             LOGGER.error("[SmartphoneBackgroundService] Failed to update hardware APIs", e);
             e.printStackTrace();

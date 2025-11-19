@@ -8,6 +8,9 @@ import jp.moyashi.phoneos.core.apps.launcher.model.Shortcut;
 import jp.moyashi.phoneos.core.input.GestureListener;
 import jp.moyashi.phoneos.core.input.GestureEvent;
 import jp.moyashi.phoneos.core.input.GestureType;
+import jp.moyashi.phoneos.core.service.sensor.Sensor;
+import jp.moyashi.phoneos.core.service.sensor.SensorEvent;
+import jp.moyashi.phoneos.core.service.sensor.SensorEventListener;
 import processing.core.PApplet;
 import processing.core.PGraphics;
 
@@ -32,7 +35,7 @@ import java.util.List;
  * @version 3.0
  * @since 1.0
  */
-public class HomeScreen implements Screen, GestureListener {
+public class HomeScreen implements Screen, GestureListener, SensorEventListener {
     
     /** Reference to the OS kernel for accessing system services */
     private final Kernel kernel;
@@ -48,6 +51,10 @@ public class HomeScreen implements Screen, GestureListener {
     
     /** Accent color for UI elements */
     private int accentColor;
+
+    /** Sensor values */
+    private float currentHumidity = 40.0f;
+    private float currentLightLevel = 15.0f;
     
     /** Flag to track if the screen has been initialized */
     private boolean isInitialized;
@@ -210,6 +217,18 @@ public class HomeScreen implements Screen, GestureListener {
                 kernel.getGestureManager().addGestureListener(this);
                 System.out.println("HomeScreen: Registered gesture listener");
             }
+            // Register sensor listener
+            if (kernel != null && kernel.getSensorManager() != null) {
+                jp.moyashi.phoneos.core.service.sensor.SensorManager sm = kernel.getSensorManager();
+                Sensor humiditySensor = sm.getDefaultSensor(Sensor.TYPE_RELATIVE_HUMIDITY);
+                if (humiditySensor != null) {
+                    sm.registerListener(this, humiditySensor, jp.moyashi.phoneos.core.service.sensor.SensorManager.SENSOR_DELAY_NORMAL);
+                }
+                Sensor lightSensor = sm.getDefaultSensor(Sensor.TYPE_LIGHT);
+                if (lightSensor != null) {
+                    sm.registerListener(this, lightSensor, jp.moyashi.phoneos.core.service.sensor.SensorManager.SENSOR_DELAY_NORMAL);
+                }
+            }
         } catch (Exception e) {
             System.err.println("❁EHomeScreen: Critical error during setup: " + e.getMessage());
             e.printStackTrace();
@@ -281,6 +300,9 @@ public class HomeScreen implements Screen, GestureListener {
 
             // Draw page indicator dots
             drawPageIndicators(g);
+
+            // Draw new dashboard cards
+            drawClockAndWeatherCard(g);
 
         } catch (Exception e) {
             System.err.println("❁EHomeScreen: Draw error (PGraphics) - " + e.getMessage());
@@ -757,6 +779,10 @@ public class HomeScreen implements Screen, GestureListener {
         if (kernel != null && kernel.getGestureManager() != null) {
             kernel.getGestureManager().removeGestureListener(this);
             System.out.println("HomeScreen: Unregistered gesture listener");
+        }
+        // Unregister sensor listener
+        if (kernel != null && kernel.getSensorManager() != null) {
+            kernel.getSensorManager().unregisterListener(this);
         }
 
         isInitialized = false;
@@ -1732,6 +1758,58 @@ public class HomeScreen implements Screen, GestureListener {
             }
         }
     }
+
+    /**
+     * Draws the clock and weather card.
+     * @param g The PGraphics instance for drawing
+     */
+    private void drawClockAndWeatherCard(PGraphics g) {
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        int surface = theme != null ? theme.colorSurface() : 0xFFFFFFFF;
+        int onSurface = theme != null ? theme.colorOnSurface() : 0xFF111111;
+
+        int cardX = 20;
+        int cardY = 80;
+        int cardWidth = 360;
+        int cardHeight = 80;
+
+        // Draw card background
+        g.fill((surface>>16)&0xFF, (surface>>8)&0xFF, surface&0xFF, 200);
+        g.stroke(theme.colorBorder());
+        g.rect(cardX, cardY, cardWidth, cardHeight, RADIUS_SMALL);
+
+        // Get time
+        String time = "--:--";
+        if (kernel != null && kernel.getSystemClock() != null) {
+            try {
+                time = kernel.getSystemClock().getFormattedTime();
+            } catch (Exception e) {
+                // ignore
+            }
+        }
+
+        // Determine weather
+        String weather;
+        if (currentHumidity > 80) {
+            if (currentLightLevel < 10) {
+                weather = "Thundering";
+            } else {
+                weather = "Rainy";
+            }
+        } else {
+            weather = "Clear";
+        }
+
+        // Draw time
+        g.fill(onSurface);
+        g.textAlign(g.LEFT, g.TOP);
+        g.textSize(TEXT_SIZE_XL);
+        g.text(time, cardX + 20, cardY + 20);
+
+        // Draw weather
+        g.textAlign(g.RIGHT, g.TOP);
+        g.text(weather, cardX + cardWidth - 20, cardY + 20);
+    }
     
     /**
      * Gets the shortcut at the specified coordinates on a specific page.
@@ -2111,6 +2189,20 @@ public class HomeScreen implements Screen, GestureListener {
     @Override
     public int getPriority() {
         return 50; // 中優先度
+    }
+
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        if (event.sensor.getType() == Sensor.TYPE_RELATIVE_HUMIDITY) {
+            currentHumidity = event.values[0];
+        } else if (event.sensor.getType() == Sensor.TYPE_LIGHT) {
+            currentLightLevel = event.values[0];
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+        // Not used for now
     }
     
     /**
