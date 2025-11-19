@@ -86,10 +86,22 @@ public class HomeScreen implements Screen, GestureListener {
     private long animationStartTime = 0;
     private float startOffset = 0.0f; // アニメーション開始時のオフセチE
     private int animationBasePageIndex = 0; // アニメーション中の基準EージE固定）
-    private static final long ANIMATION_DURATION = 500; // 500ms for smoother animation
+        private static final long ANIMATION_DURATION = 500; // 500ms for smoother animation
     
-    /** Grid configuration for app shortcuts */
-    private static final int GRID_COLS = 4;
+        // --- UI Dimension and Font Size Constants (for theme integration preparation) ---
+            private static final int STATUS_BAR_HEIGHT = 40; // Height of the status bar    
+        private static final int RADIUS_SMALL = 8; // Small corner radius for cards, etc.
+        private static final int RADIUS_MEDIUM = 12; // Medium corner radius for icons
+    
+        private static final int TEXT_SIZE_TINY = 8; // For app names below icons
+        private static final int TEXT_SIZE_SMALL = 11; // For page indicators, hints
+        private static final int TEXT_SIZE_MEDIUM = 12; // For status bar time, status
+        private static final int TEXT_SIZE_LARGE = 14; // For app library item description
+        private static final int TEXT_SIZE_XL = 16; // For app library item app name
+        private static final int TEXT_SIZE_XXL = 18; // For app library title
+        // --- End UI Dimension and Font Size Constants ---
+    
+        /** Grid configuration for app shortcuts */    private static final int GRID_COLS = 4;
     private static final int GRID_ROWS = 5;
     private static final int ICON_SIZE = 48; // Reduced from 64 to 48
     private static final int ICON_SPACING = 15; // Reduced from 20 to 15
@@ -283,7 +295,7 @@ public class HomeScreen implements Screen, GestureListener {
                 g.textFont(kernel.getJapaneseFont());
             }
 
-            g.textSize(16);
+            g.textSize(TEXT_SIZE_XL);
             g.text("HomeScreen Error: " + e.getMessage(), g.width/2, g.height/2);
         }
     }
@@ -974,9 +986,16 @@ public class HomeScreen implements Screen, GestureListener {
             int success = theme != null ? theme.colorSuccess() : 0xFF4CAF50;
             int warning = theme != null ? theme.colorWarning() : 0xFFFF9800;
 
+            // Draw status bar background with semi-transparency
+            int surfaceColor = theme != null ? theme.colorSurface() : 0xFF2A2A2A; // Fallback
+            int alpha = 180; // Semi-transparent alpha for holographic effect
+            g.fill((surfaceColor>>16)&0xFF, (surfaceColor>>8)&0xFF, surfaceColor&0xFF, alpha);
+            g.noStroke();
+            g.rect(0, 0, 400, 40); // Assuming status bar height is 40px
+
             { int c=onSurface; g.fill((c>>16)&0xFF, (c>>8)&0xFF, c&0xFF, 180); } // Semi-transparent text
             g.textAlign(g.LEFT, g.TOP);
-            g.textSize(12);
+            g.textSize(TEXT_SIZE_MEDIUM);
             
             // Current time
             if (kernel != null && kernel.getSystemClock() != null) {
@@ -1002,7 +1021,7 @@ public class HomeScreen implements Screen, GestureListener {
                                  
                 { int c=onSurface; g.fill((c>>16)&0xFF, (c>>8)&0xFF, c&0xFF, 150); }
                 g.textAlign(g.CENTER, g.TOP);
-                g.textSize(11);
+                g.textSize(TEXT_SIZE_SMALL);
                 g.text(pageName, 200, 15);
             }
 
@@ -1020,7 +1039,7 @@ public class HomeScreen implements Screen, GestureListener {
             // Fallback: just draw a simple status
             g.fill(255);
             g.textAlign(g.LEFT, g.TOP);
-            g.textSize(12);
+            g.textSize(TEXT_SIZE_MEDIUM);
             g.text("Status Error", 15, 15);
         }
     }
@@ -1125,9 +1144,9 @@ public class HomeScreen implements Screen, GestureListener {
             // No pages, show message
             g.fill(255, 255, 255, 150);
             g.textAlign(g.CENTER, g.CENTER);
-            g.textSize(16);
+            g.textSize(TEXT_SIZE_XL);
             g.text("No apps installed", 200, 300);
-            g.textSize(12);
+            g.textSize(TEXT_SIZE_MEDIUM);
             g.text("Swipe up to access app library", 200, 320);
             return;
         }
@@ -1204,7 +1223,7 @@ public class HomeScreen implements Screen, GestureListener {
         int startX = (400 - gridWidth) / 2; // Center the grid
         
         g.textAlign(g.CENTER, g.TOP);
-        g.textSize(10);
+        g.textSize(TEXT_SIZE_TINY);
         
         // First draw non-dragged shortcuts
         for (Shortcut shortcut : page.getShortcuts()) {
@@ -1247,7 +1266,7 @@ public class HomeScreen implements Screen, GestureListener {
         int onSurfaceAL = themeAL != null ? themeAL.colorOnSurface() : 0xFF111111;
         { int c=onSurfaceAL; g.fill((c>>16)&0xFF, (c>>8)&0xFF, c&0xFF); }
         g.textAlign(g.CENTER, g.TOP);
-        g.textSize(18);
+        g.textSize(TEXT_SIZE_XXL);
         System.out.println("🎨 Drawing title: 'App Library' at (200, 70) with size 18, color RGB(255,255,255)");
         g.text("App Library", 200, 70);
         System.out.println("🎨 Title drawing completed");
@@ -1258,7 +1277,7 @@ public class HomeScreen implements Screen, GestureListener {
         if (apps.isEmpty()) {
             { int c=onSurfaceAL; g.fill((c>>16)&0xFF, (c>>8)&0xFF, c&0xFF, 150); }
             g.textAlign(g.CENTER, g.CENTER);
-            g.textSize(14);
+            g.textSize(TEXT_SIZE_LARGE);
             g.text("No apps available", 200, 300);
             System.out.println("🎨 'No apps available' message drawn at (200, 300)");
             return;
@@ -1313,16 +1332,16 @@ public class HomeScreen implements Screen, GestureListener {
 
         // カード背景EEE薁EEEE
         jp.moyashi.phoneos.core.ui.effects.Elevation.drawRectShadow(g, x, y, width, height, 8, 1);
-        g.fill((surface>>16)&0xFF, (surface>>8)&0xFF, surface&0xFF);
+        g.fill((surface>>16)&0xFF, (surface>>8)&0xFF, surface&0xFF, 200); // Semi-transparent surface
         g.stroke((border>>16)&0xFF, (border>>8)&0xFF, border&0xFF);
         g.strokeWeight(1);
-        g.rect(x, y, width, height, 8);
+        g.rect(x, y, width, height, RADIUS_SMALL);
 
         // アプリアイコンのプレースホルダはアクセント色
         int acc = theme != null ? theme.colorPrimary() : 0xFF4A90E2;
         g.noStroke();
         g.fill((acc>>16)&0xFF, (acc>>8)&0xFF, acc&0xFF);
-        g.rect(x + 10, y + 10, 50, 50, 8);
+        g.rect(x + 10, y + 10, 50, 50, RADIUS_SMALL);
 
         // アプリ名E最初E斁EE
         { int c=onSurface; g.fill((c>>16)&0xFF, (c>>8)&0xFF, c&0xFF); }
@@ -1334,13 +1353,13 @@ public class HomeScreen implements Screen, GestureListener {
         // アプリ合
         { int c=onSurface; g.fill((c>>16)&0xFF, (c>>8)&0xFF, c&0xFF); }
         g.textAlign(g.LEFT, g.CENTER);
-        g.textSize(16);
+        g.textSize(TEXT_SIZE_XL);
         g.text(app.getName(), x + 75, y + 25);
 
         // アプリ説明（あれEEE
         if (app.getDescription() != null && !app.getDescription().isEmpty()) {
             { int c=onSurfaceSec; g.fill((c>>16)&0xFF, (c>>8)&0xFF, c&0xFF, 200); }
-            g.textSize(12);
+            g.textSize(TEXT_SIZE_MEDIUM);
             String description = app.getDescription();
             if (description.length() > 40) {
                 description = description.substring(0, 37) + "...";
@@ -1392,13 +1411,17 @@ public class HomeScreen implements Screen, GestureListener {
         // ドロチEEEシャドウを描画
         g.fill(0, 0, 0, 100);
         g.noStroke();
-        g.rect(x + 4, y + 4, ICON_SIZE, ICON_SIZE, 12);
+        g.rect(x + 4, y + 4, ICON_SIZE, ICON_SIZE, RADIUS_MEDIUM);
+
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        int surface = theme != null ? theme.colorSurface() : 0xFFFFFFFF; // Fallback to white
+        int border = theme != null ? theme.colorBorder() : 0xFF888888; // Fallback to gray
 
         // アイコンの背景を描画EEE半透EEEEE
-        g.fill(255, 255, 255, 220);
-        g.stroke(85, 85, 85);
+        g.fill((surface>>16)&0xFF, (surface>>8)&0xFF, surface&0xFF, 220); // Semi-transparent surface
+        g.stroke((border>>16)&0xFF, (border>>8)&0xFF, border&0xFF);
         g.strokeWeight(2);
-        g.rect(x, y, ICON_SIZE, ICON_SIZE, 12);
+        g.rect(x, y, ICON_SIZE, ICON_SIZE, RADIUS_MEDIUM);
 
         // アプリアイコンを描画
         IApplication app = shortcut.getApplication();
@@ -1447,7 +1470,7 @@ public class HomeScreen implements Screen, GestureListener {
                     int x = startX + gridX * (ICON_SIZE + ICON_SPACING);
                     int y = startY + gridY * (ICON_SIZE + ICON_SPACING + 20);
                     
-                    g.rect(x, y, ICON_SIZE, ICON_SIZE, 12);
+                    g.rect(x, y, ICON_SIZE, ICON_SIZE, RADIUS_MEDIUM);
                 }
             }
         }
@@ -1475,17 +1498,17 @@ public class HomeScreen implements Screen, GestureListener {
         int border = theme != null ? theme.colorBorder() : 0xFFCCCCCC;
         // subtle shadow to separate from light background
         jp.moyashi.phoneos.core.ui.effects.Elevation.drawRectShadow(g, x, y, ICON_SIZE, ICON_SIZE, 12, 2);
-        g.fill((surface>>16)&0xFF, (surface>>8)&0xFF, surface&0xFF);
+        g.fill((surface>>16)&0xFF, (surface>>8)&0xFF, surface&0xFF, 200); // Semi-transparent surface
         g.stroke((border>>16)&0xFF, (border>>8)&0xFF, border&0xFF);
         g.strokeWeight(1);
-        g.rect(x, y, ICON_SIZE, ICON_SIZE, 12);
+        g.rect(x, y, ICON_SIZE, ICON_SIZE, RADIUS_MEDIUM);
         
         // Draw app icon
         drawAppIcon(g, app, x + ICON_SIZE/2, y + ICON_SIZE/2);
         
         // Draw delete button if in edit mode
         if (isEditing) {
-            g.fill(0xFF4444); // Red delete button
+            g.fill(theme != null ? theme.colorError() : 0xFFDD4444); // Red delete button, theme-aware
             g.noStroke();
             g.ellipse(x + ICON_SIZE - 8, y + 8, 16, 16);
             
@@ -1565,14 +1588,14 @@ public class HomeScreen implements Screen, GestureListener {
             // use accent color tile
             g.fill(accentColor);
             g.noStroke();
-            g.rect(centerX, centerY, 40, 40, 8);
+            g.rect(centerX, centerY, 40, 40, RADIUS_SMALL);
 
             // Draw app initial
             var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
             int onSurface = theme != null ? theme.colorOnSurface() : 0xFF111111;
             { int c=onSurface; g.fill((c>>16)&0xFF, (c>>8)&0xFF, c&0xFF); }
             g.textAlign(g.CENTER, g.CENTER);
-            g.textSize(12);
+            g.textSize(TEXT_SIZE_MEDIUM);
             if (app.getName() != null && !app.getName().isEmpty()) {
                 String initial = app.getName().substring(0, 1).toUpperCase();
                 g.text(initial, centerX, centerY - 2);
@@ -1593,7 +1616,8 @@ public class HomeScreen implements Screen, GestureListener {
         var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
         int surface = theme != null ? theme.colorSurface() : 0xFF2A2A2A;
         int onSurface = theme != null ? theme.colorOnSurface() : textColor;
-        g.fill((surface>>16)&0xFF, (surface>>8)&0xFF, surface&0xFF);
+        int alpha = 180; // Semi-transparent alpha for holographic effect
+        g.fill((surface>>16)&0xFF, (surface>>8)&0xFF, surface&0xFF, alpha);
         g.noStroke();
         g.rect(0, navY, 400, NAV_AREA_HEIGHT);
 
@@ -1606,15 +1630,15 @@ public class HomeScreen implements Screen, GestureListener {
         // Draw app library access hint
         g.fill((onSurface>>16)&0xFF, (onSurface>>8)&0xFF, onSurface&0xFF, 150);
         g.textAlign(g.CENTER, g.CENTER);
-        g.textSize(14);
+        g.textSize(TEXT_SIZE_LARGE);
         g.text("App Library", 200, navY + 30);
         
         // Draw edit mode toggle hint if not in edit mode
         if (!isEditing) {
-            g.textSize(10);
+            g.textSize(TEXT_SIZE_TINY);
             g.text("Long press to edit", 200, navY + 50);
         } else {
-            g.textSize(10);
+            g.textSize(TEXT_SIZE_TINY);
             g.text("Tap outside to finish editing", 200, navY + 50);
         }
         
