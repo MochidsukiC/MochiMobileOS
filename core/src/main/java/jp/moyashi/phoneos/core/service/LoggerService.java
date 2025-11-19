@@ -54,7 +54,12 @@ public class LoggerService {
     }
 
     /**          E      E        E E*/
-    // Reduce default verbosity for performance\n    private LogLevel currentLogLevel = LogLevel.WARN;\n\n    public boolean isDebugEnabled() {\n        return currentLogLevel == LogLevel.DEBUG;\n    }
+    // Reduce default verbosity for performance
+    private LogLevel currentLogLevel = LogLevel.WARN;
+
+    public boolean isDebugEnabled() {
+        return currentLogLevel == LogLevel.DEBUG;
+    }
 
     /**
      * LoggerService   E   E
@@ -90,10 +95,10 @@ public class LoggerService {
     /**
      *            E
      *
-     * @param level      
+     * @param level
      */
     public void setLogLevel(LogLevel level) {
-        //this.currentLogLevel = level;
+        this.currentLogLevel = level;
         info("LoggerService", "Log level set to " + level);
     }
 
