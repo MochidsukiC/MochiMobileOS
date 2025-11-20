@@ -89,8 +89,8 @@ public class ChromiumRenderHandler extends CefRenderHandlerAdapter {
 
         // サイズチェック（HiDPI/Retinaディスプレイ対応）
         // Mac Retinaでは2倍サイズ（800x952）でレンダリングされる可能性がある
-        // とりあえずHiDPI処理を無効化して、サイズ違いは警告のみ
-        boolean isHiDPI = false; // 一時的に無効化
+        // Mac Retinaでは2倍サイズ（800x952）でレンダリングされる可能性がある
+        boolean isHiDPI = isMac && (width == this.width * 2);
 
         if (width != this.width) {
             log("Size difference: expected " + this.width + "x" + this.height +
