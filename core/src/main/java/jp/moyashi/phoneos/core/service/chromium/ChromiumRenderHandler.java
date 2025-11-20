@@ -81,18 +81,17 @@ public class ChromiumRenderHandler extends CefRenderHandlerAdapter {
     public void onPaint(CefBrowser browser, boolean popup, Rectangle[] dirtyRects,
                         ByteBuffer buffer, int width, int height) {
         // フレームスキップ：前回から16ms未満の場合はスキップ（60FPS制限）
-        long now = System.nanoTime();
-        if (now - lastPaintTimeNs < MIN_PAINT_INTERVAL_NS) {
-            return; // スキップ
-        }
-        lastPaintTimeNs = now;
-
-        // サイズチェック（HiDPI/Retinaディスプレイ対応）
-        // Mac Retinaでは2倍サイズ（800x952）でレンダリングされる可能性がある
-        // Mac Retinaでは2倍サイズ（800x952）でレンダリングされる可能性がある
-        boolean isHiDPI = isMac && (width == this.width * 2);
-
-        if (width != this.width) {
+                long now = System.nanoTime();
+                if (now - lastPaintTimeNs < MIN_PAINT_INTERVAL_NS) {
+                    return; // スキップ
+                }
+                lastPaintTimeNs = now;
+        
+                boolean isHiDPI = isMac && (width == this.width * 2);
+        
+                // サイズチェック（HiDPI/Retinaディスプレイ対応）
+                // Mac Retinaでは2倍サイズ（800x952）でレンダリングされる可能性がある
+                if (width != this.width && !isHiDPI) {
             log("Size difference: expected " + this.width + "x" + this.height +
                 ", got " + width + "x" + height + " - using received size");
             // サイズが違っても続行（エラーで返さない）

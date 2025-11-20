@@ -139,6 +139,18 @@
 - ~~通知センターのインタラクトが下のレイヤーに貫通するバグ（修正済み: 2025-11-07）~~
 - ~~長押し後にドラッグジェスチャーが一切動作しない（M-2の排他制御が原因、2025-11-10修正済み）~~
 - ~~ホーム画面のページアニメーション完了処理が呼ばれず、2回目以降のドラッグが無効になる~~
+- **Mac環境でのChromium HiDPI/Retinaディスプレイ対応の不具合**（2025-11-18）
+  - 症状: Chromiumブラウザでウェブページが表示されるが、アスペクト比が崩れる
+    - x軸が1/2に圧縮され、画像が左右に2つ並んで表示される
+    - y軸も大きく圧縮される（約1/8程度）
+  - 原因: `ChromiumRenderHandler.java`のHiDPIダウンサンプリングコード（106-128行目）に問題がある可能性
+    - Mac Retinaディスプレイでは2倍サイズ（800x952）でレンダリングされることを想定したコードだが、実際の動作が異なる
+    - ByteBufferの読み取り位置計算またはサイズ判定に問題がある可能性
+  - 現状: HiDPI処理を一時的に無効化（`isHiDPI = false;`）して調査中
+  - 関連ファイル:
+    - `core/src/main/java/jp/moyashi/phoneos/core/service/chromium/ChromiumRenderHandler.java`
+    - `standalone/src/main/java/jp/moyashi/phoneos/standalone/StandaloneChromiumProvider.java`
+  - 対応方針: 実際にChromiumが送ってくるバッファサイズを確認し、適切なダウンサンプリングロジックを実装する必要がある
 
 ## TODO
 
