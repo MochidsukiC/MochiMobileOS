@@ -124,9 +124,6 @@ public class ChromiumBrowserScreen implements Screen {
         // 背景
         pg.background(240);
 
-        // アドレスバーを描画
-        drawAddressBar(pg);
-
         // WebViewエリアを描画
         long drawStartNs = System.nanoTime();
         updateTabMetadata();
@@ -161,6 +158,10 @@ public class ChromiumBrowserScreen implements Screen {
             }
         }
         long copyDurationNs = System.nanoTime() - copyStartNs;
+
+        // UIを描画（WebViewピクセルコピー後に描画してUIが上書きされないようにする）
+        // アドレスバーを描画
+        drawAddressBar(pg);
 
         // ボトムナビゲーションを描画
         drawBottomNavigation(pg);

@@ -1854,16 +1854,13 @@ public class HomeScreen implements Screen, GestureListener {
 
                 // If icon is null, create a white default icon
                 if (appIcon == null && kernel != null) {
-                    processing.core.PGraphics graphics = kernel.getGraphics();
-                    if (graphics != null) {
-                        appIcon = graphics.get(0, 0, 1, 1);
-                        appIcon.resize(64, 64);
-                        appIcon.loadPixels();
-                        for (int i = 0; i < appIcon.pixels.length; i++) {
-                            appIcon.pixels[i] = 0xFFFFFFFF; // White color
-                        }
-                        appIcon.updatePixels();
+                    // Create a new PImage directly instead of using get() which fails with P2D renderer
+                    appIcon = new processing.core.PImage(64, 64, processing.core.PConstants.ARGB);
+                    appIcon.loadPixels();
+                    for (int i = 0; i < appIcon.pixels.length; i++) {
+                        appIcon.pixels[i] = 0xFFFFFFFF; // White color
                     }
+                    appIcon.updatePixels();
                 }
 
                 System.out.println("HomeScreen: Got app icon: " + (appIcon != null ? appIcon.width + "x" + appIcon.height : "null"));

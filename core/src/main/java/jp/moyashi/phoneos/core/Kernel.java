@@ -915,6 +915,8 @@ public class Kernel implements GestureListener {
 
         System.out.println("  -> OSロガーサービス作成中...");
         logger = new LoggerService(vfs);
+        // Enable DEBUG logging for troubleshooting
+        logger.setLogLevel(jp.moyashi.phoneos.core.service.LoggerService.LogLevel.DEBUG);
         logger.info("Kernel", "=== MochiMobileOS カーネル初期化開始 ===");
         logger.info("Kernel", "画面サイズ: " + width + "x" + height);
         if (worldId != null && !worldId.isEmpty()) {

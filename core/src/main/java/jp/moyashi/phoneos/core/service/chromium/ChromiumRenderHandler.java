@@ -33,6 +33,7 @@ public class ChromiumRenderHandler extends CefRenderHandlerAdapter {
     private PImage image;
     private final AtomicBoolean needsUpdate = new AtomicBoolean(false);
     private final Object imageLock = new Object();
+    private final boolean isMac;
 
     // フレームスキップ用（過剰なフレーム更新を防止）
     private long lastPaintTimeNs = 0L;
@@ -49,6 +50,10 @@ public class ChromiumRenderHandler extends CefRenderHandlerAdapter {
         this.kernel = kernel;
         this.width = width;
         this.height = height;
+
+        // OS判定（Mac環境でのみHiDPIリサイズ処理を行う）
+        String osName = System.getProperty("os.name").toLowerCase();
+        this.isMac = osName.contains("mac");
 
         // PImageを初期化（ARGB形式）
         this.image = new PImage(width, height, PImage.ARGB);
@@ -82,33 +87,60 @@ public class ChromiumRenderHandler extends CefRenderHandlerAdapter {
         }
         lastPaintTimeNs = now;
 
-        // サイズチェック
-        if (width != this.width || height != this.height) {
-            logError("Size mismatch: expected " +
-                     this.width + "x" + this.height + ", got " + width + "x" + height);
-            return;
+        // サイズチェック（HiDPI/Retinaディスプレイ対応）
+        // Mac Retinaでは2倍サイズ（800x952）でレンダリングされる可能性がある
+        // とりあえずHiDPI処理を無効化して、サイズ違いは警告のみ
+        boolean isHiDPI = false; // 一時的に無効化
+
+        if (width != this.width) {
+            log("Size difference: expected " + this.width + "x" + this.height +
+                ", got " + width + "x" + height + " - using received size");
+            // サイズが違っても続行（エラーで返さない）
         }
 
         synchronized (imageLock) {
-            // ByteBuffer（BGRA）をPImage（ARGB）に変換
+            buffer.position(0);
             image.loadPixels();
 
-            buffer.position(0);
+            if (isHiDPI) {
+                // HiDPI: 2x2ピクセルブロックを1ピクセルにダウンサンプリング
+                // 800x952 → 400x476（2倍スケールを1/2に縮小）
+                for (int y = 0; y < this.height; y++) {
+                    for (int x = 0; x < this.width; x++) {
+                        // 2x2ブロックの左上ピクセルをサンプリング（Nearest Neighbor）
+                        int srcX = x * 2;
+                        int srcY = y * 2;
+                        int srcIndex = (srcY * width + srcX) * 4; // 4 bytes per pixel (BGRA)
 
-            // 1バイトずつ処理（確実な方法）
-            for (int y = 0; y < height; y++) {
-                for (int x = 0; x < width; x++) {
-                    // BGRAバイトを読み取り
-                    int b = buffer.get() & 0xFF;
-                    int g = buffer.get() & 0xFF;
-                    int r = buffer.get() & 0xFF;
-                    int a = buffer.get() & 0xFF;
+                        // BGRAバイトを読み取り
+                        int b = buffer.get(srcIndex) & 0xFF;
+                        int g = buffer.get(srcIndex + 1) & 0xFF;
+                        int r = buffer.get(srcIndex + 2) & 0xFF;
+                        int a = buffer.get(srcIndex + 3) & 0xFF;
 
-                    // ARGBフォーマットに変換
-                    int argb = (a << 24) | (r << 16) | (g << 8) | b;
+                        // ARGBフォーマットに変換
+                        int argb = (a << 24) | (r << 16) | (g << 8) | b;
 
-                    // PImageピクセル配列に設定
-                    image.pixels[y * width + x] = argb;
+                        // PImageピクセル配列に設定
+                        image.pixels[y * this.width + x] = argb;
+                    }
+                }
+            } else {
+                // 非HiDPI: 通常の1:1変換
+                for (int y = 0; y < height; y++) {
+                    for (int x = 0; x < width; x++) {
+                        // BGRAバイトを読み取り
+                        int b = buffer.get() & 0xFF;
+                        int g = buffer.get() & 0xFF;
+                        int r = buffer.get() & 0xFF;
+                        int a = buffer.get() & 0xFF;
+
+                        // ARGBフォーマットに変換
+                        int argb = (a << 24) | (r << 16) | (g << 8) | b;
+
+                        // PImageピクセル配列に設定
+                        image.pixels[y * width + x] = argb;
+                    }
                 }
             }
 
