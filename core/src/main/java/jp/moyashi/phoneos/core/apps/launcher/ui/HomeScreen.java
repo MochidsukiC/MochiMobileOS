@@ -303,6 +303,7 @@ public class HomeScreen implements Screen, GestureListener, SensorEventListener 
 
             // Draw new dashboard cards
             drawClockAndWeatherCard(g);
+            drawSearchCard(g);
 
         } catch (Exception e) {
             System.err.println("❁EHomeScreen: Draw error (PGraphics) - " + e.getMessage());
@@ -1810,6 +1811,32 @@ public class HomeScreen implements Screen, GestureListener, SensorEventListener 
         g.textAlign(g.RIGHT, g.TOP);
         g.text(weather, cardX + cardWidth - 20, cardY + 20);
     }
+
+    /**
+     * Draws the search card.
+     * @param g The PGraphics instance for drawing
+     */
+    private void drawSearchCard(PGraphics g) {
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        int surface = theme != null ? theme.colorSurface() : 0xFFFFFFFF;
+        int onSurface = theme != null ? theme.colorOnSurface() : 0xFF111111;
+
+        int cardX = 20;
+        int cardY = 170; // Below Clock & Weather card
+        int cardWidth = 360;
+        int cardHeight = 50;
+
+        // Draw card background
+        g.fill((surface>>16)&0xFF, (surface>>8)&0xFF, surface&0xFF, 200);
+        g.stroke(theme.colorBorder());
+        g.rect(cardX, cardY, cardWidth, cardHeight, RADIUS_SMALL);
+
+        // Draw placeholder text
+        g.fill(onSurface);
+        g.textAlign(g.LEFT, g.CENTER);
+        g.textSize(TEXT_SIZE_LARGE);
+        g.text("Search...", cardX + 20, cardY + cardHeight / 2);
+    }
     
     /**
      * Gets the shortcut at the specified coordinates on a specific page.
@@ -2229,6 +2256,11 @@ public class HomeScreen implements Screen, GestureListener, SensorEventListener 
         HomePage targetPage = homePages.get(targetPageIndex);
         System.out.println("HomeScreen: Transformed tap to page " + targetPageIndex + " at (" + pageX + ", " + pageY + ")");
         
+        // Check if tap is on the search card
+        if (x > 20 && x < 20 + 360 && y > 170 && y < 170 + 50) {
+            return handleSearchCardTap();
+        }
+
         // AppLibraryペEジの場合E特別処理
         if (targetPage.isAppLibraryPage()) {
             return handleAppLibraryTap(pageX, pageY, targetPage);
@@ -2276,6 +2308,18 @@ public class HomeScreen implements Screen, GestureListener, SensorEventListener 
             return true;
         }
         
+        return false;
+    }
+
+    private boolean handleSearchCardTap() {
+        System.out.println("HomeScreen: Search card tapped");
+        if (kernel != null && kernel.getAppLoader() != null) {
+            IApplication browserApp = kernel.getAppLoader().findApplicationById("jp.moyashi.phoneos.core.apps.chromiumbrowser");
+            if (browserApp != null) {
+                kernel.getScreenManager().pushScreen(browserApp.getEntryScreen(kernel));
+                return true;
+            }
+        }
         return false;
     }
     

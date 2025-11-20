@@ -1,0 +1,39 @@
+[60251:6639833:1118/211948.927439:WARNING:account_consistency_mode_manager.cc(72)] Desktop Identity Consistency cannot be enabled as no OAuth client ID and client secret have been configured.
+[60251:6640118:1118/211953.385722:ERROR:process_requirement.cc(164)] Unable to derive validation category for current process. Signature validation of current process failed: Error Domain=NSOSStatusErrorDomain Code=-67030 "(null)" (-67030)
+[60251:6640118:1118/211953.393382:ERROR:process_requirement.cc(559)] ProcessIsSignedAndFulfillsRequirement: Error Domain=NSOSStatusErrorDomain Code=-67030 "(null)" (-67030)
+[60251:6640117:1118/233833.777905:WARNING:dns_config_service_posix.cc(201)] Failed to read DnsConfig.
+[60255:6640153:1118/233833.777920:WARNING:dns_config_service_posix.cc(201)] Failed to read DnsConfig.
+[60251:6640117:1118/233844.361480:WARNING:dns_config_service_posix.cc(201)] Failed to read DnsConfig.
+[60255:6640153:1118/233844.361526:WARNING:dns_config_service_posix.cc(201)] Failed to read DnsConfig.
+[60255:6640153:1118/233845.839112:WARNING:dns_config_service_posix.cc(201)] Failed to read DnsConfig.
+[60251:6640117:1118/233845.839186:WARNING:dns_config_service_posix.cc(201)] Failed to read DnsConfig.
+[60255:6640153:1118/233850.089229:WARNING:dns_config_service_posix.cc(201)] Failed to read DnsConfig.
+[60251:6640117:1118/233850.089358:WARNING:dns_config_service_posix.cc(201)] Failed to read DnsConfig.
+[60251:6640117:1119/000013.707384:WARNING:dns_config_service_posix.cc(201)] Failed to read DnsConfig.
+[60255:6640153:1119/000013.707418:WARNING:dns_config_service_posix.cc(201)] Failed to read DnsConfig.
+[60251:6640117:1119/000329.039521:WARNING:dns_config_service_posix.cc(201)] Failed to read DnsConfig.
+[60255:6640153:1119/000329.039554:WARNING:dns_config_service_posix.cc(201)] Failed to read DnsConfig.
+[60251:6640117:1119/000341.573284:WARNING:dns_config_service_posix.cc(201)] Failed to read DnsConfig.
+[60255:6640153:1119/000341.573397:WARNING:dns_config_service_posix.cc(201)] Failed to read DnsConfig.
+[60255:6640153:1119/000343.013428:WARNING:dns_config_service_posix.cc(201)] Failed to read DnsConfig.
+[60251:6640117:1119/000343.013586:WARNING:dns_config_service_posix.cc(201)] Failed to read DnsConfig.
+[60255:6640153:1119/000346.661247:WARNING:dns_config_service_posix.cc(201)] Failed to read DnsConfig.
+[60251:6640117:1119/000346.661345:WARNING:dns_config_service_posix.cc(201)] Failed to read DnsConfig.
+[60255:6640153:1119/000347.781620:WARNING:dns_config_service_posix.cc(201)] Failed to read DnsConfig.
+[60251:6640117:1119/000347.781691:WARNING:dns_config_service_posix.cc(201)] Failed to read DnsConfig.
+[60255:6640153:1119/000351.764578:WARNING:dns_config_service_posix.cc(201)] Failed to read DnsConfig.
+[60251:6640117:1119/000351.764617:WARNING:dns_config_service_posix.cc(201)] Failed to read DnsConfig.
+[60251:6640117:1119/000352.845301:WARNING:dns_config_service_posix.cc(201)] Failed to read DnsConfig.
+[60255:6640153:1119/000352.845360:WARNING:dns_config_service_posix.cc(201)] Failed to read DnsConfig.
+[60255:6640153:1119/000406.893496:WARNING:dns_config_service_posix.cc(201)] Failed to read DnsConfig.
+[60251:6640117:1119/000406.893536:WARNING:dns_config_service_posix.cc(201)] Failed to read DnsConfig.
+[60255:6640153:1119/000407.844977:WARNING:dns_config_service_posix.cc(201)] Failed to read DnsConfig.
+[60251:6640117:1119/000407.845026:WARNING:dns_config_service_posix.cc(201)] Failed to read DnsConfig.
+[60251:6640117:1119/000411.207783:WARNING:dns_config_service_posix.cc(201)] Failed to read DnsConfig.
+[60255:6640153:1119/000411.207832:WARNING:dns_config_service_posix.cc(201)] Failed to read DnsConfig.
+[60255:6640153:1119/000412.118308:WARNING:dns_config_service_posix.cc(201)] Failed to read DnsConfig.
+[60251:6640117:1119/000412.118342:WARNING:dns_config_service_posix.cc(201)] Failed to read DnsConfig.
+[60251:6640117:1119/000425.312601:WARNING:dns_config_service_posix.cc(201)] Failed to read DnsConfig.
+[60255:6640153:1119/000425.312625:WARNING:dns_config_service_posix.cc(201)] Failed to read DnsConfig.
+[60255:6640153:1119/000426.219567:WARNING:dns_config_service_posix.cc(201)] Failed to read DnsConfig.
+[60251:6640117:1119/000426.219660:WARNING:dns_config_service_posix.cc(201)] Failed to read DnsConfig.
