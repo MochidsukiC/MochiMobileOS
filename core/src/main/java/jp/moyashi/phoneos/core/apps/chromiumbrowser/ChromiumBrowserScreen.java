@@ -4,6 +4,7 @@ import jp.moyashi.phoneos.core.Kernel;
 import jp.moyashi.phoneos.core.service.chromium.ChromiumSurface;
 import jp.moyashi.phoneos.core.ui.Screen;
 import jp.moyashi.phoneos.core.ui.components.Button;
+import jp.moyashi.phoneos.core.ui.components.TextField;
 import processing.core.PApplet;
 import processing.core.PGraphics;
 import processing.core.PImage;
@@ -18,34 +19,28 @@ public class ChromiumBrowserScreen implements Screen {
     private Button backButton;
     private Button forwardButton;
     private Button reloadButton;
+    private TextField addressBar;
+    private boolean isEditingUrl = false;
 
     public ChromiumBrowserScreen(Kernel kernel) {
         this.kernel = kernel;
-        initializeButtons();
+        initializeUI();
     }
 
-        public ChromiumBrowserScreen(Kernel kernel, String url) {
-
-            this.kernel = kernel;
-
-            this.currentUrl = url;
-
-        }
+    public ChromiumBrowserScreen(Kernel kernel, String url) {
+        this.kernel = kernel;
+        this.currentUrl = url;
+        initializeUI();
+    }
 
     
 
-        @Override
-
-        public void setup(PGraphics p) {
-
-            // Initialization logic for the browser screen
-
-            initializeButtons();
-
-    
-
-            if (kernel != null && kernel.getChromiumService() != null) {
-
+            @Override
+            public void setup(PGraphics p) {
+                // Initialization logic for the browser screen
+                initializeUI();
+        
+                if (kernel != null && kernel.getChromiumService() != null) {
                 browserSurface = kernel.getChromiumService().createSurface(
 
                     surfaceId,
@@ -78,7 +73,7 @@ public class ChromiumBrowserScreen implements Screen {
 
     
 
-        private void initializeButtons() {
+        private void initializeUI() {
 
             // Bottom bar buttons
 
@@ -88,11 +83,31 @@ public class ChromiumBrowserScreen implements Screen {
 
     
 
-            // Top bar button
+                    // Top bar button
 
-            reloadButton = new Button(340, 5, 40, 40, "R");
+    
 
-        }
+                    reloadButton = new Button(340, 5, 40, 40, "R");
+
+    
+
+            
+
+    
+
+                    // Address bar
+
+    
+
+                    addressBar = new TextField(10, 5, 320, 40, "Enter URL");
+
+    
+
+                    addressBar.setVisible(false);
+
+    
+
+                }
 
     @Override
     public void draw(PGraphics g) {
@@ -103,6 +118,12 @@ public class ChromiumBrowserScreen implements Screen {
         if (browserSurface != null) {
             backButton.setEnabled(browserSurface.canGoBack());
             forwardButton.setEnabled(browserSurface.canGoForward());
+        }
+
+        // Pass modifier keys to address bar if it's focused
+        if (isEditingUrl && addressBar.isFocused()) {
+            addressBar.setShiftPressed(kernel.isShiftPressed());
+            addressBar.setCtrlPressed(kernel.isCtrlPressed());
         }
 
         // Draw App Background
@@ -126,10 +147,14 @@ public class ChromiumBrowserScreen implements Screen {
         g.noStroke();
         g.rect(0, 0, g.width, 50);
 
-        g.fill(onSurfaceColor);
-        g.textAlign(g.LEFT, g.CENTER);
-        g.textSize(14);
-        g.text("🔒 " + currentUrl, 20, 25);
+        if (isEditingUrl) {
+            addressBar.draw(g);
+        } else {
+            g.fill(onSurfaceColor);
+            g.textAlign(g.LEFT, g.CENTER);
+            g.textSize(14);
+            g.text("🔒 " + (browserSurface != null ? browserSurface.getTitle() : currentUrl), 20, 25);
+        }
 
         if (reloadButton != null) {
             reloadButton.draw(g);
@@ -201,34 +226,59 @@ public class ChromiumBrowserScreen implements Screen {
         if (forwardButton != null && forwardButton.onMousePressed(mouseX, mouseY)) return;
         if (reloadButton != null && reloadButton.onMousePressed(mouseX, mouseY)) return;
 
+        // Handle address bar activation
+        if (!isEditingUrl && mouseX > 10 && mouseX < 330 && mouseY > 5 && mouseY < 45) {
+            isEditingUrl = true;
+            addressBar.setVisible(true);
+            addressBar.setFocused(true);
+            addressBar.setText(browserSurface != null ? browserSurface.getCurrentUrl() : currentUrl);
+            return;
+        }
+
+        // Pass press to address bar if it's being edited
+        if (isEditingUrl && addressBar.onMousePressed(mouseX, mouseY)) {
+            return;
+        }
+
+        // If clicked outside address bar while editing, stop editing
+        if (isEditingUrl && !addressBar.contains(mouseX, mouseY)) {
+            isEditingUrl = false;
+            addressBar.setVisible(false);
+            addressBar.setFocused(false);
+        }
+
         if (browserSurface != null) {
             browserSurface.sendMousePressed(mouseX - 10, mouseY - 60, 0); // Assuming left-click (button 0)
         }
     }
 
-    @Override
     public void mouseReleased(PGraphics g, int mouseX, int mouseY) {
         if (backButton != null && backButton.onMouseReleased(mouseX, mouseY)) return;
         if (forwardButton != null && forwardButton.onMouseReleased(mouseX, mouseY)) return;
         if (reloadButton != null && reloadButton.onMouseReleased(mouseX, mouseY)) return;
+        if (addressBar != null && isEditingUrl) {
+            addressBar.onMouseReleased(mouseX, mouseY);
+        }
 
         if (browserSurface != null) {
             browserSurface.sendMouseReleased(mouseX - 10, mouseY - 60, 0); // Assuming left-click (button 0)
         }
     }
 
-    @Override
     public void mouseDragged(PGraphics g, int mouseX, int mouseY) {
+        if (addressBar != null && isEditingUrl) {
+            addressBar.onMouseDragged(mouseX, mouseY);
+        }
         if (browserSurface != null) {
             browserSurface.sendMouseMoved(mouseX - 10, mouseY - 60); // CEF uses moved for drag
         }
     }
 
-    @Override
     public void mouseMoved(PGraphics g, int mouseX, int mouseY) {
         if (backButton != null) backButton.onMouseMoved(mouseX, mouseY);
         if (forwardButton != null) forwardButton.onMouseMoved(mouseX, mouseY);
         if (reloadButton != null) reloadButton.onMouseMoved(mouseX, mouseY);
+        if (addressBar != null) addressBar.onMouseMoved(mouseX, mouseY);
     }
 
     public void mouseWheel(PGraphics g, int x, int y, float delta) {
@@ -238,7 +288,18 @@ public class ChromiumBrowserScreen implements Screen {
     }
 
     public void keyPressed(PGraphics g, char key, int keyCode) {
-        if (browserSurface != null) {
+        if (isEditingUrl && addressBar != null) {
+            if (keyCode == 10 || keyCode == 13) { // Enter key
+                if (browserSurface != null) {
+                    browserSurface.loadUrl(addressBar.getText());
+                }
+                isEditingUrl = false;
+                addressBar.setFocused(false);
+                addressBar.setVisible(false);
+            } else {
+                addressBar.onKeyPressed(key, keyCode);
+            }
+        } else if (browserSurface != null) {
             browserSurface.sendKeyPressed(keyCode, key);
         }
     }
