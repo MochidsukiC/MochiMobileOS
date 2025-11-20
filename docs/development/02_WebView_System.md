@@ -1,0 +1,68 @@
+# WebViewシステム
+
+**WebViewシステム** (✅ モバイル最適化・スクロール機能完了、✅ Forge環境対応 - 2025-10-19):
+- **目的**: JavaFX WebViewを使用したHTML/CSS/JavaScript実行環境を提供し、BrowserAppおよびHTML系アプリケーションでWebコンテンツを表示
+- **Forge環境での動作確認** (✅ 2025-10-19):
+  - JavaFXはオフスクリーンレンダリングのため、Forge MOD環境でも正常に動作する
+  - WebViewManagerはForge環境で正常に初期化される（検証済み）
+  - **修正した問題** (Kernel.java:740): `parentApplet.g = this.graphics`を設定
+    - 問題: Forge環境でBrowserScreenの初期化時に`pg is null`エラーが発生
+    - 原因: `initializeForMinecraft()`で作成したヘッドレスPAppletの`g`フィールドが未初期化
+    - 解決: `parentApplet.g`に`graphics`を設定することで、ScreenManagerが`setup(currentPApplet.g)`を正しく呼べるようになった
+  - Kernel.setup()でWebViewManagerの初期化をtry-catchで囲み、万が一のエラーに備える (Kernel.java:852-869)
+- **実装内容**:
+  - `WebViewWrapper`: WebViewのラッパークラス（`core/src/main/java/jp/moyashi/phoneos/core/service/webview/`）
+    - PGraphicsへのスナップショット描画（非同期、キャッシング対応）
+    - マウス/キーボード/スクロールイベントのJavaScript注入
+    - DOM操作、URL読み込み、コンテンツ読み込み
+  - `WebViewManager`: WebViewインスタンスの管理サービス（Kernelサービス）
+  - `JSBridge`: JavaScript ↔ Java連携ブリッジ
+- **モバイル最適化** (✅ 2025-10-19):
+  - **モバイルUser-Agent**: Android 12 MochiMobileOSとして認識（WebViewWrapper.java:89-91）
+    - User-Agent文字列: `Mozilla/5.0 (Linux; Android 12; MochiMobileOS) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36`
+  - **Viewport自動注入** (WebViewWrapper.java:786-830):
+    - ページ読み込み完了時に`injectMobileViewport()`を自動実行
+    - viewportメタタグが存在しない場合は動的に追加: `width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes`
+    - モバイル最適化CSS注入:
+      - `-webkit-text-size-adjust: 100%`: テキストサイズの自動調整
+      - `-webkit-tap-highlight-color`: タップハイライト色
+      - `font-size: 16px !important` for input/textarea/select: iOSの自動ズーム防止
+  - **パフォーマンス最適化** (WebViewWrapper.java:94-95):
+    - JavaScriptを明示的に有効化（`setJavaScriptEnabled(true)`）
+    - コンテキストメニューを無効化（`setContextMenuEnabled(false)`）してパフォーマンス向上
+  - **フレーム更新の改善** (BrowserScreen.java:209-211):
+    - 毎フレーム`requestUpdate()`を呼び出してHTML側の動的な変更を即座に反映
+    - JavaScriptアニメーション、フォーム入力、ボタンクリックなどが正常に表示される
+- **スクロール機能** (✅ 2025-10-19):
+  - **WebViewWrapper.simulateScroll()** (WebViewWrapper.java:508-562):
+    - JavaScriptで`window.scrollBy()`を実行してページ全体をスクロール
+    - スクロール可能な要素（`overflow: auto/scroll`）を自動検出して個別にスクロール
+    - WheelEventをディスパッチして互換性を確保
+    - **JavaScript生成の修正**: String.format()のロケール問題を回避するため、文字列連結に変更（浮動小数点数のフォーマット問題を解消）
+  - **BrowserScreen.mouseWheel()** (BrowserScreen.java:654-679):
+    - マウスホイールイベントをWebViewエリアで検出
+    - スクロール量を調整（delta * 50）してWebViewに転送
+    - **スクロール方向の修正**: AWTのwheelRotationとJavaScript scrollBy()の符号を統一（正=下スクロール、負=上スクロール）
+  - **Screenインターフェース** (Screen.java:238-267):
+    - `mouseWheel(PGraphics, int, int, float)`メソッドを追加
+    - PApplet版との互換性ブリッジも実装
+  - **ScreenManager.mouseWheel()** (ScreenManager.java:506-523):
+    - 現在のスクリーンにマウスホイールイベントを転送
+    - アニメーション中はイベントをブロック
+  - **Kernel.mouseWheel()** (Kernel.java:464-489):
+    - マウスホイールイベントの独立API
+    - スリープ中はイベントを拒否
+  - **StandaloneWrapper.mouseWheel()** (StandaloneWrapper.java:61-72, 167-177):
+    - ProcessingのMouseEventをKernelに転送
+    - **AWT MouseWheelListenerの追加**: Processing mouseWheel()が機能しないため、AWTコンポーネントに直接リスナーを登録
+    - 両方のイベントハンドラーを実装してクロスプラットフォーム対応
+  - **ProcessingScreen.mouseScrolled()** (ProcessingScreen.java:595-625):
+    - Minecraft GUIのスクロールイベントをKernelに転送
+    - 座標変換とスケーリングに対応
+    - **スクロール方向の修正**: delta値の符号を統一（負の符号を削除）
+- **効果**:
+  - ウェブサイトがスマートフォンOSとして認識され、モバイル最適化されたページが表示される
+  - レスポンシブデザイン対応のウェブサイトで自動的にモバイルレイアウトに切り替わる
+  - WebView描画パフォーマンスが向上
+  - マウスホイールによるスムーズなスクロールが可能
+  - ページ全体のスクロールとスクロール可能な要素の両方に対応
