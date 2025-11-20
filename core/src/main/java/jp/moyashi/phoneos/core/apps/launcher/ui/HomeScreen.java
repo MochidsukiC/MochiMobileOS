@@ -11,6 +11,7 @@ import jp.moyashi.phoneos.core.input.GestureType;
 import jp.moyashi.phoneos.core.service.sensor.Sensor;
 import jp.moyashi.phoneos.core.service.sensor.SensorEvent;
 import jp.moyashi.phoneos.core.service.sensor.SensorEventListener;
+import jp.moyashi.phoneos.core.ui.components.TextField;
 import processing.core.PApplet;
 import processing.core.PGraphics;
 
@@ -55,6 +56,10 @@ public class HomeScreen implements Screen, GestureListener, SensorEventListener 
     /** Sensor values */
     private float currentHumidity = 40.0f;
     private float currentLightLevel = 15.0f;
+
+    // --- Dashboard Components ---
+    private TextField searchField;
+    private boolean isSearching = false;
     
     /** Flag to track if the screen has been initialized */
     private boolean isInitialized;
@@ -229,6 +234,10 @@ public class HomeScreen implements Screen, GestureListener, SensorEventListener 
                     sm.registerListener(this, lightSensor, jp.moyashi.phoneos.core.service.sensor.SensorManager.SENSOR_DELAY_NORMAL);
                 }
             }
+
+            // Initialize dashboard components
+            searchField = new TextField(20, 170, 360, 50, "Search...");
+            searchField.setVisible(false);
         } catch (Exception e) {
             System.err.println("❁EHomeScreen: Critical error during setup: " + e.getMessage());
             e.printStackTrace();
@@ -1808,25 +1817,29 @@ public class HomeScreen implements Screen, GestureListener, SensorEventListener 
      * @param g The PGraphics instance for drawing
      */
     private void drawSearchCard(PGraphics g) {
-        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
-        int surface = theme != null ? theme.colorSurface() : 0xFFFFFFFF;
-        int onSurface = theme != null ? theme.colorOnSurface() : 0xFF111111;
+        if (isSearching) {
+            searchField.draw(g);
+        } else {
+            var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+            int surface = theme != null ? theme.colorSurface() : 0xFFFFFFFF;
+            int onSurface = theme != null ? theme.colorOnSurface() : 0xFF111111;
 
-        int cardX = 20;
-        int cardY = 170; // Below Clock & Weather card
-        int cardWidth = 360;
-        int cardHeight = 50;
+            int cardX = 20;
+            int cardY = 170; // Below Clock & Weather card
+            int cardWidth = 360;
+            int cardHeight = 50;
 
-        // Draw card background
-        g.fill((surface>>16)&0xFF, (surface>>8)&0xFF, surface&0xFF, 200);
-        g.stroke(theme.colorBorder());
-        g.rect(cardX, cardY, cardWidth, cardHeight, RADIUS_SMALL);
+            // Draw card background
+            g.fill((surface >> 16) & 0xFF, (surface >> 8) & 0xFF, surface & 0xFF, 200);
+            g.stroke(theme.colorBorder());
+            g.rect(cardX, cardY, cardWidth, cardHeight, RADIUS_SMALL);
 
-        // Draw placeholder text
-        g.fill(onSurface);
-        g.textAlign(g.LEFT, g.CENTER);
-        g.textSize(TEXT_SIZE_LARGE);
-        g.text("Search...", cardX + 20, cardY + cardHeight / 2);
+            // Draw placeholder text
+            g.fill(onSurface);
+            g.textAlign(g.LEFT, g.CENTER);
+            g.textSize(TEXT_SIZE_LARGE);
+            g.text("Search...", cardX + 20, cardY + cardHeight / 2);
+        }
     }
 
     /**
@@ -2306,6 +2319,31 @@ public class HomeScreen implements Screen, GestureListener, SensorEventListener 
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
         // Not used for now
     }
+
+    @Override
+    public void keyPressed(PGraphics g, char key, int keyCode) {
+        if (isSearching && searchField != null) {
+            if (keyCode == 10 || keyCode == 13) { // Enter
+                String query = searchField.getText();
+                if (!query.isEmpty()) {
+                    try {
+                        String url = "https://www.google.com/search?q=" + java.net.URLEncoder.encode(query, "UTF-8");
+                        IApplication browserApp = kernel.getAppLoader().findApplicationById("jp.moyashi.phoneos.core.apps.chromiumbrowser");
+                        if (browserApp != null) {
+                            kernel.getScreenManager().pushScreen(new jp.moyashi.phoneos.core.apps.chromiumbrowser.ChromiumBrowserScreen(kernel, url));
+                        }
+                    } catch (java.io.UnsupportedEncodingException e) {
+                        e.printStackTrace();
+                    }
+                }
+                isSearching = false;
+                searchField.setFocused(false);
+                searchField.setVisible(false);
+            } else {
+                searchField.onKeyPressed(key, keyCode);
+            }
+        }
+    }
     
     /**
      * タチEEEジェスチャーをE理EEる、
@@ -2316,6 +2354,22 @@ public class HomeScreen implements Screen, GestureListener, SensorEventListener 
      */
     private boolean handleTap(int x, int y) {
         System.out.println("HomeScreen: Handling tap at (" + x + ", " + y + ")");
+
+        // Check if tap is on the search card
+        if (!isSearching && x > 20 && x < 380 && y > 170 && y < 220) {
+            isSearching = true;
+            searchField.setVisible(true);
+            searchField.setFocused(true);
+            searchField.setText("");
+            return true;
+        }
+
+        // If searching, and tapped outside, stop searching
+        if (isSearching && (searchField == null || !searchField.contains(x, y))) {
+            isSearching = false;
+            searchField.setFocused(false);
+            searchField.setVisible(false);
+        }
         
         // マウス座標を変換
         int[] coords = transformMouseCoordinates(x, y);
@@ -2331,11 +2385,6 @@ public class HomeScreen implements Screen, GestureListener, SensorEventListener 
         HomePage targetPage = homePages.get(targetPageIndex);
         System.out.println("HomeScreen: Transformed tap to page " + targetPageIndex + " at (" + pageX + ", " + pageY + ")");
         
-        // Check if tap is on the search card
-        if (x > 20 && x < 20 + 360 && y > 170 && y < 170 + 50) {
-            return handleSearchCardTap();
-        }
-
         // AppLibraryペEジの場合E特別処理
         if (targetPage.isAppLibraryPage()) {
             return handleAppLibraryTap(pageX, pageY, targetPage);
@@ -2362,7 +2411,8 @@ public class HomeScreen implements Screen, GestureListener, SensorEventListener 
                     if (isClickingDeleteButton(pageX, pageY, tappedShortcut)) {
                         removeShortcut(tappedShortcut);
                     }
-                } else {
+                }
+                 else {
                     // 通常モードではアプリ起動（アニメーション付きEEEE
                     // ショートカチEEEの画面上での位置を計箁E
                     HomePage currentPage = homePages.get(targetPageIndex);

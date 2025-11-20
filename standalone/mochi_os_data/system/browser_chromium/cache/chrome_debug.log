@@ -1,0 +1,3 @@
+[89737:10100873:1120/155029.757126:WARNING:account_consistency_mode_manager.cc(72)] Desktop Identity Consistency cannot be enabled as no OAuth client ID and client secret have been configured.
+[89737:10101147:1120/155034.213756:ERROR:process_requirement.cc(164)] Unable to derive validation category for current process. Signature validation of current process failed: Error Domain=NSOSStatusErrorDomain Code=-67030 "(null)" (-67030)
+[89737:10101147:1120/155034.219102:ERROR:process_requirement.cc(559)] ProcessIsSignedAndFulfillsRequirement: Error Domain=NSOSStatusErrorDomain Code=-67030 "(null)" (-67030)

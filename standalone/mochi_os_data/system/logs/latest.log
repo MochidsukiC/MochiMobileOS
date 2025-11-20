@@ -591,3 +591,227 @@ Chromium Version = 135.0.7049.85
 [11/20 15:38:02.608] [DEBUG] [ChromiumPump] MessageLoopWork took 11.134ms
 [11/20 15:38:24.531] [INFO] [ChromiumManager] Shutting down Chromium...
 [11/20 15:38:24.532] [INFO] [ChromiumManager] Chromium shutdown complete
+[11/20 15:50:22.893] [INFO] [LoggerService] Logger service initialized
+[11/20 15:50:22.897] [INFO] [LoggerService] Log level set to DEBUG
+[11/20 15:50:22.899] [INFO] [Kernel] === MochiMobileOS カーネル初期化開始 ===
+[11/20 15:50:22.900] [INFO] [Kernel] 画面サイズ: 400x600
+[11/20 15:50:22.902] [INFO] [Kernel] サービスマネージャー初期化完了
+[11/20 15:50:22.902] [INFO] [Kernel] 日本語フォントを初期化中...
+[11/20 15:50:22.903] [DEBUG] [Kernel] リソースからNoto Sans JP TTFファイルを読み込み中...
+[11/20 15:50:22.903] [DEBUG] [Kernel] Kernelクラスのクラスローダーからフォントを読み込みました
+[11/20 15:50:22.949] [DEBUG] [Kernel] AWTフォントを作成しました: Noto Sans JP Thin
+[11/20 15:50:23.704] [INFO] [Kernel] フォントをシステムに登録しました: Noto Sans JP Thin
+[11/20 15:50:23.704] [DEBUG] [Kernel] AWT FontからPFontを直接構築中... (フォント名: Noto Sans JP Thin)
+[11/20 15:50:23.714] [INFO] [Kernel] PFontを作成しました (サイズ: 16、フォント名: Noto Sans JP Thin)
+[11/20 15:50:23.714] [INFO] [Kernel] 日本語フォント (Noto Sans JP) を正常に読み込みました
+[11/20 15:50:23.733] [DEBUG] [GestureManager] Gesture system initialized
+[11/20 15:50:23.739] [INFO] [ChromiumManager] ChromiumProvider set: jcefmaven (Standalone)
+[11/20 15:50:23.742] [INFO] [ChromiumManager] Initializing Chromium with provider: jcefmaven (Standalone)
+[11/20 15:50:23.794] [INFO] [ChromiumManager] Chromium initialized successfully
+[11/20 15:50:23.794] [INFO] [ChromiumManager] Chromium version: JCEF Version = 135.0.20.333
+CEF Version = 135.0.20
+Chromium Version = 135.0.7049.85
+[11/20 15:50:23.795] [INFO] [Kernel] ChromiumService初期化完了
+[11/20 15:50:23.796] [INFO] [Kernel] パーミッション管理サービス初期化完了
+[11/20 15:50:23.796] [INFO] [Kernel] アクティビティ管理サービス初期化完了
+[11/20 15:50:23.797] [INFO] [ClipboardManager] 初期化: AWTClipboardProvider (利用可能: true)
+[11/20 15:50:23.797] [INFO] [Kernel] クリップボード管理サービス初期化完了
+[11/20 15:50:23.798] [INFO] [SensorManager] デフォルトセンサーを初期化: 9個
+[11/20 15:50:23.798] [INFO] [Kernel] センサー管理サービス初期化完了
+[11/20 15:50:23.799] [DEBUG] [GestureManager] Added gesture listener ControlCenterManager (priority: 0)
+[11/20 15:50:23.799] [DEBUG] [GestureManager] Current listener order: ControlCenterManager(priority=0)
+[11/20 15:50:23.800] [DEBUG] [GestureManager] Added gesture listener NotificationManager (priority: 900)
+[11/20 15:50:23.800] [DEBUG] [GestureManager] Current listener order: NotificationManager(priority=900) -> ControlCenterManager(priority=0)
+[11/20 15:50:23.800] [DEBUG] [GestureManager] Added gesture listener Kernel (priority: -1000)
+[11/20 15:50:23.800] [DEBUG] [GestureManager] Current listener order: NotificationManager(priority=900) -> ControlCenterManager(priority=0) -> Kernel(priority=-1000)
+[11/20 15:50:23.803] [DEBUG] [ScreenManager] Kernel reference set for layer management integration
+[11/20 15:50:23.803] [DEBUG] [ScreenManager] PAppletを設定 - 成功
+[11/20 15:50:23.810] [DEBUG] [GestureManager] Added gesture listener HomeScreen (priority: 50)
+[11/20 15:50:23.811] [DEBUG] [GestureManager] Current listener order: NotificationManager(priority=900) -> HomeScreen(priority=50) -> ControlCenterManager(priority=0) -> Kernel(priority=-1000)
+[11/20 15:50:23.811] [INFO] [SensorManager] センサーリスナー登録: MochiOS Humidity Sensor, 200000us
+[11/20 15:50:23.811] [INFO] [SensorManager] センサーリスナー登録: MochiOS Light Sensor, 200000us
+[11/20 15:50:23.811] [DEBUG] [ScreenManager] New screen moved to foreground: Home Screen
+[11/20 15:50:23.812] [DEBUG] [ScreenManager] Screen analysis - Title: 'Home Screen', ClassName: 'HomeScreen', isLauncher: true
+[11/20 15:50:23.812] [DEBUG] [ScreenManager] Skipped APPLICATION layer addition - kernel=true, isLauncher=true
+[11/20 15:50:23.812] [DEBUG] [ScreenManager] Pushed screen - Home Screen
+[11/20 15:50:23.812] [INFO] [StandaloneWrapper] Instrumented AWT EventQueue installed
+[11/20 15:50:25.217] [DEBUG] [StandaloneWrapper] mousePressed event received at (233, 302)
+[11/20 15:50:25.218] [DEBUG] [Kernel] mousePressed at (233, 302)
+[11/20 15:50:25.218] [DEBUG] [Kernel] Forwarding mousePressed to ScreenManager
+[11/20 15:50:25.287] [DEBUG] [StandaloneWrapper] mouseDragged event received at (228, 302)
+[11/20 15:50:25.288] [DEBUG] [StandaloneWrapper] mouseDragged event received at (210, 302)
+[11/20 15:50:25.291] [DEBUG] [GestureManager] Dispatch gesture DRAG_START handledIndex=-1 listeners=4
+[11/20 15:50:25.292] [DEBUG] [KernelInput] mouseDragged gesture latency=3.155ms coord=(210,302)
+[11/20 15:50:25.292] [DEBUG] [KernelInput] mouseDragged total latency=3.895ms coord=(210,302)
+[11/20 15:50:25.304] [DEBUG] [StandaloneWrapper] mouseDragged event received at (162, 301)
+[11/20 15:50:25.327] [DEBUG] [StandaloneWrapper] mouseDragged event received at (105, 298)
+[11/20 15:50:25.337] [DEBUG] [StandaloneWrapper] mouseDragged event received at (60, 293)
+[11/20 15:50:25.374] [DEBUG] [StandaloneWrapper] mouseDragged event received at (15, 290)
+[11/20 15:50:25.374] [DEBUG] [StandaloneWrapper] mouseReleased event received at (15, 290)
+[11/20 15:50:25.375] [DEBUG] [Kernel] mouseReleased at (15, 290)
+[11/20 15:50:25.376] [DEBUG] [GestureManager] Dispatch gesture DRAG_END handledIndex=1 listeners=4
+[11/20 15:50:25.376] [DEBUG] [GestureManager] Dispatch gesture SWIPE_LEFT handledIndex=1 listeners=4
+[11/20 15:50:25.377] [DEBUG] [KernelInput] mouseReleased gesture latency=2.458ms coord=(15,290)
+[11/20 15:50:25.377] [DEBUG] [Kernel] Forwarding mouseReleased to ScreenManager
+[11/20 15:50:25.378] [DEBUG] [KernelInput] mouseReleased total latency=3.053ms coord=(15,290)
+[11/20 15:50:26.070] [DEBUG] [StandaloneWrapper] mousePressed event received at (65, 299)
+[11/20 15:50:26.071] [DEBUG] [Kernel] mousePressed at (65, 299)
+[11/20 15:50:26.071] [DEBUG] [Kernel] Forwarding mousePressed to ScreenManager
+[11/20 15:50:26.158] [DEBUG] [StandaloneWrapper] mouseDragged event received at (65, 300)
+[11/20 15:50:26.192] [DEBUG] [StandaloneWrapper] mouseDragged event received at (67, 300)
+[11/20 15:50:26.193] [DEBUG] [StandaloneWrapper] mouseDragged event received at (74, 300)
+[11/20 15:50:26.209] [DEBUG] [StandaloneWrapper] mouseDragged event received at (89, 300)
+[11/20 15:50:26.210] [DEBUG] [GestureManager] Dispatch gesture DRAG_START handledIndex=-1 listeners=4
+[11/20 15:50:26.226] [DEBUG] [StandaloneWrapper] mouseDragged event received at (110, 300)
+[11/20 15:50:26.244] [DEBUG] [StandaloneWrapper] mouseDragged event received at (136, 300)
+[11/20 15:50:26.260] [DEBUG] [StandaloneWrapper] mouseDragged event received at (159, 300)
+[11/20 15:50:26.277] [DEBUG] [StandaloneWrapper] mouseDragged event received at (177, 300)
+[11/20 15:50:26.293] [DEBUG] [StandaloneWrapper] mouseDragged event received at (190, 300)
+[11/20 15:50:26.311] [DEBUG] [StandaloneWrapper] mouseReleased event received at (190, 300)
+[11/20 15:50:26.312] [DEBUG] [Kernel] mouseReleased at (190, 300)
+[11/20 15:50:26.312] [DEBUG] [GestureManager] Dispatch gesture DRAG_END handledIndex=1 listeners=4
+[11/20 15:50:26.312] [DEBUG] [GestureManager] Dispatch gesture SWIPE_RIGHT handledIndex=1 listeners=4
+[11/20 15:50:26.312] [DEBUG] [Kernel] Forwarding mouseReleased to ScreenManager
+[11/20 15:50:26.313] [DEBUG] [KernelInput] mouseReleased total latency=1.008ms coord=(190,300)
+[11/20 15:50:27.820] [DEBUG] [StandaloneWrapper] mousePressed event received at (267, 335)
+[11/20 15:50:27.821] [DEBUG] [Kernel] mousePressed at (267, 335)
+[11/20 15:50:27.821] [DEBUG] [Kernel] Forwarding mousePressed to ScreenManager
+[11/20 15:50:27.888] [DEBUG] [StandaloneWrapper] mouseReleased event received at (267, 335)
+[11/20 15:50:27.888] [DEBUG] [Kernel] mouseReleased at (267, 335)
+[11/20 15:50:27.889] [DEBUG] [GestureManager] Dispatch gesture TAP handledIndex=-1 listeners=4
+[11/20 15:50:27.890] [DEBUG] [KernelInput] mouseReleased gesture latency=1.230ms coord=(267,335)
+[11/20 15:50:27.890] [DEBUG] [Kernel] Forwarding mouseReleased to ScreenManager
+[11/20 15:50:27.890] [DEBUG] [KernelInput] mouseReleased total latency=1.811ms coord=(267,335)
+[11/20 15:50:28.426] [DEBUG] [StandaloneWrapper] mousePressed event received at (144, 333)
+[11/20 15:50:28.427] [DEBUG] [Kernel] mousePressed at (144, 333)
+[11/20 15:50:28.427] [DEBUG] [Kernel] Forwarding mousePressed to ScreenManager
+[11/20 15:50:28.478] [DEBUG] [StandaloneWrapper] mouseReleased event received at (144, 333)
+[11/20 15:50:28.479] [DEBUG] [Kernel] mouseReleased at (144, 333)
+[11/20 15:50:28.479] [DEBUG] [GestureManager] Dispatch gesture TAP handledIndex=-1 listeners=4
+[11/20 15:50:28.480] [DEBUG] [Kernel] Forwarding mouseReleased to ScreenManager
+[11/20 15:50:28.480] [DEBUG] [KernelInput] mouseReleased total latency=1.186ms coord=(144,333)
+[11/20 15:50:29.429] [DEBUG] [StandaloneWrapper] mousePressed event received at (95, 201)
+[11/20 15:50:29.429] [DEBUG] [Kernel] mousePressed at (95, 201)
+[11/20 15:50:29.430] [DEBUG] [Kernel] Forwarding mousePressed to ScreenManager
+[11/20 15:50:29.499] [DEBUG] [StandaloneWrapper] mouseReleased event received at (95, 201)
+[11/20 15:50:29.500] [DEBUG] [Kernel] mouseReleased at (95, 201)
+[11/20 15:50:29.503] [DEBUG] [ScreenManager] Previous screen moved to background: Home Screen
+[11/20 15:50:29.504] [INFO] [ChromiumManager] Creating ChromiumBrowser: https://www.google.com (380x480)
+[11/20 15:50:29.524] [INFO] [ChromiumAppHandler] Registering custom scheme: httpm://
+[11/20 15:50:29.526] [INFO] [ChromiumAppHandler] httpm:// scheme registered successfully
+[11/20 15:50:29.862] [INFO] [ChromiumAppHandler] Context initialized, registering scheme handler factory
+[11/20 15:50:29.864] [INFO] [ChromiumAppHandler] HttpmSchemeHandlerFactory registered for httpm://
+[11/20 15:50:29.892] [ERROR] [ChromiumBrowser] Failed to set windowless frame rate: class jp.moyashi.phoneos.core.service.chromium.ChromiumBrowser cannot access a member of class org.cef.browser.CefBrowser_N with modifiers "public"
+[11/20 15:50:29.894] [DEBUG] [ScreenManager] New screen moved to foreground: Chromium Browser
+[11/20 15:50:29.895] [DEBUG] [ScreenManager] Screen analysis - Title: 'Chromium Browser', ClassName: 'ChromiumBrowserScreen', isLauncher: false
+[11/20 15:50:29.895] [DEBUG] [ScreenManager] Added APPLICATION layer to Kernel stack for screen: Chromium Browser
+[11/20 15:50:29.896] [DEBUG] [ScreenManager] Pushed screen - Chromium Browser
+[11/20 15:50:29.896] [WARN] [GestureInput] gesture TAP:HomeScreen latency=395.424ms coord=(95,201)
+[11/20 15:50:29.897] [DEBUG] [GestureManager] Dispatch gesture TAP handledIndex=1 listeners=4
+[11/20 15:50:29.897] [WARN] [GestureInput] gesture dispatchTotal latency=396.631ms coord=(95,201)
+[11/20 15:50:29.898] [WARN] [GestureInput] mouseReleased dispatch latency=397.277ms coord=(95,201)
+[11/20 15:50:29.898] [WARN] [KernelInput] mouseReleased gesture latency=398.026ms coord=(95,201)
+[11/20 15:50:29.898] [DEBUG] [Kernel] Forwarding mouseReleased to ScreenManager
+[11/20 15:50:29.899] [DEBUG] [KernelInput] mouseReleased screen latency=1.048ms coord=(95,201)
+[11/20 15:50:29.899] [WARN] [KernelInput] mouseReleased total latency=399.423ms coord=(95,201)
+[11/20 15:50:30.207] [DEBUG] [ChromiumBrowser] Hidden JFrame configured: focusable=false, IME disabled on GLCanvas
+[11/20 15:50:30.479] [DEBUG] [ChromiumRenderHandler] Size difference: expected 380x480, got 1x1 - using received size
+[11/20 15:50:30.661] [DEBUG] [ChromiumBrowser] Text input focus detection script injected
+[11/20 15:50:32.079] [DEBUG] [Kernel] keyPressed - key=' ' (charCode=32), keyCode=0
+[11/20 15:50:32.079] [DEBUG] [ChromiumBrowser] Disposing ChromiumBrowser
+[11/20 15:50:32.088] [DEBUG] [ChromiumBrowser] Hidden JFrame disposed
+[11/20 15:50:32.090] [DEBUG] [ScreenManager] Removed APPLICATION layer from Kernel stack for screen: Chromium Browser
+[11/20 15:50:32.090] [DEBUG] [ScreenManager] New top screen moved to foreground: Home Screen
+[11/20 15:50:32.090] [DEBUG] [ScreenManager] Popped screen - Chromium Browser
+[11/20 15:50:32.091] [DEBUG] [GestureManager] Removed gesture listener HomeScreen
+[11/20 15:50:32.091] [INFO] [SensorManager] センサーリスナー解除: MochiOS Light Sensor
+[11/20 15:50:32.091] [INFO] [SensorManager] センサーリスナー解除: MochiOS Humidity Sensor
+[11/20 15:50:32.092] [DEBUG] [ScreenManager] Popped screen - Home Screen
+[11/20 15:50:32.092] [DEBUG] [ScreenManager] All screens cleared
+[11/20 15:50:32.093] [DEBUG] [GestureManager] Added gesture listener HomeScreen (priority: 50)
+[11/20 15:50:32.093] [DEBUG] [GestureManager] Current listener order: NotificationManager(priority=900) -> HomeScreen(priority=50) -> ControlCenterManager(priority=0) -> Kernel(priority=-1000)
+[11/20 15:50:32.093] [INFO] [SensorManager] センサーリスナー登録: MochiOS Humidity Sensor, 200000us
+[11/20 15:50:32.093] [INFO] [SensorManager] センサーリスナー登録: MochiOS Light Sensor, 200000us
+[11/20 15:50:32.094] [DEBUG] [ScreenManager] New screen moved to foreground: Home Screen
+[11/20 15:50:32.094] [DEBUG] [ScreenManager] Screen analysis - Title: 'Home Screen', ClassName: 'HomeScreen', isLauncher: true
+[11/20 15:50:32.094] [DEBUG] [ScreenManager] Skipped APPLICATION layer addition - kernel=true, isLauncher=true
+[11/20 15:50:32.094] [DEBUG] [ScreenManager] Pushed screen - Home Screen
+[11/20 15:51:11.348] [DEBUG] [StandaloneWrapper] mousePressed event received at (82, 185)
+[11/20 15:51:11.349] [DEBUG] [Kernel] mousePressed at (82, 185)
+[11/20 15:51:11.350] [DEBUG] [Kernel] Forwarding mousePressed to ScreenManager
+[11/20 15:51:11.351] [DEBUG] [KernelInput] mousePressed total latency=1.246ms coord=(82,185)
+[11/20 15:51:11.420] [DEBUG] [StandaloneWrapper] mouseReleased event received at (82, 185)
+[11/20 15:51:11.421] [DEBUG] [Kernel] mouseReleased at (82, 185)
+[11/20 15:51:11.422] [DEBUG] [ScreenManager] Previous screen moved to background: Home Screen
+[11/20 15:51:11.423] [INFO] [ChromiumManager] Creating ChromiumBrowser: https://www.google.com (380x480)
+[11/20 15:51:11.424] [ERROR] [ChromiumBrowser] Failed to set windowless frame rate: class jp.moyashi.phoneos.core.service.chromium.ChromiumBrowser cannot access a member of class org.cef.browser.CefBrowser_N with modifiers "public"
+[11/20 15:51:11.425] [DEBUG] [ScreenManager] New screen moved to foreground: Chromium Browser
+[11/20 15:51:11.425] [DEBUG] [ScreenManager] Screen analysis - Title: 'Chromium Browser', ClassName: 'ChromiumBrowserScreen', isLauncher: false
+[11/20 15:51:11.426] [DEBUG] [ScreenManager] Added APPLICATION layer to Kernel stack for screen: Chromium Browser
+[11/20 15:51:11.426] [DEBUG] [ScreenManager] Pushed screen - Chromium Browser
+[11/20 15:51:11.427] [DEBUG] [GestureManager] Dispatch gesture TAP handledIndex=1 listeners=4
+[11/20 15:51:11.427] [WARN] [KernelInput] mouseReleased gesture latency=5.793ms coord=(82,185)
+[11/20 15:51:11.427] [DEBUG] [Kernel] Forwarding mouseReleased to ScreenManager
+[11/20 15:51:11.428] [WARN] [KernelInput] mouseReleased total latency=6.582ms coord=(82,185)
+[11/20 15:51:11.630] [DEBUG] [ChromiumBrowser] Hidden JFrame configured: focusable=false, IME disabled on GLCanvas
+[11/20 15:51:11.713] [DEBUG] [ChromiumRenderHandler] Size difference: expected 380x480, got 1x1 - using received size
+[11/20 15:51:11.740] [DEBUG] [ChromiumRenderHandler] Size difference: expected 380x480, got 2x2 - using received size
+[11/20 15:51:11.832] [DEBUG] [ChromiumBrowser] Text input focus detection script injected
+[11/20 15:51:13.060] [DEBUG] [StandaloneWrapper] mousePressed event received at (308, 576)
+[11/20 15:51:13.060] [DEBUG] [Kernel] mousePressed at (308, 576)
+[11/20 15:51:13.060] [DEBUG] [Kernel] Forwarding mousePressed to ScreenManager
+[11/20 15:51:13.160] [DEBUG] [StandaloneWrapper] mouseReleased event received at (308, 576)
+[11/20 15:51:13.160] [DEBUG] [Kernel] mouseReleased at (308, 576)
+[11/20 15:51:13.161] [DEBUG] [GestureManager] Dispatch gesture TAP handledIndex=-1 listeners=4
+[11/20 15:51:13.161] [DEBUG] [Kernel] Forwarding mouseReleased to ScreenManager
+[11/20 15:51:13.968] [DEBUG] [StandaloneWrapper] mousePressed event received at (297, 576)
+[11/20 15:51:13.969] [DEBUG] [Kernel] mousePressed at (297, 576)
+[11/20 15:51:13.969] [DEBUG] [Kernel] Forwarding mousePressed to ScreenManager
+[11/20 15:51:14.035] [DEBUG] [StandaloneWrapper] mouseReleased event received at (297, 576)
+[11/20 15:51:14.036] [DEBUG] [Kernel] mouseReleased at (297, 576)
+[11/20 15:51:14.036] [DEBUG] [GestureManager] Dispatch gesture TAP handledIndex=-1 listeners=4
+[11/20 15:51:14.036] [DEBUG] [Kernel] Forwarding mouseReleased to ScreenManager
+[11/20 15:51:14.120] [DEBUG] [StandaloneWrapper] mousePressed event received at (297, 576)
+[11/20 15:51:14.120] [DEBUG] [Kernel] mousePressed at (297, 576)
+[11/20 15:51:14.121] [DEBUG] [Kernel] Forwarding mousePressed to ScreenManager
+[11/20 15:51:14.202] [DEBUG] [StandaloneWrapper] mouseReleased event received at (297, 576)
+[11/20 15:51:14.202] [DEBUG] [Kernel] mouseReleased at (297, 576)
+[11/20 15:51:14.202] [DEBUG] [GestureManager] Dispatch gesture TAP handledIndex=-1 listeners=4
+[11/20 15:51:14.204] [DEBUG] [KernelInput] mouseReleased gesture latency=1.328ms coord=(297,576)
+[11/20 15:51:14.204] [DEBUG] [Kernel] Forwarding mouseReleased to ScreenManager
+[11/20 15:51:14.204] [DEBUG] [KernelInput] mouseReleased total latency=1.933ms coord=(297,576)
+[11/20 15:51:16.099] [DEBUG] [StandaloneWrapper] mousePressed event received at (297, 572)
+[11/20 15:51:16.100] [DEBUG] [Kernel] mousePressed at (297, 572)
+[11/20 15:51:16.100] [DEBUG] [Kernel] Forwarding mousePressed to ScreenManager
+[11/20 15:51:16.198] [DEBUG] [StandaloneWrapper] mouseReleased event received at (297, 572)
+[11/20 15:51:16.198] [DEBUG] [Kernel] mouseReleased at (297, 572)
+[11/20 15:51:16.199] [DEBUG] [GestureManager] Dispatch gesture TAP handledIndex=-1 listeners=4
+[11/20 15:51:16.199] [DEBUG] [Kernel] Forwarding mouseReleased to ScreenManager
+[11/20 15:51:16.202] [DEBUG] [KernelInput] mouseReleased screen latency=2.943ms coord=(297,572)
+[11/20 15:51:16.202] [DEBUG] [KernelInput] mouseReleased total latency=3.938ms coord=(297,572)
+[11/20 15:51:16.814] [DEBUG] [StandaloneWrapper] mousePressed event received at (213, 577)
+[11/20 15:51:16.814] [DEBUG] [Kernel] mousePressed at (213, 577)
+[11/20 15:51:16.815] [DEBUG] [Kernel] Forwarding mousePressed to ScreenManager
+[11/20 15:51:16.929] [DEBUG] [StandaloneWrapper] mouseReleased event received at (213, 577)
+[11/20 15:51:16.930] [DEBUG] [Kernel] mouseReleased at (213, 577)
+[11/20 15:51:16.930] [DEBUG] [GestureManager] Dispatch gesture TAP handledIndex=-1 listeners=4
+[11/20 15:51:16.930] [DEBUG] [Kernel] Forwarding mouseReleased to ScreenManager
+[11/20 15:51:17.951] [DEBUG] [StandaloneWrapper] mousePressed event received at (182, 567)
+[11/20 15:51:17.952] [DEBUG] [Kernel] mousePressed at (182, 567)
+[11/20 15:51:17.952] [DEBUG] [Kernel] Forwarding mousePressed to ScreenManager
+[11/20 15:51:18.032] [DEBUG] [StandaloneWrapper] mouseReleased event received at (182, 567)
+[11/20 15:51:18.032] [DEBUG] [Kernel] mouseReleased at (182, 567)
+[11/20 15:51:18.033] [DEBUG] [GestureManager] Dispatch gesture TAP handledIndex=-1 listeners=4
+[11/20 15:51:18.033] [DEBUG] [Kernel] Forwarding mouseReleased to ScreenManager
+[11/20 15:51:18.943] [DEBUG] [StandaloneWrapper] mousePressed event received at (382, 577)
+[11/20 15:51:18.943] [DEBUG] [Kernel] mousePressed at (382, 577)
+[11/20 15:51:18.944] [DEBUG] [Kernel] Forwarding mousePressed to ScreenManager
+[11/20 15:51:19.059] [DEBUG] [StandaloneWrapper] mouseReleased event received at (382, 577)
+[11/20 15:51:19.059] [DEBUG] [Kernel] mouseReleased at (382, 577)
+[11/20 15:51:19.060] [DEBUG] [GestureManager] Dispatch gesture TAP handledIndex=-1 listeners=4
+[11/20 15:51:19.060] [DEBUG] [Kernel] Forwarding mouseReleased to ScreenManager
+[11/20 15:52:10.486] [WARN] [ChromiumPump] MessageLoopWork took 74.941ms
+[11/20 15:52:18.732] [DEBUG] [ChromiumBrowser] Disposing ChromiumBrowser
+[11/20 15:52:18.735] [DEBUG] [ChromiumBrowser] Hidden JFrame disposed
+[11/20 15:52:18.736] [INFO] [ChromiumManager] Shutting down Chromium...
+[11/20 15:52:18.736] [INFO] [ChromiumManager] Chromium shutdown complete
