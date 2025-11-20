@@ -19,25 +19,34 @@ public interface ChromiumService {
     void initialize(Kernel kernel) throws Exception;
 
     /**
-     * サーフェスを生成します。
+     * 新しいタブ（サーフェス）を作成します。
      *
-     * @param surfaceId   一意なサーフス ID
      * @param width       初期幅
      * @param height      初期高さ
      * @param initialUrl  初期表示する URL（任意）
      * @return 作成されたサーフス
      */
-    ChromiumSurface createSurface(String surfaceId, int width, int height, String initialUrl);
+    ChromiumSurface createTab(int width, int height, String initialUrl);
 
     /**
-     * サーフスを破棄します。
+     * タブ（サーフェス）を破棄します。
      */
-    void destroySurface(String surfaceId);
+    void closeTab(String surfaceId);
 
     /**
      * サーフスを検索します。
      */
     Optional<ChromiumSurface> findSurface(String surfaceId);
+
+    /**
+     * アクティブなサーフェスを取得します。
+     */
+    Optional<ChromiumSurface> getActiveSurface();
+
+    /**
+     * アクティブなサーフェスを設定します。
+     */
+    void setActiveSurface(String surfaceId);
 
     /**
      * 定期更新処理。バックグラウンドポンプを使用する実装では no-op の場合があります。

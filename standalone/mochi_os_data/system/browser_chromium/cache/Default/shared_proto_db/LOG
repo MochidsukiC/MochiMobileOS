@@ -1,2 +1,3 @@
-2025/11/20-15:50:29.876 9a219a Creating DB /Users/soma/IdeaProjects/MochiMobileOS/standalone/mochi_os_data/system/browser_chromium/cache/Default/shared_proto_db since it was missing.
-2025/11/20-15:50:29.877 9a219a Reusing MANIFEST /Users/soma/IdeaProjects/MochiMobileOS/standalone/mochi_os_data/system/browser_chromium/cache/Default/shared_proto_db/MANIFEST-000001
+2025/11/20-16:25:17.144 9ae163 Reusing MANIFEST /Users/soma/IdeaProjects/MochiMobileOS/standalone/mochi_os_data/system/browser_chromium/cache/Default/shared_proto_db/MANIFEST-000001
+2025/11/20-16:25:17.144 9ae163 Recovering log #3
+2025/11/20-16:25:17.145 9ae163 Reusing old log /Users/soma/IdeaProjects/MochiMobileOS/standalone/mochi_os_data/system/browser_chromium/cache/Default/shared_proto_db/000003.log 
