@@ -131,15 +131,34 @@ public class StandaloneChromiumProvider implements ChromiumProvider {
             // 背景フレームレート制限を解除（YouTube動画再生時のスムーズさ向上）
             // settings.background_color = 0xFFFFFFFF; // 白背景（ColorType型のため直接設定不可）
 
-            // コマンドラインスイッチでGPU/ハードウェアアクセラレーション有効化
-            builder.addJcefArgs("--enable-gpu");
-            builder.addJcefArgs("--enable-accelerated-video-decode");
-            builder.addJcefArgs("--enable-accelerated-2d-canvas");
+            // Mac環境特有の問題に対処（コード署名エラー回避）
+            String osName = System.getProperty("os.name").toLowerCase();
+            boolean isMac = osName.contains("mac");
+
+            if (isMac) {
+                System.out.println("[StandaloneChromiumProvider] Detected Mac - applying workarounds for code signing issues");
+                // Macでのコード署名エラーを回避（サンドボックス無効化のみ）
+                builder.addJcefArgs("--no-sandbox");
+                builder.addJcefArgs("--disable-gpu-sandbox");
+                // SSL/TLS関連のエラーを回避（大学ネットワーク等の特殊環境対応）
+                builder.addJcefArgs("--ignore-certificate-errors");
+                // GPU加速は必須なので維持
+                builder.addJcefArgs("--enable-gpu");
+                builder.addJcefArgs("--enable-accelerated-video-decode");
+                builder.addJcefArgs("--enable-accelerated-2d-canvas");
+                System.out.println("[StandaloneChromiumProvider] GPU acceleration enabled (sandboxes disabled for Mac compatibility)");
+            } else {
+                // Windows/その他のプラットフォームでは従来通りの設定（サンドボックス有効）
+                builder.addJcefArgs("--enable-gpu");
+                builder.addJcefArgs("--enable-accelerated-video-decode");
+                builder.addJcefArgs("--enable-accelerated-2d-canvas");
+                System.out.println("[StandaloneChromiumProvider] GPU acceleration enabled");
+            }
+
+            // 共通設定（全プラットフォーム）
             builder.addJcefArgs("--disable-gpu-vsync"); // VSync無効化でフレームレート向上
             builder.addJcefArgs("--max-fps=60"); // 最大60FPS
             builder.addJcefArgs("--disable-frame-rate-limit"); // フレームレート制限解除
-
-            System.out.println("[StandaloneChromiumProvider] GPU acceleration enabled");
 
             // JCEFをビルドして初期化
             CefApp cefApp = builder.build();

@@ -289,6 +289,9 @@ public class StandaloneWrapper extends PApplet {
     @Override
     public void mousePressed() {
         if (kernel != null) {
+            if (kernel.getLogger() != null) {
+                kernel.getLogger().debug("StandaloneWrapper", "mousePressed event received at (" + mouseX + ", " + mouseY + ")");
+            }
             kernel.mousePressed(mouseX, mouseY);
         }
     }
@@ -299,6 +302,9 @@ public class StandaloneWrapper extends PApplet {
     @Override
     public void mouseReleased() {
         if (kernel != null) {
+            if (kernel.getLogger() != null) {
+                kernel.getLogger().debug("StandaloneWrapper", "mouseReleased event received at (" + mouseX + ", " + mouseY + ")");
+            }
             kernel.mouseReleased(mouseX, mouseY);
         }
     }
@@ -312,6 +318,9 @@ public class StandaloneWrapper extends PApplet {
     @Override
     public void mouseDragged() {
         if (kernel != null) {
+            if (kernel.getLogger() != null) {
+                kernel.getLogger().debug("StandaloneWrapper", "mouseDragged event received at (" + mouseX + ", " + mouseY + ")");
+            }
             kernel.mouseDragged(mouseX, mouseY);
         }
     }
