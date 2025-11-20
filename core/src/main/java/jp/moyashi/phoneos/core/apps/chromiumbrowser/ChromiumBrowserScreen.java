@@ -220,13 +220,6 @@ public class ChromiumBrowserScreen implements Screen {
         // All surfaces are destroyed by ChromiumService on shutdown
     }
 
-    private Optional<ChromiumSurface> getActiveBrowserSurface() {
-        if (kernel != null && kernel.getChromiumService() != null) {
-            return kernel.getChromiumService().getActiveSurface();
-        }
-        return Optional.empty();
-    }
-
     @Override
     public String getScreenTitle() {
         return "Chromium Browser";
@@ -237,4 +230,81 @@ public class ChromiumBrowserScreen implements Screen {
 
     @Override
     public void onBackground() {}
+
+    @Override
+    public void mousePressed(PGraphics g, int mouseX, int mouseY) {
+        if (backButton.onMousePressed(mouseX, mouseY)) return;
+        if (forwardButton.onMousePressed(mouseX, mouseY)) return;
+        if (reloadButton.onMousePressed(mouseX, mouseY)) return;
+        if (newTabButton.onMousePressed(mouseX, mouseY)) return;
+        if (tabListButton.onMousePressed(mouseX, mouseY)) return;
+        
+        if (!isEditingUrl && mouseX > 10 && mouseX < g.width - 70 && mouseY > 5 && mouseY < 45) {
+            isEditingUrl = true;
+            addressBar.setVisible(true);
+            addressBar.setFocused(true);
+            getActiveBrowserSurface().ifPresent(s -> addressBar.setText(s.getCurrentUrl()));
+            return;
+        }
+
+        if (isEditingUrl && addressBar.onMousePressed(mouseX, mouseY)) return;
+
+        if (isEditingUrl && !addressBar.contains(mouseX, mouseY)) {
+            isEditingUrl = false;
+            addressBar.setVisible(false);
+            addressBar.setFocused(false);
+        }
+
+        getActiveBrowserSurface().ifPresent(s -> s.sendMousePressed(mouseX - 10, mouseY - 60, 0));
+    }
+
+    @Override
+    public void mouseReleased(PGraphics g, int mouseX, int mouseY) {
+        if (backButton.onMouseReleased(mouseX, mouseY)) return;
+        if (forwardButton.onMouseReleased(mouseX, mouseY)) return;
+        if (reloadButton.onMouseReleased(mouseX, mouseY)) return;
+        if (newTabButton.onMouseReleased(mouseX, mouseY)) return;
+        if (tabListButton.onMouseReleased(mouseX, mouseY)) return;
+        if (isEditingUrl) addressBar.onMouseReleased(mouseX, mouseY);
+        
+        getActiveBrowserSurface().ifPresent(s -> s.sendMouseReleased(mouseX - 10, mouseY - 60, 0));
+    }
+
+    @Override
+    public void mouseDragged(PGraphics g, int mouseX, int mouseY) {
+        if (isEditingUrl) addressBar.onMouseDragged(mouseX, mouseY);
+        getActiveBrowserSurface().ifPresent(s -> s.sendMouseMoved(mouseX - 10, mouseY - 60));
+    }
+    
+    @Override
+    public void mouseMoved(PGraphics g, int mouseX, int mouseY) {
+        backButton.onMouseMoved(mouseX, mouseY);
+        forwardButton.onMouseMoved(mouseX, mouseY);
+        reloadButton.onMouseMoved(mouseX, mouseY);
+        newTabButton.onMouseMoved(mouseX, mouseY);
+        tabListButton.onMouseMoved(mouseX, mouseY);
+        if (isEditingUrl) addressBar.onMouseMoved(mouseX, mouseY);
+    }
+    
+    public void keyPressed(PGraphics g, char key, int keyCode) {
+        if (isEditingUrl) {
+            if (keyCode == PApplet.ENTER || keyCode == PApplet.RETURN) {
+                getActiveBrowserSurface().ifPresent(s -> s.loadUrl(addressBar.getText()));
+                isEditingUrl = false;
+                addressBar.setFocused(false);
+                addressBar.setVisible(false);
+            } else {
+                addressBar.onKeyPressed(key, keyCode);
+            }
+        } else {
+            getActiveBrowserSurface().ifPresent(s -> s.sendKeyPressed(keyCode, key));
+        }
+    }
+    
+    private Optional<ChromiumSurface> getActiveBrowserSurface() {
+        if (kernel != null && kernel.getChromiumService() != null) {
+            return kernel.getChromiumService().getActiveSurface();
+        }
+        return Optional.empty();
+    }
 }
