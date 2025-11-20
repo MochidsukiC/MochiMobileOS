@@ -301,9 +301,11 @@ public class HomeScreen implements Screen, GestureListener, SensorEventListener 
             // Draw page indicator dots
             drawPageIndicators(g);
 
-            // Draw new dashboard cards
-            drawClockAndWeatherCard(g);
-            drawSearchCard(g);
+            // Draw new dashboard cards only on the first page
+            if (currentPageIndex == 0 && !isAnimating) {
+                drawClockAndWeatherCard(g);
+                drawSearchCard(g);
+            }
 
         } catch (Exception e) {
             System.err.println("❁EHomeScreen: Draw error (PGraphics) - " + e.getMessage());
@@ -1200,7 +1202,7 @@ public class HomeScreen implements Screen, GestureListener, SensorEventListener 
             if (page.isAppLibraryPage()) {
                 drawAppLibraryPage(g, page);
             } else {
-                drawNormalPage(g, page);
+                drawNormalPage(g, page, i);
             }
             
             g.popMatrix();
@@ -1243,9 +1245,9 @@ public class HomeScreen implements Screen, GestureListener, SensorEventListener 
      * @param p The PApplet instance for drawing
      * @param page The page to draw
      */
-    private void drawNormalPage(PGraphics g, HomePage page) {
+    private void drawNormalPage(PGraphics g, HomePage page, int pageIndex) {
         // 通常のペEジ描画処理
-        int startY = 80; // Below status bar
+        int startY = (pageIndex == 0) ? 230 : 80; // Adjust startY for the first page (dashboard)
         int gridWidth = GRID_COLS * (ICON_SIZE + ICON_SPACING) - ICON_SPACING;
         int startX = (400 - gridWidth) / 2; // Center the grid
         
