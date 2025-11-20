@@ -2,6 +2,12 @@
   "pages": [
     {
       "pageIndex": 0,
+      "pageName": "Dashboard",
+      "pageType": "NORMAL",
+      "shortcuts": []
+    },
+    {
+      "pageIndex": 1,
       "pageName": "Home",
       "pageType": "NORMAL",
       "shortcuts": [

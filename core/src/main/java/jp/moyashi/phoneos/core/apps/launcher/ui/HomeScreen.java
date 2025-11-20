@@ -283,15 +283,8 @@ public class HomeScreen implements Screen, GestureListener, SensorEventListener 
             // Draw status bar
             drawStatusBar(g);
 
-            if (currentPageIndex == 0) {
-                // --- Dashboard Page ---
-                if (!isAnimating) {
-                    drawDashboard(g);
-                }
-            } else {
-                // --- App Grid Pages ---
-                drawPagesWithTransition(g);
-            }
+            // Draw pages (including dashboard) with transition animation
+            drawPagesWithTransition(g);
 
             // Draw navigation area
             drawNavigationArea(g);
@@ -1192,7 +1185,10 @@ public class HomeScreen implements Screen, GestureListener, SensorEventListener 
             g.translate(i * 400, 0); // 合EEージめE00px間隔で配置
             
             HomePage page = homePages.get(i);
-            if (page.isAppLibraryPage()) {
+            
+            if (i == 0) { // The dashboard page
+                drawDashboard(g);
+            } else if (page.isAppLibraryPage()) {
                 drawAppLibraryPage(g, page);
             } else {
                 drawNormalPage(g, page, i);
@@ -1239,9 +1235,8 @@ public class HomeScreen implements Screen, GestureListener, SensorEventListener 
      * @param page The page to draw
      */
     private void drawNormalPage(PGraphics g, HomePage page, int pageIndex) {
-        if ("Dashboard".equals(page.getPageName())) return;
-        // 通常のペEジ描画処理
-        int startY = (pageIndex == 0) ? 230 : 80; // Adjust startY for the first page (dashboard)
+        // This method is now only called for app grid pages (pageIndex > 0)
+        int startY = 80; // Below status bar
         int gridWidth = GRID_COLS * (ICON_SIZE + ICON_SPACING) - ICON_SPACING;
         int startX = (400 - gridWidth) / 2; // Center the grid
         
