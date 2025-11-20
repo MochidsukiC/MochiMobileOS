@@ -1,0 +1,47 @@
+{
+  "pages": [
+    {
+      "pageIndex": 0,
+      "pageName": "Home",
+      "pageType": "NORMAL",
+      "shortcuts": [
+        {
+          "applicationId": "jp.moyashi.phoneos.core.apps.settings",
+          "gridX": 0,
+          "gridY": 0
+        },
+        {
+          "applicationId": "jp.moyashi.phoneos.calculator",
+          "gridX": 1,
+          "gridY": 0
+        },
+        {
+          "applicationId": "jp.moyashi.phoneos.core.apps.network",
+          "gridX": 2,
+          "gridY": 0
+        },
+        {
+          "applicationId": "jp.moyashi.phoneos.core.apps.hardware_test",
+          "gridX": 3,
+          "gridY": 0
+        },
+        {
+          "applicationId": "jp.moyashi.phoneos.core.apps.voicememo.voicememoapp",
+          "gridX": 0,
+          "gridY": 1
+        },
+        {
+          "applicationId": "jp.moyashi.phoneos.core.apps.note.noteapp",
+          "gridX": 1,
+          "gridY": 1
+        },
+        {
+          "applicationId": "jp.moyashi.phoneos.core.apps.chromiumbrowser",
+          "gridX": 2,
+          "gridY": 1
+        }
+      ]
+    }
+  ],
+  "dockShortcuts": []
+}

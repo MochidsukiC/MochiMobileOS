@@ -1,0 +1,155 @@
+[11/20 14:48:32.033] [INFO] [LoggerService] Logger service initialized
+[11/20 14:48:32.036] [INFO] [LoggerService] Log level set to DEBUG
+[11/20 14:48:32.036] [INFO] [Kernel] === MochiMobileOS カーネル初期化開始 ===
+[11/20 14:48:32.036] [INFO] [Kernel] 画面サイズ: 400x600
+[11/20 14:48:32.037] [INFO] [Kernel] サービスマネージャー初期化完了
+[11/20 14:48:32.037] [INFO] [Kernel] 日本語フォントを初期化中...
+[11/20 14:48:32.037] [DEBUG] [Kernel] リソースからNoto Sans JP TTFファイルを読み込み中...
+[11/20 14:48:32.038] [DEBUG] [Kernel] Kernelクラスのクラスローダーからフォントを読み込みました
+[11/20 14:48:32.082] [DEBUG] [Kernel] AWTフォントを作成しました: Noto Sans JP Thin
+[11/20 14:48:32.841] [INFO] [Kernel] フォントをシステムに登録しました: Noto Sans JP Thin
+[11/20 14:48:32.842] [DEBUG] [Kernel] AWT FontからPFontを直接構築中... (フォント名: Noto Sans JP Thin)
+[11/20 14:48:32.850] [INFO] [Kernel] PFontを作成しました (サイズ: 16、フォント名: Noto Sans JP Thin)
+[11/20 14:48:32.851] [INFO] [Kernel] 日本語フォント (Noto Sans JP) を正常に読み込みました
+[11/20 14:48:32.868] [DEBUG] [GestureManager] Gesture system initialized
+[11/20 14:48:32.874] [INFO] [ChromiumManager] ChromiumProvider set: jcefmaven (Standalone)
+[11/20 14:48:32.874] [INFO] [ChromiumManager] Initializing Chromium with provider: jcefmaven (Standalone)
+[11/20 14:48:32.926] [INFO] [ChromiumManager] Chromium initialized successfully
+[11/20 14:48:32.926] [INFO] [ChromiumManager] Chromium version: JCEF Version = 135.0.20.333
+CEF Version = 135.0.20
+Chromium Version = 135.0.7049.85
+[11/20 14:48:32.927] [INFO] [Kernel] ChromiumService初期化完了
+[11/20 14:48:32.927] [INFO] [Kernel] パーミッション管理サービス初期化完了
+[11/20 14:48:32.928] [INFO] [Kernel] アクティビティ管理サービス初期化完了
+[11/20 14:48:32.929] [INFO] [ClipboardManager] 初期化: AWTClipboardProvider (利用可能: true)
+[11/20 14:48:32.929] [INFO] [Kernel] クリップボード管理サービス初期化完了
+[11/20 14:48:32.929] [INFO] [SensorManager] デフォルトセンサーを初期化: 9個
+[11/20 14:48:32.930] [INFO] [Kernel] センサー管理サービス初期化完了
+[11/20 14:48:32.930] [DEBUG] [GestureManager] Added gesture listener ControlCenterManager (priority: 0)
+[11/20 14:48:32.931] [DEBUG] [GestureManager] Current listener order: ControlCenterManager(priority=0)
+[11/20 14:48:32.931] [DEBUG] [GestureManager] Added gesture listener NotificationManager (priority: 900)
+[11/20 14:48:32.931] [DEBUG] [GestureManager] Current listener order: NotificationManager(priority=900) -> ControlCenterManager(priority=0)
+[11/20 14:48:32.931] [DEBUG] [GestureManager] Added gesture listener Kernel (priority: -1000)
+[11/20 14:48:32.932] [DEBUG] [GestureManager] Current listener order: NotificationManager(priority=900) -> ControlCenterManager(priority=0) -> Kernel(priority=-1000)
+[11/20 14:48:32.934] [DEBUG] [ScreenManager] Kernel reference set for layer management integration
+[11/20 14:48:32.934] [DEBUG] [ScreenManager] PAppletを設定 - 成功
+[11/20 14:48:32.935] [DEBUG] [GestureManager] Added gesture listener LockScreen (priority: 8000)
+[11/20 14:48:32.936] [DEBUG] [GestureManager] Current listener order: LockScreen(priority=8000) -> NotificationManager(priority=900) -> ControlCenterManager(priority=0) -> Kernel(priority=-1000)
+[11/20 14:48:32.936] [DEBUG] [ScreenManager] New screen moved to foreground: Lock Screen
+[11/20 14:48:32.936] [DEBUG] [ScreenManager] Screen analysis - Title: 'Lock Screen', ClassName: 'LockScreen', isLauncher: true
+[11/20 14:48:32.936] [DEBUG] [ScreenManager] Skipped APPLICATION layer addition - kernel=true, isLauncher=true
+[11/20 14:48:32.937] [DEBUG] [ScreenManager] Pushed screen - Lock Screen
+[11/20 14:48:32.937] [INFO] [StandaloneWrapper] Instrumented AWT EventQueue installed
+[11/20 14:48:34.151] [DEBUG] [StandaloneWrapper] mousePressed event received at (168, 362)
+[11/20 14:48:34.151] [DEBUG] [Kernel] mousePressed at (168, 362)
+[11/20 14:48:34.152] [DEBUG] [Kernel] Forwarding mousePressed to ScreenManager
+[11/20 14:48:34.257] [DEBUG] [StandaloneWrapper] mouseReleased event received at (168, 362)
+[11/20 14:48:34.258] [DEBUG] [Kernel] mouseReleased at (168, 362)
+[11/20 14:48:34.262] [DEBUG] [GestureManager] Dispatch gesture TAP handledIndex=0 listeners=4
+[11/20 14:48:34.263] [WARN] [KernelInput] mouseReleased gesture latency=5.138ms coord=(168,362)
+[11/20 14:48:34.263] [DEBUG] [Kernel] Forwarding mouseReleased to ScreenManager
+[11/20 14:48:34.264] [WARN] [KernelInput] mouseReleased total latency=6.030ms coord=(168,362)
+[11/20 14:48:34.483] [DEBUG] [StandaloneWrapper] mousePressed event received at (168, 362)
+[11/20 14:48:34.483] [DEBUG] [Kernel] mousePressed at (168, 362)
+[11/20 14:48:34.484] [DEBUG] [Kernel] Forwarding mousePressed to ScreenManager
+[11/20 14:48:34.519] [DEBUG] [StandaloneWrapper] mouseReleased event received at (168, 362)
+[11/20 14:48:34.519] [DEBUG] [Kernel] mouseReleased at (168, 362)
+[11/20 14:48:34.520] [DEBUG] [GestureManager] Dispatch gesture TAP handledIndex=0 listeners=4
+[11/20 14:48:34.520] [DEBUG] [Kernel] Forwarding mouseReleased to ScreenManager
+[11/20 14:48:34.807] [DEBUG] [Kernel] keyPressed - key=' ' (charCode=32), keyCode=0
+[11/20 14:48:34.807] [DEBUG] [ScreenManager] Space key with focused component - forwarding to screen
+[11/20 14:48:35.595] [DEBUG] [StandaloneWrapper] mousePressed event received at (116, 308)
+[11/20 14:48:35.595] [DEBUG] [Kernel] mousePressed at (116, 308)
+[11/20 14:48:35.596] [DEBUG] [Kernel] Forwarding mousePressed to ScreenManager
+[11/20 14:48:35.684] [DEBUG] [StandaloneWrapper] mouseDragged event received at (116, 309)
+[11/20 14:48:35.684] [DEBUG] [StandaloneWrapper] mouseDragged event received at (116, 311)
+[11/20 14:48:35.702] [DEBUG] [StandaloneWrapper] mouseDragged event received at (116, 320)
+[11/20 14:48:35.704] [DEBUG] [GestureManager] Dispatch gesture DRAG_START handledIndex=0 listeners=4
+[11/20 14:48:35.704] [DEBUG] [KernelInput] mouseDragged gesture latency=1.111ms coord=(116,320)
+[11/20 14:48:35.705] [DEBUG] [KernelInput] mouseDragged total latency=1.536ms coord=(116,320)
+[11/20 14:48:35.742] [DEBUG] [StandaloneWrapper] mouseDragged event received at (116, 336)
+[11/20 14:48:35.743] [DEBUG] [StandaloneWrapper] mouseDragged event received at (116, 355)
+[11/20 14:48:35.759] [DEBUG] [StandaloneWrapper] mouseDragged event received at (116, 377)
+[11/20 14:48:35.780] [DEBUG] [StandaloneWrapper] mouseDragged event received at (116, 398)
+[11/20 14:48:35.795] [DEBUG] [StandaloneWrapper] mouseDragged event received at (116, 416)
+[11/20 14:48:35.812] [DEBUG] [StandaloneWrapper] mouseDragged event received at (116, 430)
+[11/20 14:48:35.813] [DEBUG] [StandaloneWrapper] mouseDragged event received at (116, 442)
+[11/20 14:48:35.848] [DEBUG] [StandaloneWrapper] mouseDragged event received at (116, 451)
+[11/20 14:48:35.849] [DEBUG] [StandaloneWrapper] mouseDragged event received at (116, 456)
+[11/20 14:48:35.885] [DEBUG] [StandaloneWrapper] mouseDragged event received at (116, 459)
+[11/20 14:48:35.886] [DEBUG] [StandaloneWrapper] mouseDragged event received at (116, 461)
+[11/20 14:48:35.915] [DEBUG] [StandaloneWrapper] mouseDragged event received at (116, 462)
+[11/20 14:48:35.987] [DEBUG] [StandaloneWrapper] mouseDragged event received at (116, 463)
+[11/20 14:48:36.022] [DEBUG] [StandaloneWrapper] mouseDragged event received at (117, 463)
+[11/20 14:48:36.041] [DEBUG] [StandaloneWrapper] mouseDragged event received at (120, 464)
+[11/20 14:48:36.059] [DEBUG] [StandaloneWrapper] mouseDragged event received at (124, 466)
+[11/20 14:48:36.078] [DEBUG] [StandaloneWrapper] mouseDragged event received at (128, 469)
+[11/20 14:48:36.096] [DEBUG] [StandaloneWrapper] mouseDragged event received at (132, 471)
+[11/20 14:48:36.113] [DEBUG] [StandaloneWrapper] mouseDragged event received at (135, 473)
+[11/20 14:48:36.132] [DEBUG] [StandaloneWrapper] mouseDragged event received at (139, 475)
+[11/20 14:48:36.133] [DEBUG] [StandaloneWrapper] mouseDragged event received at (144, 476)
+[11/20 14:48:36.150] [DEBUG] [StandaloneWrapper] mouseDragged event received at (152, 477)
+[11/20 14:48:36.186] [DEBUG] [StandaloneWrapper] mouseDragged event received at (164, 477)
+[11/20 14:48:36.187] [DEBUG] [StandaloneWrapper] mouseDragged event received at (176, 477)
+[11/20 14:48:36.204] [DEBUG] [StandaloneWrapper] mouseDragged event received at (188, 477)
+[11/20 14:48:36.220] [DEBUG] [StandaloneWrapper] mouseDragged event received at (198, 477)
+[11/20 14:48:36.259] [DEBUG] [StandaloneWrapper] mouseDragged event received at (207, 477)
+[11/20 14:48:36.259] [DEBUG] [StandaloneWrapper] mouseDragged event received at (217, 476)
+[11/20 14:48:36.275] [DEBUG] [StandaloneWrapper] mouseDragged event received at (227, 475)
+[11/20 14:48:36.292] [DEBUG] [StandaloneWrapper] mouseDragged event received at (236, 475)
+[11/20 14:48:36.312] [DEBUG] [StandaloneWrapper] mouseDragged event received at (245, 475)
+[11/20 14:48:36.312] [DEBUG] [StandaloneWrapper] mouseDragged event received at (251, 475)
+[11/20 14:48:36.347] [DEBUG] [StandaloneWrapper] mouseDragged event received at (256, 475)
+[11/20 14:48:36.366] [DEBUG] [StandaloneWrapper] mouseDragged event received at (258, 475)
+[11/20 14:48:36.382] [DEBUG] [StandaloneWrapper] mouseDragged event received at (259, 475)
+[11/20 14:48:36.383] [DEBUG] [StandaloneWrapper] mouseDragged event received at (260, 475)
+[11/20 14:48:36.420] [DEBUG] [StandaloneWrapper] mouseDragged event received at (261, 475)
+[11/20 14:48:36.678] [DEBUG] [StandaloneWrapper] mouseReleased event received at (261, 475)
+[11/20 14:48:36.679] [DEBUG] [Kernel] mouseReleased at (261, 475)
+[11/20 14:48:36.679] [DEBUG] [GestureManager] Dispatch gesture DRAG_END handledIndex=0 listeners=4
+[11/20 14:48:36.679] [DEBUG] [Kernel] Forwarding mouseReleased to ScreenManager
+[11/20 14:48:37.188] [DEBUG] [GestureManager] Removed gesture listener LockScreen
+[11/20 14:48:37.188] [DEBUG] [ScreenManager] Popped screen - Lock Screen
+[11/20 14:48:37.195] [DEBUG] [GestureManager] Added gesture listener HomeScreen (priority: 50)
+[11/20 14:48:37.195] [DEBUG] [GestureManager] Current listener order: NotificationManager(priority=900) -> HomeScreen(priority=50) -> ControlCenterManager(priority=0) -> Kernel(priority=-1000)
+[11/20 14:48:37.196] [INFO] [SensorManager] センサーリスナー登録: MochiOS Humidity Sensor, 200000us
+[11/20 14:48:37.196] [INFO] [SensorManager] センサーリスナー登録: MochiOS Light Sensor, 200000us
+[11/20 14:48:37.196] [DEBUG] [ScreenManager] New screen moved to foreground: Home Screen
+[11/20 14:48:37.197] [DEBUG] [ScreenManager] Screen analysis - Title: 'Home Screen', ClassName: 'HomeScreen', isLauncher: true
+[11/20 14:48:37.197] [DEBUG] [ScreenManager] Skipped APPLICATION layer addition - kernel=true, isLauncher=true
+[11/20 14:48:37.197] [DEBUG] [ScreenManager] Pushed screen - Home Screen
+[11/20 14:48:38.480] [DEBUG] [StandaloneWrapper] mousePressed event received at (306, 357)
+[11/20 14:48:38.481] [DEBUG] [Kernel] mousePressed at (306, 357)
+[11/20 14:48:38.481] [DEBUG] [Kernel] Forwarding mousePressed to ScreenManager
+[11/20 14:48:38.583] [DEBUG] [StandaloneWrapper] mouseDragged event received at (305, 357)
+[11/20 14:48:38.600] [DEBUG] [StandaloneWrapper] mouseDragged event received at (295, 357)
+[11/20 14:48:38.602] [DEBUG] [GestureManager] Dispatch gesture DRAG_START handledIndex=-1 listeners=4
+[11/20 14:48:38.602] [DEBUG] [KernelInput] mouseDragged gesture latency=2.313ms coord=(295,357)
+[11/20 14:48:38.603] [DEBUG] [KernelInput] mouseDragged total latency=2.594ms coord=(295,357)
+[11/20 14:48:38.603] [DEBUG] [StandaloneWrapper] mouseDragged event received at (270, 357)
+[11/20 14:48:38.618] [DEBUG] [StandaloneWrapper] mouseDragged event received at (234, 357)
+[11/20 14:48:38.636] [DEBUG] [StandaloneWrapper] mouseDragged event received at (199, 357)
+[11/20 14:48:38.654] [DEBUG] [StandaloneWrapper] mouseDragged event received at (170, 356)
+[11/20 14:48:38.690] [DEBUG] [StandaloneWrapper] mouseDragged event received at (143, 351)
+[11/20 14:48:38.691] [DEBUG] [StandaloneWrapper] mouseReleased event received at (143, 351)
+[11/20 14:48:38.691] [DEBUG] [Kernel] mouseReleased at (143, 351)
+[11/20 14:48:38.692] [DEBUG] [GestureManager] Dispatch gesture DRAG_END handledIndex=1 listeners=4
+[11/20 14:48:38.693] [DEBUG] [GestureManager] Dispatch gesture SWIPE_LEFT handledIndex=1 listeners=4
+[11/20 14:48:38.693] [DEBUG] [KernelInput] mouseReleased gesture latency=2.094ms coord=(143,351)
+[11/20 14:48:38.693] [DEBUG] [Kernel] Forwarding mouseReleased to ScreenManager
+[11/20 14:48:38.694] [DEBUG] [KernelInput] mouseReleased total latency=2.641ms coord=(143,351)
+[11/20 14:48:39.418] [DEBUG] [StandaloneWrapper] mousePressed event received at (119, 359)
+[11/20 14:48:39.419] [DEBUG] [Kernel] mousePressed at (119, 359)
+[11/20 14:48:39.419] [DEBUG] [Kernel] Forwarding mousePressed to ScreenManager
+[11/20 14:48:39.505] [DEBUG] [StandaloneWrapper] mouseDragged event received at (123, 359)
+[11/20 14:48:39.522] [DEBUG] [StandaloneWrapper] mouseDragged event received at (134, 359)
+[11/20 14:48:39.522] [DEBUG] [GestureManager] Dispatch gesture DRAG_START handledIndex=1 listeners=4
+[11/20 14:48:39.556] [DEBUG] [StandaloneWrapper] mouseDragged event received at (158, 359)
+[11/20 14:48:39.557] [DEBUG] [StandaloneWrapper] mouseDragged event received at (185, 359)
+[11/20 14:48:39.575] [DEBUG] [StandaloneWrapper] mouseDragged event received at (206, 359)
+[11/20 14:48:39.593] [DEBUG] [StandaloneWrapper] mouseDragged event received at (225, 359)
+[11/20 14:48:39.610] [DEBUG] [StandaloneWrapper] mouseReleased event received at (225, 359)
+[11/20 14:48:39.610] [DEBUG] [Kernel] mouseReleased at (225, 359)
+[11/20 14:48:39.611] [DEBUG] [GestureManager] Dispatch gesture DRAG_END handledIndex=1 listeners=4
+[11/20 14:48:39.611] [DEBUG] [GestureManager] Dispatch gesture SWIPE_RIGHT handledIndex=1 listeners=4
+[11/20 14:48:39.611] [DEBUG] [Kernel] Forwarding mouseReleased to ScreenManager

@@ -258,6 +258,7 @@ public class HomeScreen implements Screen, GestureListener, SensorEventListener 
      *
      * @param g The PGraphics instance to draw to
      */
+    @Override
     public void draw(PGraphics g) {
         try {
             // 毎フレームチEEマ更新EE動Eり替え対応）
@@ -267,45 +268,36 @@ public class HomeScreen implements Screen, GestureListener, SensorEventListener 
                 this.textColor = theme.colorOnSurface();
                 this.accentColor = theme.colorPrimary();
             }
-            // DEBUGログは無効化（パフォーマンス向上EためEE
-            // ペEジタイプに応じた背景処理
-            HomePage currentPage = getCurrentPage();
+            
+            // Draw background
             int bg = backgroundColor;
-            int br = (bg>>16)&0xFF, gr = (bg>>8)&0xFF, bb = bg&0xFF;
-            if (backgroundImage != null && (currentPage == null || !currentPage.isAppLibraryPage())) {
-                g.background(br, gr, bb);
+            g.background((bg>>16)&0xFF, (bg>>8)&0xFF, bg&0xFF);
+            if (backgroundImage != null) {
                 g.image(backgroundImage, 0, 0, 400, 600);
-            } else {
-                g.background(br, gr, bb);
             }
 
             // Update page transition animation
             updatePageAnimation();
-
-            // Live follow from gesture manager
-            // TODO: syncLivePageDragFromGesture() - method not found, commented out for now
-            // syncLivePageDragFromGesture();
-
-            // Check edge auto-slide timer continuously during drag
             updateEdgeAutoSlideTimer();
 
             // Draw status bar
             drawStatusBar(g);
 
-            // Draw pages with transition animation
-            drawPagesWithTransition(g);
+            if (currentPageIndex == 0) {
+                // --- Dashboard Page ---
+                if (!isAnimating) {
+                    drawDashboard(g);
+                }
+            } else {
+                // --- App Grid Pages ---
+                drawPagesWithTransition(g);
+            }
 
             // Draw navigation area
             drawNavigationArea(g);
 
             // Draw page indicator dots
             drawPageIndicators(g);
-
-            // Draw new dashboard cards only on the first page
-            if (currentPageIndex == 0 && !isAnimating) {
-                drawClockAndWeatherCard(g);
-                drawSearchCard(g);
-            }
 
         } catch (Exception e) {
             System.err.println("❁EHomeScreen: Draw error (PGraphics) - " + e.getMessage());
@@ -850,6 +842,7 @@ public class HomeScreen implements Screen, GestureListener, SensorEventListener 
     private void initializeHomePages() {
         try {
             homePages.clear();
+            homePages.add(new HomePage("Dashboard")); // Page 0 for dashboard
 
             // 保存されたレイアウトを読み込む試行（一時的に無効化）
             boolean layoutLoaded = false;
@@ -1246,6 +1239,7 @@ public class HomeScreen implements Screen, GestureListener, SensorEventListener 
      * @param page The page to draw
      */
     private void drawNormalPage(PGraphics g, HomePage page, int pageIndex) {
+        if ("Dashboard".equals(page.getPageName())) return;
         // 通常のペEジ描画処理
         int startY = (pageIndex == 0) ? 230 : 80; // Adjust startY for the first page (dashboard)
         int gridWidth = GRID_COLS * (ICON_SIZE + ICON_SPACING) - ICON_SPACING;
@@ -1838,6 +1832,90 @@ public class HomeScreen implements Screen, GestureListener, SensorEventListener 
         g.textAlign(g.LEFT, g.CENTER);
         g.textSize(TEXT_SIZE_LARGE);
         g.text("Search...", cardX + 20, cardY + cardHeight / 2);
+    }
+
+    /**
+     * Draws the dashboard layout with all the cards.
+     * @param g The PGraphics instance for drawing
+     */
+    private void drawDashboard(PGraphics g) {
+        drawClockAndWeatherCard(g);
+        drawSearchCard(g);
+        drawMessagesCard(g);
+        drawEMoneyCard(g);
+        drawAIAssistantCard(g);
+    }
+
+    /**
+     * Draws a placeholder for the Messages card.
+     * @param g The PGraphics instance for drawing
+     */
+    private void drawMessagesCard(PGraphics g) {
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        int surface = theme != null ? theme.colorSurface() : 0xFFFFFFFF;
+        int onSurface = theme != null ? theme.colorOnSurface() : 0xFF111111;
+
+        int cardX = 20;
+        int cardY = 230; // Below Search card
+        int cardWidth = 175;
+        int cardHeight = 150;
+
+        g.fill((surface>>16)&0xFF, (surface>>8)&0xFF, surface&0xFF, 200);
+        g.stroke(theme.colorBorder());
+        g.rect(cardX, cardY, cardWidth, cardHeight, RADIUS_SMALL);
+
+        g.fill(onSurface);
+        g.textAlign(g.CENTER, g.CENTER);
+        g.textSize(TEXT_SIZE_LARGE);
+        g.text("Messages", cardX + cardWidth / 2, cardY + cardHeight / 2);
+    }
+
+    /**
+     * Draws a placeholder for the E-Money card.
+     * @param g The PGraphics instance for drawing
+     */
+    private void drawEMoneyCard(PGraphics g) {
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        int surface = theme != null ? theme.colorSurface() : 0xFFFFFFFF;
+        int onSurface = theme != null ? theme.colorOnSurface() : 0xFF111111;
+
+        int cardX = 205;
+        int cardY = 230; // Below Search card
+        int cardWidth = 175;
+        int cardHeight = 150;
+
+        g.fill((surface>>16)&0xFF, (surface>>8)&0xFF, surface&0xFF, 200);
+        g.stroke(theme.colorBorder());
+        g.rect(cardX, cardY, cardWidth, cardHeight, RADIUS_SMALL);
+
+        g.fill(onSurface);
+        g.textAlign(g.CENTER, g.CENTER);
+        g.textSize(TEXT_SIZE_LARGE);
+        g.text("E-Money", cardX + cardWidth / 2, cardY + cardHeight / 2);
+    }
+
+    /**
+     * Draws a placeholder for the AI Assistant card.
+     * @param g The PGraphics instance for drawing
+     */
+    private void drawAIAssistantCard(PGraphics g) {
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        int surface = theme != null ? theme.colorSurface() : 0xFFFFFFFF;
+        int onSurface = theme != null ? theme.colorOnSurface() : 0xFF111111;
+
+        int cardX = 20;
+        int cardY = 390; // Below Messages/E-Money cards
+        int cardWidth = 360;
+        int cardHeight = 50;
+
+        g.fill((surface>>16)&0xFF, (surface>>8)&0xFF, surface&0xFF, 200);
+        g.stroke(theme.colorBorder());
+        g.rect(cardX, cardY, cardWidth, cardHeight, RADIUS_SMALL);
+
+        g.fill(onSurface);
+        g.textAlign(g.LEFT, g.CENTER);
+        g.textSize(TEXT_SIZE_LARGE);
+        g.text("AI Assistant...", cardX + 20, cardY + cardHeight / 2);
     }
     
     /**
