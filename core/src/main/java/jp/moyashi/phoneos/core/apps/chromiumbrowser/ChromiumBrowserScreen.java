@@ -1,13 +1,18 @@
 package jp.moyashi.phoneos.core.apps.chromiumbrowser;
 
 import jp.moyashi.phoneos.core.Kernel;
+import jp.moyashi.phoneos.core.service.chromium.ChromiumSurface;
 import jp.moyashi.phoneos.core.ui.Screen;
+import processing.core.PApplet;
 import processing.core.PGraphics;
+import processing.core.PImage;
 
 public class ChromiumBrowserScreen implements Screen {
 
     private final Kernel kernel;
     private String currentUrl = "https://www.google.com";
+    private final String surfaceId = "browser_" + System.currentTimeMillis();
+    private ChromiumSurface browserSurface;
 
     public ChromiumBrowserScreen(Kernel kernel) {
         this.kernel = kernel;
@@ -21,6 +26,14 @@ public class ChromiumBrowserScreen implements Screen {
     @Override
     public void setup(PGraphics p) {
         // Initialization logic for the browser screen
+        if (kernel != null && kernel.getChromiumService() != null) {
+            browserSurface = kernel.getChromiumService().createSurface(
+                surfaceId,
+                p.width - 20, // content area width
+                p.height - 120, // content area height
+                currentUrl
+            );
+        }
     }
 
     @Override
@@ -56,13 +69,20 @@ public class ChromiumBrowserScreen implements Screen {
     }
 
     private void drawContentArea(PGraphics g, jp.moyashi.phoneos.core.ui.theme.ThemeEngine theme) {
-        // Placeholder for the actual web content
-        g.fill(theme.colorSurface());
-        g.rect(10, 60, g.width - 20, g.height - 120, 8);
-        g.fill(theme.colorOnSurface());
-        g.textAlign(g.CENTER, g.CENTER);
-        g.textSize(20);
-        g.text("Web Content Area", g.width / 2, g.height / 2);
+        if (browserSurface != null) {
+            PImage frame = browserSurface.acquireFrame();
+            if (frame != null) {
+                g.image(frame, 10, 60);
+            }
+        } else {
+            // Placeholder for the actual web content
+            g.fill(theme.colorSurface());
+            g.rect(10, 60, g.width - 20, g.height - 120, 8);
+            g.fill(theme.colorOnSurface());
+            g.textAlign(g.CENTER, g.CENTER);
+            g.textSize(20);
+            g.text("Web Content Area", g.width / 2, g.height / 2);
+        }
     }
 
     private void drawBottomBar(PGraphics g, jp.moyashi.phoneos.core.ui.theme.ThemeEngine theme) {
@@ -86,6 +106,9 @@ public class ChromiumBrowserScreen implements Screen {
     @Override
     public void cleanup(PGraphics p) {
         // Cleanup logic for the browser screen
+        if (kernel != null && kernel.getChromiumService() != null) {
+            kernel.getChromiumService().destroySurface(surfaceId);
+        }
     }
 
     @Override
@@ -98,4 +121,41 @@ public class ChromiumBrowserScreen implements Screen {
 
     @Override
     public void onBackground() {}
+
+    // Input handling
+    public void mousePressed(PGraphics g, int mouseX, int mouseY) {
+        if (browserSurface != null) {
+            browserSurface.sendMousePressed(mouseX - 10, mouseY - 60, 0); // Assuming left-click (button 0)
+        }
+    }
+
+    public void mouseReleased(PGraphics g, int mouseX, int mouseY) {
+        if (browserSurface != null) {
+            browserSurface.sendMouseReleased(mouseX - 10, mouseY - 60, 0); // Assuming left-click (button 0)
+        }
+    }
+
+    public void mouseDragged(PGraphics g, int mouseX, int mouseY) {
+        if (browserSurface != null) {
+            browserSurface.sendMouseMoved(mouseX - 10, mouseY - 60); // CEF uses moved for drag
+        }
+    }
+
+    public void mouseWheel(PGraphics g, int x, int y, float delta) {
+        if (browserSurface != null) {
+            browserSurface.sendMouseWheel(x - 10, y - 60, delta);
+        }
+    }
+
+    public void keyPressed(PGraphics g, char key, int keyCode) {
+        if (browserSurface != null) {
+            browserSurface.sendKeyPressed(keyCode, key);
+        }
+    }
+
+    public void keyReleased(PGraphics g, char key, int keyCode) {
+        if (browserSurface != null) {
+            browserSurface.sendKeyReleased(keyCode, key);
+        }
+    }
 }
