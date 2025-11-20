@@ -64,10 +64,13 @@ public class Dialog extends Panel {
     public void draw(PGraphics g) {
         if (!visible) return;
 
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+
         // モーダル背景
         if (modal) {
             g.pushStyle();
-            g.fill(0, 0, 0, 100);
+            int bgColor = theme != null ? theme.colorBackground() : 0x000000;
+            g.fill((bgColor>>16)&0xFF, (bgColor>>8)&0xFF, bgColor&0xFF, 180);
             g.noStroke();
             g.rect(0, 0, g.width, g.height);
             g.popStyle();
@@ -80,7 +83,6 @@ public class Dialog extends Panel {
         g.pushStyle();
 
         // テーマテキスト色
-        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
         int onSurface = theme != null ? theme.colorOnSurface() : 0xFF000000;
         int onSurfaceSec = theme != null ? theme.colorOnSurfaceSecondary() : 0xFF333333;
 
@@ -91,7 +93,7 @@ public class Dialog extends Panel {
         g.text(title, x + width / 2, y + 15);
 
         // 区切り線
-        int border = theme != null ? theme.colorBorder() : 0xFFCCCCCC;
+        int border = theme != null ? theme.colorBorder() : 0xFFCCCCCC; // TODO: Use constant for fallback
         g.stroke(border);
         g.strokeWeight(1);
         g.line(x + 10, y + 50, x + width - 10, y + 50);

@@ -62,7 +62,8 @@ public class Panel extends BaseComponent implements Container {
         }
 
         // 背景
-        g.fill(backgroundColor);
+        int alpha = 200; // Semi-transparent alpha for holographic effect
+        g.fill((backgroundColor>>16)&0xFF, (backgroundColor>>8)&0xFF, backgroundColor&0xFF, alpha);
         g.noStroke();
         if (cornerRadius > 0) {
             g.rect(x, y, width, height, cornerRadius);

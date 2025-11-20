@@ -97,21 +97,32 @@ public class Button extends BaseComponent implements Clickable {
         updateAnimation();
 
         // 背景色の決定
-        int currentColor = backgroundColor;
+        int baseBgColor = theme != null ? theme.colorPrimary() : backgroundColor;
+        int hoverBgColor = theme != null ? theme.colorHover() : hoverColor;
+        int pressBgColor = theme != null ? theme.colorPressed() : pressColor;
+        
+        int currentColor;
+        int alpha;
+
         if (pressed) {
-            currentColor = theme != null ? theme.colorPressed() : pressColor;
+            currentColor = pressBgColor;
+            alpha = 255; // Solid when pressed
         } else if (hovered && enabled) {
-            int hov = theme != null ? theme.colorHover() : hoverColor;
-            currentColor = lerpColor(g, backgroundColor, hov, animationProgress);
+            currentColor = lerpColor(g, baseBgColor, hoverBgColor, animationProgress);
+            alpha = 220; // More opaque on hover
+        } else {
+            currentColor = baseBgColor;
+            alpha = 200; // Default semi-transparency
         }
 
         // 無効状態の場合はグレーアウト
         if (!enabled) {
             currentColor = 0xFF999999;
+            alpha = 150;
         }
 
         // 背景描画
-        g.fill(currentColor);
+        g.fill((currentColor >> 16) & 0xFF, (currentColor >> 8) & 0xFF, currentColor & 0xFF, alpha);
         g.noStroke();
         if (cornerRadius > 0) {
             g.rect(x, y, width, height, cornerRadius);

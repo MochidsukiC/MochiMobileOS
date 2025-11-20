@@ -77,7 +77,8 @@ public class ListView extends BaseComponent implements Scrollable {
         }
 
         // 背景
-        g.fill(backgroundColor);
+        int alpha = 200;
+        g.fill((backgroundColor>>16)&0xFF, (backgroundColor>>8)&0xFF, backgroundColor&0xFF, alpha);
         g.noStroke();
         g.rect(x, y, width, height);
 
@@ -106,12 +107,16 @@ public class ListView extends BaseComponent implements Scrollable {
         boolean isSelected = (index == selectedIndex);
 
         // 背景
-        g.fill(isSelected ? selectedBackgroundColor : itemBackgroundColor);
+        int currentBgColor = isSelected ? selectedBackgroundColor : itemBackgroundColor;
+        int alpha = isSelected ? 255 : 200; // Selected items are solid, others semi-transparent
+        g.fill((currentBgColor>>16)&0xFF, (currentBgColor>>8)&0xFF, currentBgColor&0xFF, alpha);
         g.noStroke();
         g.rect(x, itemY, width, itemHeight);
 
         // テキスト
-        g.fill(isSelected ? 0xFFFFFFFF : textColor);
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        int currentTextColor = isSelected ? (theme != null ? theme.colorOnPrimary() : 0xFFFFFFFF) : textColor;
+        g.fill(currentTextColor);
         g.textAlign(PApplet.LEFT, PApplet.CENTER);
         g.textSize(14);
         g.text(item.text, x + 10, itemY + itemHeight / 2);
