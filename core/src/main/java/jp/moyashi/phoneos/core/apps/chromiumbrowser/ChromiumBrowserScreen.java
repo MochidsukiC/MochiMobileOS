@@ -67,7 +67,9 @@ public class ChromiumBrowserScreen implements Screen {
             }
         });
         tabListButton.setOnClickListener(() -> {
-            // TODO: Implement TabListScreen
+            if (kernel != null && kernel.getScreenManager() != null) {
+                kernel.getScreenManager().pushScreen(new TabListScreen(kernel));
+            }
         });
     }
 
