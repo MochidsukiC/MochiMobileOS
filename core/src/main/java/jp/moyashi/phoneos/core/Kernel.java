@@ -107,6 +107,15 @@ public class Kernel implements GestureListener {
     /** ハードウェアバイパスAPI - バッテリー情報 */
     private jp.moyashi.phoneos.core.service.hardware.BatteryInfo batteryInfo;
 
+    /** バッテリー監視サービス */
+    private BatteryMonitor batteryMonitor;
+
+    /** 前回のバッテリーチェック時刻（ミリ秒） */
+    private long lastBatteryCheckTime = 0;
+
+    /** バッテリーチェック間隔（ミリ秒） */
+    private static final long BATTERY_CHECK_INTERVAL = 1000; // 1秒
+
     /** ハードウェアバイパスAPI - カメラソケット */
     private jp.moyashi.phoneos.core.service.hardware.CameraSocket cameraSocket;
 
@@ -236,6 +245,13 @@ public class Kernel implements GestureListener {
         // SensorManagerの更新処理
         if (sensorManager != null) {
             ((jp.moyashi.phoneos.core.service.sensor.SensorManagerImpl) sensorManager).update();
+        }
+
+        // BatteryMonitorの定期チェック（1秒ごと）
+        long currentTime = System.currentTimeMillis();
+        if (batteryMonitor != null && currentTime - lastBatteryCheckTime >= BATTERY_CHECK_INTERVAL) {
+            batteryMonitor.checkBatteryLevel();
+            lastBatteryCheckTime = currentTime;
         }
 
         long chromiumStartNs = System.nanoTime();
@@ -998,6 +1014,10 @@ public class Kernel implements GestureListener {
         icSocket = new jp.moyashi.phoneos.core.service.hardware.DefaultICSocket();
         simInfo = new jp.moyashi.phoneos.core.service.hardware.DefaultSIMInfo();
 
+        // バッテリー監視サービスの初期化
+        System.out.println("  -> BatteryMonitor初期化中...");
+        batteryMonitor = new BatteryMonitor(batteryInfo, settingsManager);
+
         System.out.println("  -> ChromiumService初期化中...");
         chromiumManager = null;
         if (chromiumService != null) {
@@ -1504,6 +1524,15 @@ public class Kernel implements GestureListener {
      */
     public jp.moyashi.phoneos.core.service.hardware.BatteryInfo getBatteryInfo() {
         return batteryInfo;
+    }
+
+    /**
+     * バッテリー監視サービスのインスタンスを取得する。
+     *
+     * @return バッテリー監視サービス
+     */
+    public BatteryMonitor getBatteryMonitor() {
+        return batteryMonitor;
     }
 
     /**

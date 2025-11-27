@@ -136,15 +136,23 @@ public class Panel extends BaseComponent implements Container {
     public boolean onMousePressed(int mouseX, int mouseY) {
         if (!enabled || !visible) return false;
 
+        System.out.println("Panel.onMousePressed at (" + mouseX + ", " + mouseY + ") with " + children.size() + " children");
+
         // 子要素から順に処理（後ろから = 描画順の逆）
         for (int i = children.size() - 1; i >= 0; i--) {
             UIComponent child = children.get(i);
+            System.out.println("  Checking child " + i + ": " + child.getClass().getSimpleName() +
+                             " enabled=" + child.isEnabled() + " visible=" + child.isVisible() +
+                             " clickable=" + (child instanceof Clickable));
             if (child instanceof Clickable && child.isEnabled() && child.isVisible()) {
-                if (((Clickable) child).onMousePressed(mouseX, mouseY)) {
+                boolean handled = ((Clickable) child).onMousePressed(mouseX, mouseY);
+                System.out.println("  Child " + i + " (" + child.getClass().getSimpleName() + ") handled = " + handled);
+                if (handled) {
                     return true;
                 }
             }
         }
+        System.out.println("Panel.onMousePressed: no child handled the event");
         return false;
     }
 
@@ -158,14 +166,22 @@ public class Panel extends BaseComponent implements Container {
     public boolean onMouseReleased(int mouseX, int mouseY) {
         if (!enabled || !visible) return false;
 
+        System.out.println("Panel.onMouseReleased at (" + mouseX + ", " + mouseY + ") with " + children.size() + " children");
+
         for (int i = children.size() - 1; i >= 0; i--) {
             UIComponent child = children.get(i);
+            System.out.println("  Checking child " + i + ": " + child.getClass().getSimpleName() +
+                             " enabled=" + child.isEnabled() + " visible=" + child.isVisible() +
+                             " clickable=" + (child instanceof Clickable));
             if (child instanceof Clickable && child.isEnabled() && child.isVisible()) {
-                if (((Clickable) child).onMouseReleased(mouseX, mouseY)) {
+                boolean handled = ((Clickable) child).onMouseReleased(mouseX, mouseY);
+                System.out.println("  Child " + i + " (" + child.getClass().getSimpleName() + ") released handled = " + handled);
+                if (handled) {
                     return true;
                 }
             }
         }
+        System.out.println("Panel.onMouseReleased: no child handled the event");
         return false;
     }
 

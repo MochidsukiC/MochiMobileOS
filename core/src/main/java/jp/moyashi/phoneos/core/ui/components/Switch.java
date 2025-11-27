@@ -160,6 +160,7 @@ public class Switch extends BaseComponent implements Clickable {
 
         if (contains(mouseX, mouseY)) {
             pressed = true;
+            System.out.println("Switch '" + label + "' pressed at (" + mouseX + ", " + mouseY + ")");
             return true;
         }
         return false;
@@ -167,16 +168,26 @@ public class Switch extends BaseComponent implements Clickable {
 
     @Override
     public boolean onMouseReleased(int mouseX, int mouseY) {
+        System.out.println("Switch '" + label + "' onMouseReleased at (" + mouseX + ", " + mouseY + ")");
+        System.out.println("  enabled=" + enabled + " visible=" + visible + " pressed=" + pressed);
+
         if (!enabled || !visible) {
+            System.out.println("  Switch disabled or not visible, ignoring");
             pressed = false;
             return false;
         }
 
-        if (pressed && contains(mouseX, mouseY)) {
+        boolean containsPoint = contains(mouseX, mouseY);
+        System.out.println("  contains(" + mouseX + ", " + mouseY + ") = " + containsPoint +
+                         " (bounds: x=" + x + " y=" + y + " w=" + width + " h=" + height + ")");
+
+        if (pressed && containsPoint) {
+            System.out.println("  Toggle triggered!");
             pressed = false;
             toggle();
             return true;
         }
+        System.out.println("  Not toggling (pressed=" + pressed + " contains=" + containsPoint + ")");
         pressed = false;
         return false;
     }
@@ -200,6 +211,7 @@ public class Switch extends BaseComponent implements Clickable {
      * ON/OFF状態を切り替える。
      */
     public void toggle() {
+        System.out.println("Switch '" + label + "' toggling from " + on + " to " + !on);
         setOn(!on);
     }
 
@@ -220,10 +232,13 @@ public class Switch extends BaseComponent implements Clickable {
 
     public void setOn(boolean on) {
         if (this.on != on) {
+            System.out.println("Switch '" + label + "' state changed: " + this.on + " -> " + on);
             this.on = on;
             if (onChangeListener != null) {
                 onChangeListener.accept(on);
             }
+        } else {
+            System.out.println("Switch '" + label + "' setOn(" + on + ") called but state already " + this.on);
         }
     }
 

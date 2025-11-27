@@ -42,7 +42,9 @@
       "Bash(timeout /t 2 /nobreak)",
       "Bash(cat:*)",
       "Bash(chmod:*)",
-      "Bash(pkill:*)"
+      "Bash(pkill:*)",
+      "Bash(timeout /t 3 /nobreak)",
+      "Bash(findstr:*)"
     ],
     "deny": [],
     "ask": [],

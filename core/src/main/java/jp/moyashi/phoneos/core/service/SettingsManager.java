@@ -77,6 +77,19 @@ public class SettingsManager {
         settings.putIfAbsent("ui.shape.corner_scale", "standard"); // compact | standard | rounded
         settings.putIfAbsent("ui.effects.elevation_scale", 1.0);
 
+        // Battery（バッテリー設定）
+        settings.putIfAbsent("power.battery_saver.enabled", false);
+        settings.putIfAbsent("power.battery_saver.auto", true);
+        settings.putIfAbsent("power.battery_saver.threshold", 20);
+        settings.putIfAbsent("display.screen_timeout", 30); // 秒単位
+
+        // Sound & Vibration（音声・振動設定）
+        settings.putIfAbsent("audio.master_volume", 75); // 0-100
+        settings.putIfAbsent("audio.notification_sound", true);
+        settings.putIfAbsent("audio.touch_sound", true);
+        settings.putIfAbsent("audio.vibration", true);
+        settings.putIfAbsent("audio.ringtone", "default"); // 着信音ID
+
         System.out.println("SettingsManager: Default settings loaded");
     }
 

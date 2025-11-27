@@ -32,8 +32,12 @@ public class SettingsScreen implements Screen {
     /** Screen state */
     private boolean isInitialized = false;
     private boolean showAppearancePanel = false;
+    private boolean showBatteryPanel = false;
+    private boolean showAboutSystemPanel = false;
+    private boolean showSoundVibrationPanel = false;
+    private boolean showStoragePanel = false;
 
-    // Appearance:     E     E   E 
+    // Appearance:     E     E   E
     private jp.moyashi.phoneos.core.ui.components.Panel appearancePanel;
     // Tone
     private jp.moyashi.phoneos.core.ui.components.Button btnToneLight;
@@ -58,7 +62,51 @@ public class SettingsScreen implements Screen {
     // Toggles
     private jp.moyashi.phoneos.core.ui.components.Button btnReduceMotion;
     private jp.moyashi.phoneos.core.ui.components.Button btnLowPower;
-    
+
+    // Battery: バッテリーパネル
+    private jp.moyashi.phoneos.core.ui.components.Panel batteryPanel;
+    private jp.moyashi.phoneos.core.ui.components.ProgressBar progressBatteryLevel;
+    private jp.moyashi.phoneos.core.ui.components.Label labelBatteryLevel;
+    private jp.moyashi.phoneos.core.ui.components.Label labelBatteryHealth;
+    private jp.moyashi.phoneos.core.ui.components.Label labelChargingStatus;
+    private jp.moyashi.phoneos.core.ui.components.Switch switchBatterySaver;
+    private jp.moyashi.phoneos.core.ui.components.Switch switchAutoBatterySaver;
+    private jp.moyashi.phoneos.core.ui.components.Slider sliderBatterySaverThreshold;
+    private jp.moyashi.phoneos.core.ui.components.Button btnScreenTimeout15;
+    private jp.moyashi.phoneos.core.ui.components.Button btnScreenTimeout30;
+    private jp.moyashi.phoneos.core.ui.components.Button btnScreenTimeout60;
+    private jp.moyashi.phoneos.core.ui.components.Button btnScreenTimeout120;
+    private jp.moyashi.phoneos.core.ui.components.Button btnScreenTimeout300;
+    private jp.moyashi.phoneos.core.ui.components.Button btnScreenTimeoutNever;
+
+    // About System: 端末情報パネル
+    private jp.moyashi.phoneos.core.ui.components.Panel aboutSystemPanel;
+    private jp.moyashi.phoneos.core.ui.components.Label labelOSName;
+    private jp.moyashi.phoneos.core.ui.components.Label labelOSVersion;
+    private jp.moyashi.phoneos.core.ui.components.Label labelBuildNumber;
+    private jp.moyashi.phoneos.core.ui.components.Label labelJavaVersion;
+    private jp.moyashi.phoneos.core.ui.components.Label labelJVMVersion;
+    private jp.moyashi.phoneos.core.ui.components.Label labelMemoryInfo;
+    private jp.moyashi.phoneos.core.ui.components.Button btnOpenSourceLicenses;
+    private jp.moyashi.phoneos.core.ui.components.Button btnLegalInfo;
+
+    // Sound & Vibration: 音声・振動パネル
+    private jp.moyashi.phoneos.core.ui.components.Panel soundVibrationPanel;
+    private jp.moyashi.phoneos.core.ui.components.Slider sliderMasterVolume;
+    private jp.moyashi.phoneos.core.ui.components.Switch switchNotificationSound;
+    private jp.moyashi.phoneos.core.ui.components.Switch switchTouchSound;
+    private jp.moyashi.phoneos.core.ui.components.Switch switchVibration;
+    private jp.moyashi.phoneos.core.ui.components.Button btnRingtone;
+
+    // Storage: ストレージパネル
+    private jp.moyashi.phoneos.core.ui.components.Panel storagePanel;
+    private jp.moyashi.phoneos.core.ui.components.ProgressBar progressStorageUsage;
+    private jp.moyashi.phoneos.core.ui.components.Label labelStorageUsage;
+    private jp.moyashi.phoneos.core.ui.components.Label labelAppData;
+    private jp.moyashi.phoneos.core.ui.components.Label labelCacheSize;
+    private jp.moyashi.phoneos.core.ui.components.Button btnClearCache;
+    private jp.moyashi.phoneos.core.ui.components.Button btnClearAllData;
+
     /** Settings items configuration */
     private static final String[] SETTING_ITEMS = {
         "Appearance",
@@ -178,9 +226,29 @@ public class SettingsScreen implements Screen {
         //    E   E     
         drawSystemInfo(g);
 
-        // Appearance      
+        // Appearance
         if (showAppearancePanel) {
             drawAppearancePanelComponents(g);
+        }
+
+        // Battery パネル
+        if (showBatteryPanel) {
+            drawBatteryPanelComponents(g);
+        }
+
+        // About System パネル
+        if (showAboutSystemPanel) {
+            drawAboutSystemPanelComponents(g);
+        }
+
+        // Sound & Vibration パネル
+        if (showSoundVibrationPanel) {
+            drawSoundVibrationPanelComponents(g);
+        }
+
+        // Storage パネル
+        if (showStoragePanel) {
+            drawStoragePanelComponents(g);
         }
     }
 
@@ -213,6 +281,14 @@ public class SettingsScreen implements Screen {
         if (mouseX >= 10 && mouseX <= 50 && mouseY >= 10 && mouseY <= 50) {
             if (showAppearancePanel) {
                 showAppearancePanel = false;
+            } else if (showBatteryPanel) {
+                showBatteryPanel = false;
+            } else if (showAboutSystemPanel) {
+                showAboutSystemPanel = false;
+            } else if (showSoundVibrationPanel) {
+                showSoundVibrationPanel = false;
+            } else if (showStoragePanel) {
+                showStoragePanel = false;
             } else {
                 goBack();
             }
@@ -223,6 +299,47 @@ public class SettingsScreen implements Screen {
         if (showAppearancePanel) {
             ensureAppearanceComponents();
             if (appearancePanel != null && appearancePanel.onMousePressed(mouseX, mouseY)) {
+                return;
+            }
+            return;
+        }
+
+        // Battery panel: delegate to components
+        if (showBatteryPanel) {
+            System.out.println("SettingsScreen: Battery panel click at (" + mouseX + ", " + mouseY + ")");
+            ensureBatteryComponents();
+            if (batteryPanel != null) {
+                boolean handled = batteryPanel.onMousePressed(mouseX, mouseY);
+                System.out.println("SettingsScreen: Battery panel handled = " + handled);
+                if (handled) {
+                    return;
+                }
+            }
+            return;
+        }
+
+        // About System panel: delegate to components
+        if (showAboutSystemPanel) {
+            ensureAboutSystemComponents();
+            if (aboutSystemPanel != null && aboutSystemPanel.onMousePressed(mouseX, mouseY)) {
+                return;
+            }
+            return;
+        }
+
+        // Sound & Vibration panel: delegate to components
+        if (showSoundVibrationPanel) {
+            ensureSoundVibrationComponents();
+            if (soundVibrationPanel != null && soundVibrationPanel.onMousePressed(mouseX, mouseY)) {
+                return;
+            }
+            return;
+        }
+
+        // Storage panel: delegate to components
+        if (showStoragePanel) {
+            ensureStorageComponents();
+            if (storagePanel != null && storagePanel.onMousePressed(mouseX, mouseY)) {
                 return;
             }
             return;
@@ -330,8 +447,26 @@ public class SettingsScreen implements Screen {
      * @param mouseY The y-coordinate of the mouse release
      */
     public void mouseReleased(PGraphics g, int mouseX, int mouseY) {
+        System.out.println("SettingsScreen.mouseReleased at (" + mouseX + ", " + mouseY + ")");
         if (showAppearancePanel && appearancePanel != null) {
+            System.out.println("  Forwarding to appearancePanel");
             appearancePanel.onMouseReleased(mouseX, mouseY);
+        }
+        if (showBatteryPanel && batteryPanel != null) {
+            System.out.println("  Forwarding to batteryPanel");
+            batteryPanel.onMouseReleased(mouseX, mouseY);
+        }
+        if (showAboutSystemPanel && aboutSystemPanel != null) {
+            System.out.println("  Forwarding to aboutSystemPanel");
+            aboutSystemPanel.onMouseReleased(mouseX, mouseY);
+        }
+        if (showSoundVibrationPanel && soundVibrationPanel != null) {
+            System.out.println("  Forwarding to soundVibrationPanel");
+            soundVibrationPanel.onMouseReleased(mouseX, mouseY);
+        }
+        if (showStoragePanel && storagePanel != null) {
+            System.out.println("  Forwarding to storagePanel");
+            storagePanel.onMouseReleased(mouseX, mouseY);
         }
     }
     
@@ -350,6 +485,18 @@ public class SettingsScreen implements Screen {
     public void mouseMoved(PGraphics g, int mouseX, int mouseY) {
         if (showAppearancePanel && appearancePanel != null) {
             appearancePanel.onMouseMoved(mouseX, mouseY);
+        }
+        if (showBatteryPanel && batteryPanel != null) {
+            batteryPanel.onMouseMoved(mouseX, mouseY);
+        }
+        if (showAboutSystemPanel && aboutSystemPanel != null) {
+            aboutSystemPanel.onMouseMoved(mouseX, mouseY);
+        }
+        if (showSoundVibrationPanel && soundVibrationPanel != null) {
+            soundVibrationPanel.onMouseMoved(mouseX, mouseY);
+        }
+        if (showStoragePanel && storagePanel != null) {
+            storagePanel.onMouseMoved(mouseX, mouseY);
         }
     }
     
@@ -410,19 +557,19 @@ public class SettingsScreen implements Screen {
                 showAppearancePanel = true;
                 break;
             case 1:
-                System.out.println("SettingsScreen: Sound settings would open here");
+                showSoundVibrationPanel = true;
                 break;
             case 2:
                 System.out.println("SettingsScreen: App settings would open here");
                 break;
             case 3:
-                System.out.println("SettingsScreen: Storage settings would open here");
+                showStoragePanel = true;
                 break;
             case 4:
-                System.out.println("SettingsScreen: Battery settings would open here");
+                showBatteryPanel = true;
                 break;
             case 5:
-                System.out.println("SettingsScreen: About system would open here");
+                showAboutSystemPanel = true;
                 break;
         }
     }
@@ -858,7 +1005,558 @@ public class SettingsScreen implements Screen {
     private boolean hit(int mx, int my, int x, int y, int w, int h) {
         return mx >= x && mx <= x + w && my >= y && my <= y + h;
     }
-    
+
+    // =========================================================================
+    // Battery Section
+    // =========================================================================
+
+    private void ensureBatteryComponents() {
+        if (batteryPanel != null) return;
+
+        int px = ITEM_PADDING;
+        int py = 80;
+        int pw = 400 - 2 * ITEM_PADDING;
+        int ph = 480;
+
+        batteryPanel = new jp.moyashi.phoneos.core.ui.components.Panel(px, py, pw, ph);
+
+        int y = py + 60;
+
+        // バッテリーレベル（ProgressBar + Label）
+        progressBatteryLevel = new jp.moyashi.phoneos.core.ui.components.ProgressBar(px + 16, y, pw - 32, 30);
+        labelBatteryLevel = new jp.moyashi.phoneos.core.ui.components.Label(px + 16, y + 35, "100%");
+
+        y += 80;
+
+        // バッテリー寿命
+        labelBatteryHealth = new jp.moyashi.phoneos.core.ui.components.Label(px + 16, y, "Health: 100%");
+
+        y += 30;
+
+        // 充電状態
+        labelChargingStatus = new jp.moyashi.phoneos.core.ui.components.Label(px + 16, y, "Status: Not Charging");
+
+        y += 50;
+
+        // バッテリーセーバー
+        switchBatterySaver = new jp.moyashi.phoneos.core.ui.components.Switch(px + 16, y, "Battery Saver");
+        boolean batterySaverEnabled = kernel.getSettingsManager().getBooleanSetting("power.battery_saver.enabled", false);
+        switchBatterySaver.setOn(batterySaverEnabled);
+        switchBatterySaver.setOnChangeListener(enabled -> {
+            var sm = kernel != null ? kernel.getSettingsManager() : null;
+            if (sm != null) {
+                sm.setSetting("power.battery_saver.enabled", enabled);
+                sm.setSetting("ui.performance.low_power", enabled);
+                sm.saveSettings();
+            }
+        });
+
+        y += 40;
+
+        // 自動バッテリーセーバー
+        switchAutoBatterySaver = new jp.moyashi.phoneos.core.ui.components.Switch(px + 16, y, "Auto Battery Saver");
+        boolean autoBatterySaverEnabled = kernel.getSettingsManager().getBooleanSetting("power.battery_saver.auto", true);
+        switchAutoBatterySaver.setOn(autoBatterySaverEnabled);
+        switchAutoBatterySaver.setOnChangeListener(enabled -> {
+            var sm = kernel != null ? kernel.getSettingsManager() : null;
+            if (sm != null) {
+                sm.setSetting("power.battery_saver.auto", enabled);
+                sm.saveSettings();
+            }
+        });
+
+        y += 40;
+
+        // バッテリーセーバー閾値
+        sliderBatterySaverThreshold = new jp.moyashi.phoneos.core.ui.components.Slider(px + 16, y, pw - 32, 5, 50, 20);
+        sliderBatterySaverThreshold.setLabel("Auto Threshold: 20%");
+        sliderBatterySaverThreshold.setOnValueChangeListener(value -> {
+            int threshold = value.intValue();
+            sliderBatterySaverThreshold.setLabel("Auto Threshold: " + threshold + "%");
+            var sm = kernel != null ? kernel.getSettingsManager() : null;
+            if (sm != null) {
+                sm.setSetting("power.battery_saver.threshold", threshold);
+                sm.saveSettings();
+            }
+        });
+
+        y += 60;
+
+        // スクリーンタイムアウト
+        btnScreenTimeout15 = new jp.moyashi.phoneos.core.ui.components.Button(px + 16, y, 56, 24, "15s");
+        btnScreenTimeout30 = new jp.moyashi.phoneos.core.ui.components.Button(px + 76, y, 56, 24, "30s");
+        btnScreenTimeout60 = new jp.moyashi.phoneos.core.ui.components.Button(px + 136, y, 56, 24, "1m");
+        btnScreenTimeout120 = new jp.moyashi.phoneos.core.ui.components.Button(px + 196, y, 56, 24, "2m");
+        btnScreenTimeout300 = new jp.moyashi.phoneos.core.ui.components.Button(px + 256, y, 56, 24, "5m");
+        btnScreenTimeoutNever = new jp.moyashi.phoneos.core.ui.components.Button(px + 316, y, 56, 24, "Never");
+
+        btnScreenTimeout15.setOnClickListener(() -> updateScreenTimeout(15));
+        btnScreenTimeout30.setOnClickListener(() -> updateScreenTimeout(30));
+        btnScreenTimeout60.setOnClickListener(() -> updateScreenTimeout(60));
+        btnScreenTimeout120.setOnClickListener(() -> updateScreenTimeout(120));
+        btnScreenTimeout300.setOnClickListener(() -> updateScreenTimeout(300));
+        btnScreenTimeoutNever.setOnClickListener(() -> updateScreenTimeout(-1));
+
+        // コンポーネントをパネルに追加
+        batteryPanel.addChild(progressBatteryLevel);
+        batteryPanel.addChild(labelBatteryLevel);
+        batteryPanel.addChild(labelBatteryHealth);
+        batteryPanel.addChild(labelChargingStatus);
+        batteryPanel.addChild(switchBatterySaver);
+        batteryPanel.addChild(switchAutoBatterySaver);
+        batteryPanel.addChild(sliderBatterySaverThreshold);
+        batteryPanel.addChild(btnScreenTimeout15);
+        batteryPanel.addChild(btnScreenTimeout30);
+        batteryPanel.addChild(btnScreenTimeout60);
+        batteryPanel.addChild(btnScreenTimeout120);
+        batteryPanel.addChild(btnScreenTimeout300);
+        batteryPanel.addChild(btnScreenTimeoutNever);
+
+        updateBatteryButtonStyles();
+    }
+
+    private void updateScreenTimeout(int seconds) {
+        var sm = kernel != null ? kernel.getSettingsManager() : null;
+        if (sm != null) {
+            sm.setSetting("display.screen_timeout", seconds);
+            sm.saveSettings();
+            updateBatteryButtonStyles();
+        }
+    }
+
+    private void updateBatteryButtonStyles() {
+        var sm = kernel != null ? kernel.getSettingsManager() : null;
+        if (sm == null) return;
+
+        var theme = kernel != null ? kernel.getThemeEngine() : null;
+        if (theme == null) return;
+
+        int surface = theme.colorSurface();
+        int primary = theme.colorPrimary();
+        int border = theme.colorBorder();
+        int onSurf = theme.colorOnSurface();
+
+        int timeout = sm.getIntSetting("display.screen_timeout", 30);
+
+        java.util.function.BiConsumer<jp.moyashi.phoneos.core.ui.components.Button, Boolean> styler = (btn, selected) -> {
+            if (btn == null) return;
+            if (selected) {
+                btn.setBackgroundColor(primary);
+                btn.setBorderColor(primary);
+                btn.setTextColor(onSurf);
+            } else {
+                btn.setBackgroundColor(surface);
+                btn.setBorderColor(border);
+                btn.setTextColor(onSurf);
+            }
+        };
+
+        styler.accept(btnScreenTimeout15, timeout == 15);
+        styler.accept(btnScreenTimeout30, timeout == 30);
+        styler.accept(btnScreenTimeout60, timeout == 60);
+        styler.accept(btnScreenTimeout120, timeout == 120);
+        styler.accept(btnScreenTimeout300, timeout == 300);
+        styler.accept(btnScreenTimeoutNever, timeout == -1);
+
+        // Switch の状態を更新
+        if (switchBatterySaver != null) {
+            switchBatterySaver.setOn(sm.getBooleanSetting("power.battery_saver.enabled", false));
+        }
+        if (switchAutoBatterySaver != null) {
+            switchAutoBatterySaver.setOn(sm.getBooleanSetting("power.battery_saver.auto", true));
+        }
+        if (sliderBatterySaverThreshold != null) {
+            int threshold = sm.getIntSetting("power.battery_saver.threshold", 20);
+            sliderBatterySaverThreshold.setValue(threshold);
+            sliderBatterySaverThreshold.setLabel("Auto Threshold: " + threshold + "%");
+        }
+    }
+
+    private void drawBatteryPanelComponents(PGraphics g) {
+        int px = ITEM_PADDING;
+        int py = 80;
+
+        ensureBatteryComponents();
+
+        // バッテリー情報を更新
+        var batteryInfo = kernel != null ? kernel.getBatteryInfo() : null;
+        if (batteryInfo != null) {
+            int level = batteryInfo.getBatteryLevel();
+            int health = batteryInfo.getBatteryHealth();
+            boolean charging = batteryInfo.isCharging();
+
+            if (progressBatteryLevel != null) {
+                progressBatteryLevel.setValue(level);
+            }
+            if (labelBatteryLevel != null) {
+                labelBatteryLevel.setText(level + "%");
+            }
+            if (labelBatteryHealth != null) {
+                labelBatteryHealth.setText("Health: " + health + "%");
+            }
+            if (labelChargingStatus != null) {
+                String status = charging ? "Charging" : "Not Charging";
+                var monitor = kernel.getBatteryMonitor();
+                if (monitor != null) {
+                    status = monitor.getBatteryStatus();
+                }
+                labelChargingStatus.setText("Status: " + status);
+            }
+        }
+
+        // パネル描画
+        if (batteryPanel != null) {
+            batteryPanel.draw(g);
+        }
+
+        // ヘッダー（Appearanceと同じ位置）
+        if (kernel != null && kernel.getJapaneseFont() != null) g.textFont(kernel.getJapaneseFont());
+        int tcol = (kernel != null && kernel.getThemeEngine() != null) ? kernel.getThemeEngine().colorOnSurface() : textColor;
+        g.fill((tcol>>16)&0xFF, (tcol>>8)&0xFF, tcol&0xFF);
+        g.textAlign(g.LEFT, g.TOP);
+        g.textSize(16);
+        g.text("Battery", px + 16, py + 12);
+
+        // セクションヘッダー
+        g.textSize(14);
+        g.fill(0xFF4A90E2);
+        g.text("Battery Level", px + 16, py + 48);
+        g.text("Power Management", px + 16, py + 210);
+        g.text("Threshold", px + 16, py + 330);
+        g.text("Screen Timeout", px + 16, py + 400);
+    }
+
+    /**
+     * About Systemパネルのコンポーネントを初期化する
+     */
+    private void ensureAboutSystemComponents() {
+        if (aboutSystemPanel != null) return;
+
+        int px = ITEM_PADDING;
+        int py = 80;
+        int pw = 400 - 2 * ITEM_PADDING;
+        int ph = 480;
+
+        // パネルを作成
+        aboutSystemPanel = new jp.moyashi.phoneos.core.ui.components.Panel(px, py, pw, ph);
+
+        int y = py + 60;
+
+        // システム情報セクション
+        labelOSName = new jp.moyashi.phoneos.core.ui.components.Label(px + 16, y, "MochiMobileOS");
+        y += 30;
+
+        labelOSVersion = new jp.moyashi.phoneos.core.ui.components.Label(px + 16, y, "バージョン: 1.0.0");
+        y += 25;
+
+        labelBuildNumber = new jp.moyashi.phoneos.core.ui.components.Label(px + 16, y, "ビルド: 2025.11.27");
+        y += 60;
+
+        // Java環境セクション
+        String javaVersion = System.getProperty("java.version", "不明");
+        labelJavaVersion = new jp.moyashi.phoneos.core.ui.components.Label(px + 16, y, "Java: " + javaVersion);
+        y += 25;
+
+        String jvmName = System.getProperty("java.vm.name", "不明");
+        String jvmVersion = System.getProperty("java.vm.version", "不明");
+        labelJVMVersion = new jp.moyashi.phoneos.core.ui.components.Label(px + 16, y, "JVM: " + jvmName + " " + jvmVersion);
+        y += 60;
+
+        // メモリ情報セクション
+        Runtime runtime = Runtime.getRuntime();
+        long totalMemory = runtime.totalMemory() / 1024 / 1024; // MB
+        long freeMemory = runtime.freeMemory() / 1024 / 1024; // MB
+        long usedMemory = totalMemory - freeMemory;
+        labelMemoryInfo = new jp.moyashi.phoneos.core.ui.components.Label(px + 16, y, "メモリ: " + usedMemory + " MB / " + totalMemory + " MB");
+        y += 60;
+
+        // 法的情報ボタン
+        btnOpenSourceLicenses = new jp.moyashi.phoneos.core.ui.components.Button(px + 16, y, pw - 32, 40, "オープンソースライセンス");
+        btnOpenSourceLicenses.setOnClickListener(() -> {
+            System.out.println("SettingsScreen: Open source licenses clicked");
+            // 将来的にライセンス画面を表示
+        });
+        y += 50;
+
+        btnLegalInfo = new jp.moyashi.phoneos.core.ui.components.Button(px + 16, y, pw - 32, 40, "法的情報");
+        btnLegalInfo.setOnClickListener(() -> {
+            System.out.println("SettingsScreen: Legal info clicked");
+            // 将来的に法的情報画面を表示
+        });
+
+        // パネルに全てのコンポーネントを追加
+        aboutSystemPanel.addChild(labelOSName);
+        aboutSystemPanel.addChild(labelOSVersion);
+        aboutSystemPanel.addChild(labelBuildNumber);
+        aboutSystemPanel.addChild(labelJavaVersion);
+        aboutSystemPanel.addChild(labelJVMVersion);
+        aboutSystemPanel.addChild(labelMemoryInfo);
+        aboutSystemPanel.addChild(btnOpenSourceLicenses);
+        aboutSystemPanel.addChild(btnLegalInfo);
+    }
+
+    /**
+     * About Systemパネルのコンポーネントを描画する
+     */
+    private void drawAboutSystemPanelComponents(PGraphics g) {
+        int px = ITEM_PADDING;
+        int py = 80;
+
+        ensureAboutSystemComponents();
+
+        if (aboutSystemPanel != null) {
+            aboutSystemPanel.draw(g);
+        }
+
+        // ヘッダー（Appearanceと同じ位置）
+        if (kernel != null && kernel.getJapaneseFont() != null) g.textFont(kernel.getJapaneseFont());
+        int tcol = (kernel != null && kernel.getThemeEngine() != null) ? kernel.getThemeEngine().colorOnSurface() : textColor;
+        g.fill((tcol>>16)&0xFF, (tcol>>8)&0xFF, tcol&0xFF);
+        g.textAlign(g.LEFT, g.TOP);
+        g.textSize(16);
+        g.text("About System", px + 16, py + 12);
+
+        // セクションヘッダー
+        g.textSize(14);
+        g.fill(0xFF4A90E2);
+        g.text("System Information", px + 16, py + 48);
+        g.text("Java Environment", px + 16, py + 133);
+        g.text("Memory", px + 16, py + 218);
+        g.text("Legal", px + 16, py + 298);
+
+        // 全てのコンポーネントを描画
+        if (labelOSName != null) labelOSName.draw(g);
+        if (labelOSVersion != null) labelOSVersion.draw(g);
+        if (labelBuildNumber != null) labelBuildNumber.draw(g);
+        if (labelJavaVersion != null) labelJavaVersion.draw(g);
+        if (labelJVMVersion != null) labelJVMVersion.draw(g);
+        if (labelMemoryInfo != null) labelMemoryInfo.draw(g);
+        if (btnOpenSourceLicenses != null) btnOpenSourceLicenses.draw(g);
+        if (btnLegalInfo != null) btnLegalInfo.draw(g);
+    }
+
+    /**
+     * Sound & Vibrationパネルのコンポーネントを初期化する
+     */
+    private void ensureSoundVibrationComponents() {
+        if (soundVibrationPanel != null) return;
+
+        int px = ITEM_PADDING;
+        int py = 80;
+        int pw = 400 - 2 * ITEM_PADDING;
+        int ph = 480;
+
+        // パネルを作成
+        soundVibrationPanel = new jp.moyashi.phoneos.core.ui.components.Panel(px, py, pw, ph);
+
+        int y = py + 60;
+
+        // マスター音量スライダー
+        int currentVolume = kernel.getSettingsManager().getIntSetting("audio.master_volume", 75);
+        sliderMasterVolume = new jp.moyashi.phoneos.core.ui.components.Slider(px + 16, y, pw - 32, 0, 100, currentVolume);
+        sliderMasterVolume.setLabel("Master Volume: " + currentVolume + "%");
+        sliderMasterVolume.setOnValueChangeListener(value -> {
+            int volume = value.intValue();
+            sliderMasterVolume.setLabel("Master Volume: " + volume + "%");
+            var sm = kernel != null ? kernel.getSettingsManager() : null;
+            if (sm != null) {
+                sm.setSetting("audio.master_volume", volume);
+                sm.saveSettings();
+            }
+        });
+        y += 60;
+
+        // 通知音スイッチ
+        switchNotificationSound = new jp.moyashi.phoneos.core.ui.components.Switch(px + 16, y, "Notification Sound");
+        boolean notificationSound = kernel.getSettingsManager().getBooleanSetting("audio.notification_sound", true);
+        switchNotificationSound.setOn(notificationSound);
+        switchNotificationSound.setOnChangeListener(enabled -> {
+            var sm = kernel != null ? kernel.getSettingsManager() : null;
+            if (sm != null) {
+                sm.setSetting("audio.notification_sound", enabled);
+                sm.saveSettings();
+            }
+        });
+        y += 40;
+
+        // タッチサウンドスイッチ
+        switchTouchSound = new jp.moyashi.phoneos.core.ui.components.Switch(px + 16, y, "Touch Sound");
+        boolean touchSound = kernel.getSettingsManager().getBooleanSetting("audio.touch_sound", true);
+        switchTouchSound.setOn(touchSound);
+        switchTouchSound.setOnChangeListener(enabled -> {
+            var sm = kernel != null ? kernel.getSettingsManager() : null;
+            if (sm != null) {
+                sm.setSetting("audio.touch_sound", enabled);
+                sm.saveSettings();
+            }
+        });
+        y += 40;
+
+        // バイブレーションスイッチ
+        switchVibration = new jp.moyashi.phoneos.core.ui.components.Switch(px + 16, y, "Vibration");
+        boolean vibration = kernel.getSettingsManager().getBooleanSetting("audio.vibration", true);
+        switchVibration.setOn(vibration);
+        switchVibration.setOnChangeListener(enabled -> {
+            var sm = kernel != null ? kernel.getSettingsManager() : null;
+            if (sm != null) {
+                sm.setSetting("audio.vibration", enabled);
+                sm.saveSettings();
+            }
+        });
+        y += 60;
+
+        // 着信音選択ボタン
+        btnRingtone = new jp.moyashi.phoneos.core.ui.components.Button(px + 16, y, pw - 32, 40, "Ringtone (Coming Soon)");
+        btnRingtone.setOnClickListener(() -> {
+            System.out.println("SettingsScreen: Ringtone selection clicked (coming soon)");
+            // 将来的に着信音選択画面を表示
+        });
+
+        // パネルに全てのコンポーネントを追加
+        soundVibrationPanel.addChild(sliderMasterVolume);
+        soundVibrationPanel.addChild(switchNotificationSound);
+        soundVibrationPanel.addChild(switchTouchSound);
+        soundVibrationPanel.addChild(switchVibration);
+        soundVibrationPanel.addChild(btnRingtone);
+    }
+
+    /**
+     * Sound & Vibrationパネルのコンポーネントを描画する
+     */
+    private void drawSoundVibrationPanelComponents(PGraphics g) {
+        int px = ITEM_PADDING;
+        int py = 80;
+
+        ensureSoundVibrationComponents();
+
+        if (soundVibrationPanel != null) {
+            soundVibrationPanel.draw(g);
+        }
+
+        // ヘッダー（Appearanceと同じ位置）
+        if (kernel != null && kernel.getJapaneseFont() != null) g.textFont(kernel.getJapaneseFont());
+        int tcol = (kernel != null && kernel.getThemeEngine() != null) ? kernel.getThemeEngine().colorOnSurface() : textColor;
+        g.fill((tcol>>16)&0xFF, (tcol>>8)&0xFF, tcol&0xFF);
+        g.textAlign(g.LEFT, g.TOP);
+        g.textSize(16);
+        g.text("Sound & Vibration", px + 16, py + 12);
+
+        // セクションヘッダー
+        g.textSize(14);
+        g.fill(0xFF4A90E2);
+        g.text("Volume", px + 16, py + 48);
+        g.text("Sounds", px + 16, py + 113);
+        g.text("Ringtone", px + 16, py + 253);
+
+        // 全てのコンポーネントを描画
+        if (sliderMasterVolume != null) sliderMasterVolume.draw(g);
+        if (switchNotificationSound != null) switchNotificationSound.draw(g);
+        if (switchTouchSound != null) switchTouchSound.draw(g);
+        if (switchVibration != null) switchVibration.draw(g);
+        if (btnRingtone != null) btnRingtone.draw(g);
+    }
+
+    /**
+     * Storageパネルのコンポーネントを初期化する
+     */
+    private void ensureStorageComponents() {
+        if (storagePanel != null) return;
+
+        int px = ITEM_PADDING;
+        int py = 80;
+        int pw = 400 - 2 * ITEM_PADDING;
+        int ph = 480;
+
+        // パネルを作成
+        storagePanel = new jp.moyashi.phoneos.core.ui.components.Panel(px, py, pw, ph);
+
+        int y = py + 60;
+
+        // ストレージ使用状況（ダミーデータ）
+        // TODO: VFSから実際の使用量を取得
+        long totalStorage = 1024; // MB
+        long usedStorage = 512; // MB
+        int usagePercent = (int) ((usedStorage * 100) / totalStorage);
+
+        progressStorageUsage = new jp.moyashi.phoneos.core.ui.components.ProgressBar(px + 16, y, pw - 32, 30);
+        progressStorageUsage.setValue(usagePercent);
+        y += 35;
+
+        labelStorageUsage = new jp.moyashi.phoneos.core.ui.components.Label(px + 16, y, usedStorage + " MB / " + totalStorage + " MB (" + usagePercent + "%)");
+        y += 50;
+
+        // アプリデータ使用量（ダミーデータ）
+        long appData = 128; // MB
+        labelAppData = new jp.moyashi.phoneos.core.ui.components.Label(px + 16, y, "App Data: " + appData + " MB");
+        y += 30;
+
+        // キャッシュサイズ（ダミーデータ）
+        long cacheSize = 64; // MB
+        labelCacheSize = new jp.moyashi.phoneos.core.ui.components.Label(px + 16, y, "Cache: " + cacheSize + " MB");
+        y += 60;
+
+        // キャッシュクリアボタン
+        btnClearCache = new jp.moyashi.phoneos.core.ui.components.Button(px + 16, y, pw - 32, 40, "Clear Cache");
+        btnClearCache.setOnClickListener(() -> {
+            System.out.println("SettingsScreen: Clear cache clicked");
+            // TODO: キャッシュクリア処理を実装
+            labelCacheSize.setText("Cache: 0 MB");
+        });
+        y += 50;
+
+        // すべてのデータ削除ボタン
+        btnClearAllData = new jp.moyashi.phoneos.core.ui.components.Button(px + 16, y, pw - 32, 40, "Clear All Data");
+        btnClearAllData.setOnClickListener(() -> {
+            System.out.println("SettingsScreen: Clear all data clicked");
+            // TODO: すべてのデータ削除処理を実装（確認ダイアログが必要）
+        });
+
+        // パネルに全てのコンポーネントを追加
+        storagePanel.addChild(progressStorageUsage);
+        storagePanel.addChild(labelStorageUsage);
+        storagePanel.addChild(labelAppData);
+        storagePanel.addChild(labelCacheSize);
+        storagePanel.addChild(btnClearCache);
+        storagePanel.addChild(btnClearAllData);
+    }
+
+    /**
+     * Storageパネルのコンポーネントを描画する
+     */
+    private void drawStoragePanelComponents(PGraphics g) {
+        int px = ITEM_PADDING;
+        int py = 80;
+
+        ensureStorageComponents();
+
+        if (storagePanel != null) {
+            storagePanel.draw(g);
+        }
+
+        // ヘッダー（Appearanceと同じ位置）
+        if (kernel != null && kernel.getJapaneseFont() != null) g.textFont(kernel.getJapaneseFont());
+        int tcol = (kernel != null && kernel.getThemeEngine() != null) ? kernel.getThemeEngine().colorOnSurface() : textColor;
+        g.fill((tcol>>16)&0xFF, (tcol>>8)&0xFF, tcol&0xFF);
+        g.textAlign(g.LEFT, g.TOP);
+        g.textSize(16);
+        g.text("Storage", px + 16, py + 12);
+
+        // セクションヘッダー
+        g.textSize(14);
+        g.fill(0xFF4A90E2);
+        g.text("Internal Storage", px + 16, py + 48);
+        g.text("Data Usage", px + 16, py + 153);
+        g.text("Storage Management", px + 16, py + 248);
+
+        // 全てのコンポーネントを描画
+        if (progressStorageUsage != null) progressStorageUsage.draw(g);
+        if (labelStorageUsage != null) labelStorageUsage.draw(g);
+        if (labelAppData != null) labelAppData.draw(g);
+        if (labelCacheSize != null) labelCacheSize.draw(g);
+        if (btnClearCache != null) btnClearCache.draw(g);
+        if (btnClearAllData != null) btnClearAllData.draw(g);
+    }
+
     private String toHex(int argb) {
         int rgb = argb & 0x00FFFFFF;
         return String.format("#%06X", rgb);

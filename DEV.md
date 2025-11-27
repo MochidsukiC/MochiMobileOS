@@ -113,12 +113,13 @@
 - BaseComponent/主要コンポーネント（Button/Label/Switch/Slider/Text系）をThemeEngine準拠へ順次移行（進行中）
 - 追加適用: Panel/ListView/Dialog/Dropdown をトークン化（背景/枠線/選択色/文字色）
 - 追加適用: Checkbox/RadioButton をトークン化（境界/選択色/文字色）
-- 設定アプリに「外観」セクションを追加（モード/アクセント/角丸/文字サイズ/Reduce Motion）最小実装（完了）
+- ~~設定アプリに「外観」セクションを追加（モード/アクセント/角丸/文字サイズ/Reduce Motion）最小実装（完了）~~
 - エレベーション/影・モーションの統一（Reduce Motion対応）
   - ユーティリティ実装済（段階適用中）
 - AUTOモードの判定実装（時間帯/ホストOSテーマのフックが可能なら対応）
 - App Library: 検索のIME/テキスト入力周りの強化、検索対象の拡張（説明/ID）
 - 低電力モードの適用実装（ScreenTransitionのフェード切替、影段階の調整、速度最適化）
+- 設定アプリの残りセクション実装（Sound & Vibration、Storage、Apps & Notifications）
 
 ## �d�l�i�ǉ��E�X�V�j
 
