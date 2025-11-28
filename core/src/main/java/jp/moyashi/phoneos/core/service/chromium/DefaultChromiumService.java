@@ -24,6 +24,7 @@ public class DefaultChromiumService implements ChromiumService {
 
     private final ChromiumProvider provider;
     private final Map<String, DefaultChromiumSurface> surfaces = new ConcurrentHashMap<>();
+    private String activeSurfaceId;
 
     private Kernel kernel;
     private ChromiumManager manager;
@@ -62,29 +63,54 @@ public class DefaultChromiumService implements ChromiumService {
     }
 
     @Override
-    public ChromiumSurface createSurface(String surfaceId, int width, int height, String initialUrl) {
+    public ChromiumSurface createTab(int width, int height, String initialUrl) {
         if (manager == null) {
             throw new IllegalStateException("ChromiumService is not initialized");
         }
+
+        String surfaceId = "browser_tab_" + System.currentTimeMillis();
 
         DefaultChromiumSurface surface = surfaces.computeIfAbsent(surfaceId, id -> {
             ChromiumBrowser browser = manager.createBrowser(initialUrl, width, height);
             return new DefaultChromiumSurface(id, browser);
         });
+        
+        activeSurfaceId = surfaceId;
         return surface;
     }
 
     @Override
-    public void destroySurface(String surfaceId) {
+    public void closeTab(String surfaceId) {
         DefaultChromiumSurface surface = surfaces.remove(surfaceId);
         if (surface != null) {
             surface.dispose();
+
+            // If the closed tab was the active one, switch to another tab if available
+            if (surfaceId.equals(activeSurfaceId)) {
+                if (!surfaces.isEmpty()) {
+                    activeSurfaceId = surfaces.keySet().iterator().next();
+                } else {
+                    activeSurfaceId = null;
+                }
+            }
         }
     }
 
     @Override
     public Optional<ChromiumSurface> findSurface(String surfaceId) {
         return Optional.ofNullable(surfaces.get(surfaceId));
+    }
+
+    @Override
+    public Optional<ChromiumSurface> getActiveSurface() {
+        return Optional.ofNullable(surfaces.get(activeSurfaceId));
+    }
+
+    @Override
+    public void setActiveSurface(String surfaceId) {
+        if (surfaces.containsKey(surfaceId)) {
+            this.activeSurfaceId = surfaceId;
+        }
     }
 
     @Override
