@@ -85,3 +85,13 @@ HANDOVER_TO_CODEX.md
 ### Claude Settings ###
 .claude/settings.local.json
 .claude/mcp.json
+
+### External Libraries ###
+forge/libs/commons-compress-*.jar
+forge/libs/javafx/
+
+### Git Tools ###
+git-filter-repo
+
+### Mojibake Files ###
+C*Usersdora2IdeaProjectsMochiMobileOS*
