@@ -39,4 +39,49 @@ bin/
 .vscode/
 
 ### Mac OS ###
-.DS_Storeforge/run/libs/
+.DS_Store
+
+### IDEA Additional ###
+.idea/gradle.xml
+.idea/misc.xml
+.idea/vcs.xml
+.idea/runConfigurations/
+
+### Runtime Data ###
+standalone/jcef-bundle/
+standalone/mochi_os_data/
+forge/run/
+mochi_os_data/
+jcef-bundle/
+
+### Logs ###
+*.log
+debug.log
+nul
+
+### Development Scripts ###
+*.bat
+!gradlew.bat
+
+### Documentation ###
+docs/java-cef-master/
+docs/jcef-api-javadoc/
+docs/logs/
+docs/mcef-*/
+
+### Development Files ###
+autonomous_ui_improver/
+data/
+resources/
+screenshots/
+*.py
+replacements.txt
+JMdict_e
+AGENTS.md
+API_DIFFERENCES_REPORT.md
+HANDOVER_TO_CODEX.md
+*gemini-cli-readme.md
+
+### Claude Settings ###
+.claude/settings.local.json
+.claude/mcp.json
