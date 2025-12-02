@@ -62,4 +62,11 @@ public interface ChromiumService {
      * 管理下のサーフス一覧を取得します。
      */
     Collection<ChromiumSurface> getSurfaces();
+
+    /**
+     * ブラウザデータマネージャー（ブックマーク、履歴）を取得します。
+     *
+     * @return BrowserDataManager
+     */
+    BrowserDataManager getBrowserDataManager();
 }

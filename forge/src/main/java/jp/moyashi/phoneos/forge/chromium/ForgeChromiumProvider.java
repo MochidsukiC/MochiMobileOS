@@ -209,6 +209,18 @@ public class ForgeChromiumProvider implements ChromiumProvider {
     }
 
     @Override
+    public void sendMouseDragged(org.cef.browser.CefBrowser browser, int x, int y, int button) {
+        try {
+            com.cinemamod.mcef.MCEFBrowser mcefBrowser = getMcefBrowser(browser);
+            if (mcefBrowser == null) return;
+            // MCEF does not have explicit drag support, so we reuse move
+            mcefBrowser.sendMouseMove(x, y);
+        } catch (Exception e) {
+            // Suppress stack trace
+        }
+    }
+
+    @Override
     public void sendMouseWheel(org.cef.browser.CefBrowser browser, int x, int y, float delta) {
         try {
             com.cinemamod.mcef.MCEFBrowser mcefBrowser = getMcefBrowser(browser);
@@ -221,18 +233,24 @@ public class ForgeChromiumProvider implements ChromiumProvider {
     }
 
     @Override
-    public void sendKeyPressed(org.cef.browser.CefBrowser browser, int keyCode, char keyChar, boolean ctrlPressed, boolean shiftPressed) {
+    public void sendKeyPressed(org.cef.browser.CefBrowser browser, int keyCode, char keyChar, boolean shiftPressed, boolean ctrlPressed, boolean altPressed, boolean metaPressed) {
         try {
             com.cinemamod.mcef.MCEFBrowser mcefBrowser = getMcefBrowser(browser);
             if (mcefBrowser == null) return;
 
             // 修飾子フラグを構築（MCEF APIに合わせる）
             int modifiers = 0;
+            if (shiftPressed) {
+                modifiers |= 1;  // SHIFT_DOWN_MASK equivalent
+            }
             if (ctrlPressed) {
                 modifiers |= 2;  // CTRL_DOWN_MASK equivalent
             }
-            if (shiftPressed) {
-                modifiers |= 1;  // SHIFT_DOWN_MASK equivalent
+            if (altPressed) {
+                modifiers |= 4;  // ALT_DOWN_MASK equivalent
+            }
+            if (metaPressed) {
+                modifiers |= 8;  // META_DOWN_MASK equivalent
             }
 
             mcefBrowser.sendKeyPress(keyCode, 0L, modifiers);
@@ -246,18 +264,24 @@ public class ForgeChromiumProvider implements ChromiumProvider {
     }
 
     @Override
-    public void sendKeyReleased(org.cef.browser.CefBrowser browser, int keyCode, char keyChar, boolean ctrlPressed, boolean shiftPressed) {
+    public void sendKeyReleased(org.cef.browser.CefBrowser browser, int keyCode, char keyChar, boolean shiftPressed, boolean ctrlPressed, boolean altPressed, boolean metaPressed) {
         try {
             com.cinemamod.mcef.MCEFBrowser mcefBrowser = getMcefBrowser(browser);
             if (mcefBrowser == null) return;
 
             // 修飾子フラグを構築
             int modifiers = 0;
+            if (shiftPressed) {
+                modifiers |= 1;  // SHIFT_DOWN_MASK equivalent
+            }
             if (ctrlPressed) {
                 modifiers |= 2;  // CTRL_DOWN_MASK equivalent
             }
-            if (shiftPressed) {
-                modifiers |= 1;  // SHIFT_DOWN_MASK equivalent
+            if (altPressed) {
+                modifiers |= 4;  // ALT_DOWN_MASK equivalent
+            }
+            if (metaPressed) {
+                modifiers |= 8;  // META_DOWN_MASK equivalent
             }
 
             mcefBrowser.sendKeyRelease(keyCode, 0L, modifiers);

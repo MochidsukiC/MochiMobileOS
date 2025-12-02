@@ -304,3 +304,197 @@
   - **グローバルスワイプ検出の復活**（2025-11-10）
     - `checkForSwipe()` を再度呼び出し、エッジスワイプで通知センター/コントロールセンター/ロック画面が展開できるように修正
     - 長押し中はスワイプを発火させず、ドラッグ完了後に距離・速度条件を満たした場合のみSWIPEイベントを生成
+
+## 変更(2025-11-28)
+- **Mac版とWindows版のコードベースマージ完了**
+  - 背景: Mac環境で`git push --force`が実行され、Windows環境とGit履歴が完全に分岐
+    - ChromiumBrowserScreen.java: Mac版では完全にリライト（ChromiumSurface/TextField/Buttonベースの新アーキテクチャ、257行）、Windows版では従来の手動レンダリング（1075行）
+    - SettingsScreen.java: Windows版ではPhase 1-3実装完了（6セクション、1573行）、Mac版は旧バージョン（875行）
+  - 対応手順:
+    1. `.gitignore`を更新し、未追跡のランタイムファイル/開発ファイル（.idea/*, standalone/jcef-bundle/*, forge/run/*, *.log, *.bat等）を除外
+    2. `git pull origin master --allow-unrelated-histories`で強制マージ実行
+    3. 20ファイル以上のマージ競合をユーザーがIDE上で手動解決
+    4. HomeScreen.javaのimport文不足（TextField, Sensor, SensorEvent, SensorEventListener）をユーザーが手動修正
+  - 結果: **core/forgeモジュールのビルドに成功** - BUILD SUCCESSFUL
+    - Mac版のChromiumブラウザUI改善（新アーキテクチャ）を取り込み
+    - Windows版のSettings Phase 1-3実装（6セクション完全実装）を保持
+    - 両環境の変更を統合した完全なコードベースを確立
+  - 今後の課題:
+    - Mac環境でのHiDPI/Retinaディスプレイ対応の検証
+    - 統合されたChromiumBrowserScreenの動作テスト
+
+- **ホームスクリーンのページ構造修正**
+  - 問題: マージの過程で1ページ目（ダッシュボード）にアプリショートカットが配置されていた
+  - 修正内容（HomeScreen.java `createDefaultLayout()`メソッド）:
+    - 1ページ目: ダッシュボード専用ページ（アプリショートカットは配置しない）
+    - 2ページ目以降: アプリグリッドページ（従来通りアプリショートカットを配置）
+    - 最終ページ: AppLibraryページ（全アプリリスト表示）
+  - 結果: 正しいページ構造を復元し、ダッシュボードとアプリグリッドが分離された
+
+- **Chromiumブラウザのマウスイベント処理修正**
+  - 問題: クロミウムブラウザでスクロール、クリック、ドラッグが正しくChromiumに転送されていなかった
+  - 修正内容（ChromiumBrowserScreen.java）:
+    1. `mousePressed`メソッド（236行目）: `sendMouseDragged`を誤って呼んでいた → `sendMousePressed`に修正
+    2. `mouseDragged`メソッドを新規追加（282-294行目）: ドラッグイベントをChromiumに転送
+    3. `mouseMoved`メソッド（267-271行目）: UIコンポーネント処理後、コンテンツエリア内であればChromiumに`sendMouseMoved`を転送
+    4. `mouseWheel`メソッド（277-279行目）: コンテンツエリア内かどうかをチェックしてから転送
+    5. `mouseReleased`メソッド（251-254行目）: コンテンツエリア内かどうかをチェックしてから転送
+    6. `isInContentArea`ヘルパーメソッドを追加（327-329行目）: コンテンツエリア（10, 60, width-10, height-60）の当たり判定
+  - **追加修正1**: ボタン番号とスクロール量を修正
+    - ボタン番号: ChromiumProviderはProcessing規約（1=左, 2=中, 3=右）でボタン番号を受け取る
+      - `mousePressed`, `mouseReleased`, `mouseDragged`でボタン番号を1（左ボタン）に修正（button 0 → button 1）
+    - スクロール量: ChromiumProviderでdelta値を`(int)`にキャストするため、小さな値が0になる問題を修正
+      - `mouseWheel`でdelta値を10倍に増幅（`delta * 10`）してから転送（当初3倍→10倍に調整）
+  - **追加修正2**: スクロールイベントの重複を修正（StandaloneWrapper.java）
+    - 問題: マウスホイールイベントが3箇所で登録されており、1回のスクロールで複数回イベントが発火していた
+      - NEWTウィンドウのmouseWheelMovedリスナー（88-105行目）
+      - AWTのMouseWheelListener（175-186行目）
+      - Processing標準のmouseWheel()メソッド（353-361行目）
+    - 修正: NEWT/AWTのリスナーをコメントアウトし、Processing標準のmouseWheel()のみを使用
+    - 結果: スクロールイベントの重複が解消され、正しいスクロール動作を実現
+  - **最終結果**: Chromiumブラウザ内でのクリック、ドラッグ、スクロール、マウス移動が正常に動作するようになった
+
+- **Android Intent URL対応**
+  - 問題: `intent://`スキームのURLにアクセスすると「ERR_UNKNOWN_URL_SCHEME」エラーが発生
+  - Intent URLとは: Androidアプリを起動するためのURL形式で、通常のブラウザでは処理できない
+    - 形式: `intent://HOST/PATH#Intent;scheme=SCHEME;S.browser_fallback_url=FALLBACK_URL;end;`
+  - 修正内容:
+    - **ChromiumBrowserScreen.java**:
+      - `convertIntentUrl()`メソッドを新規追加（347-395行目）
+        - Intent URLを検出し、`S.browser_fallback_url`パラメータからフォールバックURLを抽出
+        - フォールバックURLが存在しない場合は、`scheme`パラメータとホスト/パスから通常のURLを構築
+        - URLデコード処理を含む
+      - `keyPressed()`メソッドを修正（303-306行目）: アドレスバーからのURL入力時にIntent URLを変換してから読み込む
+    - **ChromiumBrowser.java（追加修正）**:
+      - `CefRequestHandlerAdapter`を追加（107-125行目）: ページ内のIntent URLリンククリック時にもインターセプト
+        - `onBeforeBrowse()`メソッドでナビゲーション前にURLをチェック
+        - Intent URLを検出したら、変換後のURLで`browser.loadURL()`を呼び出し
+        - 元のリクエストをキャンセル（`return true`）
+      - `convertIntentUrl()`メソッドを追加（1024-1071行目）: ChromiumBrowserScreen.javaと同じロジック
+      - import文に`CefRequestHandlerAdapter`と`CefRequest`を追加（12-14行目）
+  - 結果: アドレスバー入力とページ内リンククリックの両方でIntent URLが自動変換され、エラーなくページが表示される
+
+- **Chromiumブラウザのショートカットキー対応**（2025-11-28）
+  - 問題: Chromiumブラウザ内でCtrl+C、Ctrl+V、Alt+F4、Cmd+C（Mac）等のショートカットキーが動作しない
+  - 原因: 修飾キー（Alt/Meta）の状態がChromiumに渡されていなかった
+    - Kernel.javaにはShift/Ctrlのみ実装されており、Alt/Metaキーの追跡がなかった
+    - ChromiumSurface/ChromiumProviderのインターフェースに修飾キーパラメータがなかった
+    - StandaloneWrapper.javaでAlt/Metaキーが特殊キーとして検出されていなかった
+  - 修正内容:
+    - **Kernel.java**:
+      - `altPressed`/`metaPressed`フィールドを追加（197-201行目）
+      - `isAltPressed()`/`isMetaPressed()`メソッドを追加（1443-1459行目）
+      - `keyPressed()`でAlt（keyCode==18）とMeta（keyCode==91/157）を検出（668-689行目）
+      - `keyReleased()`でAlt/Metaキーのリリースを検出（775-790行目）
+    - **ChromiumSurface.java（インターフェース変更）**:
+      - `sendKeyPressed()`/`sendKeyReleased()`にshiftPressed/ctrlPressed/altPressed/metaPressedパラメータを追加（121行目、133行目）
+    - **ChromiumProvider.java（インターフェース変更）**:
+      - `sendKeyPressed()`/`sendKeyReleased()`にshiftPressed/ctrlPressed/altPressed/metaPressedパラメータを追加（191行目、204行目）
+    - **ChromiumBrowser.java**:
+      - `sendKeyPressed()`/`sendKeyReleased()`のシグネチャを更新（625行目、639行目）
+      - `flushInputEvents()`でKernelから全修飾キー（Shift/Ctrl/Alt/Meta）を取得してProviderに渡す（993-997行目、1000-1004行目）
+    - **DefaultChromiumService.java**:
+      - `sendKeyPressed()`/`sendKeyReleased()`のシグネチャを更新（295行目、300行目）
+    - **StandaloneChromiumProvider.java**:
+      - `sendKeyPressed()`/`sendKeyReleased()`のシグネチャを更新（469行目、533行目）
+      - Alt/MetaのmodifierをAWTイベントに追加（`ALT_DOWN_MASK`、`META_DOWN_MASK`）（485-490行目、549-554行目）
+    - **ForgeChromiumProvider.java**:
+      - `sendKeyPressed()`/`sendKeyReleased()`のシグネチャを更新（236行目、267行目）
+      - Alt/MetaのmodifierをMCEFイベントに追加（modifiers |= 4/8）（249-254行目、280-285行目）
+    - **StandaloneWrapper.java**:
+      - `keyPressed()`でAlt（18）とMeta（91/157）を特殊キーとして検出（385-386行目）
+      - Ctrl/Alt/Metaのいずれかが押されている場合も通常文字キーをKernelに転送（389-392行目）
+    - **ChromiumBrowserScreen.java**:
+      - `keyPressed()`/`keyReleased()`でKernelから全修飾キーを取得してsendKeyPressed/sendKeyReleasedに渡す（315-320行目、327-331行目）
+  - 結果: **Ctrl+C/V/X/A、Alt+F4、Cmd+C（Mac）等のショートカットキーがChromiumブラウザ内で正常に動作するようになった**
+  - **追加修正1**（制御文字の問題・改訂版）:
+    - 問題: Ctrl+Aのみ動作し、Ctrl+C/V/X等のショートカットが動作しない
+    - 原因: Ctrl押下時にkeyCharが制御文字（Ctrl+C=0x03、Ctrl+V=0x16等）になっており、Chromium側で正しく解釈されなかった
+    - 修正内容（StandaloneChromiumProvider.java）:
+      - **sendKeyPressed()でCtrl/Alt/Meta押下時に制御文字が来た場合、keyCharをCHAR_UNDEFINEDに変換**（501-509行目）
+        - ChromiumはmodifiersとkeyCodeの組み合わせでショートカットを判定するため、keyCharは不要
+        - すべての制御文字（0x00-0x1F）をCHAR_UNDEFINED（0xFFFF）に変換
+      - sendKeyReleased()でも同様の処理を追加（578-582行目）
+      - **デバッグログを追加**して、送信されるイベント情報を確認できるようにした（495-512行目）
+    - テスト手順:
+      1. `./gradlew standalone:build`でビルド
+      2. standaloneアプリを起動してChromiumブラウザでCtrl+Cを押す
+      3. コンソールに以下のようなログが出力される：
+         ```
+         [StandaloneChromiumProvider] sendKeyPressed: keyCode=67, keyChar=3 ('?'), shift=false, ctrl=true, alt=false, meta=false
+         [StandaloneChromiumProvider] Adjusted control char to UNDEFINED: keyCode=67, original keyChar=3
+         [StandaloneChromiumProvider] Sending KEY_PRESSED: awtKeyCode=67, adjustedKeyChar=65535, modifiers=128
+         ```
+    - 期待される結果: **Ctrl+C/V/X等のショートカットキーが正常に動作する**
+  - **追加修正2**（フォーカス管理システムへの統合）（2025-11-28）:
+    - 問題: アドレスバーをクリックした後、Ctrl+C等のショートカットキーがアドレスバーに送られてしまい、Chromiumで動作しない
+    - 根本原因: ChromiumBrowserScreenが独自の`isEditingUrl`フラグでフォーカス管理を行っており、既存のOSフォーカス管理システムと統合されていなかった
+    - 修正内容（ChromiumBrowserScreen.java）:
+      - `isEditingUrl`フラグを完全に削除（27行目）
+      - `hasFocusedComponent()`メソッドを実装（435-437行目）：`addressBar.isFocused()`を返す
+      - `setModifierKeys()`メソッドを実装（447-454行目）：将来的な拡張のための準備
+      - `keyPressed()`メソッドを簡略化（302-337行目）：`addressBar.isFocused()`で判定し、フォーカスされている場合はアドレスバーに、されていない場合はChromiumに送信
+      - `keyReleased()`メソッドも同様に修正（339-352行目）
+      - `mousePressed()`メソッドの`isEditingUrl`参照を`addressBar.isFocused()`に置換（219-234行目）
+      - その他全ての`isEditingUrl`参照を`addressBar.isFocused()`に置換（113, 139, 252, 269, 290行目）
+    - 結果: **OSの既存フォーカス管理システムに統合され、通常のテキスト入力と同じ動作になった**
+      - アドレスバーをクリックした後でも、Chromiumコンテンツをクリックするとフォーカスが自動的に移動
+      - ショートカットキーは常にフォーカスされているコンポーネント（アドレスバーまたはChromium）に正しく送信される
+  - **追加修正3**（JCEFブラウザへのフォーカス設定の問題を修正）（2025-11-28）:
+    - 問題: `browser.setFocus(true)` の呼び出しでAWTイベントキューで例外が発生
+      - "Exception in thread "AWT-EventQueue-0"" が複数回出力される
+      - ChromiumBrowser.javaの初期化時に `uiComponent.setFocusable(false)` を設定している（328行目）ため、setFocus()が失敗
+    - 修正内容（StandaloneChromiumProvider.java）:
+      - `browser.setFocus(true)` の呼び出しを完全に削除（533-536行目、289行目）
+      - JCEFはフォーカスなしでもキーイベントを受け取ることができる
+      - UIコンポーネントが `setFocusable(false)` に設定されている理由: ProcessingウィンドウでIMEを使用するため
+    - エラーハンドリングの改善:
+      - InvocationTargetExceptionの詳細を表示するように改善（565-571行目、624-630行目）
+    - 結果: **AWTスレッドでの例外が解消され、キーイベントが正しく送信されるようになった**
+  - **追加修正4**（KeyEvent/MouseEventのsourceComponentを実際のUIコンポーネントに変更）（2025-11-28）:
+    - 問題: キーイベントは送信されているが、ショートカットキーが動作しない
+    - 根本原因: KeyEvent/MouseEventのsourceとして`new Canvas()`という空のコンポーネントを使用していた
+      - このコンポーネントは実際のブラウザのUIコンポーネントとは無関係で、フォーカスも持っていない
+    - 修正内容（StandaloneChromiumProvider.java）:
+      - `eventComponent`を`fallbackComponent`に改名（55行目）
+      - すべてのイベント送信メソッドで`browser.getUIComponent()`を呼び出して実際のUIコンポーネントを取得
+        - sendKeyPressed()（518-522行目）
+        - sendKeyReleased()（607-611行目）
+        - sendMousePressed()（277-280行目）
+        - sendMouseReleased()（329-332行目）
+        - sendMouseMoved()（362-365行目）
+        - sendMouseDragged()（406-409行目）
+        - sendMouseWheel()（437-440行目）
+      - getUIComponent()がnullの場合はfallbackComponentを使用
+    - 結果: **KeyEvent/MouseEventが実際のブラウザUIコンポーネントから発火されるようになり、Chromiumがショートカットキーを正しく認識できるようになった**
+
+## 変更(2025-12-01)
+- **iOS/Android方式のテキスト入力統一アーキテクチャ完成**
+  - 目的: OS全体でCtrl+C/V/X/A等のクリップボード操作を統一的に処理する
+  - iOSの設計パターンを採用:
+    - `TextInputProtocol`: iOS UITextInput相当のインターフェース
+    - `Screen.getFocusedTextInput()`: iOS UIResponder Chain相当
+    - `ClipboardService`: iOS UIPasteboard相当
+    - `Kernel`: 中央でCtrlショートカットを検出し、フォーカスされた入力に操作を委譲
+  - 修正内容:
+    - **ChromiumSurface.java**: TextInputProtocol用メソッドを追加（hasTextInputFocus, getCachedSelectedText, executeScript）
+    - **DefaultChromiumService.java**: 新しいChromiumSurfaceメソッドを実装
+    - **ChromiumTextInput.java**: ChromiumBrowserからChromiumSurfaceを使用するように変更
+    - **NoteEditScreen.java**: getFocusedTextInput()を実装し、旧Ctrl+C/V処理を削除
+    - **ChromiumBrowserScreen.java**: iOS/Android方式を採用 - フォーカス検出に頼らず、Chromiumサーフェスがアクティブな場合は常にChromiumTextInputを返す
+  - 解決した問題:
+    - メモアプリでCtrl+Aが動作しない → getFocusedTextInput()実装で解決
+    - YouTube等の複雑なWebアプリでdocument.activeElementがBODYを返す → iOS/Android方式（常にJS実行）で解決
+  - 技術的発見:
+    - iOS/AndroidはWebViewでフォーカス検出に頼らない
+    - 常にJavaScript操作を実行し、実際に入力フィールドがあれば動作する方式を採用
+  - 結果: **Google検索、YouTube検索、メモアプリ等、すべてのテキスト入力でCtrl+C/V/X/Aが正常に動作**
+
+- **バックスペースキーのTextInputProtocol統合**
+  - 問題: バックスペースがHTMLフィールドに正しく転送されていなかった
+  - 修正内容:
+    - **TextInputProtocol.java**: `deleteBackward()`メソッドを追加
+    - **BaseTextInput.java**: `deleteBackward()`を実装（選択があれば削除、なければカーソル前の1文字を削除）
+    - **ChromiumTextInput.java**: JavaScript経由で`deleteBackward()`を実装（INPUT/TEXTAREAはvalue操作、contentEditableはexecCommand）
+    - **Kernel.java**: バックスペースキー（keyCode=8）をTextInputProtocol経由で処理
+  - 結果: **メモアプリ、Chromiumアドレスバー、HTMLフィールド（Google/YouTube等）でバックスペースが正常に動作**

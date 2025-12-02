@@ -584,6 +584,24 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
     }
 
     /**
+     * キーリリースイベントを現在のスクリーンに転送する。
+     *
+     * @param key 離されたキー文字
+     * @param keyCode キーコード
+     */
+    public void keyReleased(char key, int keyCode) {
+        // アニメーション中はイベントを無視
+        if (screenTransition.isAnimating()) {
+            return;
+        }
+
+        Screen currentScreen = getCurrentScreen();
+        if (currentScreen != null && currentPApplet != null) {
+            currentScreen.keyReleased(currentPApplet, key, keyCode);
+        }
+    }
+
+    /**
      * ナビゲーションスタック内のスクリーン数を取得する。
      * 
      * @return スタックのサイズ
@@ -810,5 +828,19 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
             return currentScreen.hasFocusedComponent();
         }
         return false;
+    }
+
+    /**
+     * フォーカスされたテキスト入力コンポーネントを取得する。
+     * OS統一クリップボード管理（Ctrl+C/V/X/A）のためにKernelから呼び出される。
+     *
+     * @return フォーカスされたTextInputProtocol、なければnull
+     */
+    public jp.moyashi.phoneos.core.ui.components.TextInputProtocol getFocusedTextInput() {
+        Screen currentScreen = getCurrentScreen();
+        if (currentScreen != null) {
+            return currentScreen.getFocusedTextInput();
+        }
+        return null;
     }
 }

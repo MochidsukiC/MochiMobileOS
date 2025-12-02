@@ -24,7 +24,7 @@ import processing.core.PGraphics;
  * @version 1.0
  * @since 1.0
  */
-public abstract class BaseTextInput extends BaseComponent implements Focusable, Clickable {
+public abstract class BaseTextInput extends BaseComponent implements Focusable, Clickable, TextInputProtocol {
 
     // テキストデータ
     protected String text;
@@ -203,26 +203,8 @@ public abstract class BaseTextInput extends BaseComponent implements Focusable, 
     public boolean onKeyPressed(char key, int keyCode) {
         if (!focused || !enabled) return false;
 
-        // Ctrl+C: コピー（keyCodeで判定: C=67）
-        if (ctrlPressed && keyCode == 67) {
-            // コピー処理は外部で実装（ClipboardManager経由）
-            return true;
-        }
-
-        // Ctrl+V: ペースト（keyCodeで判定: V=86）
-        if (ctrlPressed && keyCode == 86) {
-            // ペースト処理は外部で実装（ClipboardManager経由）
-            return true;
-        }
-
-        // Ctrl+A: 全選択（keyCodeで判定: A=65）
-        if (ctrlPressed && keyCode == 65) {
-            selectionStart = 0;
-            selectionEnd = text.length();
-            cursorPosition = text.length();
-            anchorPosition = cursorPosition; // アンカー位置を更新
-            return true;
-        }
+        // Ctrl+C/V/X/A はOS側（Kernel）で統一管理されるため、ここでは処理しない
+        // TextInputProtocolインターフェース経由でOS側が操作する
 
         // バックスペース
         if (keyCode == 8) {
@@ -373,17 +355,22 @@ public abstract class BaseTextInput extends BaseComponent implements Focusable, 
         return str.length() * 8;
     }
 
-    protected boolean hasSelection() {
+    // ===== TextInputProtocol実装 =====
+
+    @Override
+    public boolean hasSelection() {
         return selectionStart >= 0 && selectionEnd >= 0 && selectionStart != selectionEnd;
     }
 
-    protected void clearSelection() {
+    @Override
+    public void clearSelection() {
         selectionStart = -1;
         selectionEnd = -1;
         // anchorPositionはクリアしない（シフトクリック範囲選択のため）
     }
 
-    protected void deleteSelection() {
+    @Override
+    public void deleteSelection() {
         if (!hasSelection()) return;
 
         int start = Math.min(selectionStart, selectionEnd);
@@ -397,12 +384,77 @@ public abstract class BaseTextInput extends BaseComponent implements Focusable, 
         clearSelection();
     }
 
+    @Override
+    public void deleteBackward() {
+        // バックスペース操作: 選択があれば削除、なければカーソル前の1文字を削除
+        if (hasSelection()) {
+            deleteSelection();
+        } else if (cursorPosition > 0) {
+            text = text.substring(0, cursorPosition - 1) + text.substring(cursorPosition);
+            cursorPosition--;
+            anchorPosition = cursorPosition;
+        }
+    }
+
+    @Override
+    public void selectAll() {
+        selectionStart = 0;
+        selectionEnd = text.length();
+        cursorPosition = text.length();
+        anchorPosition = cursorPosition;
+    }
+
+    @Override
+    public int getSelectionStart() {
+        return selectionStart;
+    }
+
+    @Override
+    public int getSelectionEnd() {
+        return selectionEnd;
+    }
+
+    @Override
+    public void setSelection(int start, int end) {
+        selectionStart = Math.max(0, Math.min(start, text.length()));
+        selectionEnd = Math.max(0, Math.min(end, text.length()));
+        cursorPosition = selectionEnd;
+        anchorPosition = selectionStart;
+    }
+
+    @Override
+    public void insertTextAtCursor(String insertText) {
+        insertText(insertText);
+    }
+
+    @Override
+    public void replaceSelection(String replacement) {
+        if (hasSelection()) {
+            deleteSelection();
+        }
+        insertText(replacement);
+    }
+
+    @Override
+    public int getCursorPosition() {
+        return cursorPosition;
+    }
+
+    @Override
+    public void setCursorPosition(int position) {
+        cursorPosition = Math.max(0, Math.min(position, text.length()));
+        anchorPosition = cursorPosition;
+        clearSelection();
+    }
+
     // ===== Getter/Setter =====
 
+    @Override
     public String getText() {
         return text;
     }
 
+    @Override
     public void setText(String text) {
         this.text = text;
         cursorPosition = Math.min(cursorPosition, text.length());
@@ -439,6 +491,7 @@ public abstract class BaseTextInput extends BaseComponent implements Focusable, 
     /**
      * 選択されたテキストを取得。
      */
+    @Override
     public String getSelectedText() {
         if (!hasSelection()) return "";
 

@@ -9,7 +9,9 @@ import org.cef.handler.CefDisplayHandlerAdapter;
 import org.cef.handler.CefFocusHandlerAdapter;
 import org.cef.handler.CefLoadHandlerAdapter;
 import org.cef.handler.CefRequestContextHandlerAdapter;
+import org.cef.handler.CefRequestHandlerAdapter;
 import org.cef.handler.CefWindowHandlerAdapter;
+import org.cef.network.CefRequest;
 import processing.core.PGraphics;
 import processing.core.PImage;
 
@@ -49,9 +51,17 @@ public class ChromiumBrowser {
     private boolean isLoading = false;
     private String currentTitle = "";
     private volatile boolean webPageClicked = false; // Webページがクリックされたか（テキスト入力可能性）
+    private volatile String cachedSelectedText = ""; // 選択テキストキャッシュ（TextInputProtocol用）
 
     private final ConcurrentLinkedQueue<InputEvent> inputQueue = new ConcurrentLinkedQueue<>();
     private long lastInputLogNs = System.nanoTime();
+    
+    public interface LoadListener {
+        void onLoadStart(String url);
+        void onLoadEnd(String url, String title, int httpStatusCode);
+    }
+    
+    private final List<LoadListener> loadListeners = new ArrayList<>();
 
     // 隠しJFrame（ChromiumのOSRレンダリングをトリガーするために必要）
     private javax.swing.JFrame hiddenFrame;
@@ -83,6 +93,11 @@ public class ChromiumBrowser {
             @Override
             public boolean onConsoleMessage(CefBrowser browser, org.cef.CefSettings.LogSeverity level,
                     String message, String source, int line) {
+                // MochiOS関連のコンソールメッセージをログ出力
+                if (message != null && message.startsWith("[MochiOS:")) {
+                    log("Console message received: " + message);
+                }
+
                 // JavaScriptからのテキスト入力フォーカス通知を受信
                 if (message != null && message.startsWith("[MochiOS:TextFocus]")) {
                     String focusState = message.substring("[MochiOS:TextFocus]".length());
@@ -90,7 +105,33 @@ public class ChromiumBrowser {
                     log("Text input focus changed: " + webPageClicked);
                     return true; // メッセージを処理したのでtrueを返す
                 }
+                // JavaScriptからの選択テキスト通知を受信
+                if (message != null && message.startsWith("[MochiOS:Selection]")) {
+                    cachedSelectedText = message.substring("[MochiOS:Selection]".length());
+                    return true; // メッセージを処理したのでtrueを返す
+                }
                 return false; // 他のコンソールメッセージは通常通り処理
+            }
+        });
+
+        // Intent URLを処理するリクエストハンドラーを追加
+        client.addRequestHandler(new CefRequestHandlerAdapter() {
+            @Override
+            public boolean onBeforeBrowse(CefBrowser browser, CefFrame frame, CefRequest request,
+                                          boolean user_gesture, boolean is_redirect) {
+                String url = request.getURL();
+                if (url != null && url.startsWith("intent://")) {
+                    // Intent URLを通常のURLに変換
+                    String convertedUrl = convertIntentUrl(url);
+                    if (!url.equals(convertedUrl)) {
+                        log("Intent URL detected, redirecting to: " + convertedUrl);
+                        // 変換後のURLをロード
+                        browser.loadURL(convertedUrl);
+                        // 元のリクエストをキャンセル
+                        return true;
+                    }
+                }
+                return false; // 通常のナビゲーションを続行
             }
         });
 
@@ -130,6 +171,10 @@ public class ChromiumBrowser {
                     currentTitle = currentUrl;
                     // 新しいページをロードする時、Webページクリック状態をリセット
                     webPageClicked = false;
+                    
+                    for (LoadListener listener : loadListeners) {
+                        listener.onLoadStart(currentUrl);
+                    }
                 }
             }
 
@@ -144,6 +189,10 @@ public class ChromiumBrowser {
 
                     // ページロード完了時にテキスト入力フォーカス監視スクリプトを注入
                     injectFocusDetectionScript(browser);
+                    
+                    for (LoadListener listener : loadListeners) {
+                        listener.onLoadEnd(currentUrl, currentTitle, httpStatusCode);
+                    }
                 }
             }
 
@@ -315,6 +364,10 @@ public class ChromiumBrowser {
         }
     }
 
+    public void addLoadListener(LoadListener listener) {
+        loadListeners.add(listener);
+    }
+
     /**
      * URLを読み込む。
      *
@@ -370,18 +423,46 @@ public class ChromiumBrowser {
      * テキスト入力フォーカス検出スクリプトを注入する。
      * Webページ内のテキスト入力フィールドのfocus/blurイベントを監視し、
      * console.logでJava側に通知する。
+     * また、選択テキスト変更も監視してJava側に通知する。
      */
     private void injectFocusDetectionScript(CefBrowser browser) {
         String script =
             "(function() {" +
+            "  console.log('[MochiOS:Init] Focus detection script starting');" +
             "  let mochiOS_hasTextFocus = false;" +
+            // Shadow DOM内の実際のactiveElementを再帰的に取得
+            "  function getDeepActiveElement() {" +
+            "    let el = document.activeElement;" +
+            "    while (el && el.shadowRoot && el.shadowRoot.activeElement) {" +
+            "      el = el.shadowRoot.activeElement;" +
+            "    }" +
+            "    return el;" +
+            "  }" +
+            // 要素がテキスト入力可能かチェック（親要素も確認）
+            "  function isTextInputElement(el) {" +
+            "    if (!el) return false;" +
+            // 標準的なテキスト入力要素
+            "    if (el.tagName === 'INPUT' && ['text', 'password', 'email', 'search', 'tel', 'url', 'number', ''].includes(el.type || 'text')) return true;" +
+            "    if (el.tagName === 'TEXTAREA') return true;" +
+            // contenteditable属性（自身または親要素）
+            "    if (el.isContentEditable) return true;" +
+            "    if (el.getAttribute && el.getAttribute('contenteditable') === 'true') return true;" +
+            // role属性でテキスト入力を示すもの（YouTube等で使用）
+            "    var role = el.getAttribute && el.getAttribute('role');" +
+            "    if (role === 'textbox' || role === 'searchbox' || role === 'combobox') return true;" +
+            // 親要素がcontenteditable
+            "    var parent = el.parentElement;" +
+            "    while (parent) {" +
+            "      if (parent.isContentEditable || (parent.getAttribute && parent.getAttribute('contenteditable') === 'true')) return true;" +
+            "      parent = parent.parentElement;" +
+            "    }" +
+            "    return false;" +
+            "  }" +
             "  function updateFocusState() {" +
-            "    const el = document.activeElement;" +
-            "    const isTextInput = el && (" +
-            "      el.tagName === 'INPUT' && ['text', 'password', 'email', 'search', 'tel', 'url', 'number'].includes(el.type) ||" +
-            "      el.tagName === 'TEXTAREA' ||" +
-            "      el.isContentEditable" +
-            "    );" +
+            "    const el = getDeepActiveElement();" +
+            "    const isTextInput = isTextInputElement(el);" +
+            // デバッグ: フォーカス要素の情報をログ
+            "    console.log('[MochiOS:FocusDebug] tag=' + (el ? el.tagName : 'null') + ', type=' + (el ? el.type : 'null') + ', role=' + (el ? el.getAttribute('role') : 'null') + ', contentEditable=' + (el ? el.isContentEditable : 'null') + ', isTextInput=' + isTextInput);" +
             "    if (isTextInput !== mochiOS_hasTextFocus) {" +
             "      mochiOS_hasTextFocus = isTextInput;" +
             "      console.log('[MochiOS:TextFocus]' + isTextInput);" +
@@ -389,11 +470,42 @@ public class ChromiumBrowser {
             "  }" +
             "  document.addEventListener('focusin', updateFocusState, true);" +
             "  document.addEventListener('focusout', updateFocusState, true);" +
+            // クリックイベントでも検出（YouTube等のカスタム要素対応）
+            "  document.addEventListener('click', function(e) {" +
+            "    var target = e.target;" +
+            "    if (isTextInputElement(target)) {" +
+            "      if (!mochiOS_hasTextFocus) {" +
+            "        mochiOS_hasTextFocus = true;" +
+            "        console.log('[MochiOS:TextFocus]true');" +
+            "      }" +
+            "    }" +
+            "  }, true);" +
+            // inputイベントでテキスト入力を検出
+            "  document.addEventListener('input', function(e) {" +
+            "    if (!mochiOS_hasTextFocus) {" +
+            "      mochiOS_hasTextFocus = true;" +
+            "      console.log('[MochiOS:TextFocus]true');" +
+            "    }" +
+            "  }, true);" +
             "  updateFocusState();" +
+            // 選択テキスト監視（TextInputProtocol用）
+            "  document.addEventListener('selectionchange', function() {" +
+            "    var text = '';" +
+            "    var el = getDeepActiveElement();" +
+            "    if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) {" +
+            "      text = el.value.substring(el.selectionStart, el.selectionEnd);" +
+            "    } else {" +
+            "      var sel = window.getSelection();" +
+            "      if (sel && sel.rangeCount > 0) {" +
+            "        text = sel.toString();" +
+            "      }" +
+            "    }" +
+            "    console.log('[MochiOS:Selection]' + text);" +
+            "  });" +
             "})();";
 
         browser.executeJavaScript(script, browser.getURL(), 0);
-        log("Text input focus detection script injected");
+        log("Text input focus and selection detection script injected");
     }
 
     /**
@@ -441,6 +553,17 @@ public class ChromiumBrowser {
      */
     public void resetWebPageClickState() {
         webPageClicked = false;
+    }
+
+    /**
+     * キャッシュされた選択テキストを取得する。
+     * JavaScript側で選択変更時にconsole.logで通知され、
+     * onConsoleMessageで受信してキャッシュが更新される。
+     *
+     * @return キャッシュされた選択テキスト
+     */
+    public String getCachedSelectedText() {
+        return cachedSelectedText;
     }
 
     /**
@@ -549,6 +672,17 @@ public class ChromiumBrowser {
     }
 
     /**
+     * マウスドラッグイベントを送信する。
+     *
+     * @param x X座標
+     * @param y Y座標
+     * @param button マウスボタン（1=左、2=中、3=右）
+     */
+    public void sendMouseDragged(int x, int y, int button) {
+        enqueueInput(InputEvent.mouseDrag(x, y, button));
+    }
+
+    /**
      * マウスホイールイベントを送信する。
      *
      * @param x X座標
@@ -564,9 +698,16 @@ public class ChromiumBrowser {
      *
      * @param keyCode キーコード
      * @param keyChar 文字
+     * @param shiftPressed Shiftキーが押されているか
+     * @param ctrlPressed Ctrlキーが押されているか
+     * @param altPressed Altキーが押されているか
+     * @param metaPressed Metaキー（Command/Windowsキー）が押されているか
      */
-    public void sendKeyPressed(int keyCode, char keyChar) {
+    public void sendKeyPressed(int keyCode, char keyChar, boolean shiftPressed, boolean ctrlPressed, boolean altPressed, boolean metaPressed) {
+        System.out.println("[ChromiumBrowser] sendKeyPressed: keyCode=" + keyCode + ", keyChar=" + (int)keyChar +
+                           ", shift=" + shiftPressed + ", ctrl=" + ctrlPressed + ", alt=" + altPressed + ", meta=" + metaPressed);
         enqueueInput(InputEvent.keyPress(keyCode, keyChar));
+        System.out.println("[ChromiumBrowser] Enqueued KEY_PRESS event, queue size=" + inputQueue.size());
     }
 
     /**
@@ -574,12 +715,23 @@ public class ChromiumBrowser {
      *
      * @param keyCode キーコード
      * @param keyChar 文字
+     * @param shiftPressed Shiftキーが押されているか
+     * @param ctrlPressed Ctrlキーが押されているか
+     * @param altPressed Altキーが押されているか
+     * @param metaPressed Metaキー（Command/Windowsキー）が押されているか
      */
-    public void sendKeyReleased(int keyCode, char keyChar) {
+    public void sendKeyReleased(int keyCode, char keyChar, boolean shiftPressed, boolean ctrlPressed, boolean altPressed, boolean metaPressed) {
+        System.out.println("[ChromiumBrowser] sendKeyReleased: keyCode=" + keyCode + ", keyChar=" + (int)keyChar +
+                           ", shift=" + shiftPressed + ", ctrl=" + ctrlPressed + ", alt=" + altPressed + ", meta=" + metaPressed);
         enqueueInput(InputEvent.keyRelease(keyCode, keyChar));
+        System.out.println("[ChromiumBrowser] Enqueued KEY_RELEASE event, queue size=" + inputQueue.size());
     }
 
     public void flushInputEvents() {
+        if (inputQueue.size() > 0) {
+            System.out.println("[ChromiumBrowser] flushInputEvents: queue size=" + inputQueue.size());
+        }
+
         if (browser == null) {
             inputQueue.clear();
             return;
@@ -602,6 +754,9 @@ public class ChromiumBrowser {
 
         InputEvent event;
         while ((event = inputQueue.poll()) != null) {
+            if (event.type == InputEvent.Type.KEY_PRESS || event.type == InputEvent.Type.KEY_RELEASE) {
+                System.out.println("[ChromiumBrowser] Processing " + event.type + " event: keyCode=" + event.keyCode);
+            }
             boolean isMouseMove = (event.type == InputEvent.Type.MOUSE_MOVE);
 
             // マウス移動イベントの制限チェック
@@ -849,6 +1004,7 @@ public class ChromiumBrowser {
             MOUSE_PRESS,
             MOUSE_RELEASE,
             MOUSE_MOVE,
+            MOUSE_DRAG,
             MOUSE_WHEEL,
             KEY_PRESS,
             KEY_RELEASE
@@ -887,6 +1043,10 @@ public class ChromiumBrowser {
             return new InputEvent(Type.MOUSE_MOVE, x, y, 0f, 0, 0, (char) 0);
         }
 
+        static InputEvent mouseDrag(int x, int y, int button) {
+            return new InputEvent(Type.MOUSE_DRAG, x, y, 0f, button, 0, (char) 0);
+        }
+
         static InputEvent mouseWheel(int x, int y, float delta) {
             return new InputEvent(Type.MOUSE_WHEEL, x, y, delta, 0, 0, (char) 0);
         }
@@ -917,18 +1077,26 @@ public class ChromiumBrowser {
                 case MOUSE_MOVE:
                     provider.sendMouseMoved(browser, x, y);
                     break;
+                case MOUSE_DRAG:
+                    provider.sendMouseDragged(browser, x, y, button);
+                    break;
                 case MOUSE_WHEEL:
                     provider.sendMouseWheel(browser, x, y, wheelDelta);
                     break;
                 case KEY_PRESS:
-                    boolean ctrlPressed = kernel != null && kernel.isCtrlPressed();
                     boolean shiftPressed = kernel != null && kernel.isShiftPressed();
-                    provider.sendKeyPressed(browser, keyCode, keyChar, ctrlPressed, shiftPressed);
+                    boolean ctrlPressed = kernel != null && kernel.isCtrlPressed();
+                    boolean altPressed = kernel != null && kernel.isAltPressed();
+                    boolean metaPressed = kernel != null && kernel.isMetaPressed();
+                    provider.sendKeyPressed(browser, keyCode, keyChar, shiftPressed, ctrlPressed, altPressed, metaPressed);
                     break;
                 case KEY_RELEASE:
-                    boolean ctrlReleased = kernel != null && kernel.isCtrlPressed();
+                    System.out.println("[ChromiumBrowser] Processing KEY_RELEASE event: keyCode=" + keyCode);
                     boolean shiftReleased = kernel != null && kernel.isShiftPressed();
-                    provider.sendKeyReleased(browser, keyCode, keyChar, ctrlReleased, shiftReleased);
+                    boolean ctrlReleased = kernel != null && kernel.isCtrlPressed();
+                    boolean altReleased = kernel != null && kernel.isAltPressed();
+                    boolean metaReleased = kernel != null && kernel.isMetaPressed();
+                    provider.sendKeyReleased(browser, keyCode, keyChar, shiftReleased, ctrlReleased, altReleased, metaReleased);
                     break;
             }
         }
@@ -949,6 +1117,63 @@ public class ChromiumBrowser {
     private void logError(String message) {
         if (kernel.getLogger() != null) {
             kernel.getLogger().error("ChromiumBrowser", message);
+        }
+    }
+
+    /**
+     * Android Intent URLを通常のURLに変換する。
+     * Intent URL形式: intent://HOST/PATH#Intent;scheme=SCHEME;S.browser_fallback_url=URL;end;
+     * フォールバックURLが存在すればそれを使用し、なければscheme+host+pathから構築する。
+     *
+     * @param url 変換対象のURL
+     * @return 変換後のURL（Intent URLでなければそのまま返す）
+     */
+    private String convertIntentUrl(String url) {
+        if (url == null || !url.startsWith("intent://")) {
+            return url;
+        }
+
+        try {
+            // Extract browser_fallback_url parameter
+            String fallbackPrefix = "S.browser_fallback_url=";
+            int fallbackStart = url.indexOf(fallbackPrefix);
+            if (fallbackStart != -1) {
+                int fallbackEnd = url.indexOf(";", fallbackStart);
+                if (fallbackEnd != -1) {
+                    String encodedFallbackUrl = url.substring(fallbackStart + fallbackPrefix.length(), fallbackEnd);
+                    // URL decode
+                    String fallbackUrl = java.net.URLDecoder.decode(encodedFallbackUrl, "UTF-8");
+                    log("Converted Intent URL to fallback: " + fallbackUrl);
+                    return fallbackUrl;
+                }
+            }
+
+            // If no fallback URL, construct from scheme and host/path
+            int intentStart = "intent://".length();
+            int intentEnd = url.indexOf("#Intent");
+            if (intentEnd == -1) {
+                intentEnd = url.length();
+            }
+            String hostAndPath = url.substring(intentStart, intentEnd);
+
+            // Extract scheme parameter
+            String scheme = "https"; // default
+            String schemePrefix = "scheme=";
+            int schemeStart = url.indexOf(schemePrefix);
+            if (schemeStart != -1) {
+                int schemeEnd = url.indexOf(";", schemeStart);
+                if (schemeEnd != -1) {
+                    scheme = url.substring(schemeStart + schemePrefix.length(), schemeEnd);
+                }
+            }
+
+            String convertedUrl = scheme + "://" + hostAndPath;
+            log("Converted Intent URL to: " + convertedUrl);
+            return convertedUrl;
+
+        } catch (Exception e) {
+            logError("Failed to convert Intent URL: " + e.getMessage());
+            return url; // Return original URL if conversion fails
         }
     }
 }

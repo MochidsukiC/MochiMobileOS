@@ -158,6 +158,16 @@ public interface ChromiumProvider {
     void sendMouseMoved(CefBrowser browser, int x, int y);
 
     /**
+     * マウスドラッグイベントをブラウザに送信する。
+     *
+     * @param browser CefBrowserインスタンス
+     * @param x マウスX座標
+     * @param y マウスY座標
+     * @param button マウスボタン (1=左, 2=中, 3=右)
+     */
+    void sendMouseDragged(CefBrowser browser, int x, int y, int button);
+
+    /**
      * マウスホイールイベントをブラウザに送信する。
      *
      * @param browser CefBrowserインスタンス
@@ -173,10 +183,12 @@ public interface ChromiumProvider {
      * @param browser CefBrowserインスタンス
      * @param keyCode キーコード
      * @param keyChar キャラクター
-     * @param ctrlPressed Ctrlキーが押されているか
      * @param shiftPressed Shiftキーが押されているか
+     * @param ctrlPressed Ctrlキーが押されているか
+     * @param altPressed Altキーが押されているか
+     * @param metaPressed Metaキー（Command/Windowsキー）が押されているか
      */
-    void sendKeyPressed(CefBrowser browser, int keyCode, char keyChar, boolean ctrlPressed, boolean shiftPressed);
+    void sendKeyPressed(CefBrowser browser, int keyCode, char keyChar, boolean shiftPressed, boolean ctrlPressed, boolean altPressed, boolean metaPressed);
 
     /**
      * キー離しイベントをブラウザに送信する。
@@ -184,8 +196,10 @@ public interface ChromiumProvider {
      * @param browser CefBrowserインスタンス
      * @param keyCode キーコード
      * @param keyChar キャラクター
-     * @param ctrlPressed Ctrlキーが押されているか
      * @param shiftPressed Shiftキーが押されているか
+     * @param ctrlPressed Ctrlキーが押されているか
+     * @param altPressed Altキーが押されているか
+     * @param metaPressed Metaキー（Command/Windowsキー）が押されているか
      */
-    void sendKeyReleased(CefBrowser browser, int keyCode, char keyChar, boolean ctrlPressed, boolean shiftPressed);
+    void sendKeyReleased(CefBrowser browser, int keyCode, char keyChar, boolean shiftPressed, boolean ctrlPressed, boolean altPressed, boolean metaPressed);
 }

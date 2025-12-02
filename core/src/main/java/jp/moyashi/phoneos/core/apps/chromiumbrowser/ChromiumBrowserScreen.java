@@ -2,9 +2,11 @@ package jp.moyashi.phoneos.core.apps.chromiumbrowser;
 
 import jp.moyashi.phoneos.core.Kernel;
 import jp.moyashi.phoneos.core.service.chromium.ChromiumSurface;
+import jp.moyashi.phoneos.core.service.chromium.ChromiumTextInput;
 import jp.moyashi.phoneos.core.ui.Screen;
 import jp.moyashi.phoneos.core.ui.components.Button;
 import jp.moyashi.phoneos.core.ui.components.TextField;
+import jp.moyashi.phoneos.core.ui.components.TextInputProtocol;
 import processing.core.PApplet;
 import processing.core.PGraphics;
 import processing.core.PImage;
@@ -21,8 +23,9 @@ public class ChromiumBrowserScreen implements Screen {
     private Button reloadButton;
     private Button newTabButton;
     private Button tabListButton;
+    private Button bookmarkButton;
+    private Button menuButton;
     private TextField addressBar;
-    private boolean isEditingUrl = false;
 
     public ChromiumBrowserScreen(Kernel kernel) {
         this.kernel = kernel;
@@ -48,19 +51,32 @@ public class ChromiumBrowserScreen implements Screen {
         backButton = new Button(20, 555, 40, 40, "<");
         forwardButton = new Button(80, 555, 40, 40, ">");
         newTabButton = new Button(p.width / 2f - 20, 555, 40, 40, "+");
-        tabListButton = new Button(p.width - 70, 555, 40, 40, "□");
+        tabListButton = new Button(p.width - 120, 555, 40, 40, "□");
+        menuButton = new Button(p.width - 60, 555, 40, 40, "...");
 
         // Top bar button
         reloadButton = new Button(p.width - 60, 5, 40, 40, "R");
+        bookmarkButton = new Button(p.width - 110, 5, 40, 40, "☆");
 
         // Address bar
-        addressBar = new TextField(10, 5, p.width - 80, 40, "Enter URL");
+        addressBar = new TextField(10, 5, p.width - 130, 40, "Enter URL");
         addressBar.setVisible(false);
 
         // Set click listeners
         backButton.setOnClickListener(() -> getActiveBrowserSurface().ifPresent(ChromiumSurface::goBack));
         forwardButton.setOnClickListener(() -> getActiveBrowserSurface().ifPresent(ChromiumSurface::goForward));
         reloadButton.setOnClickListener(() -> getActiveBrowserSurface().ifPresent(ChromiumSurface::reload));
+        bookmarkButton.setOnClickListener(() -> {
+             getActiveBrowserSurface().ifPresent(s -> {
+                 var dm = kernel.getChromiumService().getBrowserDataManager();
+                 if (dm.isBookmarked(s.getCurrentUrl())) {
+                     dm.removeBookmark(s.getCurrentUrl());
+                 } else {
+                     dm.addBookmark(s.getTitle(), s.getCurrentUrl());
+                 }
+             });
+        });
+        
         newTabButton.setOnClickListener(() -> {
             if (kernel != null && kernel.getChromiumService() != null) {
                 kernel.getChromiumService().createTab(p.width - 20, p.height - 120, "https://www.google.com");
@@ -70,6 +86,11 @@ public class ChromiumBrowserScreen implements Screen {
             if (kernel != null && kernel.getScreenManager() != null) {
                 kernel.getScreenManager().pushScreen(new TabListScreen(kernel));
             }
+        });
+        menuButton.setOnClickListener(() -> {
+             if (kernel != null && kernel.getScreenManager() != null) {
+                 kernel.getScreenManager().pushScreen(new BrowserMenuScreen(kernel));
+             }
         });
     }
 
@@ -91,7 +112,7 @@ public class ChromiumBrowserScreen implements Screen {
         }
 
         // Pass modifier keys to address bar if it's focused
-        if (isEditingUrl && addressBar.isFocused()) {
+        if (addressBar.isFocused()) {
             addressBar.setShiftPressed(kernel.isShiftPressed());
             addressBar.setCtrlPressed(kernel.isCtrlPressed());
         }
@@ -117,7 +138,7 @@ public class ChromiumBrowserScreen implements Screen {
         g.noStroke();
         g.rect(0, 0, g.width, 50);
 
-        if (isEditingUrl) {
+        if (addressBar.isFocused()) {
             addressBar.draw(g);
         } else {
             g.fill(onSurfaceColor);
@@ -128,6 +149,15 @@ public class ChromiumBrowserScreen implements Screen {
         }
 
         if (reloadButton != null) reloadButton.draw(g);
+        if (bookmarkButton != null) {
+             // Update bookmark state
+             if (getActiveBrowserSurface().isPresent()) {
+                 String url = getActiveBrowserSurface().get().getCurrentUrl();
+                 boolean isBookmarked = kernel.getChromiumService().getBrowserDataManager().isBookmarked(url);
+                 bookmarkButton.setText(isBookmarked ? "★" : "☆");
+             }
+             bookmarkButton.draw(g);
+        }
         if (newTabButton != null) newTabButton.draw(g);
         if (tabListButton != null) tabListButton.draw(g);
     }
@@ -159,6 +189,7 @@ public class ChromiumBrowserScreen implements Screen {
         if (forwardButton != null) forwardButton.draw(g);
         if (newTabButton != null) newTabButton.draw(g);
         if (tabListButton != null) tabListButton.draw(g);
+        if (menuButton != null) menuButton.draw(g);
     }
 
     @Override
@@ -181,71 +212,149 @@ public class ChromiumBrowserScreen implements Screen {
         if (backButton.onMousePressed(mouseX, mouseY)) return;
         if (forwardButton.onMousePressed(mouseX, mouseY)) return;
         if (reloadButton.onMousePressed(mouseX, mouseY)) return;
+        if (bookmarkButton.onMousePressed(mouseX, mouseY)) return;
         if (newTabButton.onMousePressed(mouseX, mouseY)) return;
         if (tabListButton.onMousePressed(mouseX, mouseY)) return;
-        
-        if (!isEditingUrl && mouseX > 10 && mouseX < g.width - 70 && mouseY > 5 && mouseY < 45) {
-            isEditingUrl = true;
+        if (menuButton.onMousePressed(mouseX, mouseY)) return;
+
+        // アドレスバー領域をクリックした場合、フォーカスを設定
+        if (!addressBar.isFocused() && mouseX > 10 && mouseX < g.width - 120 && mouseY > 5 && mouseY < 45) {
             addressBar.setVisible(true);
             addressBar.setFocused(true);
             getActiveBrowserSurface().ifPresent(s -> addressBar.setText(s.getCurrentUrl()));
             return;
         }
 
-        if (isEditingUrl && addressBar.onMousePressed(mouseX, mouseY)) return;
+        // アドレスバーがフォーカスされている場合、クリックイベントを転送
+        if (addressBar.isFocused() && addressBar.onMousePressed(mouseX, mouseY)) return;
 
-        if (isEditingUrl && !addressBar.contains(mouseX, mouseY)) {
-            isEditingUrl = false;
+        // アドレスバーの外側をクリックした場合、フォーカスを解除
+        if (addressBar.isFocused() && !addressBar.contains(mouseX, mouseY)) {
+            System.out.println("[ChromiumBrowserScreen] Clicked outside addressBar, clearing focus");
             addressBar.setVisible(false);
             addressBar.setFocused(false);
         }
 
-        getActiveBrowserSurface().ifPresent(s -> s.sendMousePressed(mouseX - 10, mouseY - 60, 0));
+        // Forward mouse press to Chromium if in content area
+        // Button: 1=左, 2=中, 3=右 (Processing convention)
+        if (isInContentArea(g, mouseX, mouseY)) {
+            System.out.println("[ChromiumBrowserScreen] Clicked in content area, forwarding to Chromium");
+            getActiveBrowserSurface().ifPresent(s -> s.sendMousePressed(mouseX - 10, mouseY - 60, 1));
+        }
     }
 
     public void mouseReleased(PGraphics g, int mouseX, int mouseY) {
         if (backButton.onMouseReleased(mouseX, mouseY)) return;
         if (forwardButton.onMouseReleased(mouseX, mouseY)) return;
         if (reloadButton.onMouseReleased(mouseX, mouseY)) return;
+        if (bookmarkButton.onMouseReleased(mouseX, mouseY)) return;
         if (newTabButton.onMouseReleased(mouseX, mouseY)) return;
         if (tabListButton.onMouseReleased(mouseX, mouseY)) return;
-        if (isEditingUrl) addressBar.onMouseReleased(mouseX, mouseY);
-        
-        getActiveBrowserSurface().ifPresent(s -> s.sendMouseReleased(mouseX - 10, mouseY - 60, 0));
-    }
+        if (menuButton.onMouseReleased(mouseX, mouseY)) return;
+        if (addressBar.isFocused()) addressBar.onMouseReleased(mouseX, mouseY);
 
-    public void mouseDragged(PGraphics g, int mouseX, int mouseY) {
-        if (isEditingUrl) addressBar.onMouseDragged(mouseX, mouseY);
-        getActiveBrowserSurface().ifPresent(s -> s.sendMouseMoved(mouseX - 10, mouseY - 60));
+        // Forward mouse release to Chromium if in content area
+        // Button: 1=左, 2=中, 3=右 (Processing convention)
+        if (isInContentArea(g, mouseX, mouseY)) {
+            getActiveBrowserSurface().ifPresent(s -> s.sendMouseReleased(mouseX - 10, mouseY - 60, 1));
+        }
     }
     
     public void mouseMoved(PGraphics g, int mouseX, int mouseY) {
         backButton.onMouseMoved(mouseX, mouseY);
         forwardButton.onMouseMoved(mouseX, mouseY);
         reloadButton.onMouseMoved(mouseX, mouseY);
+        bookmarkButton.onMouseMoved(mouseX, mouseY);
         newTabButton.onMouseMoved(mouseX, mouseY);
         tabListButton.onMouseMoved(mouseX, mouseY);
-        if (isEditingUrl) addressBar.onMouseMoved(mouseX, mouseY);
+        menuButton.onMouseMoved(mouseX, mouseY);
+        if (addressBar.isFocused()) addressBar.onMouseMoved(mouseX, mouseY);
+
+        // Forward mouse move to Chromium if in content area
+        if (isInContentArea(g, mouseX, mouseY)) {
+            getActiveBrowserSurface().ifPresent(s -> s.sendMouseMoved(mouseX - 10, mouseY - 60));
+        }
     }
-    
+
+    @Override
+    public void mouseWheel(PGraphics g, int x, int y, float delta) {
+        // Forward wheel events to browser if in content area
+        // Processing delta: positive is down (scroll down content), negative is up
+        // Amplify delta for better scrolling (ChromiumProvider casts to int)
+        if (isInContentArea(g, x, y)) {
+            getActiveBrowserSurface().ifPresent(s -> s.sendMouseWheel(x - 10, y - 60, delta * 10));
+        }
+    }
+
+    @Override
+    public void mouseDragged(PGraphics g, int mouseX, int mouseY) {
+        // UI components don't have onMouseDragged, so just forward to Chromium
+        if (addressBar.isFocused()) {
+            // If address bar is focused, let it handle text selection dragging
+            // Address bar uses onMousePressed and onMouseMoved for selection
+        }
+
+        // Forward mouse drag to Chromium if in content area
+        // Button: 1=左, 2=中, 3=右 (Processing convention)
+        if (isInContentArea(g, mouseX, mouseY)) {
+            getActiveBrowserSurface().ifPresent(s -> s.sendMouseDragged(mouseX - 10, mouseY - 60, 1));
+        }
+    }
+
     public void keyPressed(PGraphics g, char key, int keyCode) {
-        if (isEditingUrl) {
+        System.out.println("[ChromiumBrowserScreen] keyPressed: key=" + (int)key + ", keyCode=" + keyCode +
+                           ", addressBarFocused=" + addressBar.isFocused());
+
+        // アドレスバーがフォーカスされている場合、アドレスバーにイベントを転送
+        if (addressBar.isFocused()) {
             if (keyCode == PApplet.ENTER || keyCode == PApplet.RETURN) {
-                getActiveBrowserSurface().ifPresent(s -> s.loadUrl(addressBar.getText()));
-                isEditingUrl = false;
+                // ENTERキーでURL読み込み
+                String url = addressBar.getText();
+                // Convert Intent URL to fallback URL if needed
+                url = convertIntentUrl(url);
+                final String finalUrl = url;
+                getActiveBrowserSurface().ifPresent(s -> s.loadUrl(finalUrl));
                 addressBar.setFocused(false);
                 addressBar.setVisible(false);
             } else {
+                System.out.println("[ChromiumBrowserScreen] Forwarding to addressBar");
                 addressBar.onKeyPressed(key, keyCode);
             }
         } else {
-            getActiveBrowserSurface().ifPresent(s -> s.sendKeyPressed(keyCode, key));
+            // アドレスバーがフォーカスされていない場合、Chromiumに送信
+            boolean shiftPressed = kernel != null && kernel.isShiftPressed();
+            boolean ctrlPressed = kernel != null && kernel.isCtrlPressed();
+            boolean altPressed = kernel != null && kernel.isAltPressed();
+            boolean metaPressed = kernel != null && kernel.isMetaPressed();
+            System.out.println("[ChromiumBrowserScreen] Sending to Chromium: shift=" + shiftPressed +
+                               ", ctrl=" + ctrlPressed + ", alt=" + altPressed + ", meta=" + metaPressed);
+            Optional<ChromiumSurface> surface = getActiveBrowserSurface();
+            if (surface.isPresent()) {
+                System.out.println("[ChromiumBrowserScreen] Active surface found, calling sendKeyPressed");
+                surface.get().sendKeyPressed(keyCode, key, shiftPressed, ctrlPressed, altPressed, metaPressed);
+            } else {
+                System.out.println("[ChromiumBrowserScreen] No active surface!");
+            }
         }
     }
-    
+
     public void keyReleased(PGraphics g, char key, int keyCode) {
-        // BaseTextInput does not have onKeyReleased, so directly send to browser surface
-        getActiveBrowserSurface().ifPresent(s -> s.sendKeyReleased(keyCode, key));
+        System.out.println("[ChromiumBrowserScreen] keyReleased: key=" + (int)key + ", keyCode=" + keyCode + ", addressBarFocused=" + addressBar.isFocused());
+
+        // アドレスバーがフォーカスされている場合はChromiumに送信しない
+        // BaseTextInputにはonKeyReleasedがないため、フォーカス時は何もしない
+        if (addressBar.isFocused()) {
+            System.out.println("[ChromiumBrowserScreen] Address bar focused, ignoring keyReleased");
+            return;
+        }
+
+        // アドレスバーがフォーカスされていない場合、Chromiumに送信
+        boolean shiftPressed = kernel != null && kernel.isShiftPressed();
+        boolean ctrlPressed = kernel != null && kernel.isCtrlPressed();
+        boolean altPressed = kernel != null && kernel.isAltPressed();
+        boolean metaPressed = kernel != null && kernel.isMetaPressed();
+        System.out.println("[ChromiumBrowserScreen] Sending keyReleased to Chromium: shift=" + shiftPressed + ", ctrl=" + ctrlPressed + ", alt=" + altPressed + ", meta=" + metaPressed);
+        getActiveBrowserSurface().ifPresent(s -> s.sendKeyReleased(keyCode, key, shiftPressed, ctrlPressed, altPressed, metaPressed));
     }
 
     private Optional<ChromiumSurface> getActiveBrowserSurface() {
@@ -253,5 +362,141 @@ public class ChromiumBrowserScreen implements Screen {
             return kernel.getChromiumService().getActiveSurface();
         }
         return Optional.empty();
+    }
+
+    /**
+     * コンテンツエリア（Chromiumブラウザ表示領域）内かどうかをチェック
+     * コンテンツエリア: (10, 60) から (width - 10, height - 60) まで
+     */
+    private boolean isInContentArea(PGraphics g, int x, int y) {
+        return x >= 10 && x < g.width - 10 && y >= 60 && y < g.height - 60;
+    }
+
+    /**
+     * Android Intent URLを通常のURLに変換する。
+     * Intent URL形式: intent://HOST/PATH#Intent;scheme=SCHEME;S.browser_fallback_url=URL;end;
+     * フォールバックURLが存在すればそれを使用し、なければscheme+host+pathから構築する。
+     *
+     * @param url 変換対象のURL
+     * @return 変換後のURL（Intent URLでなければそのまま返す）
+     */
+    private String convertIntentUrl(String url) {
+        if (url == null || !url.startsWith("intent://")) {
+            return url;
+        }
+
+        try {
+            // Extract browser_fallback_url parameter
+            String fallbackPrefix = "S.browser_fallback_url=";
+            int fallbackStart = url.indexOf(fallbackPrefix);
+            if (fallbackStart != -1) {
+                int fallbackEnd = url.indexOf(";", fallbackStart);
+                if (fallbackEnd != -1) {
+                    String encodedFallbackUrl = url.substring(fallbackStart + fallbackPrefix.length(), fallbackEnd);
+                    // URL decode
+                    String fallbackUrl = java.net.URLDecoder.decode(encodedFallbackUrl, "UTF-8");
+                    System.out.println("ChromiumBrowserScreen: Converted Intent URL to fallback: " + fallbackUrl);
+                    return fallbackUrl;
+                }
+            }
+
+            // If no fallback URL, construct from scheme and host/path
+            int intentStart = "intent://".length();
+            int intentEnd = url.indexOf("#Intent");
+            if (intentEnd == -1) {
+                intentEnd = url.length();
+            }
+            String hostAndPath = url.substring(intentStart, intentEnd);
+
+            // Extract scheme parameter
+            String scheme = "https"; // default
+            String schemePrefix = "scheme=";
+            int schemeStart = url.indexOf(schemePrefix);
+            if (schemeStart != -1) {
+                int schemeEnd = url.indexOf(";", schemeStart);
+                if (schemeEnd != -1) {
+                    scheme = url.substring(schemeStart + schemePrefix.length(), schemeEnd);
+                }
+            }
+
+            String convertedUrl = scheme + "://" + hostAndPath;
+            System.out.println("ChromiumBrowserScreen: Converted Intent URL to: " + convertedUrl);
+            return convertedUrl;
+
+        } catch (Exception e) {
+            System.err.println("ChromiumBrowserScreen: Failed to convert Intent URL: " + e.getMessage());
+            e.printStackTrace();
+            return url; // Return original URL if conversion fails
+        }
+    }
+
+    /**
+     * OSのフォーカス管理システムとの統合。
+     * アドレスバーがフォーカスされている場合、キーボードイベントはアドレスバーに送られる。
+     * フォーカスされていない場合、キーボードイベントはChromiumブラウザに送られる。
+     *
+     * @return アドレスバーがフォーカスされている場合true
+     */
+    @Override
+    public boolean hasFocusedComponent() {
+        return addressBar != null && addressBar.isFocused();
+    }
+
+    /**
+     * 修飾キー状態をアドレスバーに伝える。
+     * これにより、アドレスバーでShift+矢印キーによる選択やCtrl+A等が正しく動作する。
+     *
+     * @param shift Shiftキーが押されているか
+     * @param ctrl Ctrlキーが押されているか
+     */
+    @Override
+    public void setModifierKeys(boolean shift, boolean ctrl) {
+        if (addressBar != null) {
+            // BaseTextInputは内部でshiftPressed/ctrlPressedフィールドを持つ
+            // ただし、public setterがないため、現在の実装では直接設定できない
+            // 将来的にBaseTextInputにpublic setterを追加するか、
+            // または各キーイベントで修飾キー状態が自動的に反映される
+        }
+    }
+
+    /**
+     * 現在フォーカスされているTextInputProtocolを返す。
+     * iOS UITextInputの統一インターフェースに相当。
+     * OS側でCtrl+C/V/X/Aを統一的に処理するために使用される。
+     *
+     * 優先順位:
+     * 1. アドレスバーがフォーカスされている場合: addressBar (TextField/BaseTextInput)
+     * 2. Chromiumコンテンツ内のテキスト入力にフォーカスがある場合: ChromiumTextInput
+     * 3. それ以外: null
+     *
+     * @return フォーカスされているTextInputProtocol、なければnull
+     */
+    @Override
+    public TextInputProtocol getFocusedTextInput() {
+        // 1. アドレスバーがフォーカスされている場合
+        if (addressBar != null && addressBar.isFocused()) {
+            if (kernel != null && kernel.getLogger() != null) {
+                kernel.getLogger().debug("ChromiumBrowserScreen", "getFocusedTextInput: addressBar focused");
+            }
+            return addressBar;
+        }
+
+        // 2. Chromiumコンテンツがアクティブな場合
+        // iOS/Android方式: フォーカス検出に頼らず、常にChromiumTextInputを返す
+        // YouTube等のカスタム要素でもJavaScript経由で操作可能
+        Optional<ChromiumSurface> activeSurface = getActiveBrowserSurface();
+        if (activeSurface.isPresent()) {
+            ChromiumSurface surface = activeSurface.get();
+            if (kernel != null && kernel.getLogger() != null) {
+                kernel.getLogger().debug("ChromiumBrowserScreen", "getFocusedTextInput: returning ChromiumTextInput (always-on mode)");
+            }
+            return new ChromiumTextInput(surface);
+        }
+
+        // 3. アクティブなサーフェスなし
+        if (kernel != null && kernel.getLogger() != null) {
+            kernel.getLogger().debug("ChromiumBrowserScreen", "getFocusedTextInput: no active surface");
+        }
+        return null;
     }
 }

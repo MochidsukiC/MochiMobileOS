@@ -85,6 +85,10 @@ public class StandaloneWrapper extends PApplet {
                             glWindowClass.getClassLoader(),
                             new Class<?>[] { mouseListenerClass },
                             (proxy, method, args) -> {
+                                // DISABLED: Duplicate mouseWheel event handling
+                                // Processing's mouseWheel() method (line 343) already handles this
+                                // Multiple listeners were causing duplicate/conflicting scroll events
+                                /*
                                 if (method.getName().equals("mouseWheelMoved") && args != null && args.length > 0) {
                                     // MouseEventからwheel rotationを取得
                                     Object mouseEvent = args[0];
@@ -98,6 +102,7 @@ public class StandaloneWrapper extends PApplet {
                                         // Silent failure
                                     }
                                 }
+                                */
                                 return null;
                             }
                         );
@@ -167,6 +172,10 @@ public class StandaloneWrapper extends PApplet {
                         System.err.println("StandaloneWrapper: WARNING - InputContext is null");
                     }
 
+                    // DISABLED: Duplicate mouseWheel event handling
+                    // Processing's mouseWheel() method (line 343) already handles this
+                    // Multiple listeners were causing duplicate/conflicting scroll events
+                    /*
                     // AWTのMouseWheelListenerを登録
                     component.addMouseWheelListener(e -> {
                         if (kernel != null) {
@@ -174,6 +183,7 @@ public class StandaloneWrapper extends PApplet {
                         }
                     });
                     System.out.println("StandaloneWrapper: AWT MouseWheelListener registered");
+                    */
                 } else {
                     System.err.println("StandaloneWrapper: Unknown native window type: " + nativeWindow.getClass().getName());
                 }
@@ -341,14 +351,12 @@ public class StandaloneWrapper extends PApplet {
      */
     @Override
     public void mouseWheel(processing.event.MouseEvent event) {
-        System.out.println("StandaloneWrapper: mouseWheel event received - count: " + event.getCount() + ", mouseX: " + mouseX + ", mouseY: " + mouseY);
+        // Only Processing's mouseWheel event is used to avoid duplicate event handling
+        // NEWT and AWT listeners have been disabled (lines 88-105, 175-186)
         if (kernel != null) {
             // Kernelの独立mouseWheel APIを呼び出し
             // getCount()はスクロール量を返す（正の値：下スクロール、負の値：上スクロール）
             kernel.mouseWheel(mouseX, mouseY, event.getCount());
-            System.out.println("StandaloneWrapper: mouseWheel forwarded to Kernel");
-        } else {
-            System.out.println("StandaloneWrapper: kernel is null, cannot forward mouseWheel event");
         }
     }
 
@@ -370,20 +378,22 @@ public class StandaloneWrapper extends PApplet {
             return;
         }
 
-        // 特殊キー（矢印、Backspace、Delete、Shift、Ctrl等）のみここで処理
+        // 特殊キー（矢印、Backspace、Delete、Shift、Ctrl、Alt、Meta等）のみここで処理
         // 通常の文字入力はkeyTyped()で処理される
-        // 制御文字（< 32）、CODEDキー、特殊キーコード（35-40: Home, End, 矢印）、修飾キー（16: Shift, 17: Ctrl）を処理
+        // 制御文字（< 32）、CODEDキー、特殊キーコード（35-40: Home, End, 矢印）、修飾キー（16: Shift, 17: Ctrl, 18: Alt, 91/157: Meta）を処理
         // 修飾キーはkeyCodeで判定（keyの値が不定のため）
         boolean isSpecialKey = (key == CODED || key < 32 || (keyCode >= 35 && keyCode <= 40) ||
-                                keyCode == 8 || keyCode == 127 || keyCode == 16 || keyCode == 17);
+                                keyCode == 8 || keyCode == 127 || keyCode == 16 || keyCode == 17 || keyCode == 18 || keyCode == 91 || keyCode == 157);
 
-        // Ctrlが押されている場合、通常文字キーもkeyPressed()に転送（Ctrl+C/V/A等のショートカット用）
+        // Ctrl/Alt/Metaが押されている場合、通常文字キーもkeyPressed()に転送（Ctrl+C/V/A、Alt+F4、Cmd+C等のショートカット用）
         boolean isCtrlPressed = (kernel != null && kernel.isCtrlPressed());
-        boolean shouldForwardKey = isSpecialKey || isCtrlPressed;
+        boolean isAltPressed = (kernel != null && kernel.isAltPressed());
+        boolean isMetaPressed = (kernel != null && kernel.isMetaPressed());
+        boolean shouldForwardKey = isSpecialKey || isCtrlPressed || isAltPressed || isMetaPressed;
 
         if (shouldForwardKey) {
             if (kernel != null) {
-                System.out.println("StandaloneWrapper: Forwarding key to Kernel (key: '" + key + "', keyCode: " + keyCode + ", Ctrl: " + isCtrlPressed + ")");
+                System.out.println("StandaloneWrapper: Forwarding key to Kernel (key: '" + key + "', keyCode: " + keyCode + ", Ctrl: " + isCtrlPressed + ", Alt: " + isAltPressed + ", Meta: " + isMetaPressed + ")");
                 kernel.keyPressed(key, keyCode);
             } else {
                 System.out.println("StandaloneWrapper: kernel is null, cannot forward key event");

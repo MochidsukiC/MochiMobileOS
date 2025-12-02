@@ -140,6 +140,9 @@ public class Kernel implements GestureListener {
     /** クリップボード管理サービス */
     private jp.moyashi.phoneos.core.service.clipboard.ClipboardManager clipboardManager;
 
+    /** クリップボードサービス（TextInputProtocol用OS統一管理） */
+    private jp.moyashi.phoneos.core.service.ClipboardService clipboardService;
+
     /** センサー管理サービス */
     private jp.moyashi.phoneos.core.service.sensor.SensorManager sensorManager;
 
@@ -193,6 +196,12 @@ public class Kernel implements GestureListener {
 
     /** Ctrlキーが押されているかどうか */
     private boolean ctrlPressed = false;
+
+    /** Altキーが押されているかどうか */
+    private boolean altPressed = false;
+
+    /** Metaキー（Command/Windowsキー）が押されているかどうか */
+    private boolean metaPressed = false;
 
     // ホームボタン動的優先順位システム
     /** レイヤー種別定義 */
@@ -629,6 +638,7 @@ public class Kernel implements GestureListener {
      */
     public void keyPressed(char key, int keyCode) {
         System.out.println("Kernel: keyPressed - key: '" + key + "', keyCode: " + keyCode);
+        System.out.println("Kernel: [MODIFIER STATE] shift=" + shiftPressed + ", ctrl=" + ctrlPressed + ", alt=" + altPressed + ", meta=" + metaPressed);
 
         // LoggerServiceでデバッグログを記録（VFS保存用）
         if (logger != null) {
@@ -653,6 +663,28 @@ public class Kernel implements GestureListener {
                 System.out.println("Kernel: *** Ctrl key pressed - ctrlPressed=true ***");
                 if (logger != null) {
                     logger.debug("Kernel", "*** CTRL キー検出 (keyCode=17) - ctrlPressed=true ***");
+                }
+                // 修飾キーの状態をすぐにScreenManagerに伝播
+                if (screenManager != null) {
+                    screenManager.setModifierKeys(shiftPressed, ctrlPressed);
+                }
+            }
+            if (keyCode == 18) { // Alt key code
+                altPressed = true;
+                System.out.println("Kernel: *** Alt key pressed - altPressed=true ***");
+                if (logger != null) {
+                    logger.debug("Kernel", "*** ALT キー検出 (keyCode=18) - altPressed=true ***");
+                }
+                // 修飾キーの状態をすぐにScreenManagerに伝播
+                if (screenManager != null) {
+                    screenManager.setModifierKeys(shiftPressed, ctrlPressed);
+                }
+            }
+            if (keyCode == 91 || keyCode == 157) { // Meta key code (Command on Mac, Windows key on Windows)
+                metaPressed = true;
+                System.out.println("Kernel: *** Meta key pressed - metaPressed=true ***");
+                if (logger != null) {
+                    logger.debug("Kernel", "*** META キー検出 (keyCode=" + keyCode + ") - metaPressed=true ***");
                 }
                 // 修飾キーの状態をすぐにScreenManagerに伝播
                 if (screenManager != null) {
@@ -706,6 +738,61 @@ public class Kernel implements GestureListener {
                 return;
             }
 
+            // バックスペースキー処理（テキスト入力にフォーカスがある場合）
+            if (keyCode == 8) { // Backspace key
+                jp.moyashi.phoneos.core.ui.components.TextInputProtocol textInput = null;
+                if (screenManager != null) {
+                    textInput = screenManager.getFocusedTextInput();
+                }
+                if (textInput != null) {
+                    textInput.deleteBackward();
+                    System.out.println("Kernel: Backspace - deleted backward");
+                    return; // イベント消費
+                }
+            }
+
+            // Ctrl+C/V/X/A検出（OS統一クリップボード管理）
+            if (ctrlPressed && !shiftPressed && !altPressed && !metaPressed) {
+                jp.moyashi.phoneos.core.ui.components.TextInputProtocol textInput = null;
+                if (screenManager != null) {
+                    textInput = screenManager.getFocusedTextInput();
+                }
+
+                if (textInput != null) {
+                    if (keyCode == 67) { // Ctrl+C
+                        if (textInput.hasSelection()) {
+                            String selectedText = textInput.getSelectedText();
+                            if (selectedText != null && !selectedText.isEmpty()) {
+                                clipboardService.copy(selectedText);
+                                System.out.println("Kernel: Ctrl+C - copied: " + selectedText);
+                            }
+                        }
+                        return; // イベント消費
+                    } else if (keyCode == 86) { // Ctrl+V
+                        String pasteText = clipboardService.paste();
+                        if (pasteText != null && !pasteText.isEmpty()) {
+                            textInput.replaceSelection(pasteText);
+                            System.out.println("Kernel: Ctrl+V - pasted: " + pasteText);
+                        }
+                        return; // イベント消費
+                    } else if (keyCode == 88) { // Ctrl+X
+                        if (textInput.hasSelection()) {
+                            String selectedText = textInput.getSelectedText();
+                            if (selectedText != null && !selectedText.isEmpty()) {
+                                clipboardService.copy(selectedText);
+                                textInput.deleteSelection();
+                                System.out.println("Kernel: Ctrl+X - cut: " + selectedText);
+                            }
+                        }
+                        return; // イベント消費
+                    } else if (keyCode == 65) { // Ctrl+A
+                        textInput.selectAll();
+                        System.out.println("Kernel: Ctrl+A - selected all");
+                        return; // イベント消費
+                    }
+                }
+            }
+
             // 通常のキー処理をスクリーンマネージャーに転送
             // 修飾キーの状態も一緒に送る
             if (screenManager != null) {
@@ -744,6 +831,22 @@ public class Kernel implements GestureListener {
                 screenManager.setModifierKeys(shiftPressed, ctrlPressed);
             }
         }
+        if (keyCode == 18) { // Alt key code
+            altPressed = false;
+            System.out.println("Kernel: *** Alt key released - altPressed=false ***");
+            // 修飾キーの状態をすぐにScreenManagerに伝播
+            if (screenManager != null) {
+                screenManager.setModifierKeys(shiftPressed, ctrlPressed);
+            }
+        }
+        if (keyCode == 91 || keyCode == 157) { // Meta key code
+            metaPressed = false;
+            System.out.println("Kernel: *** Meta key released - metaPressed=false ***");
+            // 修飾キーの状態をすぐにScreenManagerに伝播
+            if (screenManager != null) {
+                screenManager.setModifierKeys(shiftPressed, ctrlPressed);
+            }
+        }
 
         // ESCキーの処理（スリープ中でも許可）
         if (keyCode == 27) { // ESC key code
@@ -772,6 +875,11 @@ public class Kernel implements GestureListener {
         if (isSleeping) {
             System.out.println("Kernel: keyReleased ignored - device is sleeping (only ESC is allowed)");
             return;
+        }
+
+        // 通常のキー処理をスクリーンマネージャーに転送
+        if (screenManager != null) {
+            screenManager.keyReleased(key, keyCode);
         }
     }
 
@@ -1059,6 +1167,11 @@ public class Kernel implements GestureListener {
         System.out.println("  -> クリップボード管理サービス作成中...");
         clipboardManager = new jp.moyashi.phoneos.core.service.clipboard.ClipboardManagerImpl(this);
         logger.info("Kernel", "クリップボード管理サービス初期化完了");
+
+        // クリップボードサービスの初期化（TextInputProtocol用OS統一管理）
+        System.out.println("  -> クリップボードサービス（OS統一管理）作成中...");
+        clipboardService = new jp.moyashi.phoneos.core.service.ClipboardService();
+        logger.info("Kernel", "クリップボードサービス（OS統一管理）初期化完了");
 
         // センサー管理サービスの初期化
         System.out.println("  -> センサー管理サービス作成中...");
@@ -1394,6 +1507,24 @@ public class Kernel implements GestureListener {
      */
     public boolean isCtrlPressed() {
         return ctrlPressed;
+    }
+
+    /**
+     * Altキーが押されているかどうかを取得する。
+     *
+     * @return Altキーが押されている場合true
+     */
+    public boolean isAltPressed() {
+        return altPressed;
+    }
+
+    /**
+     * Metaキー（Command/Windowsキー）が押されているかどうかを取得する。
+     *
+     * @return Metaキーが押されている場合true
+     */
+    public boolean isMetaPressed() {
+        return metaPressed;
     }
 
     /**

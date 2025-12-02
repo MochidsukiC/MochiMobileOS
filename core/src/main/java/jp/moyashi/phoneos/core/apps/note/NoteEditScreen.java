@@ -8,6 +8,7 @@ import jp.moyashi.phoneos.core.ui.components.Button;
 import jp.moyashi.phoneos.core.ui.components.Label;
 import jp.moyashi.phoneos.core.ui.components.TextField;
 import jp.moyashi.phoneos.core.ui.components.TextArea;
+import jp.moyashi.phoneos.core.ui.components.TextInputProtocol;
 import processing.core.PApplet;
 import processing.core.PGraphics;
 
@@ -262,23 +263,8 @@ public class NoteEditScreen implements Screen {
 
     @Override
     public void keyPressed(PGraphics g, char key, int keyCode) {
-        // Ctrl+C: コピー（keyCode=67）
-        if (ctrlPressed && keyCode == 67) {
-            if (kernel.getLogger() != null) {
-                kernel.getLogger().debug("NoteEditScreen", "Ctrl+C detected - calling copyToClipboard()");
-            }
-            copyToClipboard();
-            return;
-        }
-
-        // Ctrl+V: ペースト（keyCode=86）
-        if (ctrlPressed && keyCode == 86) {
-            if (kernel.getLogger() != null) {
-                kernel.getLogger().debug("NoteEditScreen", "Ctrl+V detected - calling pasteFromClipboard()");
-            }
-            pasteFromClipboard();
-            return;
-        }
+        // Ctrl+C/V/X/AはOS(Kernel)で統一管理されるため、ここでは処理しない
+        // TextInputProtocol経由でOS側が操作する
 
         // コンポーネントにキーイベントを送信
         if (titleField.isFocused()) {
@@ -315,6 +301,18 @@ public class NoteEditScreen implements Screen {
         // titleFieldまたはcontentAreaがフォーカスされているかチェック
         return (titleField != null && titleField.isFocused()) ||
                (contentArea != null && contentArea.isFocused());
+    }
+
+    @Override
+    public TextInputProtocol getFocusedTextInput() {
+        // フォーカスされているテキスト入力コンポーネントを返す
+        if (titleField != null && titleField.isFocused()) {
+            return titleField;
+        }
+        if (contentArea != null && contentArea.isFocused()) {
+            return contentArea;
+        }
+        return null;
     }
 
     /**

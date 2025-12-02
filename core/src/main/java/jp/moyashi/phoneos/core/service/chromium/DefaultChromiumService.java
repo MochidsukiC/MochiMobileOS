@@ -29,6 +29,7 @@ public class DefaultChromiumService implements ChromiumService {
     private Kernel kernel;
     private ChromiumManager manager;
     private ScheduledExecutorService pumpExecutor;
+    private BrowserDataManager browserDataManager;
 
     public DefaultChromiumService(ChromiumProvider provider) {
         this.provider = provider;
@@ -40,6 +41,8 @@ public class DefaultChromiumService implements ChromiumService {
         this.manager = new ChromiumManager(kernel);
         manager.setProvider(provider);
         manager.initialize();
+        
+        this.browserDataManager = new BrowserDataManager(kernel);
 
         // バックグラウンドでCEFメッセージループと入力イベント処理を実行
         // 高優先度スレッドで実行し、draw()のブロッキングを完全に回避
@@ -72,6 +75,21 @@ public class DefaultChromiumService implements ChromiumService {
 
         DefaultChromiumSurface surface = surfaces.computeIfAbsent(surfaceId, id -> {
             ChromiumBrowser browser = manager.createBrowser(initialUrl, width, height);
+            
+            browser.addLoadListener(new ChromiumBrowser.LoadListener() {
+                @Override
+                public void onLoadStart(String url) {
+                    // Do nothing
+                }
+
+                @Override
+                public void onLoadEnd(String url, String title, int httpStatusCode) {
+                    if (browserDataManager != null) {
+                        browserDataManager.addToHistory(title, url);
+                    }
+                }
+            });
+            
             return new DefaultChromiumSurface(id, browser);
         });
         
@@ -149,6 +167,11 @@ public class DefaultChromiumService implements ChromiumService {
             list.add(surface);
         }
         return Collections.unmodifiableList(list);
+    }
+
+    @Override
+    public BrowserDataManager getBrowserDataManager() {
+        return browserDataManager;
     }
 
     /**
@@ -259,18 +282,23 @@ public class DefaultChromiumService implements ChromiumService {
         }
 
         @Override
+        public void sendMouseDragged(int x, int y, int button) {
+            browser.sendMouseDragged(x, y, button);
+        }
+
+        @Override
         public void sendMouseWheel(int x, int y, float delta) {
             browser.sendMouseWheel(x, y, delta);
         }
 
         @Override
-        public void sendKeyPressed(int keyCode, char keyChar) {
-            browser.sendKeyPressed(keyCode, keyChar);
+        public void sendKeyPressed(int keyCode, char keyChar, boolean shiftPressed, boolean ctrlPressed, boolean altPressed, boolean metaPressed) {
+            browser.sendKeyPressed(keyCode, keyChar, shiftPressed, ctrlPressed, altPressed, metaPressed);
         }
 
         @Override
-        public void sendKeyReleased(int keyCode, char keyChar) {
-            browser.sendKeyReleased(keyCode, keyChar);
+        public void sendKeyReleased(int keyCode, char keyChar, boolean shiftPressed, boolean ctrlPressed, boolean altPressed, boolean metaPressed) {
+            browser.sendKeyReleased(keyCode, keyChar, shiftPressed, ctrlPressed, altPressed, metaPressed);
         }
 
         @Override
@@ -281,6 +309,21 @@ public class DefaultChromiumService implements ChromiumService {
         @Override
         public void dispose() {
             browser.dispose();
+        }
+
+        @Override
+        public boolean hasTextInputFocus() {
+            return browser.hasTextInputFocus();
+        }
+
+        @Override
+        public String getCachedSelectedText() {
+            return browser.getCachedSelectedText();
+        }
+
+        @Override
+        public void executeScript(String script) {
+            browser.executeScript(script);
         }
     }
 

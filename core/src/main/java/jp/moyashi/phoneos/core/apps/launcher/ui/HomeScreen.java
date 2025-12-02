@@ -1,6 +1,9 @@
 package jp.moyashi.phoneos.core.apps.launcher.ui;
 
 import jp.moyashi.phoneos.core.Kernel;
+import jp.moyashi.phoneos.core.service.sensor.Sensor;
+import jp.moyashi.phoneos.core.service.sensor.SensorEvent;
+import jp.moyashi.phoneos.core.service.sensor.SensorEventListener;
 import jp.moyashi.phoneos.core.ui.Screen;
 import jp.moyashi.phoneos.core.app.IApplication;
 import jp.moyashi.phoneos.core.apps.launcher.model.HomePage;
@@ -8,6 +11,7 @@ import jp.moyashi.phoneos.core.apps.launcher.model.Shortcut;
 import jp.moyashi.phoneos.core.input.GestureListener;
 import jp.moyashi.phoneos.core.input.GestureEvent;
 import jp.moyashi.phoneos.core.input.GestureType;
+import jp.moyashi.phoneos.core.ui.components.TextField;
 import processing.core.PApplet;
 import processing.core.PGraphics;
 
@@ -924,50 +928,54 @@ public class HomeScreen implements Screen, GestureListener, SensorEventListener 
     }
     
     /**
-     * チEEEォルトEレイアウトを作Eし、利用可能なアプリをE置する、
+     * デフォルトのレイアウトを作成し、利用可能なアプリを配置する。
      */
     private void createDefaultLayout() {
-        // 最初EペEジを作E
-        HomePage firstPage = new HomePage("Home");
-        homePages.add(firstPage);
-        
+        // 1ページ目: ダッシュボードページ（アプリショートカットは配置しない）
+        HomePage dashboardPage = new HomePage("Dashboard");
+        homePages.add(dashboardPage);
+        System.out.println("HomeScreen: ダッシュボードページを作成");
+
         if (kernel != null && kernel.getAppLoader() != null) {
             try {
                 List<IApplication> loadedApps = kernel.getAppLoader().getLoadedApps();
                 if (loadedApps != null) {
-                    // ランチャー以外Eロード済みアプリを追加
+                    // ランチャー以外のロード済みアプリを追加
                     List<IApplication> availableApps = new ArrayList<>();
                     for (IApplication app : loadedApps) {
                         if (app != null && !"jp.moyashi.phoneos.core.apps.launcher".equals(app.getApplicationId())) {
                             availableApps.add(app);
                         }
                     }
-                    
-                    HomePage currentPage = firstPage;
+
+                    // 2ページ目以降: アプリグリッドページ
+                    HomePage currentPage = null;
                     for (IApplication app : availableApps) {
                         try {
-                            if (currentPage.isFull()) {
-                                // 現在のペEジが満員の場合E新しいペEジを作E
+                            if (currentPage == null || currentPage.isFull()) {
+                                // 新しいアプリグリッドページを作成
                                 currentPage = new HomePage();
                                 homePages.add(currentPage);
+                                System.out.println("HomeScreen: アプリグリッドページ " + (homePages.size() - 1) + " を作成");
                             }
                             currentPage.addShortcut(app);
                         } catch (Exception e) {
-                            System.err.println("HomeScreen: ペEジへのアプリ追加エラー: " + e.getMessage());
+                            System.err.println("HomeScreen: ページへのアプリ追加エラー: " + e.getMessage());
                         }
                     }
+                    System.out.println("HomeScreen: " + availableApps.size() + " 個のアプリを配置");
                 }
             } catch (Exception e) {
                 System.err.println("HomeScreen: AppLoaderアクセスエラー: " + e.getMessage());
             }
         } else {
-            System.out.println("HomeScreen: KernelまたEAppLoaderがnull - 空のペEジを作E");
+            System.out.println("HomeScreen: KernelまたはAppLoaderがnull - 空のページを作成");
         }
-        
-        // チEEEォルトレイアウトを保孁E
+
+        // デフォルトレイアウトを保存
         if (kernel != null && kernel.getLayoutManager() != null) {
             kernel.getLayoutManager().saveLayout(homePages);
-            System.out.println("HomeScreen: チEEEォルトレイアウトを保存しました");
+            System.out.println("HomeScreen: デフォルトレイアウトを保存しました");
         }
     }
     

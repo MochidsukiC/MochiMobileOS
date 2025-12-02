@@ -99,19 +99,38 @@ public interface ChromiumSurface {
     void sendMouseMoved(int x, int y);
 
     /**
+     * マウスドラッグイベントを通知します。
+     */
+    void sendMouseDragged(int x, int y, int button);
+
+    /**
      * マウスホイールイベントを通知します。
      */
     void sendMouseWheel(int x, int y, float delta);
 
     /**
      * キー押下イベントを通知します。
+     *
+     * @param keyCode キーコード
+     * @param keyChar キャラクター
+     * @param shiftPressed Shiftキーが押されているか
+     * @param ctrlPressed Ctrlキーが押されているか
+     * @param altPressed Altキーが押されているか
+     * @param metaPressed Metaキー（Command/Windowsキー）が押されているか
      */
-    void sendKeyPressed(int keyCode, char keyChar);
+    void sendKeyPressed(int keyCode, char keyChar, boolean shiftPressed, boolean ctrlPressed, boolean altPressed, boolean metaPressed);
 
     /**
      * キー離上イベントを通知します。
+     *
+     * @param keyCode キーコード
+     * @param keyChar キャラクター
+     * @param shiftPressed Shiftキーが押されているか
+     * @param ctrlPressed Ctrlキーが押されているか
+     * @param altPressed Altキーが押されているか
+     * @param metaPressed Metaキー（Command/Windowsキー）が押されているか
      */
-    void sendKeyReleased(int keyCode, char keyChar);
+    void sendKeyReleased(int keyCode, char keyChar, boolean shiftPressed, boolean ctrlPressed, boolean altPressed, boolean metaPressed);
 
     /**
      * 現在の描画内容を表すフレームを取得します。
@@ -122,4 +141,29 @@ public interface ChromiumSurface {
      * サーフェスを破棄し、関連リソースを解放します。
      */
     void dispose();
+
+    // ========== TextInputProtocol用メソッド ==========
+
+    /**
+     * Webページ内のテキスト入力フィールドにフォーカスがあるかを返します。
+     * JavaScript側のフォーカス検出スクリプトにより更新されます。
+     *
+     * @return テキスト入力フィールドにフォーカスがある場合true
+     */
+    boolean hasTextInputFocus();
+
+    /**
+     * キャッシュされた選択テキストを取得します。
+     * JavaScript側で選択変更時にコンソール通知され、Java側でキャッシュされます。
+     *
+     * @return キャッシュされた選択テキスト（選択がない場合は空文字列）
+     */
+    String getCachedSelectedText();
+
+    /**
+     * JavaScriptを実行します。
+     *
+     * @param script 実行するJavaScriptコード
+     */
+    void executeScript(String script);
 }

@@ -176,7 +176,36 @@ public interface Screen {
         // デフォルト実装：PGraphics版を呼び出すブリッジ
         keyPressed(p.g, key, keyCode);
     }
-    
+
+    /**
+     * キーボードリリースイベントが発生した時に呼び出される（PGraphics版）。
+     * PGraphics統一アーキテクチャで使用する。
+     * このメソッドでキーリリースを処理する。
+     * デフォルト実装は何もしない。
+     *
+     * @param g 描画・計算処理用のPGraphicsインスタンス
+     * @param key 離されたキー
+     * @param keyCode キーコード
+     */
+    default void keyReleased(PGraphics g, char key, int keyCode) {
+        // デフォルト実装：何もしない
+    }
+
+    /**
+     * キーボードリリースイベントが発生した時に呼び出される（PApplet版）。
+     * 互換性のために残存。段階的にPGraphics版に移行予定。
+     *
+     * @deprecated Use {@link #keyReleased(PGraphics, char, int)} instead. This method will be removed in a future version.
+     * @param p 描画・計算処理用のPAppletインスタンス
+     * @param key 離されたキー
+     * @param keyCode キーコード
+     */
+    @Deprecated
+    default void keyReleased(PApplet p, char key, int keyCode) {
+        // デフォルト実装：PGraphics版を呼び出すブリッジ
+        keyReleased(p.g, key, keyCode);
+    }
+
     /**
      * マウスドラッグイベントが発生した時に呼び出される（PGraphics版）。
      * PGraphics統一アーキテクチャで使用する。
@@ -353,5 +382,17 @@ public interface Screen {
     default boolean hasFocusedComponent() {
         // デフォルト実装：フォーカスされたコンポーネントなし
         return false;
+    }
+
+    /**
+     * フォーカスされたテキスト入力コンポーネントを取得する。
+     * OS統一クリップボード管理（Ctrl+C/V/X/A）のために使用される。
+     * デフォルト実装はnullを返す（テキスト入力なし）。
+     *
+     * @return フォーカスされたTextInputProtocol、なければnull
+     */
+    default jp.moyashi.phoneos.core.ui.components.TextInputProtocol getFocusedTextInput() {
+        // デフォルト実装：フォーカスされたテキスト入力なし
+        return null;
     }
 }
