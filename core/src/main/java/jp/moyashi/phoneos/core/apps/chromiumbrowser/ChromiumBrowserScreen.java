@@ -439,7 +439,15 @@ public class ChromiumBrowserScreen implements Screen {
      */
     @Override
     public boolean hasFocusedComponent() {
-        return addressBar != null && addressBar.isFocused();
+        // アドレスバーがフォーカスされている場合
+        if (addressBar != null && addressBar.isFocused()) {
+            return true;
+        }
+
+        // Webページ内でテキスト入力にフォーカスがある場合もtrueを返す
+        // ChromiumSurfaceのhasTextInputFocus()メソッドを使用して正確に判定
+        Optional<ChromiumSurface> surface = getActiveBrowserSurface();
+        return surface.isPresent() && surface.get().hasTextInputFocus();
     }
 
     /**

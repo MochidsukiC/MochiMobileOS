@@ -5,6 +5,14 @@ import jp.moyashi.phoneos.core.service.*;
 import jp.moyashi.phoneos.core.service.chromium.ChromiumManager;
 import jp.moyashi.phoneos.core.service.chromium.ChromiumService;
 import jp.moyashi.phoneos.core.service.chromium.DefaultChromiumService;
+import jp.moyashi.phoneos.core.service.CoreServiceBootstrap;
+import jp.moyashi.phoneos.core.service.ServiceContainer;
+import jp.moyashi.phoneos.core.power.PowerManager;
+import jp.moyashi.phoneos.core.lifecycle.SystemLifecycleManager;
+import jp.moyashi.phoneos.core.navigation.NavigationController;
+import jp.moyashi.phoneos.core.navigation.LayerController;
+import jp.moyashi.phoneos.core.resource.ResourceManager;
+import jp.moyashi.phoneos.core.hardware.HardwareController;
 import jp.moyashi.phoneos.core.ui.Screen;
 import jp.moyashi.phoneos.core.ui.ScreenManager;
 import jp.moyashi.phoneos.core.ui.popup.PopupManager;
@@ -12,11 +20,16 @@ import jp.moyashi.phoneos.core.input.GestureManager;
 import jp.moyashi.phoneos.core.input.GestureListener;
 import jp.moyashi.phoneos.core.input.GestureEvent;
 import jp.moyashi.phoneos.core.input.GestureType;
+import jp.moyashi.phoneos.core.input.InputManager;
+import jp.moyashi.phoneos.core.render.RenderPipeline;
 import jp.moyashi.phoneos.core.apps.launcher.LauncherApp;
 import jp.moyashi.phoneos.core.apps.settings.SettingsApp;
 import jp.moyashi.phoneos.core.apps.calculator.CalculatorApp;
 import jp.moyashi.phoneos.core.ui.LayerManager;
 import jp.moyashi.phoneos.core.coordinate.CoordinateTransform;
+import jp.moyashi.phoneos.core.event.EventBus;
+import jp.moyashi.phoneos.core.event.EventListener;
+import jp.moyashi.phoneos.core.event.system.SystemEvent;
 import processing.core.PApplet;
 import processing.core.PGraphics;
 import processing.core.PFont;
@@ -82,6 +95,33 @@ public class Kernel implements GestureListener {
 
     /** 統一座標変換システム */
     private CoordinateTransform coordinateTransform;
+
+    /** 入力イベント管理システム（Phase 1リファクタリング） */
+    private InputManager inputManager;
+
+    /** 描画パイプライン管理システム（Phase 1リファクタリング） */
+    private RenderPipeline renderPipeline;
+
+    /** サービスコンテナブートストラップ（Phase 2リファクタリング） */
+    private CoreServiceBootstrap serviceBootstrap;
+
+    /** 電源管理システム（Phase 2リファクタリング） */
+    private PowerManager powerManager;
+
+    /** ライフサイクル管理システム（Phase 2リファクタリング） */
+    private SystemLifecycleManager lifecycleManager;
+
+    /** 画面遷移管理システム（Phase 3リファクタリング） */
+    private NavigationController navigationController;
+
+    /** レイヤー管理システム（Phase 3リファクタリング） */
+    private LayerController layerController;
+
+    /** リソース管理システム（Phase 3リファクタリング） */
+    private ResourceManager resourceManager;
+
+    /** ハードウェア管理システム（Phase 3リファクタリング） */
+    private HardwareController hardwareController;
 
     /** 仮想ネットワークルーターサービス */
     private jp.moyashi.phoneos.core.service.network.VirtualRouter virtualRouter;
@@ -166,6 +206,9 @@ public class Kernel implements GestureListener {
     /** フレームカウント */
     public int frameCount = 0;
 
+    /** ターゲットフレームレート */
+    private int targetFrameRate = 60;
+
     /** レンダリング同期用ロック */
     private final Object renderLock = new Object();
 
@@ -236,13 +279,19 @@ public class Kernel implements GestureListener {
         frameCount++;
         long startNs = System.nanoTime();
 
-        // ESCキー長押し検出の更新
-        if (escKeyPressed) {
-            long elapsedTime = System.currentTimeMillis() - escKeyPressTime;
-            if (elapsedTime >= LONG_PRESS_DURATION) {
-                System.out.println("Kernel: ESCキー長押し検出 - シャットダウン開始");
-                shutdown();
-                escKeyPressed = false;
+        // Phase 1リファクタリング: InputManagerの更新処理
+        if (inputManager != null) {
+            inputManager.update(); // ESCキー長押し検出などを処理
+        } else {
+            // InputManagerが初期化されていない場合の従来処理（後方互換性）
+            // ESCキー長押し検出の更新
+            if (escKeyPressed) {
+                long elapsedTime = System.currentTimeMillis() - escKeyPressTime;
+                if (elapsedTime >= LONG_PRESS_DURATION) {
+                    System.out.println("Kernel: ESCキー長押し検出 - スリープモード起動");
+                    sleep(); // InputManagerではsleep()を呼び出すので統一
+                    escKeyPressed = false;
+                }
             }
         }
 
@@ -295,63 +344,36 @@ public class Kernel implements GestureListener {
                 return;
             }
 
-            // スリープ中の場合は描画処理を完全にスキップしてGPU使用率を削減
-            if (isSleeping) {
-                // 描画をスキップ（前フレームのバッファ内容を維持）
-                // これにより、GPU処理が大幅に削減される
-                return;
+            // Phase 1リファクタリング: RenderPipelineに描画処理を委譲
+            if (renderPipeline != null) {
+                // RenderPipelineはbeginDraw/endDrawを内部で管理
+                // スリープ処理も内部で管理
+                renderPipeline.render(graphics, screenManager, themeEngine, isSleeping);
+
+                // ピクセルキャッシュの同期
+                pixelsCache = renderPipeline.getPixelsCache();
+                pixelsCacheDirty = false;
+                frameCount = renderPipeline.getFrameCount();
+
+                // RenderPipelineが描画処理を完了したので、追加の描画は必要に応じてbeginDraw/endDrawで囲む
+                // 以下のコードは後のPhaseで段階的にRenderPipelineに移行予定
+                graphics.beginDraw();
+            } else {
+                // RenderPipelineが初期化されていない場合の緊急処理
+                graphics.beginDraw();
+                graphics.background(0);
+                graphics.fill(255, 0, 0);
+                graphics.textAlign(PApplet.CENTER, PApplet.CENTER);
+                graphics.text("RenderPipeline not initialized!", width/2, height/2);
+                // endDraw()は最後に統一して実行
             }
-
-            // ピクセルキャッシュを無効化（新しい描画が行われる）
-            pixelsCacheDirty = true;
-
-            // PGraphicsバッファへの描画開始
-            graphics.beginDraw();
-
-            try {
 
             // 日本語フォントを適用（全角文字表示のため）
             if (japaneseFont != null) {
                 graphics.textFont(japaneseFont);
             }
 
-            // まず背景を描画（重要：Screenが背景を描画しない場合のために）
-            int bg = themeEngine != null ? themeEngine.colorBackground() : 0xFF000000;
-            int br = (bg >> 16) & 0xFF;
-            int bgc = (bg >> 8) & 0xFF;
-            int bb = bg & 0xFF;
-            graphics.background(br, bgc, bb);
-
-            // スクリーンマネージャーによる通常描画
-            if (screenManager != null) {
-                try {
-                    screenManager.draw(graphics);
-                } catch (Exception e) {
-                    System.err.println("Kernel: ScreenManager描画エラー: " + e.getMessage());
-
-                    // エラー時のフォールバック表示
-                    graphics.background(50, 50, 50); // ダークグレー背景
-                    graphics.fill(255, 0, 0);
-                    graphics.rect(50, height/2 - 50, width - 100, 100);
-                    graphics.fill(255, 255, 255);
-                    graphics.textAlign(PApplet.CENTER, PApplet.CENTER);
-                    graphics.textSize(18);
-                    graphics.text("画面エラー!", width/2, height/2 - 20);
-                    graphics.textSize(12);
-                    graphics.text("エラー: " + e.getMessage(), width/2, height/2);
-                }
-            } else {
-                // ScreenManagerが未初期化の場合の表示
-                // テーマ背景
-                int tbg = themeEngine != null ? themeEngine.colorBackground() : 0xFF1E1E1E;
-                graphics.background((tbg>>16)&0xFF, (tbg>>8)&0xFF, (tbg)&0xFF);
-                graphics.fill(255, 255, 255);
-                graphics.textAlign(PApplet.CENTER, PApplet.CENTER);
-                graphics.textSize(16);
-                graphics.text("システム初期化中...", width/2, height/2);
-            }
-
-            // 通知センターの描画
+            // 通知センターの描画（将来的にRenderPipelineに移行）
             if (notificationManager != null) {
                 try {
                     notificationManager.draw(graphics);
@@ -360,7 +382,7 @@ public class Kernel implements GestureListener {
                 }
             }
 
-            // コントロールセンターの描画
+            // コントロールセンターの描画（将来的にRenderPipelineに移行）
             if (controlCenterManager != null) {
                 try {
                     controlCenterManager.draw(graphics);
@@ -369,7 +391,7 @@ public class Kernel implements GestureListener {
                 }
             }
 
-            // ポップアップの描画
+            // ポップアップの描画（将来的にRenderPipelineに移行）
             if (popupManager != null) {
                 try {
                     popupManager.draw(graphics);
@@ -378,13 +400,7 @@ public class Kernel implements GestureListener {
                 }
             }
 
-            } catch (Exception e) {
-                System.err.println("Kernel: 描画処理中にエラーが発生: " + e.getMessage());
-                e.printStackTrace();
-            } finally {
-                // PGraphicsバッファへの描画終了
-                graphics.endDraw();
-            }
+            graphics.endDraw();
         }
     }
 
@@ -395,61 +411,67 @@ public class Kernel implements GestureListener {
      * @param y マウスY座標
      */
     public void mousePressed(int x, int y) {
-        long startNs = System.nanoTime();
-        long stageStartNs = startNs;
+        // Phase 1リファクタリング: InputManagerに処理を委譲
+        if (inputManager != null) {
+            inputManager.handleMousePressed(x, y, 1); // デフォルトで左ボタン
+        } else {
+            // InputManagerが初期化されていない場合の従来処理（後方互換性）
+            long startNs = System.nanoTime();
+            long stageStartNs = startNs;
 
-        if (isSleeping) {
-            if (logger != null) {
-                logger.debug("Kernel", "mousePressed ignored - device is sleeping");
-            }
-            return;
-        }
-
-        if (logger != null) {
-            logger.debug("Kernel", "mousePressed at (" + x + ", " + y + ")");
-        }
-
-        try {
-            if (popupManager != null && popupManager.hasActivePopup()) {
-                boolean popupHandled = popupManager.handleMouseClick(x, y);
-                long stageEndNs = System.nanoTime();
-                logInputStage("mousePressed", "popup", stageStartNs, stageEndNs, x, y);
-                if (popupHandled) {
-                    logInputStage("mousePressed", "total", startNs, stageEndNs, x, y);
-                    return;
-                }
-                stageStartNs = stageEndNs;
-            }
-
-            if (gestureManager != null) {
-                boolean gestureHandled = gestureManager.handleMousePressed(x, y);
-                long stageEndNs = System.nanoTime();
-                logInputStage("mousePressed", "gesture", stageStartNs, stageEndNs, x, y);
-                if (gestureHandled) {
-                    logInputStage("mousePressed", "total", startNs, stageEndNs, x, y);
-                    return;
-                }
-                stageStartNs = stageEndNs;
-            }
-
-            if (screenManager != null) {
+            if (isSleeping) {
                 if (logger != null) {
-                    logger.debug("Kernel", "Forwarding mousePressed to ScreenManager");
+                    logger.debug("Kernel", "mousePressed ignored - device is sleeping");
                 }
-                screenManager.setModifierKeys(shiftPressed, ctrlPressed);
-                screenManager.mousePressed(x, y);
-                long stageEndNs = System.nanoTime();
-                logInputStage("mousePressed", "screen", stageStartNs, stageEndNs, x, y);
+                return;
             }
-        } catch (Exception e) {
+
             if (logger != null) {
-                logger.error("Kernel", "mousePressed処理エラー", e);
+                logger.debug("Kernel", "mousePressed at (" + x + ", " + y + ")");
             }
-            System.err.println("Kernel: mousePressed処理エラー: " + e.getMessage());
-            e.printStackTrace();
-        } finally {
-            long endNs = System.nanoTime();
-            logInputStage("mousePressed", "total", startNs, endNs, x, y);
+
+            try {
+                if (popupManager != null && popupManager.hasActivePopup()) {
+                    boolean popupHandled = popupManager.handleMouseClick(x, y);
+                    long stageEndNs = System.nanoTime();
+                    logInputStage("mousePressed", "popup", stageStartNs, stageEndNs, x, y);
+                    if (popupHandled) {
+                        logInputStage("mousePressed", "total", startNs, stageEndNs, x, y);
+                        return;
+                    }
+                    stageStartNs = stageEndNs;
+                }
+
+                if (gestureManager != null) {
+                    boolean gestureHandled = gestureManager.handleMousePressed(x, y);
+                    long stageEndNs = System.nanoTime();
+                    logInputStage("mousePressed", "gesture", stageStartNs, stageEndNs, x, y);
+                    if (gestureHandled) {
+                        logInputStage("mousePressed", "total", startNs, stageEndNs, x, y);
+                        return;
+                    }
+                    stageStartNs = stageEndNs;
+                }
+
+                if (screenManager != null) {
+                    if (logger != null) {
+                        logger.debug("Kernel", "Forwarding mousePressed to ScreenManager");
+                    }
+                    screenManager.setModifierKeys(shiftPressed, ctrlPressed);
+                    screenManager.mousePressed(x, y);
+                    long stageEndNs = System.nanoTime();
+                    logInputStage("mousePressed", "screen", stageStartNs, stageEndNs, x, y);
+                }
+            } catch (Exception e) {
+                if (logger != null) {
+                    logger.error("Kernel", "mousePressed処理エラー", e);
+                }
+                System.err.println("Kernel: mousePressed処理エラー: " + e.getMessage());
+                e.printStackTrace();
+            } finally {
+                long endNs = System.nanoTime();
+                logInputStage("mousePressed", "total", startNs, endNs, x, y);
+            }
         }
     }
 
@@ -637,6 +659,32 @@ public class Kernel implements GestureListener {
      * @param keyCode キーコード
      */
     public void keyPressed(char key, int keyCode) {
+        // Phase 1リファクタリング: InputManagerに処理を委譲
+        // ただし、ESCとスペースキーは元のKernelで処理（動作しないため）
+        if (inputManager != null) {
+            // ESCキー（27）とスペースキー（32）以外はInputManagerで処理
+            if (keyCode != 27 && keyCode != 32 && key != ' ') {
+                inputManager.handleKeyPressed(key, keyCode);
+
+                // 修飾キーの状態を同期（互換性のため）
+                InputManager.ModifierKeyState modifierState = inputManager.getModifierState();
+                shiftPressed = modifierState.isShiftPressed();
+                ctrlPressed = modifierState.isCtrlPressed();
+                altPressed = modifierState.isAltPressed();
+                metaPressed = modifierState.isMetaPressed();
+                return;
+            }
+
+            // ESCとスペースは下の従来処理で実行
+            // 修飾キーの状態だけ同期
+            InputManager.ModifierKeyState modifierState = inputManager.getModifierState();
+            shiftPressed = modifierState.isShiftPressed();
+            ctrlPressed = modifierState.isCtrlPressed();
+            altPressed = modifierState.isAltPressed();
+            metaPressed = modifierState.isMetaPressed();
+        }
+
+        // InputManagerが初期化されていない場合の従来処理（後方互換性）
         System.out.println("Kernel: keyPressed - key: '" + key + "', keyCode: " + keyCode);
         System.out.println("Kernel: [MODIFIER STATE] shift=" + shiftPressed + ", ctrl=" + ctrlPressed + ", alt=" + altPressed + ", meta=" + metaPressed);
 
@@ -717,7 +765,16 @@ public class Kernel implements GestureListener {
                 System.out.println("Kernel: Space key pressed - checking lock screen and focus status");
 
                 // ロック画面が表示されている場合は、ロック画面に処理を委譲
-                if (layerStack.contains(LayerType.LOCK_SCREEN)) {
+                // Phase 3: LayerControllerを使用してレイヤーを確認
+                boolean isLockScreen = false;
+                if (layerController != null) {
+                    isLockScreen = layerController.hasLayer(LayerType.LOCK_SCREEN);
+                } else if (layerStack != null) {
+                    // 後方互換性のため、layerControllerがない場合は従来のlayerStackを使用
+                    isLockScreen = layerStack.contains(LayerType.LOCK_SCREEN);
+                }
+
+                if (isLockScreen) {
                     System.out.println("Kernel: Lock screen is active - forwarding space key to screen manager");
                     if (screenManager != null) {
                         screenManager.keyPressed(key, keyCode);
@@ -812,6 +869,32 @@ public class Kernel implements GestureListener {
      * @param keyCode キーコード
      */
     public void keyReleased(char key, int keyCode) {
+        // Phase 1リファクタリング: InputManagerに処理を委譲
+        // ただし、ESCキーは元のKernelで処理（動作しないため）
+        if (inputManager != null) {
+            // ESCキー（27）以外はInputManagerで処理
+            if (keyCode != 27) {
+                inputManager.handleKeyReleased(key, keyCode);
+
+                // 修飾キーの状態を同期（互換性のため）
+                InputManager.ModifierKeyState modifierState = inputManager.getModifierState();
+                shiftPressed = modifierState.isShiftPressed();
+                ctrlPressed = modifierState.isCtrlPressed();
+                altPressed = modifierState.isAltPressed();
+                metaPressed = modifierState.isMetaPressed();
+                return;
+            }
+
+            // ESCは下の従来処理で実行
+            // 修飾キーの状態だけ同期
+            InputManager.ModifierKeyState modifierState = inputManager.getModifierState();
+            shiftPressed = modifierState.isShiftPressed();
+            ctrlPressed = modifierState.isCtrlPressed();
+            altPressed = modifierState.isAltPressed();
+            metaPressed = modifierState.isMetaPressed();
+        }
+
+        // InputManagerが初期化されていない場合の従来処理（後方互換性）
         System.out.println("Kernel: keyReleased - key: '" + key + "', keyCode: " + keyCode);
 
         // 修飾キーのリリースを追跡
@@ -1021,7 +1104,72 @@ public class Kernel implements GestureListener {
         System.out.println("Kernel: OSサービスを初期化中...");
         System.out.println("Kernel: フレームレートを60FPSに設定");
 
-        // 動的レイヤー管理システムを初期化
+        // Phase 4リファクタリング: イベントバスの初期化
+        System.out.println("=== Phase 4: イベントバスシステム初期化開始 ===");
+        EventBus eventBus = EventBus.getInstance();
+        eventBus.setDebugMode(false); // デバッグモードは必要に応じて有効化
+
+        // システムイベントリスナーを登録（例）
+        eventBus.register(SystemEvent.class, new EventListener<SystemEvent>() {
+            @Override
+            public void onEvent(SystemEvent event) {
+                System.out.println("System Event: " + event.getType() + " - " + event.getMessage());
+            }
+        });
+
+        // システム起動イベントを発行
+        eventBus.post(SystemEvent.startup(this));
+        System.out.println("✅ イベントバスシステム初期化完了");
+
+        // Phase 2リファクタリング: ServiceContainerの初期化
+        System.out.println("=== Phase 2: サービスコンテナ初期化開始 ===");
+        serviceBootstrap = new CoreServiceBootstrap(this);
+        boolean servicesInitialized = serviceBootstrap.initialize(graphics);
+
+        if (servicesInitialized) {
+            System.out.println("✅ サービスコンテナ初期化完了: " +
+                             serviceBootstrap.getServiceCount() + "個のサービスが登録されました");
+
+            // ServiceContainerから主要サービスを取得
+            powerManager = serviceBootstrap.tryGetService(PowerManager.class);
+            lifecycleManager = serviceBootstrap.tryGetService(SystemLifecycleManager.class);
+
+            if (powerManager != null) {
+                System.out.println("  -> PowerManager: 初期化成功");
+            }
+            if (lifecycleManager != null) {
+                System.out.println("  -> SystemLifecycleManager: 初期化成功");
+                lifecycleManager.start(); // システム開始
+            }
+        } else {
+            System.err.println("⚠️ サービスコンテナの初期化に失敗しました。従来の初期化方法を使用します。");
+        }
+
+        // Phase 3リファクタリング: 画面遷移とリソース管理の初期化
+        System.out.println("=== Phase 3: 画面遷移・リソース管理システム初期化開始 ===");
+
+        // NavigationController初期化
+        System.out.println("  -> NavigationController作成中...");
+        navigationController = new NavigationController(this);
+
+        // LayerController初期化（従来のlayerStack処理を移行）
+        System.out.println("  -> LayerController作成中...");
+        layerController = new LayerController(this);
+
+        // ResourceManager初期化（日本語フォント処理を移行）
+        System.out.println("  -> ResourceManager作成中...");
+        resourceManager = new ResourceManager(logger);
+        if (parentApplet != null) {
+            resourceManager.setApplet(parentApplet);
+        }
+
+        // HardwareController初期化（ハードウェアバイパスAPIを統合）
+        System.out.println("  -> HardwareController作成中...");
+        hardwareController = new HardwareController();
+
+        System.out.println("✅ Phase 3システム初期化完了");
+
+        // 動的レイヤー管理システムを初期化（後方互換性のため残す）
         System.out.println("  -> 動的レイヤー管理システム作成中...");
         layerStack = new ArrayList<>();
         layerStack.add(LayerType.HOME_SCREEN); // 最初は常にホーム画面
@@ -1030,101 +1178,420 @@ public class Kernel implements GestureListener {
         System.out.println("  -> 統一座標変換システム作成中...");
         coordinateTransform = new CoordinateTransform(width, height);
 
-        // コアサービスの初期化（LoggerService用にVFSを先に初期化）
+        // 基本的なサービスの早期初期化（DIコンテナの前提条件）
         System.out.println("  -> VFS（仮想ファイルシステム）作成中...");
         if (worldId != null && !worldId.isEmpty()) {
             System.out.println("     World ID: " + worldId);
         }
         vfs = new VFS(worldId);
 
-        System.out.println("  -> OSロガーサービス作成中...");
-        logger = new LoggerService(vfs);
-        // Enable DEBUG logging for troubleshooting
-        logger.setLogLevel(jp.moyashi.phoneos.core.service.LoggerService.LogLevel.DEBUG);
-        logger.info("Kernel", "=== MochiMobileOS カーネル初期化開始 ===");
-        logger.info("Kernel", "画面サイズ: " + width + "x" + height);
-        if (worldId != null && !worldId.isEmpty()) {
-            logger.info("Kernel", "World ID: " + worldId);
+        // DIコンテナから各サービスを取得
+        if (serviceBootstrap != null && serviceBootstrap.isInitialized()) {
+            System.out.println("=== DIコンテナからサービスを取得 ===");
+
+            // LoggerService取得
+            logger = serviceBootstrap.tryGetService(LoggerService.class);
+            if (logger != null) {
+                System.out.println("  -> LoggerService: DIコンテナから取得成功");
+                logger.setLogLevel(jp.moyashi.phoneos.core.service.LoggerService.LogLevel.DEBUG);
+                logger.info("Kernel", "=== MochiMobileOS カーネル初期化開始 ===");
+                logger.info("Kernel", "画面サイズ: " + width + "x" + height);
+                if (worldId != null && !worldId.isEmpty()) {
+                    logger.info("Kernel", "World ID: " + worldId);
+                }
+            } else {
+                System.out.println("  -> LoggerService: DIコンテナから取得失敗、直接作成");
+                logger = new LoggerService(vfs);
+                logger.setLogLevel(jp.moyashi.phoneos.core.service.LoggerService.LogLevel.DEBUG);
+            }
+
+            // SystemClock取得
+            systemClock = serviceBootstrap.tryGetService(SystemClock.class);
+            if (systemClock != null) {
+                System.out.println("  -> SystemClock: DIコンテナから取得成功");
+            }
+
+            // NotificationManager取得
+            notificationManager = serviceBootstrap.tryGetService(NotificationManager.class);
+            if (notificationManager != null) {
+                System.out.println("  -> NotificationManager: DIコンテナから取得成功");
+            }
+
+            // AppLoader取得
+            appLoader = serviceBootstrap.tryGetService(AppLoader.class);
+            if (appLoader != null) {
+                System.out.println("  -> AppLoader: DIコンテナから取得成功");
+            }
+
+            // LayoutManager取得
+            layoutManager = serviceBootstrap.tryGetService(LayoutManager.class);
+            if (layoutManager != null) {
+                System.out.println("  -> LayoutManager: DIコンテナから取得成功");
+            }
+
+            // SettingsManager取得
+            settingsManager = serviceBootstrap.tryGetService(SettingsManager.class);
+            if (settingsManager != null) {
+                System.out.println("  -> SettingsManager: DIコンテナから取得成功");
+            }
+
+            // ThemeEngine取得
+            themeEngine = serviceBootstrap.tryGetService(jp.moyashi.phoneos.core.ui.theme.ThemeEngine.class);
+            if (themeEngine != null) {
+                System.out.println("  -> ThemeEngine: DIコンテナから取得成功");
+            }
+
+            // ScreenManager取得
+            screenManager = serviceBootstrap.tryGetService(ScreenManager.class);
+            if (screenManager != null) {
+                System.out.println("  -> ScreenManager: DIコンテナから取得成功");
+            }
+
+            // PopupManager取得
+            popupManager = serviceBootstrap.tryGetService(PopupManager.class);
+            if (popupManager != null) {
+                System.out.println("  -> PopupManager: DIコンテナから取得成功");
+            }
+
+            // GestureManager取得
+            gestureManager = serviceBootstrap.tryGetService(GestureManager.class);
+            if (gestureManager != null) {
+                System.out.println("  -> GestureManager: DIコンテナから取得成功");
+            }
+
+            // InputManager取得
+            inputManager = serviceBootstrap.tryGetService(InputManager.class);
+            if (inputManager != null) {
+                System.out.println("  -> InputManager: DIコンテナから取得成功");
+            }
+
+            // RenderPipeline取得
+            renderPipeline = serviceBootstrap.tryGetService(RenderPipeline.class);
+            if (renderPipeline != null) {
+                System.out.println("  -> RenderPipeline: DIコンテナから取得成功");
+            }
+
+            // ControlCenterManager取得
+            controlCenterManager = serviceBootstrap.tryGetService(ControlCenterManager.class);
+            if (controlCenterManager != null) {
+                System.out.println("  -> ControlCenterManager: DIコンテナから取得成功");
+            }
+
+            // LockManager取得
+            lockManager = serviceBootstrap.tryGetService(LockManager.class);
+            if (lockManager != null) {
+                System.out.println("  -> LockManager: DIコンテナから取得成功");
+            }
+
+            // VirtualRouter取得
+            virtualRouter = serviceBootstrap.tryGetService(jp.moyashi.phoneos.core.service.network.VirtualRouter.class);
+            if (virtualRouter != null) {
+                System.out.println("  -> VirtualRouter: DIコンテナから取得成功");
+            }
+
+            // MessageStorage取得
+            messageStorage = serviceBootstrap.tryGetService(MessageStorage.class);
+            if (messageStorage != null) {
+                System.out.println("  -> MessageStorage: DIコンテナから取得成功");
+            }
+
+            // ChromiumService取得
+            chromiumService = serviceBootstrap.tryGetService(jp.moyashi.phoneos.core.service.chromium.ChromiumService.class);
+            if (chromiumService != null) {
+                System.out.println("  -> ChromiumService: DIコンテナから取得成功");
+            }
+
+            // ハードウェアバイパスAPI取得
+            mobileDataSocket = serviceBootstrap.tryGetService(jp.moyashi.phoneos.core.service.hardware.MobileDataSocket.class);
+            if (mobileDataSocket != null) {
+                System.out.println("  -> MobileDataSocket: DIコンテナから取得成功");
+            }
+
+            bluetoothSocket = serviceBootstrap.tryGetService(jp.moyashi.phoneos.core.service.hardware.BluetoothSocket.class);
+            if (bluetoothSocket != null) {
+                System.out.println("  -> BluetoothSocket: DIコンテナから取得成功");
+            }
+
+            locationSocket = serviceBootstrap.tryGetService(jp.moyashi.phoneos.core.service.hardware.LocationSocket.class);
+            if (locationSocket != null) {
+                System.out.println("  -> LocationSocket: DIコンテナから取得成功");
+            }
+
+            batteryInfo = serviceBootstrap.tryGetService(jp.moyashi.phoneos.core.service.hardware.BatteryInfo.class);
+            if (batteryInfo != null) {
+                System.out.println("  -> BatteryInfo: DIコンテナから取得成功");
+            }
+
+            // 追加のハードウェアバイパスAPI取得
+            cameraSocket = serviceBootstrap.tryGetService(jp.moyashi.phoneos.core.service.hardware.CameraSocket.class);
+            if (cameraSocket != null) {
+                System.out.println("  -> CameraSocket: DIコンテナから取得成功");
+            }
+
+            microphoneSocket = serviceBootstrap.tryGetService(jp.moyashi.phoneos.core.service.hardware.MicrophoneSocket.class);
+            if (microphoneSocket != null) {
+                System.out.println("  -> MicrophoneSocket: DIコンテナから取得成功");
+            }
+
+            speakerSocket = serviceBootstrap.tryGetService(jp.moyashi.phoneos.core.service.hardware.SpeakerSocket.class);
+            if (speakerSocket != null) {
+                System.out.println("  -> SpeakerSocket: DIコンテナから取得成功");
+            }
+
+            icSocket = serviceBootstrap.tryGetService(jp.moyashi.phoneos.core.service.hardware.ICSocket.class);
+            if (icSocket != null) {
+                System.out.println("  -> ICSocket: DIコンテナから取得成功");
+            }
+
+            simInfo = serviceBootstrap.tryGetService(jp.moyashi.phoneos.core.service.hardware.SIMInfo.class);
+            if (simInfo != null) {
+                System.out.println("  -> SIMInfo: DIコンテナから取得成功");
+            }
+
+            // SensorManager取得
+            sensorManager = serviceBootstrap.tryGetService(jp.moyashi.phoneos.core.service.sensor.SensorManager.class);
+            if (sensorManager != null) {
+                System.out.println("  -> SensorManager: DIコンテナから取得成功");
+            }
+
+            // BatteryMonitor取得
+            batteryMonitor = serviceBootstrap.tryGetService(BatteryMonitor.class);
+            if (batteryMonitor != null) {
+                System.out.println("  -> BatteryMonitor: DIコンテナから取得成功");
+            }
+        } else {
+            // フォールバック: 従来の初期化
+            System.out.println("⚠️ DIコンテナが利用できません。従来の初期化を実行します。");
+            logger = new LoggerService(vfs);
+            logger.setLogLevel(jp.moyashi.phoneos.core.service.LoggerService.LogLevel.DEBUG);
+            logger.info("Kernel", "=== MochiMobileOS カーネル初期化開始（フォールバック） ===");
         }
 
+        // サービスマネージャーは直接作成（将来DI化予定）
         System.out.println("  -> サービスマネージャー作成中...");
         serviceManager = new ServiceManager(this);
         serviceManager.initialize();
-        logger.info("Kernel", "サービスマネージャー初期化完了");
-
-        // 日本語フォントの初期化（LoggerService使用）
-        logger.info("Kernel", "日本語フォントを初期化中...");
-        japaneseFont = loadJapaneseFont();
-        if (japaneseFont != null) {
-            logger.info("Kernel", "日本語フォント (Noto Sans JP) を正常に読み込みました");
-        } else {
-            logger.warn("Kernel", "日本語フォントの読み込みに失敗しました。デフォルトフォントを使用します");
+        if (logger != null) {
+            logger.info("Kernel", "サービスマネージャー初期化完了");
         }
 
-        System.out.println("  -> 設定マネージャー作成中...");
-        settingsManager = new SettingsManager(vfs);
+        // 日本語フォントの初期化（Phase 3: ResourceManager経由）
+        logger.info("Kernel", "日本語フォントを初期化中...");
+        if (resourceManager != null) {
+            japaneseFont = resourceManager.getJapaneseFont();
+            if (japaneseFont != null) {
+                logger.info("Kernel", "日本語フォント (Noto Sans JP) を正常に読み込みました");
+            } else {
+                logger.warn("Kernel", "日本語フォントの読み込みに失敗しました。デフォルトフォントを使用します");
+            }
+        } else {
+            // ResourceManagerが利用できない場合は従来の方法
+            japaneseFont = loadJapaneseFont();
+        }
 
-        // テーマエンジン初期化（設定を購読し即時反映）
-        System.out.println("  -> テーマエンジン作成中...");
-        themeEngine = new jp.moyashi.phoneos.core.ui.theme.ThemeEngine(settingsManager);
+        // SettingsManagerの初期化（DIで取得できなかった場合）
+        if (settingsManager == null) {
+            System.out.println("  -> 設定マネージャー作成中（フォールバック）...");
+            settingsManager = new SettingsManager(vfs);
+        }
+
+        // ThemeEngineの初期化（DIで取得できなかった場合）
+        if (themeEngine == null) {
+            System.out.println("  -> テーマエンジン作成中（フォールバック）...");
+            themeEngine = new jp.moyashi.phoneos.core.ui.theme.ThemeEngine(settingsManager);
+        }
         jp.moyashi.phoneos.core.ui.theme.ThemeContext.setTheme(themeEngine);
         
-        System.out.println("  -> システムクロック作成中...");
-        systemClock = new SystemClock();
-        
-        System.out.println("  -> アプリケーションローダー作成中...");
-        appLoader = new AppLoader(vfs);
-        
+        // SystemClockの初期化（DIで取得できなかった場合）
+        if (systemClock == null) {
+            System.out.println("  -> システムクロック作成中（フォールバック）...");
+            systemClock = new SystemClock();
+        }
+
+        // AppLoaderの初期化（DIで取得できなかった場合）
+        if (appLoader == null) {
+            System.out.println("  -> アプリケーションローダー作成中（フォールバック）...");
+            appLoader = new AppLoader(vfs);
+        }
+
         // アプリケーションをスキャンして読み込む
         System.out.println("  -> 外部アプリケーションをスキャン中...");
         appLoader.scanForApps();
+
+        // LayoutManagerの初期化（DIで取得できなかった場合）
+        if (layoutManager == null) {
+            System.out.println("  -> レイアウト管理サービス作成中（フォールバック）...");
+            layoutManager = new LayoutManager(vfs, appLoader);
+        }
         
-        System.out.println("  -> レイアウト管理サービス作成中...");
-        layoutManager = new LayoutManager(vfs, appLoader);
-        
-        System.out.println("  -> グローバルポップアップマネージャー作成中...");
-        popupManager = new PopupManager();
-        
-        System.out.println("  -> Kernelレベルジェスチャーマネージャー作成中...");
-        gestureManager = new GestureManager(logger);
-        
-        System.out.println("  -> コントロールセンター管理サービス作成中...");
-        controlCenterManager = new ControlCenterManager();
+        // PopupManagerの初期化（DIで取得できなかった場合）
+        if (popupManager == null) {
+            System.out.println("  -> グローバルポップアップマネージャー作成中（フォールバック）...");
+            popupManager = new PopupManager();
+        }
+
+        // Phase 1リファクタリング: 入力管理と描画パイプラインの初期化
+        // InputManagerの初期化（DIで取得できなかった場合）
+        if (inputManager == null) {
+            System.out.println("  -> 入力管理システム作成中（フォールバック）...");
+            inputManager = new InputManager(this);
+        }
+        logger.info("Kernel", "InputManager初期化完了");
+
+        // RenderPipelineの初期化（DIで取得できなかった場合）
+        if (renderPipeline == null) {
+            System.out.println("  -> 描画パイプライン作成中（フォールバック）...");
+            renderPipeline = new RenderPipeline(this, width, height);
+        }
+        logger.info("Kernel", "RenderPipeline初期化完了");
+
+        // GestureManagerの初期化（DIで取得できなかった場合）
+        if (gestureManager == null) {
+            System.out.println("  -> Kernelレベルジェスチャーマネージャー作成中（フォールバック）...");
+            gestureManager = new GestureManager(logger);
+        }
+
+        // ControlCenterManagerの初期化（DIで取得できなかった場合）
+        if (controlCenterManager == null) {
+            System.out.println("  -> コントロールセンター管理サービス作成中（フォールバック）...");
+            controlCenterManager = new ControlCenterManager();
+        }
         controlCenterManager.setGestureManager(gestureManager);
         controlCenterManager.setCoordinateTransform(coordinateTransform);
         setupControlCenter();
-        
-        System.out.println("  -> 通知センター管理サービス作成中...");
-        notificationManager = new NotificationManager();
+
+        // NotificationManagerの初期化（DIで取得できなかった場合）
+        if (notificationManager == null) {
+            System.out.println("  -> 通知センター管理サービス作成中（フォールバック）...");
+            notificationManager = new NotificationManager();
+        }
         notificationManager.setKernel(this); // Kernelの参照を設定
         
-        System.out.println("  -> ロック状態管理サービス作成中...");
-        lockManager = new LockManager(settingsManager);
+        // LockManagerの初期化（DIで取得できなかった場合）
+        if (lockManager == null) {
+            System.out.println("  -> ロック状態管理サービス作成中（フォールバック）...");
+            lockManager = new LockManager(settingsManager);
+        }
         
         System.out.println("  -> 動的レイヤー管理システム作成中...");
         layerManager = new LayerManager(gestureManager);
 
-        System.out.println("  -> 仮想ネットワークルーター作成中...");
-        virtualRouter = new jp.moyashi.phoneos.core.service.network.VirtualRouter();
+        // VirtualRouterの初期化（DIで取得できなかった場合）
+        if (virtualRouter == null) {
+            System.out.println("  -> 仮想ネットワークルーター作成中（フォールバック）...");
+            virtualRouter = new jp.moyashi.phoneos.core.service.network.VirtualRouter();
+        }
 
-        System.out.println("  -> メッセージストレージサービス作成中...");
-        messageStorage = new MessageStorage(vfs);
+        // MessageStorageの初期化（DIで取得できなかった場合）
+        if (messageStorage == null) {
+            System.out.println("  -> メッセージストレージサービス作成中（フォールバック）...");
+            messageStorage = new MessageStorage(vfs);
+        }
 
-        // ハードウェアバイパスAPIの初期化（デフォルト実装）
+        // ハードウェアバイパスAPIの初期化
         System.out.println("  -> ハードウェアバイパスAPI作成中...");
-        mobileDataSocket = new jp.moyashi.phoneos.core.service.hardware.DefaultMobileDataSocket();
-        bluetoothSocket = new jp.moyashi.phoneos.core.service.hardware.DefaultBluetoothSocket();
-        locationSocket = new jp.moyashi.phoneos.core.service.hardware.DefaultLocationSocket();
-        batteryInfo = new jp.moyashi.phoneos.core.service.hardware.DefaultBatteryInfo();
-        cameraSocket = new jp.moyashi.phoneos.core.service.hardware.DefaultCameraSocket();
-        microphoneSocket = new jp.moyashi.phoneos.core.service.hardware.DefaultMicrophoneSocket();
-        speakerSocket = new jp.moyashi.phoneos.core.service.hardware.DefaultSpeakerSocket();
-        icSocket = new jp.moyashi.phoneos.core.service.hardware.DefaultICSocket();
-        simInfo = new jp.moyashi.phoneos.core.service.hardware.DefaultSIMInfo();
 
-        // バッテリー監視サービスの初期化
-        System.out.println("  -> BatteryMonitor初期化中...");
-        batteryMonitor = new BatteryMonitor(batteryInfo, settingsManager);
+        // DIコンテナから取得したサービスを優先
+        boolean usedDI = false;
+        if (mobileDataSocket != null || bluetoothSocket != null ||
+            locationSocket != null || batteryInfo != null ||
+            cameraSocket != null || microphoneSocket != null ||
+            speakerSocket != null || icSocket != null ||
+            simInfo != null) {
+            System.out.println("     ハードウェアAPIの一部またはすべてをDIコンテナから取得済み");
+            usedDI = true;
+        }
+
+        // DIで取得できなかったサービスをHardwareControllerまたは直接初期化で補完
+        if (hardwareController != null) {
+            // DIで取得できなかったサービスのみHardwareControllerから取得
+            if (mobileDataSocket == null) {
+                mobileDataSocket = hardwareController.getMobileDataSocket();
+                if (mobileDataSocket != null) System.out.println("     -> MobileDataSocket: HardwareController経由で取得");
+            }
+            if (bluetoothSocket == null) {
+                bluetoothSocket = hardwareController.getBluetoothSocket();
+                if (bluetoothSocket != null) System.out.println("     -> BluetoothSocket: HardwareController経由で取得");
+            }
+            if (locationSocket == null) {
+                locationSocket = hardwareController.getLocationSocket();
+                if (locationSocket != null) System.out.println("     -> LocationSocket: HardwareController経由で取得");
+            }
+            if (batteryInfo == null) {
+                batteryInfo = hardwareController.getBatteryInfo();
+                if (batteryInfo != null) System.out.println("     -> BatteryInfo: HardwareController経由で取得");
+            }
+            if (cameraSocket == null) {
+                cameraSocket = hardwareController.getCameraSocket();
+                if (cameraSocket != null) System.out.println("     -> CameraSocket: HardwareController経由で取得");
+            }
+            if (microphoneSocket == null) {
+                microphoneSocket = hardwareController.getMicrophoneSocket();
+                if (microphoneSocket != null) System.out.println("     -> MicrophoneSocket: HardwareController経由で取得");
+            }
+            if (speakerSocket == null) {
+                speakerSocket = hardwareController.getSpeakerSocket();
+                if (speakerSocket != null) System.out.println("     -> SpeakerSocket: HardwareController経由で取得");
+            }
+            if (icSocket == null) {
+                icSocket = hardwareController.getICSocket();
+                if (icSocket != null) System.out.println("     -> ICSocket: HardwareController経由で取得");
+            }
+            if (simInfo == null) {
+                simInfo = hardwareController.getSIMInfo();
+                if (simInfo != null) System.out.println("     -> SIMInfo: HardwareController経由で取得");
+            }
+
+            // バッテリー監視サービスの初期化（DIで取得できなかった場合）
+            if (batteryMonitor == null) {
+                System.out.println("  -> BatteryMonitor初期化中...");
+                hardwareController.initializeBatteryMonitor(settingsManager);
+                batteryMonitor = hardwareController.getBatteryMonitor();
+                if (batteryMonitor != null) System.out.println("     -> BatteryMonitor: HardwareController経由で取得");
+            }
+        }
+
+        // まだ取得できていないサービスは直接初期化（フォールバック）
+        if (mobileDataSocket == null) {
+            mobileDataSocket = new jp.moyashi.phoneos.core.service.hardware.DefaultMobileDataSocket();
+            System.out.println("     -> MobileDataSocket: 直接初期化（フォールバック）");
+        }
+        if (bluetoothSocket == null) {
+            bluetoothSocket = new jp.moyashi.phoneos.core.service.hardware.DefaultBluetoothSocket();
+            System.out.println("     -> BluetoothSocket: 直接初期化（フォールバック）");
+        }
+        if (locationSocket == null) {
+            locationSocket = new jp.moyashi.phoneos.core.service.hardware.DefaultLocationSocket();
+            System.out.println("     -> LocationSocket: 直接初期化（フォールバック）");
+        }
+        if (batteryInfo == null) {
+            batteryInfo = new jp.moyashi.phoneos.core.service.hardware.DefaultBatteryInfo();
+            System.out.println("     -> BatteryInfo: 直接初期化（フォールバック）");
+        }
+        if (cameraSocket == null) {
+            cameraSocket = new jp.moyashi.phoneos.core.service.hardware.DefaultCameraSocket();
+            System.out.println("     -> CameraSocket: 直接初期化（フォールバック）");
+        }
+        if (microphoneSocket == null) {
+            microphoneSocket = new jp.moyashi.phoneos.core.service.hardware.DefaultMicrophoneSocket();
+            System.out.println("     -> MicrophoneSocket: 直接初期化（フォールバック）");
+        }
+        if (speakerSocket == null) {
+            speakerSocket = new jp.moyashi.phoneos.core.service.hardware.DefaultSpeakerSocket();
+            System.out.println("     -> SpeakerSocket: 直接初期化（フォールバック）");
+        }
+        if (icSocket == null) {
+            icSocket = new jp.moyashi.phoneos.core.service.hardware.DefaultICSocket();
+            System.out.println("     -> ICSocket: 直接初期化（フォールバック）");
+        }
+        if (simInfo == null) {
+            simInfo = new jp.moyashi.phoneos.core.service.hardware.DefaultSIMInfo();
+            System.out.println("     -> SIMInfo: 直接初期化（フォールバック）");
+        }
+        if (batteryMonitor == null) {
+            batteryMonitor = new BatteryMonitor(batteryInfo, settingsManager);
+            System.out.println("     -> BatteryMonitor: 直接初期化（フォールバック）");
+        }
 
         System.out.println("  -> ChromiumService初期化中...");
         chromiumManager = null;
@@ -1173,9 +1640,11 @@ public class Kernel implements GestureListener {
         clipboardService = new jp.moyashi.phoneos.core.service.ClipboardService();
         logger.info("Kernel", "クリップボードサービス（OS統一管理）初期化完了");
 
-        // センサー管理サービスの初期化
-        System.out.println("  -> センサー管理サービス作成中...");
-        sensorManager = new jp.moyashi.phoneos.core.service.sensor.SensorManagerImpl(this);
+        // SensorManagerの初期化（DIで取得できなかった場合）
+        if (sensorManager == null) {
+            System.out.println("  -> センサー管理サービス作成中（フォールバック）...");
+            sensorManager = new jp.moyashi.phoneos.core.service.sensor.SensorManagerImpl(this);
+        }
         logger.info("Kernel", "センサー管理サービス初期化完了");
 
         // コントロールセンターを最高優先度のジェスチャーリスナーとして登録
@@ -1225,13 +1694,24 @@ public class Kernel implements GestureListener {
         noteApp.onInitialize(this);
         chromiumBrowserApp.onInitialize(this);
 
-        // スクリーンマネージャーを初期化してランチャーを初期画面に設定
-        System.out.println("  -> スクリーンマネージャー作成中...");
-        screenManager = new ScreenManager();
+        // ScreenManagerの初期化（DIで取得できなかった場合）
+        if (screenManager == null) {
+            System.out.println("  -> スクリーンマネージャー作成中（フォールバック）...");
+            screenManager = new ScreenManager();
+        }
         System.out.println("✅ ScreenManager作成済み: " + (screenManager != null));
 
         // ScreenManagerにKernelインスタンスを設定（レイヤー管理統合のため）
         screenManager.setKernel(this);
+
+        // Phase 3: NavigationControllerとLayerControllerの設定
+        if (navigationController != null) {
+            navigationController.setScreenManager(screenManager);
+        }
+        if (layerController != null) {
+            layerController.setManagers(navigationController, screenManager,
+                popupManager, controlCenterManager, notificationManager);
+        }
 
         // ScreenManagerにPAppletを設定（画面のsetup()に必要）
         System.out.println("  -> ScreenManagerにPAppletを設定中...");
@@ -1395,6 +1875,9 @@ public class Kernel implements GestureListener {
     public void shutdown() {
         System.out.println("Kernel: System shutdown requested");
 
+        // システムシャットダウンイベントを発行
+        EventBus.getInstance().post(SystemEvent.shutdown(this));
+
         // ServiceManager のシャットダウン
         if (serviceManager != null) {
             System.out.println("Kernel: Shutting down ServiceManager...");
@@ -1422,6 +1905,10 @@ public class Kernel implements GestureListener {
         new Thread(() -> {
             try {
                 Thread.sleep(1500);
+
+                // EventBusのシャットダウン
+                EventBus.getInstance().shutdown();
+
                 System.out.println("Kernel: Shutdown complete");
                 if (parentApplet != null) {
                     parentApplet.exit();
@@ -1440,7 +1927,15 @@ public class Kernel implements GestureListener {
     public VFS getVFS() {
         return vfs;
     }
-    
+
+    /**
+     * VFSサービスを設定する。
+     * @param vfs VFSインスタンス
+     */
+    public void setVFS(VFS vfs) {
+        this.vfs = vfs;
+    }
+
     /**
      * 設定管理サービスを取得する。
      * @return SettingsManagerインスタンス
@@ -1497,6 +1992,10 @@ public class Kernel implements GestureListener {
      * @return Shiftキーが押されている場合true
      */
     public boolean isShiftPressed() {
+        // Phase 1リファクタリング: InputManagerから状態を取得
+        if (inputManager != null) {
+            return inputManager.isShiftPressed();
+        }
         return shiftPressed;
     }
 
@@ -1506,6 +2005,10 @@ public class Kernel implements GestureListener {
      * @return Ctrlキーが押されている場合true
      */
     public boolean isCtrlPressed() {
+        // Phase 1リファクタリング: InputManagerから状態を取得
+        if (inputManager != null) {
+            return inputManager.isCtrlPressed();
+        }
         return ctrlPressed;
     }
 
@@ -1515,6 +2018,10 @@ public class Kernel implements GestureListener {
      * @return Altキーが押されている場合true
      */
     public boolean isAltPressed() {
+        // Phase 1リファクタリング: InputManagerから状態を取得
+        if (inputManager != null) {
+            return inputManager.isAltPressed();
+        }
         return altPressed;
     }
 
@@ -1524,6 +2031,10 @@ public class Kernel implements GestureListener {
      * @return Metaキーが押されている場合true
      */
     public boolean isMetaPressed() {
+        // Phase 1リファクタリング: InputManagerから状態を取得
+        if (inputManager != null) {
+            return inputManager.isMetaPressed();
+        }
         return metaPressed;
     }
 
@@ -1763,12 +2274,84 @@ public class Kernel implements GestureListener {
     }
 
     /**
+     * 電源管理システムを取得する（Phase 2リファクタリング）。
+     *
+     * @return PowerManagerインスタンス
+     */
+    public PowerManager getPowerManager() {
+        return powerManager;
+    }
+
+    /**
+     * ライフサイクル管理システムを取得する（Phase 2リファクタリング）。
+     *
+     * @return SystemLifecycleManagerインスタンス
+     */
+    public SystemLifecycleManager getLifecycleManager() {
+        return lifecycleManager;
+    }
+
+    /**
+     * サービスコンテナから任意のサービスを取得する（Phase 2リファクタリング）。
+     * 高度な使用向け。
+     *
+     * @param <T> サービスの型
+     * @param serviceClass サービスクラス
+     * @return サービスインスタンス、存在しない場合はnull
+     */
+    public <T> T getService(Class<T> serviceClass) {
+        if (serviceBootstrap != null) {
+            return serviceBootstrap.tryGetService(serviceClass);
+        }
+        return null;
+    }
+
+    /**
+     * NavigationControllerを取得する（Phase 3リファクタリング）。
+     *
+     * @return NavigationControllerインスタンス
+     */
+    public NavigationController getNavigationController() {
+        return navigationController;
+    }
+
+    /**
+     * LayerControllerを取得する（Phase 3リファクタリング）。
+     *
+     * @return LayerControllerインスタンス
+     */
+    public LayerController getLayerController() {
+        return layerController;
+    }
+
+    /**
+     * ResourceManagerを取得する（Phase 3リファクタリング）。
+     *
+     * @return ResourceManagerインスタンス
+     */
+    public ResourceManager getResourceManager() {
+        return resourceManager;
+    }
+
+    /**
+     * HardwareControllerを取得する（Phase 3リファクタリング）。
+     *
+     * @return HardwareControllerインスタンス
+     */
+    public HardwareController getHardwareController() {
+        return hardwareController;
+    }
+
+    /**
      * モバイルデータ通信ソケットを設定する（forge-mod用）。
      *
      * @param socket モバイルデータ通信ソケット
      */
     public void setMobileDataSocket(jp.moyashi.phoneos.core.service.hardware.MobileDataSocket socket) {
-        this.mobileDataSocket = socket;
+        if (hardwareController != null) {
+            hardwareController.setMobileDataSocket(socket);
+        }
+        this.mobileDataSocket = socket; // 後方互換性のため
     }
 
     /**
@@ -2091,7 +2674,19 @@ public class Kernel implements GestureListener {
      *
      * 例外: ロック画面は閉じられない（デバッグスクリーンが出るため）
      */
-    private void handleHomeButton() {
+    /**
+     * ホームボタンの処理を実行する。
+     * Phase 1リファクタリングでInputManagerから呼び出されるため、publicに変更。
+     * 将来的にはLayerControllerに移行予定。
+     */
+    public void handleHomeButton() {
+        // Phase 3: LayerControllerに処理を委譲
+        if (layerController != null) {
+            layerController.handleHomeButton();
+            return;
+        }
+
+        // LayerControllerが利用できない場合の従来処理（後方互換性）
         System.out.println("Kernel: Home button pressed - dynamic layer management");
         System.out.println("Kernel: Current layer stack: " + layerStack);
 
@@ -2162,6 +2757,11 @@ public class Kernel implements GestureListener {
         layerStack.add(layerType);
 
         System.out.println("Kernel: Layer '" + layerType + "' added to stack. Current stack: " + layerStack);
+
+        // Phase 3: LayerControllerにも同期
+        if (layerController != null) {
+            layerController.addLayer(layerType);
+        }
     }
 
     /**
@@ -2173,6 +2773,11 @@ public class Kernel implements GestureListener {
         boolean removed = layerStack.remove(layerType);
         if (removed) {
             System.out.println("Kernel: Layer '" + layerType + "' removed from stack. Current stack: " + layerStack);
+        }
+
+        // Phase 3: LayerControllerにも同期
+        if (layerController != null) {
+            layerController.removeLayer(layerType);
         }
     }
 
@@ -2370,9 +2975,22 @@ public class Kernel implements GestureListener {
      * background()とtick()はそのまま動作する。
      */
     public void sleep() {
-        if (!isSleeping) {
+        // Phase 2リファクタリング: PowerManagerを使用
+        if (powerManager != null) {
+            if (powerManager.sleep()) {
+                isSleeping = true; // 互換性のために保持
+                System.out.println("Kernel: Device entering sleep mode (via PowerManager)");
+                if (logger != null) {
+                    logger.info("Kernel", "スリープモードに入りました (PowerManager経由)");
+                }
+            } else {
+                System.out.println("Kernel: Sleep blocked by PowerManager");
+                return;
+            }
+        } else if (!isSleeping) {
+            // PowerManagerが利用できない場合の従来処理
             isSleeping = true;
-            System.out.println("Kernel: Device entering sleep mode");
+            System.out.println("Kernel: Device entering sleep mode (legacy)");
             if (logger != null) {
                 logger.info("Kernel", "スリープモードに入りました");
             }
@@ -2410,37 +3028,62 @@ public class Kernel implements GestureListener {
      * これにより、ロック解除後に前回のセッションを復帰できる。
      */
     public void wake() {
-        if (isSleeping) {
+        // Phase 2リファクタリング: PowerManagerを使用
+        if (powerManager != null) {
+            if (powerManager.isSleeping()) {
+                powerManager.wake();
+                isSleeping = false; // 互換性のために保持
+                System.out.println("Kernel: Device waking up from sleep mode (via PowerManager)");
+                if (logger != null) {
+                    logger.info("Kernel", "スリープモードから復帰しました (PowerManager経由)");
+                }
+
+                // ロック画面を表示（PowerManager経由でも必要）
+                showLockScreenAfterWake();
+            } else {
+                System.out.println("Kernel: Not sleeping, cannot wake (PowerManager)");
+                return;
+            }
+        } else if (isSleeping) {
+            // PowerManagerが利用できない場合の従来処理
             isSleeping = false;
-            System.out.println("Kernel: Device waking up from sleep mode");
+            System.out.println("Kernel: Device waking up from sleep mode (legacy)");
             if (logger != null) {
                 logger.info("Kernel", "スリープモードから復帰しました");
             }
 
             // ロック画面を表示
-            if (lockManager != null) {
-                lockManager.lock(); // デバイスをロック状態にする
+            showLockScreenAfterWake();
+        }
+    }
 
-                // ロック画面に切り替え
-                try {
-                    jp.moyashi.phoneos.core.ui.lock.LockScreen lockScreen =
-                        new jp.moyashi.phoneos.core.ui.lock.LockScreen(this);
+    /**
+     * スリープから復帰後にロック画面を表示する。
+     * PowerManager経由と従来処理の両方から呼び出される共通処理。
+     */
+    private void showLockScreenAfterWake() {
+        if (lockManager != null) {
+            lockManager.lock(); // デバイスをロック状態にする
 
-                    // 既存のスクリーンスタックを保持したまま、ロック画面をプッシュ
-                    // 注意: clearAllScreens()は呼ばない（WebViewの破棄を防ぐため）
-                    if (screenManager != null) {
-                        screenManager.pushScreen(lockScreen);
-                        addLayer(LayerType.LOCK_SCREEN); // レイヤースタックに追加
-                    }
+            // ロック画面に切り替え
+            try {
+                jp.moyashi.phoneos.core.ui.lock.LockScreen lockScreen =
+                    new jp.moyashi.phoneos.core.ui.lock.LockScreen(this);
 
-                    System.out.println("Kernel: Wake up - lock screen pushed (screen stack preserved)");
-                    if (logger != null) {
-                        logger.info("Kernel", "ロック画面を表示（スクリーンスタック保持）");
-                    }
-                } catch (Exception e) {
-                    System.err.println("Kernel: Error displaying lock screen after wake: " + e.getMessage());
-                    e.printStackTrace();
+                // 既存のスクリーンスタックを保持したまま、ロック画面をプッシュ
+                // 注意: clearAllScreens()は呼ばない（WebViewの破棄を防ぐため）
+                if (screenManager != null) {
+                    screenManager.pushScreen(lockScreen);
+                    addLayer(LayerType.LOCK_SCREEN); // レイヤースタックに追加
                 }
+
+                System.out.println("Kernel: Wake up - lock screen pushed (screen stack preserved)");
+                if (logger != null) {
+                    logger.info("Kernel", "ロック画面を表示（スクリーンスタック保持）");
+                }
+            } catch (Exception e) {
+                System.err.println("Kernel: Error displaying lock screen after wake: " + e.getMessage());
+                e.printStackTrace();
             }
         }
     }
@@ -2452,5 +3095,44 @@ public class Kernel implements GestureListener {
      */
     public boolean isSleeping() {
         return isSleeping;
+    }
+
+    /**
+     * デバッグモードかどうかを取得する。
+     * RenderPipeline等のコンポーネントから利用される。
+     *
+     * @return デバッグモードの場合true
+     */
+    public boolean isDebugMode() {
+        // 設定からデバッグモードを取得（将来的実装）
+        // 現在は環境変数またはシステムプロパティから判定
+        String debug = System.getProperty("debug.mode", "false");
+        if ("true".equalsIgnoreCase(debug)) {
+            return true;
+        }
+        // または環境変数から
+        String envDebug = System.getenv("MOCHI_DEBUG");
+        return "true".equalsIgnoreCase(envDebug);
+    }
+
+    /**
+     * フレームレートを設定する（PowerManager用）。
+     *
+     * @param fps ターゲットフレームレート
+     */
+    public void frameRate(int fps) {
+        this.targetFrameRate = fps;
+        if (logger != null) {
+            logger.debug("Kernel", "Frame rate changed to: " + fps + " FPS");
+        }
+    }
+
+    /**
+     * 現在のフレームレートを取得する。
+     *
+     * @return ターゲットフレームレート
+     */
+    public int getFrameRate() {
+        return targetFrameRate;
     }
 }

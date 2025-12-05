@@ -53,12 +53,48 @@ public class StandaloneWrapper extends PApplet {
     }
 
     /**
+     * ProcessingのhandleKeyEvent()をオーバーライド。
+     * ESCキーイベントを完全に無効化する。
+     */
+    @Override
+    public void handleKeyEvent(processing.event.KeyEvent event) {
+        // ESCキーの場合、Processingのデフォルト処理をスキップ
+        if (event.getKeyCode() == 27) {
+            // ESCキーイベントを消費（親クラスのhandleKeyEventを呼ばない）
+            keyPressed = (event.getAction() == processing.event.KeyEvent.PRESS);
+            key = event.getKey();
+            keyCode = event.getKeyCode();
+
+            // 自分のkeyPressed/keyReleased/keyTypedを直接呼ぶ
+            if (event.getAction() == processing.event.KeyEvent.PRESS) {
+                keyPressed();
+            } else if (event.getAction() == processing.event.KeyEvent.RELEASE) {
+                keyReleased();
+            }
+            return; // 親クラスのhandleKeyEventを呼ばない
+        }
+        // ESC以外は通常通り処理
+        super.handleKeyEvent(event);
+    }
+
+    /**
      * Processing初期化メソッド。
      * Kernelの初期化を行う。
      */
     @Override
     public void setup() {
         System.out.println("StandaloneWrapper: Kernel初期化開始...");
+
+        // ProcessingのESCキーによる終了を無効化
+        // これによりESCキーを通常のキー入力として使用可能にする
+        try {
+            // PAppletの内部変数 exitCalled を無効化
+            java.lang.reflect.Field exitCalledField = PApplet.class.getDeclaredField("exitCalled");
+            exitCalledField.setAccessible(true);
+            // ESCキー処理中は常にfalseになるように設定される
+        } catch (Exception e) {
+            System.out.println("StandaloneWrapper: Note - exitCalled field access: " + e);
+        }
 
         // IMEを有効化（日本語入力のインライン編集対応）
         try {
@@ -240,6 +276,19 @@ public class StandaloneWrapper extends PApplet {
      */
     @Override
     public void draw() {
+        // ProcessingのESCキーによる終了を防ぐ
+        // 毎フレーム、exitCalledフラグをリセット
+        try {
+            java.lang.reflect.Field exitCalledField = PApplet.class.getDeclaredField("exitCalled");
+            exitCalledField.setAccessible(true);
+            if ((Boolean) exitCalledField.get(this)) {
+                System.out.println("StandaloneWrapper: ESC exit detected and cancelled");
+                exitCalledField.set(this, false);
+            }
+        } catch (Exception e) {
+            // Silent failure - continue normal operation
+        }
+
         if (kernel == null) {
             background(255, 0, 0);
             fill(255);
@@ -374,16 +423,24 @@ public class StandaloneWrapper extends PApplet {
             if (kernel != null) {
                 kernel.keyPressed(key, keyCode);
             }
-            key = 0; // Processingのデフォルト処理を無効化
+            // key = 0を削除 - keyReleased()に影響を与えないようにする
+            // Processingのデフォルト処理を無効化する別の方法を使用
             return;
         }
 
-        // 特殊キー（矢印、Backspace、Delete、Shift、Ctrl、Alt、Meta等）のみここで処理
+        // 特殊キー（矢印、Backspace、Delete、Shift、Ctrl、Alt、Meta、Space等）のみここで処理
         // 通常の文字入力はkeyTyped()で処理される
-        // 制御文字（< 32）、CODEDキー、特殊キーコード（35-40: Home, End, 矢印）、修飾キー（16: Shift, 17: Ctrl, 18: Alt, 91/157: Meta）を処理
+        // 制御文字（<= 32）、CODEDキー、特殊キーコード（35-40: Home, End, 矢印）、修飾キー（16: Shift, 17: Ctrl, 18: Alt, 91/157: Meta）を処理
         // 修飾キーはkeyCodeで判定（keyの値が不定のため）
-        boolean isSpecialKey = (key == CODED || key < 32 || (keyCode >= 35 && keyCode <= 40) ||
+        // スペースキー（key == ' ' または keyCode == 32）も特殊キーとして処理（ホームボタンとして使用されるため）
+        boolean isSpecialKey = (key == CODED || key <= 32 || (keyCode >= 35 && keyCode <= 40) ||
                                 keyCode == 8 || keyCode == 127 || keyCode == 16 || keyCode == 17 || keyCode == 18 || keyCode == 91 || keyCode == 157);
+
+        // スペースキーの特別処理
+        if (key == ' ' || keyCode == 32) {
+            System.out.println("StandaloneWrapper: SPACE key detected specifically! key='" + key + "' (" + (int)key + "), keyCode=" + keyCode);
+            isSpecialKey = true; // 確実に特殊キーとして扱う
+        }
 
         // Ctrl/Alt/Metaが押されている場合、通常文字キーもkeyPressed()に転送（Ctrl+C/V/A、Alt+F4、Cmd+C等のショートカット用）
         boolean isCtrlPressed = (kernel != null && kernel.isCtrlPressed());
@@ -412,9 +469,10 @@ public class StandaloneWrapper extends PApplet {
     public void keyTyped() {
         System.out.println("StandaloneWrapper: keyTyped - key: '" + key + "' (Unicode: " + (int)key + ")");
 
-        // 制御文字、CODEDキー、特殊キーコード（35-40: Home, End, 矢印）を除外
+        // 制御文字、CODEDキー、スペース、特殊キーコード（35-40: Home, End, 矢印）を除外
         // これらはkeyPressed()で既に処理されている
-        if (key == CODED || key < 32 || (key >= 35 && key <= 40) || key == 127) {
+        // スペースキー（32）も除外（ホームボタンとして特殊処理されるため）
+        if (key == CODED || key <= 32 || (key >= 35 && key <= 40) || key == 127) {
             System.out.println("StandaloneWrapper: Skipping control character or special key in keyTyped()");
             return;
         }
@@ -436,6 +494,21 @@ public class StandaloneWrapper extends PApplet {
         if (kernel != null) {
             kernel.keyReleased(key, keyCode);
         }
+    }
+
+    /**
+     * ProcessingのexitActual()をオーバーライド。
+     * ESCキーで誤って終了しないようにする。
+     */
+    @Override
+    public void exitActual() {
+        // ESCキーが押された場合は終了をキャンセル
+        if (keyCode == 27) {
+            System.out.println("StandaloneWrapper: ESC key exit cancelled");
+            return; // 終了をキャンセル
+        }
+        // 通常の終了処理
+        super.exitActual();
     }
 
     /**

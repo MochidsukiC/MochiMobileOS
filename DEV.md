@@ -7,7 +7,7 @@
 より詳細な技術仕様や実装については、以下の各ドキュメントを参照してください。
 
 - **[00_Project_Overview.md](./docs/development/00_Project_Overview.md)**
-  - プロジェクト全体の概要、アーキテクチャ、主要機能について説明します。
+  - プロジェクト全体の概要、アーキテクチャ、主要機能について説明します。本プロジェクトは教育目的での利用も想定して開発されています。
 
 - **[01_Chromium_Integration.md](./docs/development/01_Chromium_Integration.md)**
   - Chromium (JCEF/MCEF) の統合アーキテクチャ、パフォーマンス最適化の経緯、UI設計について詳述します。
@@ -64,6 +64,34 @@
 - SettingsScreen は ThemeEngine のトークンを使用して配色（ダーク/ライト即時反映）
 - AppLibraryScreen はテーマ同期し、検索ボックス/ホバー/押下ハイライト/ホイールスクロールに対応
 - Appearanceにテーマカラープリセット（12色のseed選択）を追加。アクセントはseedから自動生成
+- Kernelアーキテクチャのリファクタリング（2025-12-02〜2025-12-04）
+  - Service Locatorアンチパターンから依存性注入（DI）パターンへの移行
+  - ServiceContainer/CoreServiceBootstrapによるサービス管理の一元化
+  - イベント駆動アーキテクチャの導入（EventBus実装）
+  - メモリ管理の高度化（MemoryManager: GC制御、リーク検出、統計収集）
+  - ファイルシステム管理の抽象化（FileSystemManager: VFS統合、ファイル監視、キャッシュ）
+  - リソース管理の効率化（ResourceCache: LRUポリシー、ソフト/ウィーク参照）
+  - **既存サービスのDIコンテナへの移行開始**（2025-12-04）
+    - 第一段階移行済み: VFS、LoggerService、SystemClock、NotificationManager、AppLoader、LayoutManager、SettingsManager、ThemeEngine、ScreenManager、PopupManager、GestureManager、InputManager、RenderPipeline
+    - **第二段階移行完了**（2025-12-04）
+      - 新規追加サービス: ClipboardManager（SimpleClipboardManager実装）、ControlCenterManager、LockManager、ServiceManager
+      - SimpleClipboardManager実装クラスを作成（ClipboardManagerインターフェースの実装）
+      - Kernelのフォールバック処理を拡張
+    - **第三段階移行完了**（2025-12-04）
+      - 追加サービス: ChromiumService（DefaultChromiumService、ChromiumProviderに依存）、VirtualRouter、MessageStorage、ハードウェアバイパスAPI（MobileDataSocket、BluetoothSocket、LocationSocket、BatteryInfo）
+      - ハードウェアAPIのDI優先初期化: DIコンテナ → HardwareController → 直接初期化の順で取得
+      - ChromiumServiceはLazySingletonとして登録（ChromiumProviderが環境依存のため）
+      - **ChromiumServiceのNullエラー修正**（2025-12-04）
+        - 問題: ChromiumProviderが利用できない環境でChromiumServiceファクトリがnullを返し、NullPointerExceptionが発生
+        - 解決: NoOpChromiumService実装を作成し、ChromiumProviderが存在しない場合はNoOp実装を返すように修正
+        - NoOpChromiumServiceはすべてのメソッドで安全な空の操作またはnullを返す（Null Objectパターン）
+    - **第四段階移行完了**（2025-12-04）
+      - 追加サービス: CameraSocket、MicrophoneSocket、SpeakerSocket、ICSocket、SIMInfo、SensorManager、BatteryMonitor
+      - すべてのハードウェアバイパスAPIのDI統合が完了
+      - SensorManagerはLazySingletonとして登録（Kernelインスタンスに依存）
+      - 3段階のフォールバック機構を確立: DIコンテナ → HardwareController → 直接初期化
+      - Kernelのハードウェアバイパス初期化処理を最適化（各サービスの取得元をログ出力）
+    - Kernelの初期化処理: DIコンテナから各サービスを優先的に取得、取得できない場合は従来の直接初期化（フォールバック機構）
 - PGraphics統一アーキテクチャへの移行
   - `INotification`インターフェースに`draw(PGraphics g, ...)`メソッドを追加（2025-11-07）
   - PApplet版のdrawメソッドは非推奨化（@Deprecated）
@@ -153,6 +181,36 @@
   - 対応方針: 実際にChromiumが送ってくるバッファサイズを確認し、適切なダウンサンプリングロジックを実装する必要がある
 
 ## TODO
+
+### Kernelアーキテクチャ移行の次ステップ
+- **既存サービスのDIコンテナ化（ほぼ完了）**
+  - ✅ 完了（25サービス）: VFS、LoggerService、SystemClock、NotificationManager、AppLoader、LayoutManager、SettingsManager、ThemeEngine、ScreenManager、PopupManager、GestureManager、InputManager、RenderPipeline、ClipboardManager、ControlCenterManager、LockManager、ServiceManager、ChromiumService、VirtualRouter、MessageStorage、MobileDataSocket、BluetoothSocket、LocationSocket、BatteryInfo
+  - 残りのサービス: その他のハードウェアソケット（CameraSocket、MicrophoneSocket、SpeakerSocket、ICSocket）、SensorManager、BatteryMonitor
+- **画面クラスのDI対応**
+  - Screenインターフェースの拡張（依存性を注入可能に）
+  - 既存画面クラスのコンストラクタ変更とDI対応
+- **統合テスト**
+  - DIコンテナ経由の初期化フロー検証
+  - 依存関係の解決順序の最適化
+  - メモリ効率とパフォーマンス測定
+
+### Kernel分離リファクタリング Phase 1-5（完了）
+- **Phase 1: サービス層基盤（完了 2025-12-02）**
+  - ServiceContainer/CoreServiceBootstrap作成（依存性注入コンテナ）
+- **Phase 2: 電源・ライフサイクル管理（完了 2025-12-02）**
+  - PowerManager/SystemLifecycleManager作成（電源管理とライフサイクル）
+- **Phase 3: 画面・リソース管理（完了 2025-12-02）**
+  - NavigationController/LayerController作成（画面遷移とレイヤー管理）
+  - HardwareController作成（ハードウェアAPI）
+- **Phase 4: イベントバスシステム（完了 2025-12-04）**
+  - EventBus/Event/EventType/EventListener作成（Publish-Subscribeパターン）
+  - SystemEvent/ApplicationEvent/ScreenEvent実装
+  - PowerManager、NavigationController、Kernelとの統合
+- **Phase 5: メモリ・リソース管理（完了 2025-12-04）**
+  - MemoryManager作成（メモリ監視、GC制御、リーク検出）
+  - FileSystemManager作成（VFS統合、ファイル監視、キャッシュ）
+  - ResourceCache作成（LRUキャッシュ、ソフト/ウィーク参照、メモリ圧迫対応）
+  - CoreServiceBootstrapへの統合完了
 
 - BaseComponent/主要コンポーネント（Button/Label/Switch/Slider/Text系）をThemeEngine準拠へ順次移行（進行中）
   - (更新) HomeScreen.javaの描画要素は、テーマ対応の色、寸法、フォントサイズ、角丸の定数化により大幅にThemeEngine準拠に近づいた。
@@ -468,6 +526,127 @@
       - getUIComponent()がnullの場合はfallbackComponentを使用
     - 結果: **KeyEvent/MouseEventが実際のブラウザUIコンポーネントから発火されるようになり、Chromiumがショートカットキーを正しく認識できるようになった**
 
+## 変更(2025-12-02)
+- **Kernel分離リファクタリング Phase 1 完了**
+  - 目的: Kernelクラス（2456行）の責任分散と単一責任原則への準拠
+  - 作成された新規クラス:
+    - `InputManager`: 入力イベント処理（マウス/キーボード）を一元管理
+    - `ShortcutKeyProcessor`: Ctrl+C/V/X/A等のショートカット処理を専門化
+    - `RenderPipeline`: 描画パイプライン管理（背景、スクリーン、スリープ処理）
+  - Kernelの変更:
+    - 入力処理メソッド（mousePressed/Released/Dragged/Moved、keyPressed/Released）をInputManagerへ委譲
+    - render()メソッドをRenderPipelineへ委譲
+    - 修飾キー状態管理をInputManagerへ移管
+    - handleHomeButton()をpublicに変更（将来的にLayerControllerへ移行予定）
+  - 互換性維持:
+    - 既存APIは維持し、内部実装のみ委譲に変更
+    - InputManager/RenderPipelineが初期化されていない場合は従来処理を実行
+  - 技術的修正:
+    - PopupManagerのインポートパスを修正（service→ui.popup）
+    - ClipboardManagerのメソッド名を修正（setText/getText→copyText/pasteText）
+    - ScreenManager/GestureManagerのメソッドシグネチャに合わせて修正
+  - 結果: **BUILD SUCCESSFUL** - コンパイルエラー解消
+
+- **Kernel分離リファクタリング Phase 2 完了**
+  - 目的: Service Locatorアンチパターンの解消と依存性注入パターンへの移行
+  - 作成された新規クラス:
+    - `ServiceContainer`: 依存性注入コンテナ（シングルトン/トランジエント/遅延初期化をサポート）
+    - `CoreServiceBootstrap`: サービスの初期化順序と依存関係を管理
+    - `PowerManager`: スリープ/ウェイク、省電力モード、自動スリープ機能を管理
+    - `SystemLifecycleManager`: システムの起動/停止/一時停止/再開ライフサイクルを管理
+    - `FileSystemManager`、`MemoryManager`、`ResourceBundle`: プレースホルダー実装（Phase 3で完全実装予定）
+  - Kernelの変更:
+    - CoreServiceBootstrapをsetup()メソッドの最初に初期化
+    - PowerManager経由でsleep()/wake()を処理（従来処理も維持）
+    - frameRate()メソッドを追加（PowerManagerのFPS制御用）
+    - getService()メソッドを追加（ServiceContainerからの任意サービス取得）
+  - 技術的解決:
+    - Service Locatorパターンの問題「カーネルパニックの危険性」を解消
+    - 依存関係の明示化とテスト可能性の向上
+    - サービス初期化順序の自動管理
+  - 結果: **BUILD SUCCESSFUL** - 全コンパイルエラー解消、サービスコンテナ統合完了
+
+- **Kernel分離リファクタリング Phase 3 完了**
+  - 目的: 上位層の責任分離とハードウェア/リソース管理の独立
+  - 作成された新規クラス:
+    - `NavigationController`: 画面遷移管理（プッシュ/ポップ/切り替え、履歴管理）
+    - `LayerController`: レイヤー管理とホームボタン処理（動的優先順位システム）
+    - `ResourceManager`: リソース管理（フォント、画像のキャッシュと遅延読み込み）
+    - `HardwareController`: ハードウェアAPI統合（モバイルデータ、Bluetooth、位置情報、カメラ等）
+  - Kernelの変更:
+    - Phase 3コンポーネントの初期化をsetup()メソッドに追加
+    - handleHomeButton()をLayerControllerへ完全委譲（互換性のため従来処理も維持）
+    - 各コントローラーへの参照を保持し、必要に応じて連携
+  - LayerController機能:
+    - LayerType列挙型: HOME_SCREEN、APPLICATION、NOTIFICATION、CONTROL_CENTER、POPUP、LOCK_SCREEN
+    - 動的レイヤースタック管理と優先順位制御
+    - ホームボタン処理の一元化（最上位の閉じられるレイヤーから順に処理）
+  - ResourceManager機能:
+    - 日本語フォント（Noto Sans JP）の複数ClassLoader対応読み込み
+    - フォント/画像キャッシュと遅延読み込み
+    - メモリ管理とリソース解放機能
+  - HardwareController機能:
+    - 各ハードウェアソケット（MobileData、Bluetooth、Location、Camera等）の統一管理
+    - プラットフォーム固有実装（Forge/Standalone）への対応
+    - BatteryMonitor統合とハードウェア状態確認API
+  - 動作確認:
+    - standalone:runでの起動確認完了
+    - LayerControllerによるホームボタン処理が正常動作
+    - Phase 3コンポーネントの初期化ログを確認
+  - 残タスク:
+    - Phase 4: SystemGestureHandlerの作成（システムジェスチャー処理）
+    - ControlCenterManager/NotificationManagerのclose関連メソッド実装
+    - MobileDataSocket/BluetoothSocketのisEnabled()メソッド実装
+  - 結果: **BUILD SUCCESSFUL** - Phase 3統合完了、実行時動作確認済み
+
+## 変更(2025-12-04)
+- **Kernel構造健全化後の入力処理問題の修正（第4版）**
+  - 問題: Phase 1-3のリファクタリング後、スペースキーとESCキーが動作しなくなった
+    - InputManagerに処理を移行したが、KernelがInputManagerに完全に委譲してreturnするため処理されない
+    - LayerControllerのaddLayer/removeLayerがKernelと同期していない
+  - 修正内容:
+    - **Kernel.keyPressed()/keyReleased()の修正**:
+      - ESCキー（keyCode=27）とスペースキー（keyCode=32）はInputManagerをスキップ
+      - これらのキーは元のKernelの処理で直接実行
+      - その他のキーはInputManagerで処理
+    - **InputManagerの修正**:
+      - ESCキーとスペースキーの処理をコメントアウト（Kernelで処理するため）
+      - update()メソッドのESCキー長押し検出を削除
+    - **Kernel.addLayer()/removeLayer()の修正**:
+      - LayerControllerのaddLayer/removeLayerも同時に呼び出して同期
+    - **LayerControllerのロガー修正**:
+      - java.util.logging.LoggerをLoggerServiceに変更
+      - すべてのログ出力を`logger.info("LayerController", message)`形式に統一
+  - 結果: **元の動作を復元。スペースキーによるホームボタン動作、ESCキー単押しでスリープトグル、ESCキー長押しでシャットダウンが正常に動作**
+
+- **スリープから復帰時のロック画面表示修正**
+  - 問題: PowerManager経由でwake()した場合、ロック画面が表示されない
+  - 修正内容:
+    - **showLockScreenAfterWake()メソッド作成**: ロック画面表示処理を共通メソッドとして抽出
+    - **PowerManager経由のwake()でもロック画面表示**: wake()メソッドでPowerManager経由でもshowLockScreenAfterWake()を呼び出し
+  - 結果: **スリープから復帰時に必ずロック画面が表示されるように修正**
+
+## 変更(2025-12-04)
+- **Standalone入力処理のバグ修正（第3版）**
+  - 問題: スペースキーとESCキーが正しく動作しない
+    - スペースキー: InputManagerからKernel.handleHomeButton()が呼ばれるが、LayerControllerのログが出力されない
+    - ESCキー: Processingのデフォルト終了動作でシステムがシャットダウンされていた
+  - 修正内容:
+    - **LayerControllerのロガー修正**:
+      - java.util.logging.LoggerをLoggerServiceに変更
+      - Kernelから`getLogger()`でLoggerServiceを取得
+      - すべてのログ出力を`logger.info("LayerController", message)`形式に変更
+    - **StandaloneWrapper.java**:
+      - スペースキー処理の改善:
+        - keyPressed()でkey <= 32の条件に変更（411行目）
+        - スペースキー専用のデバッグログ追加（415-418行目）
+        - keyTyped()でもkey <= 32に変更し、スペースキーを確実に除外（450行目）
+      - ESCキー処理の完全な修正:
+        - handleKeyEvent()をオーバーライドし、ESCキーイベントを完全に消費（60-78行目）
+        - draw()メソッドでexitCalledフラグを毎フレームリセット（256-265行目）
+        - exitActual()のオーバーライド継続（459-467行目）
+  - 結果: **LayerControllerのログが正しく出力されるようになり、デバッグが可能に。スペースキーによるホームボタン動作、ESCキー2秒長押しによるスリープモードが正常に動作するようになった**
+
 ## 変更(2025-12-01)
 - **iOS/Android方式のテキスト入力統一アーキテクチャ完成**
   - 目的: OS全体でCtrl+C/V/X/A等のクリップボード操作を統一的に処理する
@@ -498,3 +677,143 @@
     - **ChromiumTextInput.java**: JavaScript経由で`deleteBackward()`を実装（INPUT/TEXTAREAはvalue操作、contentEditableはexecCommand）
     - **Kernel.java**: バックスペースキー（keyCode=8）をTextInputProtocol経由で処理
   - 結果: **メモアプリ、Chromiumアドレスバー、HTMLフィールド（Google/YouTube等）でバックスペースが正常に動作**
+
+## PDE実行エンジン仕様
+
+MochiMobileOS上でProcessingスケッチ（.pde）をアプリケーションとして実行するための仕様。
+
+### 1. アプリケーション形式と自動ロード
+
+-   **フォルダ構成**: PDEアプリは、複数の`.pde`ファイル、アイコン、およびマニフェストファイルを含む単一のフォルダとして提供される。
+-   **配置場所**: ユーザーは、このアプリフォルダを仮想ファイルシステム上の `/apps/` ディレクトリに配置する。
+-   **マニフェスト (`app.json`)**: アプリフォルダには、以下の情報を含む`app.json`を必須とする。
+    -   `name` (String): アプリケーション名。
+    -   `version` (String): バージョン番号。
+    -   `entry_point` (String): メインとなる`.pde`ファイル名。
+    -   `type` (String): `"pde"` という固定値。
+-   **自動ロード**: OS起動時に`AppLoader`サービスが`/apps/`をスキャンし、`"type": "pde"`のマニフェストを持つフォルダを自動的にPDEアプリとして認識し、ランチャーに登録する。
+
+### 2. 実行アーキテクチャ
+
+-   **動的コンパイル**: PDEアプリは、起動時に`PdeInterpreterService`によってJavaソースコードに変換され、動的にコンパイル・ロードされる。
+-   **PGraphicsベースのレンダリング**: コンパイルされたスケッチは、OSのオフスクリーンレンダリング（OSR）アーキテクチャに統合される。`PApplet`インスタンスはUIに直接描画せず、OSから提供される`PGraphics`オブジェクトへの描画エンジンとして機能する。
+
+### 3. OS API連携
+
+-   **安全なAPIアクセス**: スケッチからOSの機能を安全に利用するため、公開用のAPIラッパーを提供する。
+-   **カスタム基底クラス (`MmosPdeApplet`)**: スケッチは、コンパイル時に`MmosPdeApplet`というカスタム基底クラスを継承する。この基底クラスが、公開APIへのアクセスポイント（例: `api`変数）を提供する。
+-   **利用例**: スケッチ開発者は、`api.showNotification("タイトル", "メッセージ");` のような形式で、準備なしにOSの機能を呼び出すことができる。
+
+### PDE実行エンジン実装タスク (TODO)
+- **`PdeInterpreterService`の作成:** .pdeファイルの動的コンパイルとクラスロード機能の実装。
+- **`AppLoader`の拡張:** `app.json`の`type: "pde"`を解釈し、PDEアプリを登録する機能の追加。
+- **API連携基盤の実装:**
+    - `MmosPdeApplet`カスタム基底クラスの作成。
+    - 公開用`MmosApi`ラッパークラスの作成（第一弾として通知機能など）。
+- **`PdeScreen`の作成:** コンパイルされたPDEスケッチをPGraphicsベースで描画・実行する画面の実装。
+- **サンプルPDEアプリの作成:** 動作テストとユースケースを示すための簡単なサンプルアプリ。
+
+## キーボード入力処理の修正（2025-12-04）
+
+### 問題と修正内容
+
+**問題**: Kernel分離リファクタリング（Phase 1-3）実施後、ESCキーとスペースキーが動作しなくなった。
+
+**根本原因**: KernelがInputManagerに処理を完全に委譲し、元の処理をスキップしていたため。
+
+**修正内容**:
+1. **Kernel.java**:
+   - `keyPressed()`メソッドで、ESC（keyCode=27）とスペース（keyCode=32）はInputManagerをスキップし、従来処理を実行
+   - `keyReleased()`メソッドも同様に修正
+   ```java
+   if (inputManager != null) {
+       // ESCキー（27）とスペースキー（32）以外はInputManagerで処理
+       if (keyCode != 27 && keyCode != 32 && key != ' ') {
+           inputManager.handleKeyPressed(key, keyCode);
+           return;
+       }
+       // ESCとスペースは下の従来処理で実行
+   }
+   ```
+
+2. **ロック画面表示の修正**:
+   - スリープから復帰時にロック画面が表示されない問題を修正
+   - `showLockScreenAfterWake()`メソッドを追加し、PowerManager経由とレガシー経路両方で呼び出し
+
+3. **Chromiumブラウザでのスペースキー入力修正**:
+   - `ChromiumBrowserScreen.hasFocusedComponent()`を修正
+   - Chromiumコンテンツがアクティブな場合も`true`を返すように変更
+   - これによりWebページ内でのスペースキー入力が正常に動作
+
+**結果**:
+- ESCキー: 単押しでスリープトグル、長押し（2秒）でシャットダウン
+- スペースキー: テキスト入力フォーカスがない時はホームボタン、フォーカスがある時は通常の文字入力
+- スリープ解除時にロック画面が正常に表示される
+
+### Chromiumブラウザ内スペースキー処理の改善
+
+**問題**: Chromiumブラウザ内でテキストボックスからフォーカスが外れた状態でもスペースキーがページスクロールに使われてしまい、ホームボタンとして機能しない。
+
+**解決方法（最終版）**: 既存のJavaScriptフォーカス検出システムを活用:
+
+1. **既存システムの発見**:
+   - ChromiumBrowserに`injectFocusDetectionScript()`メソッドが既に実装済み
+   - ページロード時にJavaScriptを注入してフォーカス状態を監視
+   - input、textarea、contenteditable、role="textbox"等を検出
+   - `[MochiOS:TextFocus]`メッセージで状態変更を通知
+   - `hasTextInputFocus()`メソッドで状態を取得可能
+
+2. **JavaScript検出ロジック**:
+   - Shadow DOM内の要素も検出（`getDeepActiveElement()`）
+   - focusin/focusout、click、inputイベントをリッスン
+   - YouTube等のカスタム要素（role属性）にも対応
+   - 選択テキストも監視（TextInputProtocol用）
+
+3. **ChromiumBrowserScreenの修正**:
+   - ヒューリスティック処理を削除
+   - `hasFocusedComponent()`でChromiumSurface.hasTextInputFocus()を使用
+   - アドレスバーまたはWeb内テキスト入力フォーカスでtrue返却
+
+**動作**:
+- テキストボックスにフォーカス時: スペースキーは文字入力
+- フォーカス外: スペースキーはホームボタンとして機能
+- 正確なフォーカス検出（モバイルOSと同等）
+
+## OS構造最適化 Phase 4: イベントバスシステム（2025-12-04）
+
+### 実装内容
+
+**目的**: イベント駆動アーキテクチャによるコンポーネント間の疎結合化を実現
+
+**作成されたクラス**:
+
+1. **イベントバスコア** (`core/src/main/java/jp/moyashi/phoneos/core/event/`):
+   - `Event`: 基底イベントクラス（キャンセル/消費機能付き）
+   - `EventType`: システム全体のイベントタイプ定義
+   - `EventListener<T>`: イベントリスナーインターフェース
+   - `EventFilter<T>`: イベントフィルタリングインターフェース
+   - `EventBus`: Publish-Subscribe パターンの中核実装
+     - スレッドセーフ設計
+     - 優先度付きリスナー
+     - 非同期/同期イベント配信
+     - イベント履歴管理
+
+2. **イベント実装クラス**:
+   - `system/SystemEvent`: システムライフサイクルイベント（起動/終了/スリープ/ウェイク）
+   - `app/ApplicationEvent`: アプリケーションイベント（起動/終了/フォーカス）
+   - `ui/ScreenEvent`: 画面遷移イベント（プッシュ/ポップ/遷移タイプ）
+
+3. **既存コンポーネントの統合**:
+   - `PowerManager`: スリープ/ウェイク時にSystemEventを発行
+   - `NavigationController`: 画面遷移時にScreenEventを発行（キャンセル可能）
+   - `Kernel`: システム起動時にEventBus初期化、シャットダウン時にイベント発行
+
+**技術的特徴**:
+- **疎結合化**: コンポーネント間の直接的な依存関係を削減
+- **拡張性**: 新しいイベントタイプとリスナーの追加が容易
+- **デバッグ性**: イベント履歴とデバッグモードによる詳細ログ
+- **パフォーマンス**: 非同期イベント配信とキャッシュ済みスレッドプール
+
+**結果**:
+- コンポーネント間通信の標準化と疎結合化により、システムの保守性と拡張性が向上
+- BUILD SUCCESSFUL - 全コンパイルエラー解消

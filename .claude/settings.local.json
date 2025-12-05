@@ -45,7 +45,10 @@
       "Bash(pkill:*)",
       "Bash(timeout /t 3 /nobreak)",
       "Bash(findstr:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(pkill:*)",
+      "Bash(git push:*)",
+      "Bash(java:*)"
     ],
     "deny": [],
     "ask": [],
