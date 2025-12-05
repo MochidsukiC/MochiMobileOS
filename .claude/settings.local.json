@@ -48,7 +48,10 @@
       "Bash(find:*)",
       "Bash(pkill:*)",
       "Bash(git push:*)",
-      "Bash(java:*)"
+      "Bash(java:*)",
+      "Bash(git lfs:*)",
+      "Bash(git config:*)",
+      "Bash(gh auth status:*)"
     ],
     "deny": [],
     "ask": [],
