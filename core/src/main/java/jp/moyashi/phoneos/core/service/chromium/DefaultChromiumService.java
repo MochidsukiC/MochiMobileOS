@@ -67,34 +67,59 @@ public class DefaultChromiumService implements ChromiumService {
 
     @Override
     public ChromiumSurface createTab(int width, int height, String initialUrl) {
+        log("createTab called: " + width + "x" + height + ", URL: " + initialUrl);
+
         if (manager == null) {
+            log("ERROR: manager is null!");
             throw new IllegalStateException("ChromiumService is not initialized");
         }
 
+        if (!manager.isInitialized()) {
+            log("ERROR: ChromiumManager is not initialized!");
+            throw new IllegalStateException("ChromiumManager is not initialized");
+        }
+
         String surfaceId = "browser_tab_" + System.currentTimeMillis();
+        log("Creating surface with ID: " + surfaceId);
 
-        DefaultChromiumSurface surface = surfaces.computeIfAbsent(surfaceId, id -> {
-            ChromiumBrowser browser = manager.createBrowser(initialUrl, width, height);
-            
-            browser.addLoadListener(new ChromiumBrowser.LoadListener() {
-                @Override
-                public void onLoadStart(String url) {
-                    // Do nothing
-                }
+        try {
+            DefaultChromiumSurface surface = surfaces.computeIfAbsent(surfaceId, id -> {
+                log("computeIfAbsent: creating browser for " + id);
+                ChromiumBrowser browser = manager.createBrowser(initialUrl, width, height);
+                log("computeIfAbsent: browser created");
 
-                @Override
-                public void onLoadEnd(String url, String title, int httpStatusCode) {
-                    if (browserDataManager != null) {
-                        browserDataManager.addToHistory(title, url);
+                browser.addLoadListener(new ChromiumBrowser.LoadListener() {
+                    @Override
+                    public void onLoadStart(String url) {
+                        // Do nothing
                     }
-                }
+
+                    @Override
+                    public void onLoadEnd(String url, String title, int httpStatusCode) {
+                        if (browserDataManager != null) {
+                            browserDataManager.addToHistory(title, url);
+                        }
+                    }
+                });
+
+                log("computeIfAbsent: returning new surface");
+                return new DefaultChromiumSurface(id, browser);
             });
-            
-            return new DefaultChromiumSurface(id, browser);
-        });
-        
-        activeSurfaceId = surfaceId;
-        return surface;
+
+            log("Surface created, total surfaces: " + surfaces.size());
+            activeSurfaceId = surfaceId;
+            return surface;
+        } catch (Exception e) {
+            log("ERROR in createTab: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
+    }
+
+    private void log(String message) {
+        if (kernel != null && kernel.getLogger() != null) {
+            kernel.getLogger().info("DefaultChromiumService", message);
+        }
     }
 
     @Override

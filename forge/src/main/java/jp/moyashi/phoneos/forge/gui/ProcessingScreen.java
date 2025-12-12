@@ -62,18 +62,36 @@ public class ProcessingScreen extends Screen {
     private ResourceLocation textureLocation = null;
     private NativeImage nativeImage = null;
 
-    /** マウスイベント処理用の専用スレッド（ポーリング方式） */
-    private volatile Thread mouseEventThread = null;
-    private volatile boolean mouseEventThreadRunning = false;
+    /** マウスイベントキュー（render()内で処理） */
+    private final java.util.concurrent.ConcurrentLinkedQueue<MouseEvent> mouseEventQueue = new java.util.concurrent.ConcurrentLinkedQueue<>();
 
-    /** 最新のマウス座標とイベントタイプ（ポーリングで処理） */
-    private volatile Integer latestMouseX = null;
-    private volatile Integer latestMouseY = null;
-    private volatile MouseEventType latestEventType = null;
+    /** 最後にPRESSEDした座標（RELEASEDで使用） */
+    private volatile int lastPressedX = -1;
+    private volatile int lastPressedY = -1;
+
+    /** ホームボタン表示用 */
+    private static final int HOME_BUTTON_SIZE = 40;
+    private static final int HOME_BUTTON_MARGIN = 10;
+    private int homeButtonX, homeButtonY;
+    private boolean homeButtonVisible = false;
+    private boolean homeButtonHovered = false;
 
     /** マウスイベントタイプ */
     private enum MouseEventType {
         PRESSED, DRAGGED, RELEASED
+    }
+
+    /** マウスイベントデータ */
+    private static class MouseEvent {
+        final int x;
+        final int y;
+        final MouseEventType type;
+
+        MouseEvent(int x, int y, MouseEventType type) {
+            this.x = x;
+            this.y = y;
+            this.type = type;
+        }
     }
 
     /**
@@ -127,6 +145,12 @@ public class ProcessingScreen extends Screen {
             if (this.kernel != null) {
                 LOGGER.info("[ProcessingScreen] Found shared kernel - frameCount: " + this.kernel.frameCount);
 
+                // カーネルがスリープ中の場合はウェイクする
+                if (this.kernel.isSleeping()) {
+                    LOGGER.info("[ProcessingScreen] Kernel is sleeping, waking up...");
+                    this.kernel.wake();
+                }
+
                 // ハードウェアAPIのプレイヤー情報を初回更新
                 SmartphoneBackgroundService.updateHardwareAPIs();
 
@@ -136,9 +160,6 @@ public class ProcessingScreen extends Screen {
 
                 // テクスチャを初期化
                 initializeTexture();
-
-                // マウスイベント処理スレッドを開始
-                startMouseEventThread();
             } else {
                 LOGGER.warn("[ProcessingScreen] No kernel found - it should have been created at MOD startup");
                 this.graphicsEnabled = false;
@@ -184,76 +205,36 @@ public class ProcessingScreen extends Screen {
     }
 
     /**
-     * マウスイベント処理スレッドを開始（ポーリング方式）。
-     * キューイングせず、最新の座標を定期的にポーリングして処理する。
+     * キューに溜まったマウスイベントを全て処理する（render()から呼び出される）。
+     * 全ての処理がRender threadで行われるため、スレッドセーフ。
      */
-    private void startMouseEventThread() {
-        if (mouseEventThread != null && mouseEventThread.isAlive()) {
-            LOGGER.warn("[ProcessingScreen] Mouse event thread already running");
+    private void processPendingMouseEvents() {
+        if (kernel == null) {
+            mouseEventQueue.clear();
             return;
         }
 
-        mouseEventThreadRunning = true;
-        mouseEventThread = new Thread(() -> {
-            LOGGER.info("[ProcessingScreen] Mouse event polling thread started");
-
-            while (mouseEventThreadRunning) {
-                try {
-                    // 最新のマウスイベントを処理
-                    Integer x = latestMouseX;
-                    Integer y = latestMouseY;
-                    MouseEventType eventType = latestEventType;
-
-                    if (x != null && y != null && eventType != null && kernel != null) {
-                        switch (eventType) {
-                            case PRESSED:
-                                kernel.mousePressed(x, y);
-                                latestEventType = null; // 一度だけ処理
-                                break;
-                            case DRAGGED:
-                                kernel.mouseDragged(x, y);
-                                // DRAGGEDは連続的なので消さない
-                                break;
-                            case RELEASED:
-                                kernel.mouseReleased(x, y);
-                                latestEventType = null; // 一度だけ処理
-                                latestMouseX = null;
-                                latestMouseY = null;
-                                break;
-                        }
-                    }
-
-                    // 1000fps相当（1ms間隔）でポーリング - 超高密度検知
-                    Thread.sleep(1);
-
-                } catch (InterruptedException e) {
-                    LOGGER.info("[ProcessingScreen] Mouse event thread interrupted");
-                    break;
-                } catch (Exception e) {
-                    LOGGER.error("[ProcessingScreen] Error in mouse event thread: " + e.getMessage(), e);
-                }
-            }
-
-            LOGGER.info("[ProcessingScreen] Mouse event polling thread stopped");
-        }, "MochiOS-MouseEventPoller");
-
-        mouseEventThread.setDaemon(true);
-        mouseEventThread.start();
-    }
-
-    /**
-     * マウスイベント処理スレッドを停止。
-     */
-    private void stopMouseEventThread() {
-        mouseEventThreadRunning = false;
-        if (mouseEventThread != null) {
-            mouseEventThread.interrupt();
+        MouseEvent event;
+        while ((event = mouseEventQueue.poll()) != null) {
             try {
-                mouseEventThread.join(1000); // 最大1秒待機
-            } catch (InterruptedException e) {
-                LOGGER.warn("[ProcessingScreen] Interrupted while stopping mouse event thread");
+                switch (event.type) {
+                    case PRESSED:
+                        LOGGER.info("[ProcessingScreen] Processing PRESSED at (" + event.x + ", " + event.y +
+                                   ") isSleeping=" + kernel.isSleeping() +
+                                   ", screenManager=" + (kernel.getScreenManager() != null));
+                        kernel.mousePressed(event.x, event.y);
+                        break;
+                    case DRAGGED:
+                        kernel.mouseDragged(event.x, event.y);
+                        break;
+                    case RELEASED:
+                        LOGGER.info("[ProcessingScreen] Processing RELEASED at (" + event.x + ", " + event.y + ")");
+                        kernel.mouseReleased(event.x, event.y);
+                        break;
+                }
+            } catch (Exception e) {
+                LOGGER.error("[ProcessingScreen] Error processing mouse event: " + e.getMessage(), e);
             }
-            mouseEventThread = null;
         }
     }
 
@@ -279,6 +260,9 @@ public class ProcessingScreen extends Screen {
             // フレームカウンターを更新
             frameCount++;
 
+            // 保留中のマウスイベントを処理（Render threadで実行）
+            processPendingMouseEvents();
+
             // ハードウェアAPIのプレイヤー情報を更新
             SmartphoneBackgroundService.updateHardwareAPIs();
 
@@ -287,6 +271,12 @@ public class ProcessingScreen extends Screen {
 
             // MochiMobileOSのピクセルデータをMinecraftのGUIに転送
             renderKernelToMinecraft(guiGraphics);
+
+            // Chromiumブラウザ画面が表示されている場合、ホームボタンを描画
+            updateHomeButtonVisibility();
+            if (homeButtonVisible) {
+                renderHomeButton(guiGraphics, mouseX, mouseY);
+            }
 
             // デバッグのため、スマートフォンフレームを一時的に削除
             // drawSmartphoneFrame(guiGraphics);
@@ -598,6 +588,12 @@ public class ProcessingScreen extends Screen {
             return super.mouseClicked(mouseX, mouseY, button);
         }
 
+        // ホームボタンがクリックされた場合、ホームに戻る
+        if (isMouseOverHomeButton((int) mouseX, (int) mouseY)) {
+            handleHomeButtonClick();
+            return true;
+        }
+
         // スマートフォン画面内のクリックかチェック（スケール後のサイズを使用）
         LOGGER.info("[ProcessingScreen] Checking bounds: offset=(" + offsetX + "," + offsetY + "), scaled size=" + scaledWidth + "x" + scaledHeight);
         if (mouseX >= offsetX && mouseX <= offsetX + scaledWidth &&
@@ -608,12 +604,10 @@ public class ProcessingScreen extends Screen {
                 int mobileX = (int) ((mouseX - offsetX) / scale);
                 int mobileY = (int) ((mouseY - offsetY) / scale);
 
-                LOGGER.info("[ProcessingScreen] Inside bounds, recording mousePressed(" + mobileX + ", " + mobileY + ")");
+                LOGGER.info("[ProcessingScreen] Inside bounds, queuing mousePressed(" + mobileX + ", " + mobileY + ")");
 
-                // 座標を記録（ポーリングスレッドが処理）
-                latestMouseX = mobileX;
-                latestMouseY = mobileY;
-                latestEventType = MouseEventType.PRESSED;
+                // キューに追加（render()で処理）
+                mouseEventQueue.offer(new MouseEvent(mobileX, mobileY, MouseEventType.PRESSED));
 
                 return true;
 
@@ -646,10 +640,8 @@ public class ProcessingScreen extends Screen {
                 int mobileX = (int) ((mouseX - offsetX) / scale);
                 int mobileY = (int) ((mouseY - offsetY) / scale);
 
-                // 座標を記録（ポーリングスレッドが処理）
-                latestMouseX = mobileX;
-                latestMouseY = mobileY;
-                latestEventType = MouseEventType.RELEASED;
+                // キューに追加（render()で処理）
+                mouseEventQueue.offer(new MouseEvent(mobileX, mobileY, MouseEventType.RELEASED));
 
                 return true;
 
@@ -680,10 +672,8 @@ public class ProcessingScreen extends Screen {
                 int mobileX = (int) ((mouseX - offsetX) / scale);
                 int mobileY = (int) ((mouseY - offsetY) / scale);
 
-                // 座標を記録（ポーリングスレッドが定期的に処理）
-                latestMouseX = mobileX;
-                latestMouseY = mobileY;
-                latestEventType = MouseEventType.DRAGGED;
+                // キューに追加（render()で処理）
+                mouseEventQueue.offer(new MouseEvent(mobileX, mobileY, MouseEventType.DRAGGED));
 
                 return true;
 
@@ -1039,9 +1029,6 @@ public class ProcessingScreen extends Screen {
     public void removed() {
         super.removed();
 
-        // マウスイベント処理スレッドを停止
-        stopMouseEventThread();
-
         cleanupTexture();
     }
 
@@ -1065,6 +1052,85 @@ public class ProcessingScreen extends Screen {
             LOGGER.info("[ProcessingScreen] Texture cleaned up successfully");
         } catch (Exception e) {
             LOGGER.error("[ProcessingScreen] Failed to cleanup texture: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Chromiumブラウザ画面が表示されているかを確認し、ホームボタンの表示状態を更新する。
+     */
+    private void updateHomeButtonVisibility() {
+        homeButtonVisible = false;
+        if (kernel != null && kernel.getScreenManager() != null) {
+            jp.moyashi.phoneos.core.ui.Screen currentScreen = kernel.getScreenManager().getCurrentScreen();
+            if (currentScreen != null) {
+                String screenClassName = currentScreen.getClass().getSimpleName();
+                // ChromiumBrowserScreenが表示されている場合のみホームボタンを表示
+                homeButtonVisible = screenClassName.contains("ChromiumBrowser");
+            }
+        }
+
+        // ホームボタンの位置を更新（スマートフォンUIの右下外側）
+        if (homeButtonVisible) {
+            homeButtonX = offsetX + scaledWidth + HOME_BUTTON_MARGIN;
+            homeButtonY = offsetY + scaledHeight - HOME_BUTTON_SIZE - HOME_BUTTON_MARGIN;
+        }
+    }
+
+    /**
+     * ホームボタンを描画する。
+     */
+    private void renderHomeButton(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+        // ホバー状態を更新
+        homeButtonHovered = isMouseOverHomeButton(mouseX, mouseY);
+
+        // ボタン背景
+        int bgColor = homeButtonHovered ? 0xDD444444 : 0xAA333333;
+        guiGraphics.fill(homeButtonX, homeButtonY, homeButtonX + HOME_BUTTON_SIZE, homeButtonY + HOME_BUTTON_SIZE, bgColor);
+
+        // ボタン枠
+        int borderColor = homeButtonHovered ? 0xFFFFFFFF : 0xFFAAAAAA;
+        guiGraphics.fill(homeButtonX, homeButtonY, homeButtonX + HOME_BUTTON_SIZE, homeButtonY + 1, borderColor); // 上
+        guiGraphics.fill(homeButtonX, homeButtonY + HOME_BUTTON_SIZE - 1, homeButtonX + HOME_BUTTON_SIZE, homeButtonY + HOME_BUTTON_SIZE, borderColor); // 下
+        guiGraphics.fill(homeButtonX, homeButtonY, homeButtonX + 1, homeButtonY + HOME_BUTTON_SIZE, borderColor); // 左
+        guiGraphics.fill(homeButtonX + HOME_BUTTON_SIZE - 1, homeButtonY, homeButtonX + HOME_BUTTON_SIZE, homeButtonY + HOME_BUTTON_SIZE, borderColor); // 右
+
+        // ホームアイコン（家の形を描く）
+        int iconColor = homeButtonHovered ? 0xFFFFFFFF : 0xFFCCCCCC;
+        int cx = homeButtonX + HOME_BUTTON_SIZE / 2;
+        int cy = homeButtonY + HOME_BUTTON_SIZE / 2;
+
+        // 家の屋根（三角形の代わりに台形で表現）
+        guiGraphics.fill(cx - 12, cy - 2, cx + 12, cy - 1, iconColor);
+        guiGraphics.fill(cx - 10, cy - 4, cx + 10, cy - 3, iconColor);
+        guiGraphics.fill(cx - 8, cy - 6, cx + 8, cy - 5, iconColor);
+        guiGraphics.fill(cx - 6, cy - 8, cx + 6, cy - 7, iconColor);
+        guiGraphics.fill(cx - 4, cy - 10, cx + 4, cy - 9, iconColor);
+
+        // 家の本体
+        guiGraphics.fill(cx - 10, cy, cx + 10, cy + 10, iconColor);
+
+        // ドア（中央に開口部）
+        int doorColor = bgColor;
+        guiGraphics.fill(cx - 3, cy + 3, cx + 3, cy + 10, doorColor);
+    }
+
+    /**
+     * マウスがホームボタンの上にあるかを判定する。
+     */
+    private boolean isMouseOverHomeButton(int mouseX, int mouseY) {
+        return homeButtonVisible &&
+               mouseX >= homeButtonX && mouseX < homeButtonX + HOME_BUTTON_SIZE &&
+               mouseY >= homeButtonY && mouseY < homeButtonY + HOME_BUTTON_SIZE;
+    }
+
+    /**
+     * ホームボタンがクリックされた時の処理。
+     */
+    private void handleHomeButtonClick() {
+        if (kernel != null) {
+            LOGGER.info("[ProcessingScreen] Home button clicked - going to home screen");
+            // Kernel.handleHomeButton()を呼び出してホーム画面に戻る
+            kernel.handleHomeButton();
         }
     }
 }

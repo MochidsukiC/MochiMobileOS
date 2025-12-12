@@ -202,4 +202,31 @@ public interface ChromiumProvider {
      * @param metaPressed Metaキー（Command/Windowsキー）が押されているか
      */
     void sendKeyReleased(CefBrowser browser, int keyCode, char keyChar, boolean shiftPressed, boolean ctrlPressed, boolean altPressed, boolean metaPressed);
+
+    /**
+     * コンソールメッセージリスナーのインターフェース。
+     */
+    interface ConsoleMessageListener {
+        /**
+         * コンソールメッセージを受信した時に呼ばれる。
+         *
+         * @param message メッセージ
+         * @param source ソースURL
+         * @param line 行番号
+         * @return メッセージを処理した場合true
+         */
+        boolean onConsoleMessage(String message, String source, int line);
+    }
+
+    /**
+     * コンソールメッセージリスナーを追加する。
+     * Forge環境（MCEF）ではMCEFClientにDisplayHandlerを追加する。
+     * Standalone環境ではCefClientに直接追加されるため、このメソッドは呼ばれない。
+     *
+     * @param browser CefBrowserインスタンス
+     * @param listener リスナー
+     */
+    default void addConsoleMessageListener(CefBrowser browser, ConsoleMessageListener listener) {
+        // デフォルトでは何もしない（Standaloneでは不要）
+    }
 }

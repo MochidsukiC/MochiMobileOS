@@ -1,8 +1,10 @@
 package jp.moyashi.phoneos.forge.chromium;
 
+import com.mojang.logging.LogUtils;
 import jp.moyashi.phoneos.core.Kernel;
 import jp.moyashi.phoneos.core.service.chromium.ChromiumProvider;
 import org.cef.CefApp;
+import org.slf4j.Logger;
 
 /**
  * Forge環境用のChromiumProvider実装。
@@ -20,6 +22,7 @@ import org.cef.CefApp;
  */
 public class ForgeChromiumProvider implements ChromiumProvider {
 
+    private static final Logger LOGGER = LogUtils.getLogger();
     private static final String TAG = "[ForgeChromiumProvider]";
     private static final String MOBILE_USER_AGENT =
             "Mozilla/5.0 (Linux; Android 12; MochiMobileOS) " +
@@ -91,6 +94,9 @@ public class ForgeChromiumProvider implements ChromiumProvider {
         }
     }
 
+    /** MCEFClientのマッピング（ブラウザごとにMCEFClientを保持） */
+    private final java.util.Map<org.cef.browser.CefBrowser, com.cinemamod.mcef.MCEFClient> mcefClientMap = new java.util.concurrent.ConcurrentHashMap<>();
+
     @Override
     public org.cef.browser.CefBrowser createBrowser(org.cef.CefClient client, String url, boolean osrEnabled, boolean transparent) {
         try {
@@ -112,6 +118,9 @@ public class ForgeChromiumProvider implements ChromiumProvider {
                 url,
                 transparent
             );
+
+            // MCEFClientをマップに保存（後でaddConsoleMessageListenerで使用）
+            mcefClientMap.put(browser, mcefClient);
 
             System.out.println(TAG + " Browser created successfully (MCEFBrowser)");
             System.out.println(TAG + " MCEFRenderer initialized with textureID: " + browser.getRenderer().getTextureID());
@@ -288,5 +297,59 @@ public class ForgeChromiumProvider implements ChromiumProvider {
         } catch (Exception e) {
             System.err.println(TAG + " Failed to send key released: " + e.getMessage());
         }
+    }
+
+    @Override
+    public void addConsoleMessageListener(org.cef.browser.CefBrowser browser, ConsoleMessageListener listener) {
+        LOGGER.warn("{} addConsoleMessageListener called", TAG);
+        LOGGER.warn("{} browser: {}", TAG, browser);
+        LOGGER.warn("{} mcefClientMap size: {}", TAG, mcefClientMap.size());
+        LOGGER.warn("{} mcefClientMap keys: {}", TAG, mcefClientMap.keySet());
+
+        com.cinemamod.mcef.MCEFClient mcefClient = mcefClientMap.get(browser);
+        if (mcefClient == null) {
+            LOGGER.error("{} MCEFClient not found for browser, cannot add console listener", TAG);
+            LOGGER.error("{} Browser class: {}", TAG, browser.getClass().getName());
+            return;
+        }
+
+        // MCEFClientにDisplayHandlerを追加
+        mcefClient.addDisplayHandler(new org.cef.handler.CefDisplayHandler() {
+            @Override
+            public void onAddressChange(org.cef.browser.CefBrowser b, org.cef.browser.CefFrame frame, String url) {
+            }
+
+            @Override
+            public void onTitleChange(org.cef.browser.CefBrowser b, String title) {
+            }
+
+            public void onFullscreenModeChange(org.cef.browser.CefBrowser b, boolean fullscreen) {
+            }
+
+            @Override
+            public boolean onTooltip(org.cef.browser.CefBrowser b, String text) {
+                return false;
+            }
+
+            @Override
+            public void onStatusMessage(org.cef.browser.CefBrowser b, String value) {
+            }
+
+            @Override
+            public boolean onConsoleMessage(org.cef.browser.CefBrowser b, org.cef.CefSettings.LogSeverity level,
+                    String message, String source, int line) {
+                LOGGER.warn("{} [DEBUG] onConsoleMessage received: {}", TAG, message);
+                boolean result = listener.onConsoleMessage(message, source, line);
+                LOGGER.warn("{} [DEBUG] listener returned: {}", TAG, result);
+                return result;
+            }
+
+            @Override
+            public boolean onCursorChange(org.cef.browser.CefBrowser b, int cursorType) {
+                return false;
+            }
+        });
+
+        LOGGER.warn("{} Console message listener added to MCEFClient", TAG);
     }
 }

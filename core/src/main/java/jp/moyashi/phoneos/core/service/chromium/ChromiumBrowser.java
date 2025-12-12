@@ -150,6 +150,30 @@ public class ChromiumBrowser {
             return;
         }
 
+        // Forge環境（MCEF）用：コンソールメッセージリスナーを追加
+        // MCEFClientはCefClientをラップするため、元のCefDisplayHandlerが動作しない
+        // provider経由でMCEFClientにDisplayHandlerを追加する
+        provider.addConsoleMessageListener(browser, (message, source, line) -> {
+            // MochiOS関連のコンソールメッセージをログ出力
+            if (message != null && message.startsWith("[MochiOS:")) {
+                log("Console message received (via provider): " + message);
+            }
+
+            // JavaScriptからのテキスト入力フォーカス通知を受信
+            if (message != null && message.startsWith("[MochiOS:TextFocus]")) {
+                String focusState = message.substring("[MochiOS:TextFocus]".length());
+                webPageClicked = "true".equals(focusState);
+                log("Text input focus changed (via provider): " + webPageClicked);
+                return true;
+            }
+            // JavaScriptからの選択テキスト通知を受信
+            if (message != null && message.startsWith("[MochiOS:Selection]")) {
+                cachedSelectedText = message.substring("[MochiOS:Selection]".length());
+                return true;
+            }
+            return false;
+        });
+
         // ChromiumRenderHandlerを作成
         // MCEFBrowser（Forge）の場合は、プロバイダー経由でアダプターを取得
         // jcefmaven（Standalone）の場合は、通常のChromiumRenderHandlerを使用

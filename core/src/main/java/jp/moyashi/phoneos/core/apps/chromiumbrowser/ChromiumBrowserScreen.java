@@ -38,11 +38,28 @@ public class ChromiumBrowserScreen implements Screen {
 
     @Override
     public void setup(PGraphics p) {
+        log("setup() called - PGraphics size: " + p.width + "x" + p.height);
         initializeUI(p);
-        
+
         // Create initial tab if no tabs exist
-        if (kernel != null && kernel.getChromiumService() != null && kernel.getChromiumService().getSurfaces().isEmpty()) {
-            kernel.getChromiumService().createTab(p.width - 20, p.height - 120, initialUrl);
+        if (kernel != null && kernel.getChromiumService() != null) {
+            log("ChromiumService available, checking surfaces...");
+            log("Current surfaces count: " + kernel.getChromiumService().getSurfaces().size());
+            if (kernel.getChromiumService().getSurfaces().isEmpty()) {
+                log("Creating initial tab with size: " + (p.width - 20) + "x" + (p.height - 120) + ", URL: " + initialUrl);
+                kernel.getChromiumService().createTab(p.width - 20, p.height - 120, initialUrl);
+                log("Tab created, surfaces count: " + kernel.getChromiumService().getSurfaces().size());
+            }
+        } else {
+            log("WARNING: kernel or ChromiumService is null!");
+            log("kernel: " + kernel + ", chromiumService: " + (kernel != null ? kernel.getChromiumService() : "N/A"));
+        }
+    }
+
+    /** ログ出力用ヘルパー */
+    private void log(String message) {
+        if (kernel != null && kernel.getLogger() != null) {
+            kernel.getLogger().info("ChromiumBrowserScreen", message);
         }
     }
 
@@ -78,8 +95,13 @@ public class ChromiumBrowserScreen implements Screen {
         });
         
         newTabButton.setOnClickListener(() -> {
+            log("newTabButton clicked!");
             if (kernel != null && kernel.getChromiumService() != null) {
+                log("Creating new tab...");
                 kernel.getChromiumService().createTab(p.width - 20, p.height - 120, "https://www.google.com");
+                log("New tab created");
+            } else {
+                log("Cannot create tab - kernel or service is null");
             }
         });
         tabListButton.setOnClickListener(() -> {
@@ -435,19 +457,15 @@ public class ChromiumBrowserScreen implements Screen {
      * アドレスバーがフォーカスされている場合、キーボードイベントはアドレスバーに送られる。
      * フォーカスされていない場合、キーボードイベントはChromiumブラウザに送られる。
      *
-     * @return アドレスバーがフォーカスされている場合true
+     * @return Chromiumブラウザ画面では常にtrue（スペースキーを常にブラウザに転送）
      */
     @Override
     public boolean hasFocusedComponent() {
-        // アドレスバーがフォーカスされている場合
-        if (addressBar != null && addressBar.isFocused()) {
-            return true;
-        }
-
-        // Webページ内でテキスト入力にフォーカスがある場合もtrueを返す
-        // ChromiumSurfaceのhasTextInputFocus()メソッドを使用して正確に判定
-        Optional<ChromiumSurface> surface = getActiveBrowserSurface();
-        return surface.isPresent() && surface.get().hasTextInputFocus();
+        // Chromiumブラウザ画面では常にtrueを返す
+        // Forge環境ではホームボタンを別途表示するため、スペースキーは常にブラウザに転送する
+        // スタンドアロン環境でも同様の動作となるが、スペースキーでホームに戻る必要がある場合は
+        // 別のUIを使用する（または将来的にスタンドアロン専用の分岐を追加）
+        return true;
     }
 
     /**

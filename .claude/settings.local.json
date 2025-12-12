@@ -46,12 +46,17 @@
       "Bash(timeout /t 3 /nobreak)",
       "Bash(findstr:*)",
       "Bash(find:*)",
+      "Bash(git grep:*)",
+      "Bash(git push:*)",
+      "Bash(find:*)",
       "Bash(pkill:*)",
       "Bash(git push:*)",
       "Bash(java:*)",
       "Bash(git lfs:*)",
       "Bash(git config:*)",
-      "Bash(gh auth status:*)"
+      "Bash(gh auth status:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(jar -tf:*)"
     ],
     "deny": [],
     "ask": [],

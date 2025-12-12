@@ -401,6 +401,10 @@ public class Kernel implements GestureListener {
             }
 
             graphics.endDraw();
+
+            // 重要: 描画完了後にピクセルキャッシュを無効化
+            // これにより次のgetPixels()呼び出しで最新のピクセルデータが取得される
+            pixelsCacheDirty = true;
         }
     }
 
@@ -1295,10 +1299,14 @@ public class Kernel implements GestureListener {
                 System.out.println("  -> MessageStorage: DIコンテナから取得成功");
             }
 
-            // ChromiumService取得
-            chromiumService = serviceBootstrap.tryGetService(jp.moyashi.phoneos.core.service.chromium.ChromiumService.class);
-            if (chromiumService != null) {
-                System.out.println("  -> ChromiumService: DIコンテナから取得成功");
+            // ChromiumService取得（setChromiumService()で事前に設定されていない場合のみDIコンテナから取得）
+            if (chromiumService == null) {
+                chromiumService = serviceBootstrap.tryGetService(jp.moyashi.phoneos.core.service.chromium.ChromiumService.class);
+                if (chromiumService != null) {
+                    System.out.println("  -> ChromiumService: DIコンテナから取得成功");
+                }
+            } else {
+                System.out.println("  -> ChromiumService: setChromiumService()で事前設定済み（DIコンテナをスキップ）");
             }
 
             // ハードウェアバイパスAPI取得
