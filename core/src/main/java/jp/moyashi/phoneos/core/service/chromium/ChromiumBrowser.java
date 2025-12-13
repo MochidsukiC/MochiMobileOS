@@ -44,8 +44,8 @@ public class ChromiumBrowser {
     private final CefClient client;
     private final CefBrowser browser;
     private final ChromiumRenderHandler renderHandler;
-    private final int width;
-    private final int height;
+    private volatile int width;
+    private volatile int height;
 
     private String currentUrl = "";
     private boolean isLoading = false;
@@ -183,7 +183,27 @@ public class ChromiumBrowser {
         } else {
             this.renderHandler = new ChromiumRenderHandler(kernel, width, height);
         }
+
+        // 重要: RenderHandlerをブラウザインスタンスに注入する
+        // CefClient.addRenderHandler()が存在しないため、リフレクションを使用して
+        // CefBrowserOsrのRenderHandlerフィールドに直接設定する。
+        // フィールド名がバージョンによって異なる可能性があるため、型で探索する。
+        // デバッグ: ブラウザオブジェクトの全メソッドとフィールドをダンプして
+        // サイズ設定やRenderHandler登録の手がかりを探す
+        // (解決済みのため削除)
+
         currentTitle = url == null ? "" : url;
+
+        // ... (中略: loadHandler等の設定) ...
+        
+        // 重要: 初期サイズを強制適用する
+        // CefBrowserOsrは初期サイズが1x1になっており、GLCanvasの初期化を待たずに
+        // レンダリングが始まると1x1描画になってしまうため、ここで明示的にサイズを設定する。
+        if (browser != null && width > 0 && height > 0) {
+            resize(width, height);
+        }
+
+        // OSRモードでは、createImmediately()を呼び出す必要がある
 
         // ロードハンドラーを追加（ローディング状態管理）
         client.addLoadHandler(new CefLoadHandlerAdapter() {
@@ -903,24 +923,70 @@ public class ChromiumBrowser {
     }
 
     public void resize(int newWidth, int newHeight) {
-        if (browser == null) {
+        if (browser == null || renderHandler == null) {
             return;
         }
+
+        if (newWidth <= 0 || newHeight <= 0) {
+            logError("Invalid resize dimensions: " + newWidth + "x" + newHeight);
+            return;
+        }
+
+        log("Resizing browser from " + width + "x" + height + " to " + newWidth + "x" + newHeight);
+
+        // 1. 内部のwidth/heightを更新
+        this.width = newWidth;
+        this.height = newHeight;
+
+        // 2. RenderHandlerのサイズを更新（getViewRect()が新サイズを返すようになる）
+        renderHandler.setSize(newWidth, newHeight);
+
+        // 3. ブラウザの内部サイズ情報を強制更新
+        // JCEFのCefBrowserOsrはGLCanvasのイベントに依存してサイズを更新するが、
+        // タイミングによってはこれが間に合わないため、リフレクションで直接更新する。
         try {
-            java.lang.reflect.Method resizeMethod = browser.getClass().getMethod("resize", int.class, int.class);
-            resizeMethod.setAccessible(true);
-            resizeMethod.invoke(browser, newWidth, newHeight);
-        } catch (NoSuchMethodException e) {
-            try {
-                java.lang.reflect.Method wasResizedMethod = browser.getClass().getMethod("wasResized", int.class, int.class);
+            // A. browser_rect_ フィールドの更新 (CefBrowserOsr)
+            java.lang.reflect.Field rectField = getFieldRecursive(browser.getClass(), "browser_rect_");
+            if (rectField != null) {
+                rectField.setAccessible(true);
+                rectField.set(browser, new java.awt.Rectangle(0, 0, newWidth, newHeight));
+                log("Updated browser_rect_ to " + newWidth + "x" + newHeight);
+            } else {
+                log("Field 'browser_rect_' not found");
+            }
+
+            // B. wasResized(int, int) の呼び出し (CefBrowser_N)
+            java.lang.reflect.Method wasResizedMethod = getMethodRecursive(browser.getClass(), "wasResized", int.class, int.class);
+            if (wasResizedMethod != null) {
                 wasResizedMethod.setAccessible(true);
                 wasResizedMethod.invoke(browser, newWidth, newHeight);
-            } catch (Exception ex) {
-                logError("Failed to resize browser via wasResized: " + ex.getMessage());
+                log("Called wasResized(" + newWidth + ", " + newHeight + ")");
+            } else {
+                // 引数なしのwasResized()を試す (Fallback)
+                try {
+                    java.lang.reflect.Method fallbackMethod = browser.getClass().getMethod("wasResized");
+                    fallbackMethod.invoke(browser);
+                    log("Called wasResized() [no args]");
+                } catch (NoSuchMethodException nsme) {
+                    log("Method wasResized() not found");
+                }
             }
         } catch (Exception e) {
-            logError("Failed to resize browser: " + e.getMessage());
+            logError("Failed to force resize: " + e.getMessage());
         }
+    }
+
+    private java.lang.reflect.Method getMethodRecursive(Class<?> clazz, String methodName, Class<?>... parameterTypes) {
+        Class<?> c = clazz;
+        while (c != null) {
+            try {
+                java.lang.reflect.Method m = c.getDeclaredMethod(methodName, parameterTypes);
+                return m;
+            } catch (NoSuchMethodException e) {
+                c = c.getSuperclass();
+            }
+        }
+        return null;
     }
 
     /**
@@ -1199,5 +1265,17 @@ public class ChromiumBrowser {
             logError("Failed to convert Intent URL: " + e.getMessage());
             return url; // Return original URL if conversion fails
         }
+    }
+
+    private java.lang.reflect.Field getFieldRecursive(Class<?> clazz, String fieldName) {
+        Class<?> c = clazz;
+        while (c != null) {
+            try {
+                return c.getDeclaredField(fieldName);
+            } catch (NoSuchFieldException e) {
+                c = c.getSuperclass();
+            }
+        }
+        return null;
     }
 }

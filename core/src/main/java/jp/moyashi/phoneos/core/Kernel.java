@@ -1690,6 +1690,10 @@ public class Kernel implements GestureListener {
         jp.moyashi.phoneos.core.apps.chromiumbrowser.ChromiumBrowserApp chromiumBrowserApp = new jp.moyashi.phoneos.core.apps.chromiumbrowser.ChromiumBrowserApp();
         appLoader.registerApplication(chromiumBrowserApp);
 
+        // Sample WebApp（HTML/CSS/JSデモ）
+        jp.moyashi.phoneos.core.apps.samplewebapp.SampleWebApp sampleWebApp = new jp.moyashi.phoneos.core.apps.samplewebapp.SampleWebApp();
+        appLoader.registerApplication(sampleWebApp);
+
         System.out.println("Kernel: " + appLoader.getLoadedApps().size() + " 個のアプリケーションを登録");
 
         // すべてのアプリ登録後に初期化を実行
@@ -1701,6 +1705,7 @@ public class Kernel implements GestureListener {
         hardwareTestApp.onInitialize(this);
         noteApp.onInitialize(this);
         chromiumBrowserApp.onInitialize(this);
+        sampleWebApp.onInitialize(this);
 
         // ScreenManagerの初期化（DIで取得できなかった場合）
         if (screenManager == null) {

@@ -44,6 +44,11 @@
           "applicationId": "jp.moyashi.phoneos.core.apps.chromiumbrowser",
           "gridX": 2,
           "gridY": 1
+        },
+        {
+          "applicationId": "jp.moyashi.phoneos.core.apps.samplewebapp",
+          "gridX": 3,
+          "gridY": 1
         }
       ]
     }

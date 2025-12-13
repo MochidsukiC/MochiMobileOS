@@ -28,8 +28,8 @@ import java.util.function.Consumer;
 public class ChromiumRenderHandler extends CefRenderHandlerAdapter {
 
     private final Kernel kernel;
-    private final int width;
-    private final int height;
+    private volatile int width;
+    private volatile int height;
     private PImage image;
     private final AtomicBoolean needsUpdate = new AtomicBoolean(false);
     private final Object imageLock = new Object();
@@ -195,6 +195,35 @@ public class ChromiumRenderHandler extends CefRenderHandlerAdapter {
     @Override
     public Rectangle getViewRect(CefBrowser browser) {
         return new Rectangle(0, 0, width, height);
+    }
+
+    /**
+     * ビューポートサイズを更新する。
+     * wasResized()呼び出し前にこのメソッドでサイズを更新する必要がある。
+     *
+     * @param newWidth 新しい幅
+     * @param newHeight 新しい高さ
+     */
+    public void setSize(int newWidth, int newHeight) {
+        if (newWidth <= 0 || newHeight <= 0) {
+            log("Invalid size: " + newWidth + "x" + newHeight);
+            return;
+        }
+
+        synchronized (imageLock) {
+            this.width = newWidth;
+            this.height = newHeight;
+
+            // PImageを新しいサイズで再作成
+            this.image = new PImage(newWidth, newHeight, PImage.ARGB);
+            this.image.loadPixels();
+            for (int i = 0; i < image.pixels.length; i++) {
+                image.pixels[i] = 0xFFFFFFFF; // 白
+            }
+            this.image.updatePixels();
+
+            log("Viewport resized to: " + newWidth + "x" + newHeight);
+        }
     }
 
     /**
