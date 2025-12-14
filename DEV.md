@@ -817,3 +817,63 @@ MochiMobileOS上でProcessingスケッチ（.pde）をアプリケーション�
 **結果**:
 - コンポーネント間通信の標準化と疎結合化により、システムの保守性と拡張性が向上
 - BUILD SUCCESSFUL - 全コンパイルエラー解消
+
+## 変更(2025-12-13)
+- **WebScreen画面真っ白問題の修正**（Phase 1）
+  - 問題: WebScreenでChromiumの描画が真っ白のまま
+  - 原因: GLCanvasのOpenGLコンテキストが初期化される前にonPaintが呼ばれ、早期リターンしていた
+  - 修正内容:
+    - **ChromiumBrowser.java**:
+      - `CountDownLatch` と `glContextReady` フラグを追加してGLContext初期化完了を同期化
+      - `SwingUtilities.invokeLater()` 内でGLCanvas追加後に200ms待機し、`glInitLatch.countDown()` を呼び出し
+      - `loadURL()` で `waitForGLContext(3000)` を呼び出してGLContext準備完了を待機
+      - `isReadyToRender()` を改善し、`glContextReady` フラグを優先チェック
+    - **ChromiumSurface.java**:
+      - `isReadyToRender()` メソッドをインターフェースに追加
+    - **DefaultChromiumService.java**:
+      - `DefaultChromiumSurface` 内部クラスに `isReadyToRender()` を実装
+    - **WebScreen.java**:
+      - 時間ベースのリトライロジックを `surface.isReadyToRender()` チェックに改善
+      - GLContext準備完了を確認してからreload()を実行
+  - 結果: **BUILD SUCCESSFUL** - core/forge/standaloneの全モジュールでコンパイル成功
+
+## 変更(2025-12-14)
+- **ホームボタンシステム アーキテクチャ再設計**
+  - 目的: スペースキーをホームボタンとして扱う設計を廃止し、プラットフォーム固有の実装に分離
+  - 設計変更:
+    - **Core**: スペースキー特別処理を削除。`requestGoHome()` API のみを提供
+    - **Standalone**: 別ウィンドウにホームボタン表示 + Ctrl+Spaceショートカット
+    - **Forge**: 画面上にホームボタンを常時表示 + Ctrl+Spaceショートカット
+  - 修正内容:
+    - **Kernel.java**:
+      - `requestGoHome()` メソッド追加 - プラットフォーム層からの公開API
+      - `hasTextInputFocus()` メソッド追加 - テキスト入力フォーカス判定
+      - スペースキー特別処理を削除（通常のキー入力として扱う）
+    - **ScreenManager.java**:
+      - スペースキー特別処理を削除（通常のキーとしてスクリーンに転送）
+    - **StandaloneWrapper.java**:
+      - Ctrl+Space検出を追加 → `kernel.requestGoHome()` 呼び出し
+      - スペースキーを通常の文字として扱うように修正（`keyTyped()` で処理）
+    - **HardwareWindow.java**: 新規作成（ハードウェアボタンエミュレーション）
+      - メインウィンドウの右側に配置される独立Swingウィンドウ
+      - 音量アップボタン（上）- TODO: 音量処理実装
+      - ホームボタン（中央）- `kernel.requestGoHome()` 呼び出し
+      - 音量ダウンボタン（下）- TODO: 音量処理実装
+      - ボタン外領域をドラッグしてウィンドウ移動可能
+    - **ProcessingScreen.java (Forge)**:
+      - Ctrl+Space検出を追加 → `kernel.requestGoHome()` 呼び出し
+      - ホームボタンを常時表示（ChromiumBrowserScreen限定を解除）
+      - `handleHomeButtonClick()` を `kernel.requestGoHome()` に変更
+      - スペースキーを通常の文字として扱うように修正（`charTyped()` で処理）
+  - 動作フロー:
+    ```
+    [Standalone環境]
+    Ctrl+Space押下 または HomeButtonWindow クリック → kernel.requestGoHome() → handleHomeButton()
+
+    [Forge環境]
+    Ctrl+Space押下 または 画面上ホームボタンクリック → kernel.requestGoHome() → handleHomeButton()
+
+    [スペースキー]
+    通常のキー入力として処理（テキスト入力フィールドに ' ' 入力）
+    ```
+  - 結果: **BUILD SUCCESSFUL** - スペースキーがテキスト入力として正常動作、ホームへの移動はCtrl+Spaceまたは専用ボタンで実現

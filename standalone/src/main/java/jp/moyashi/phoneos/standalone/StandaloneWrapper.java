@@ -26,6 +26,9 @@ public class StandaloneWrapper extends PApplet {
     /** IME入力レイヤー（P2DレンダラーでIME入力を可能にする） */
     private IMEInputLayer imeInputLayer;
 
+    /** ハードウェアボタンウィンドウ（メインウィンドウの右側に表示、ホーム/音量ボタン） */
+    private HardwareWindow hardwareWindow;
+
     /** 画面幅 */
     private static final int SCREEN_WIDTH = 400;
 
@@ -245,14 +248,25 @@ public class StandaloneWrapper extends PApplet {
         }
 
         // IME入力レイヤーを初期化（P2DレンダラーでIME入力を可能にする）
+        java.awt.Frame processingFrame = null;
         try {
             // ProcessingウィンドウのAWTコンポーネントを取得
             java.awt.Frame[] frames = java.awt.Frame.getFrames();
-            java.awt.Frame processingFrame = null;
+            System.out.println("StandaloneWrapper: Searching for Processing Frame among " + frames.length + " frames");
             for (java.awt.Frame frame : frames) {
-                if (frame.isVisible() && frame.getWidth() == SCREEN_WIDTH && frame.getHeight() == SCREEN_HEIGHT) {
-                    processingFrame = frame;
-                    break;
+                System.out.println("StandaloneWrapper: Frame: " + frame.getTitle() +
+                    ", visible=" + frame.isVisible() +
+                    ", size=" + frame.getWidth() + "x" + frame.getHeight());
+                // ウィンドウ装飾のためサイズが完全一致しない場合があるので、近似値で判定
+                // または可視フレームで最初のものを使用
+                if (frame.isVisible() && frame.getWidth() > 0 && frame.getHeight() > 0) {
+                    // Processingフレームはクラス名にPSurfaceを含むことが多い
+                    String className = frame.getClass().getName();
+                    if (className.contains("processing") || className.contains("PSurface") ||
+                        processingFrame == null) {
+                        processingFrame = frame;
+                        System.out.println("StandaloneWrapper: Selected frame: " + frame.getTitle());
+                    }
                 }
             }
 
@@ -266,6 +280,18 @@ public class StandaloneWrapper extends PApplet {
             System.err.println("StandaloneWrapper: Failed to initialize IMEInputLayer: " + e.getMessage());
             e.printStackTrace();
         }
+
+        // ハードウェアボタンウィンドウを初期化（ホーム/音量ボタン）
+        javax.swing.SwingUtilities.invokeLater(() -> {
+            try {
+                hardwareWindow = new HardwareWindow(kernel, SCREEN_WIDTH, SCREEN_HEIGHT);
+                hardwareWindow.showWindow();
+                System.out.println("StandaloneWrapper: HardwareWindow initialized and shown");
+            } catch (Exception ex) {
+                System.err.println("StandaloneWrapper: Failed to create HardwareWindow: " + ex.getMessage());
+                ex.printStackTrace();
+            }
+        });
 
         System.out.println("StandaloneWrapper: Kernel初期化完了");
     }
@@ -417,6 +443,20 @@ public class StandaloneWrapper extends PApplet {
     public void keyPressed() {
         System.out.println("StandaloneWrapper: keyPressed - key: '" + key + "', keyCode: " + keyCode);
 
+        // Ctrl/Alt/Metaの状態を取得（複数箇所で使用）
+        boolean isCtrlPressed = (kernel != null && kernel.isCtrlPressed());
+        boolean isAltPressed = (kernel != null && kernel.isAltPressed());
+        boolean isMetaPressed = (kernel != null && kernel.isMetaPressed());
+
+        // Ctrl+Space でホームに戻る（プラットフォーム固有のホームボタンショートカット）
+        if (isCtrlPressed && !isAltPressed && !isMetaPressed && (key == ' ' || keyCode == 32)) {
+            System.out.println("StandaloneWrapper: Ctrl+Space detected - requesting go home");
+            if (kernel != null) {
+                kernel.requestGoHome();
+            }
+            return; // イベント消費
+        }
+
         // ESCキー（keyCode == 27）の場合、Processingのデフォルト動作（アプリケーション終了）を無効化
         if (keyCode == 27) {
             System.out.println("StandaloneWrapper: ESC key detected - disabling default exit behavior");
@@ -428,24 +468,15 @@ public class StandaloneWrapper extends PApplet {
             return;
         }
 
-        // 特殊キー（矢印、Backspace、Delete、Shift、Ctrl、Alt、Meta、Space等）のみここで処理
+        // 特殊キー（矢印、Backspace、Delete、Shift、Ctrl、Alt、Meta等）のみここで処理
         // 通常の文字入力はkeyTyped()で処理される
-        // 制御文字（<= 32）、CODEDキー、特殊キーコード（35-40: Home, End, 矢印）、修飾キー（16: Shift, 17: Ctrl, 18: Alt, 91/157: Meta）を処理
+        // 制御文字（< 32）、CODEDキー、特殊キーコード（35-40: Home, End, 矢印）、修飾キー（16: Shift, 17: Ctrl, 18: Alt, 91/157: Meta）を処理
         // 修飾キーはkeyCodeで判定（keyの値が不定のため）
-        // スペースキー（key == ' ' または keyCode == 32）も特殊キーとして処理（ホームボタンとして使用されるため）
-        boolean isSpecialKey = (key == CODED || key <= 32 || (keyCode >= 35 && keyCode <= 40) ||
+        // スペースキーは通常のキーとして扱う（keyTyped()で処理）
+        boolean isSpecialKey = (key == CODED || key < 32 || (keyCode >= 35 && keyCode <= 40) ||
                                 keyCode == 8 || keyCode == 127 || keyCode == 16 || keyCode == 17 || keyCode == 18 || keyCode == 91 || keyCode == 157);
 
-        // スペースキーの特別処理
-        if (key == ' ' || keyCode == 32) {
-            System.out.println("StandaloneWrapper: SPACE key detected specifically! key='" + key + "' (" + (int)key + "), keyCode=" + keyCode);
-            isSpecialKey = true; // 確実に特殊キーとして扱う
-        }
-
         // Ctrl/Alt/Metaが押されている場合、通常文字キーもkeyPressed()に転送（Ctrl+C/V/A、Alt+F4、Cmd+C等のショートカット用）
-        boolean isCtrlPressed = (kernel != null && kernel.isCtrlPressed());
-        boolean isAltPressed = (kernel != null && kernel.isAltPressed());
-        boolean isMetaPressed = (kernel != null && kernel.isMetaPressed());
         boolean shouldForwardKey = isSpecialKey || isCtrlPressed || isAltPressed || isMetaPressed;
 
         if (shouldForwardKey) {
@@ -469,10 +500,10 @@ public class StandaloneWrapper extends PApplet {
     public void keyTyped() {
         System.out.println("StandaloneWrapper: keyTyped - key: '" + key + "' (Unicode: " + (int)key + ")");
 
-        // 制御文字、CODEDキー、スペース、特殊キーコード（35-40: Home, End, 矢印）を除外
+        // 制御文字、CODEDキー、特殊キーコード（35-40: Home, End, 矢印）を除外
         // これらはkeyPressed()で既に処理されている
-        // スペースキー（32）も除外（ホームボタンとして特殊処理されるため）
-        if (key == CODED || key <= 32 || (key >= 35 && key <= 40) || key == 127) {
+        // スペースキー（32）は通常の文字として扱う
+        if (key == CODED || key < 32 || (key >= 35 && key <= 40) || key == 127) {
             System.out.println("StandaloneWrapper: Skipping control character or special key in keyTyped()");
             return;
         }

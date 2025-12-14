@@ -20,6 +20,8 @@ import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Chromiumブラウザインスタンスのラッパークラス。
@@ -65,6 +67,10 @@ public class ChromiumBrowser {
 
     // 隠しJFrame（ChromiumのOSRレンダリングをトリガーするために必要）
     private javax.swing.JFrame hiddenFrame;
+
+    // GLContext初期化同期用
+    private final CountDownLatch glInitLatch = new CountDownLatch(1);
+    private volatile boolean glContextReady = false;
 
     /**
      * ChromiumBrowserを構築する。
@@ -201,6 +207,26 @@ public class ChromiumBrowser {
         // レンダリングが始まると1x1描画になってしまうため、ここで明示的にサイズを設定する。
         if (browser != null && width > 0 && height > 0) {
             resize(width, height);
+            
+            // 可視性を強制的に有効化（レンダリング開始のため）
+            try {
+                java.lang.reflect.Method setVisibilityMethod = getMethodRecursive(browser.getClass(), "setWindowVisibility", boolean.class);
+                if (setVisibilityMethod != null) {
+                    setVisibilityMethod.setAccessible(true);
+                    setVisibilityMethod.invoke(browser, true);
+                    log("Called setWindowVisibility(true)");
+                }
+                
+                // 移動/リサイズ開始通知
+                java.lang.reflect.Method notifyMethod = getMethodRecursive(browser.getClass(), "notifyMoveOrResizeStarted");
+                if (notifyMethod != null) {
+                    notifyMethod.setAccessible(true);
+                    notifyMethod.invoke(browser);
+                    log("Called notifyMoveOrResizeStarted()");
+                }
+            } catch (Exception e) {
+                logError("Failed to set visibility/notify: " + e.getMessage());
+            }
         }
 
         // OSRモードでは、createImmediately()を呼び出す必要がある
@@ -233,10 +259,15 @@ public class ChromiumBrowser {
 
                     // ページロード完了時にテキスト入力フォーカス監視スクリプトを注入
                     injectFocusDetectionScript(browser);
-                    
+
                     for (LoadListener listener : loadListeners) {
                         listener.onLoadEnd(currentUrl, currentTitle, httpStatusCode);
                     }
+
+                    // CRITICAL: data: URLを使用する場合は強制再描画が不要
+                    // loadString()を使用する修正後、forceRepaintAfterLoadは問題を引き起こす可能性がある
+                    // （一瞬表示→白画面→再表示のフリッカー現象）
+                    // forceRepaintAfterLoad(); // 無効化
                 }
             }
 
@@ -314,6 +345,7 @@ public class ChromiumBrowser {
 
             // addOnPaintListener()を呼び出す
             addListenerMethod.invoke(browser, paintListener);
+            log("Successfully registered onPaint listener via reflection");
         } catch (NoSuchMethodException e) {
             logError("addOnPaintListener() method not found on browser: " + browser.getClass().getName());
         } catch (Exception e) {
@@ -390,6 +422,33 @@ public class ChromiumBrowser {
 
                             log("Hidden JFrame configured: focusable=false, IME disabled on GLCanvas");
 
+                            // GLCanvasのdisplay()を呼び出してOpenGLコンテキストの初期化を強制
+                            log("UIComponent class: " + uiComponent.getClass().getName());
+                            try {
+                                // リフレクションでdisplay()を呼び出し
+                                java.lang.reflect.Method displayMethod = uiComponent.getClass().getMethod("display");
+                                displayMethod.setAccessible(true);
+                                log("Calling display() via reflection...");
+                                displayMethod.invoke(uiComponent);
+                                log("display() called successfully via reflection");
+                            } catch (NoSuchMethodException nsme) {
+                                log("display() method not found on " + uiComponent.getClass().getName());
+                            } catch (Exception displayEx) {
+                                logError("Failed to call display(): " + displayEx.getMessage());
+                                displayEx.printStackTrace();
+                            }
+
+                            // GLContext初期化完了を通知
+                            // GLCanvasがUIツリーに追加された後、少し待機してからreadyにする
+                            try {
+                                Thread.sleep(200);  // GLContext初期化を待機
+                            } catch (InterruptedException ie) {
+                                Thread.currentThread().interrupt();
+                            }
+                            glContextReady = true;
+                            glInitLatch.countDown();
+                            log("GLContext initialization signaled (latch released)");
+
                         } catch (Exception e) {
                             logError("Failed to setup hidden JFrame (invokeLater): " + e.getMessage());
                             // GraphicsConfigurationエラーが発生しても、レンダリングを試みる
@@ -414,14 +473,40 @@ public class ChromiumBrowser {
 
     /**
      * URLを読み込む。
+     * GLContext初期化を待機してから読み込みを開始する。
      *
      * @param url URL
      */
     public void loadURL(String url) {
         if (browser != null) {
+            // GLContext初期化を待機（最大3秒）
+            waitForGLContext(3000);
             log("Loading URL: " + url);
             currentUrl = url;
             browser.loadURL(url);
+        }
+    }
+
+    /**
+     * GLContext初期化を待機する。
+     *
+     * @param timeoutMs タイムアウト（ミリ秒）
+     */
+    private void waitForGLContext(long timeoutMs) {
+        if (glContextReady) {
+            return; // 既に準備完了
+        }
+        try {
+            log("Waiting for GLContext initialization (max " + timeoutMs + "ms)...");
+            boolean success = glInitLatch.await(timeoutMs, TimeUnit.MILLISECONDS);
+            if (success) {
+                log("GLContext initialization completed");
+            } else {
+                log("Warning: GLContext initialization timed out after " + timeoutMs + "ms");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log("GLContext wait interrupted");
         }
     }
 
@@ -436,20 +521,83 @@ public class ChromiumBrowser {
 
     /**
      * HTMLコンテンツを読み込む（ベースURL指定）。
+     * data: URLを使用してHTMLを直接レンダリングする。
+     * カスタムスキーム（mochiapp://等）でOSR再描画がトリガーされない問題を回避。
+     *
+     * 注意: data: URLを使用する場合、相対パス（CSSや画像）は解決されない。
+     * HTML内でmochiapp://の絶対パスを使用するか、
+     * <base href="mochiapp://modid/">タグを挿入する必要がある。
      *
      * @param html HTMLコンテンツ
-     * @param baseUrl ベースURL
+     * @param baseUrl ベースURL（<base>タグ挿入に使用）
      */
     public void loadContent(String html, String baseUrl) {
         if (browser != null) {
-            log("Loading HTML content (base: " + baseUrl + ")");
+            // GLContext初期化を待機（最大3秒）
+            waitForGLContext(3000);
+            log("Loading HTML content via data URL (base: " + baseUrl + ")");
             currentUrl = baseUrl;
 
-            // TODO: loadString()メソッドがjcefmaven 122.1.10で利用できない
-            // 代替: data URLを使用
-            String dataUrl = "data:text/html;charset=utf-8," + html;
+            // HTMLに<base>タグを挿入して相対パスを解決可能にする
+            // これによりCSS/JS/画像の相対パスがmochiapp://で正しく解決される
+            String htmlWithBase = injectBaseTag(html, baseUrl);
+
+            // data: URLを使用してHTMLを読み込む
+            // エンコーディングの問題を避けるため、Base64エンコードを使用
+            String base64Html = java.util.Base64.getEncoder().encodeToString(
+                htmlWithBase.getBytes(java.nio.charset.StandardCharsets.UTF_8)
+            );
+            String dataUrl = "data:text/html;charset=utf-8;base64," + base64Html;
             browser.loadURL(dataUrl);
+            log("Loaded HTML via data URL (" + html.length() + " chars -> " + base64Html.length() + " base64)");
         }
+    }
+
+    /**
+     * HTMLに<base>タグを挿入する。
+     * 既に<base>タグがある場合は置換する。
+     *
+     * @param html HTMLコンテンツ
+     * @param baseUrl ベースURL
+     * @return <base>タグが挿入されたHTML
+     */
+    private String injectBaseTag(String html, String baseUrl) {
+        // ベースURLのディレクトリ部分を抽出
+        String baseHref = baseUrl;
+        int lastSlash = baseUrl.lastIndexOf('/');
+        if (lastSlash > 0 && !baseUrl.endsWith("/")) {
+            baseHref = baseUrl.substring(0, lastSlash + 1);
+        }
+
+        String baseTag = "<base href=\"" + baseHref + "\">";
+        log("Injecting base tag: " + baseTag);
+
+        // 既存の<base>タグを置換
+        String htmlLower = html.toLowerCase();
+        int existingBaseStart = htmlLower.indexOf("<base");
+        if (existingBaseStart >= 0) {
+            int existingBaseEnd = html.indexOf(">", existingBaseStart);
+            if (existingBaseEnd > existingBaseStart) {
+                return html.substring(0, existingBaseStart) + baseTag + html.substring(existingBaseEnd + 1);
+            }
+        }
+
+        // <head>タグの直後に挿入
+        int headEnd = htmlLower.indexOf("<head>");
+        if (headEnd >= 0) {
+            int insertPos = headEnd + "<head>".length();
+            return html.substring(0, insertPos) + "\n" + baseTag + "\n" + html.substring(insertPos);
+        }
+
+        // <head>がない場合、<html>の直後に挿入
+        int htmlEnd = htmlLower.indexOf("<html");
+        if (htmlEnd >= 0) {
+            int insertPos = html.indexOf(">", htmlEnd) + 1;
+            return html.substring(0, insertPos) + "\n<head>\n" + baseTag + "\n</head>\n" + html.substring(insertPos);
+        }
+
+        // 両方ない場合、先頭に挿入
+        return "<!DOCTYPE html>\n<html>\n<head>\n" + baseTag + "\n</head>\n<body>\n" + html + "\n</body>\n</html>";
     }
 
     /**
@@ -1055,6 +1203,95 @@ public class ChromiumBrowser {
     }
 
     /**
+     * ページロード完了後に強制的に再描画をトリガーする。
+     * onPaintが初回のみ呼ばれる問題を解決するため、
+     * 複数回にわたってinvalidate、wasResized、display()を呼び出す。
+     */
+    private void forceRepaintAfterLoad() {
+        new Thread(() -> {
+            try {
+                // DOMのレンダリング完了を待機（JavaScriptの実行も含む）
+                Thread.sleep(500);
+
+                log("forceRepaintAfterLoad: Starting OSR invalidation sequence...");
+
+                // 複数回試行（CEFのOSRレンダリングをトリガー）
+                for (int attempt = 0; attempt < 10; attempt++) {
+                    log("forceRepaintAfterLoad: Attempt " + (attempt + 1) + "/10");
+
+                    if (browser == null) break;
+
+                    // 1. サイズを一時的に変更してOSR再描画をトリガー（+1/-1ピクセル）
+                    try {
+                        renderHandler.setSize(width + 1, height);
+                        java.lang.reflect.Method wasResizedMethod = getMethodRecursive(browser.getClass(), "wasResized", int.class, int.class);
+                        if (wasResizedMethod != null) {
+                            wasResizedMethod.setAccessible(true);
+                            wasResizedMethod.invoke(browser, width + 1, height);
+                            log("forceRepaintAfterLoad: Resized to " + (width + 1) + "x" + height);
+                        }
+                        Thread.sleep(100);
+
+                        // 元のサイズに戻す
+                        renderHandler.setSize(width, height);
+                        if (wasResizedMethod != null) {
+                            wasResizedMethod.invoke(browser, width, height);
+                            log("forceRepaintAfterLoad: Resized back to " + width + "x" + height);
+                        }
+                    } catch (Exception e) {
+                        log("forceRepaintAfterLoad: Resize failed: " + e.getMessage());
+                    }
+
+                    // 2. setWindowVisibility(true)を呼び出し
+                    try {
+                        java.lang.reflect.Method setVisibilityMethod = getMethodRecursive(browser.getClass(), "setWindowVisibility", boolean.class);
+                        if (setVisibilityMethod != null) {
+                            setVisibilityMethod.setAccessible(true);
+                            setVisibilityMethod.invoke(browser, true);
+                        }
+                    } catch (Exception e) {
+                        // Silent
+                    }
+
+                    // 3. GLCanvasのinvalidate()とrepaint()を呼び出し
+                    if (provider != null && provider.supportsUIComponent()) {
+                        try {
+                            java.awt.Component uiComponent = browser.getUIComponent();
+                            if (uiComponent != null) {
+                                uiComponent.invalidate();
+                                uiComponent.repaint();
+
+                                // display()を呼び出し
+                                java.lang.reflect.Method displayMethod = uiComponent.getClass().getMethod("display");
+                                displayMethod.setAccessible(true);
+                                displayMethod.invoke(uiComponent);
+                                log("forceRepaintAfterLoad: Called invalidate/repaint/display on UIComponent");
+                            }
+                        } catch (Exception e) {
+                            // Silent
+                        }
+                    }
+
+                    // 4. sendMouseMoved()でダミーマウスイベントを送信
+                    try {
+                        provider.sendMouseMoved(browser, width / 2 + attempt, height / 2);
+                    } catch (Exception e) {
+                        // Silent
+                    }
+
+                    // 待機してから次の試行
+                    Thread.sleep(200);
+                }
+
+                log("forceRepaintAfterLoad: Completed OSR invalidation sequence");
+
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }, "ChromiumBrowser-ForceRepaint").start();
+    }
+
+    /**
      * レンダリングをトリガーする（GraphicsConfigurationエラー後のフォールバック）。
      * wasResized()を呼び出してブラウザにサイズを通知し、レンダリングを開始させる。
      */
@@ -1277,5 +1514,55 @@ public class ChromiumBrowser {
             }
         }
         return null;
+    }
+
+    /**
+     * レンダリング準備が整っているか（GLContextが初期化されているか）を確認する。
+     * JCEFのOSR実装はGLContextがないとonPaintイベントを発火しないため、
+     * このメソッドで確認してからURLロードや再描画を行うことが望ましい。
+     *
+     * @return 準備完了ならtrue
+     */
+    public boolean isReadyToRender() {
+        // まずglContextReadyフラグをチェック（高速パス）
+        if (glContextReady) {
+            return true;
+        }
+
+        if (browser == null) return false;
+
+        // フラグが設定されていない場合、リフレクションでGLContextを直接確認
+        try {
+            java.lang.reflect.Field canvasField = getFieldRecursive(browser.getClass(), "canvas_");
+            if (canvasField != null) {
+                canvasField.setAccessible(true);
+                Object canvas = canvasField.get(browser);
+                if (canvas != null) {
+                    java.lang.reflect.Method getContextMethod = canvas.getClass().getMethod("getContext");
+                    Object context = getContextMethod.invoke(canvas);
+                    boolean isReady = context != null;
+                    if (isReady) {
+                        // GLContextが準備完了ならフラグも更新
+                        glContextReady = true;
+                        glInitLatch.countDown();
+                    }
+                    return isReady;
+                }
+            }
+        } catch (Exception e) {
+            logError("Failed to check render readiness: " + e.getMessage());
+        }
+        return false;
+    }
+
+    /**
+     * MCEF環境（Forge）かどうかを返す。
+     * MCEF環境ではJavaScriptコンソールメッセージが読み取れないため、
+     * テキストフォーカス検出が動作しない。
+     *
+     * @return MCEF環境の場合true
+     */
+    public boolean isMCEF() {
+        return provider != null && "MCEF".equals(provider.getName());
     }
 }

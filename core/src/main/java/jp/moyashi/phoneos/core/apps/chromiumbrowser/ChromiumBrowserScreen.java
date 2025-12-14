@@ -454,18 +454,24 @@ public class ChromiumBrowserScreen implements Screen {
 
     /**
      * OSのフォーカス管理システムとの統合。
-     * アドレスバーがフォーカスされている場合、キーボードイベントはアドレスバーに送られる。
-     * フォーカスされていない場合、キーボードイベントはChromiumブラウザに送られる。
+     * アドレスバーがフォーカスされている場合、またはWebページ内のテキスト入力にフォーカスがある場合にtrueを返す。
+     * これにより、テキスト入力中はスペースキーが入力され、
+     * フォーカスがない時はスペースキーでホームに戻れる。
      *
-     * @return Chromiumブラウザ画面では常にtrue（スペースキーを常にブラウザに転送）
+     * @return テキスト入力にフォーカスがある場合true
      */
     @Override
     public boolean hasFocusedComponent() {
-        // Chromiumブラウザ画面では常にtrueを返す
-        // Forge環境ではホームボタンを別途表示するため、スペースキーは常にブラウザに転送する
-        // スタンドアロン環境でも同様の動作となるが、スペースキーでホームに戻る必要がある場合は
-        // 別のUIを使用する（または将来的にスタンドアロン専用の分岐を追加）
-        return true;
+        // アドレスバーにフォーカスがある場合
+        if (addressBar != null && addressBar.isFocused()) {
+            return true;
+        }
+        // MCEF環境（Forge）ではJSコンソールが読み取れずテキストフォーカス検出が動作しないため、
+        // 常にtrueを返す（スペースキーをMinecraftに渡さない）
+        // スタンドアロン環境ではWebページ内のテキスト入力にフォーカスがある場合のみtrueを返す
+        return getActiveBrowserSurface()
+                .map(surface -> surface.isMCEF() || surface.hasTextInputFocus())
+                .orElse(false);
     }
 
     /**

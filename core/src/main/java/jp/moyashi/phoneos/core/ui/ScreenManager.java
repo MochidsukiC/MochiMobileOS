@@ -560,22 +560,9 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
             return;
         }
 
-        // スペースキー（ホームボタン）の処理
-        if (key == ' ' || keyCode == 32) {
-            Screen currentScreen = getCurrentScreen();
-
-            // テキスト入力フォーカスがある場合はスクリーンに転送
-            if (currentScreen != null && currentScreen.hasFocusedComponent()) {
-                log("Space key with focused component - forwarding to screen");
-                currentScreen.keyPressed(currentPApplet, key, keyCode);
-                return;
-            }
-
-            // フォーカスがない場合はホーム画面に戻る
-            log("Space key detected - returning to home screen");
-            navigateToHome();
-            return;
-        }
+        // スペースキーは通常のキー入力として扱う（ホームボタン機能はプラットフォーム層で実装）
+        // Standalone: Ctrl+Space または HomeButtonWindow
+        // Forge: Ctrl+Space または 画面上ホームボタン
 
         Screen currentScreen = getCurrentScreen();
         if (currentScreen != null && currentPApplet != null) {

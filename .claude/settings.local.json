@@ -56,12 +56,21 @@
       "Bash(git config:*)",
       "Bash(gh auth status:*)",
       "WebFetch(domain:raw.githubusercontent.com)",
-      "Bash(jar -tf:*)"
+      "Bash(jar -tf:*)",
+      "Bash(timeout /t 10 /nobreak)",
+      "Bash(grep:*)",
+      "Bash(timeout 60 ./gradlew standalone:run:*)",
+      "Bash(timeout 70 ./gradlew:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": [],
     "additionalDirectories": [
       "C:\\c\\Users\\dora2\\IdeaProjects"
     ]
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "gemini-cli"
+  ]
 }

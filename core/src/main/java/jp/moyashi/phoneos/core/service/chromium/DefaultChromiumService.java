@@ -247,6 +247,11 @@ public class DefaultChromiumService implements ChromiumService {
         }
 
         @Override
+        public void loadContent(String html, String baseUrl) {
+            browser.loadContent(html, baseUrl);
+        }
+
+        @Override
         public String getCurrentUrl() {
             return browser.getCurrentURL();
         }
@@ -349,6 +354,16 @@ public class DefaultChromiumService implements ChromiumService {
         @Override
         public void executeScript(String script) {
             browser.executeScript(script);
+        }
+
+        @Override
+        public boolean isReadyToRender() {
+            return browser.isReadyToRender();
+        }
+
+        @Override
+        public boolean isMCEF() {
+            return browser.isMCEF();
         }
     }
 

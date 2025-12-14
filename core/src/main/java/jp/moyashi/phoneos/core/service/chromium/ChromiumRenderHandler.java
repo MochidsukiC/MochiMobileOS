@@ -77,15 +77,51 @@ public class ChromiumRenderHandler extends CefRenderHandlerAdapter {
      * @param width 幅
      * @param height 高さ
      */
+    // デバッグ用: onPaint呼び出しカウンター
+    private int onPaintCount = 0;
+
     @Override
     public void onPaint(CefBrowser browser, boolean popup, Rectangle[] dirtyRects,
                         ByteBuffer buffer, int width, int height) {
+        onPaintCount++;
+
+        // デバッグ: onPaintが呼ばれていることを確認
+        log("onPaint called #" + onPaintCount + ": " + width + "x" + height + ", popup=" + popup + ", buffer=" + (buffer != null ? buffer.remaining() + " bytes" : "null"));
+
+        // デバッグ: バッファの最初の数ピクセルの内容を確認
+        if (buffer != null && buffer.remaining() >= 16) {
+            buffer.position(0);
+            StringBuilder sb = new StringBuilder("First 4 pixels (BGRA): ");
+            for (int i = 0; i < 4; i++) {
+                int b = buffer.get() & 0xFF;
+                int g = buffer.get() & 0xFF;
+                int r = buffer.get() & 0xFF;
+                int a = buffer.get() & 0xFF;
+                sb.append(String.format("[B:%d G:%d R:%d A:%d] ", b, g, r, a));
+            }
+            buffer.position(0); // リセット
+            log(sb.toString());
+
+            // 中央付近のピクセルも確認
+            int centerIndex = (height / 2 * width + width / 2) * 4;
+            if (buffer.remaining() > centerIndex + 4) {
+                buffer.position(centerIndex);
+                int b = buffer.get() & 0xFF;
+                int g = buffer.get() & 0xFF;
+                int r = buffer.get() & 0xFF;
+                int a = buffer.get() & 0xFF;
+                log(String.format("Center pixel (BGRA): [B:%d G:%d R:%d A:%d]", b, g, r, a));
+                buffer.position(0); // リセット
+            }
+        }
+
         // フレームスキップ：前回から16ms未満の場合はスキップ（60FPS制限）
-                long now = System.nanoTime();
-                if (now - lastPaintTimeNs < MIN_PAINT_INTERVAL_NS) {
-                    return; // スキップ
-                }
-                lastPaintTimeNs = now;
+        long now = System.nanoTime();
+        if (now - lastPaintTimeNs < MIN_PAINT_INTERVAL_NS) {
+            log("Frame skipped (too soon)");
+            return; // スキップ
+        }
+        lastPaintTimeNs = now;
         
                 boolean isHiDPI = isMac && (width == this.width * 2);
         
@@ -145,6 +181,29 @@ public class ChromiumRenderHandler extends CefRenderHandlerAdapter {
 
             image.updatePixels();
             needsUpdate.set(true);
+
+            // デバッグ: 変換後のPImageの内容を確認
+            if (onPaintCount <= 3) {
+                int whiteCount = 0;
+                int nonWhiteCount = 0;
+                int sampleSize = Math.min(100, image.pixels.length);
+                StringBuilder pixelSamples = new StringBuilder("PImage samples: ");
+                for (int i = 0; i < sampleSize; i++) {
+                    int pixel = image.pixels[i];
+                    if (pixel == 0xFFFFFFFF) {
+                        whiteCount++;
+                    } else {
+                        nonWhiteCount++;
+                        if (nonWhiteCount <= 3) {
+                            pixelSamples.append(String.format("[%d:0x%08X] ", i, pixel));
+                        }
+                    }
+                }
+                log("PImage after conversion: white=" + whiteCount + ", nonWhite=" + nonWhiteCount + "/" + sampleSize);
+                if (nonWhiteCount > 0) {
+                    log(pixelSamples.toString());
+                }
+            }
         }
     }
 

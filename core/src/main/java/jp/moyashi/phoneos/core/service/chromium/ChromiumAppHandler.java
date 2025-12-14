@@ -85,6 +85,7 @@ public class ChromiumAppHandler extends CefAppHandlerAdapter {
         // URL形式: mochiapp://modid/path/to/resource
         // 注意: スキーム名にハイフンを含めるとJCEFで問題が発生する可能性があるため、
         //       シンプルな名前を使用
+        // is_csp_bypassing=true: インラインCSS/JSの実行を許可（白画面問題修正）
         boolean mochiosAppRegistered = registrar.addCustomScheme(
             "mochiapp",  // スキーム名
             true,           // is_standard
@@ -92,7 +93,7 @@ public class ChromiumAppHandler extends CefAppHandlerAdapter {
             false,          // is_display_isolated
             true,           // is_secure (セキュアとして扱う)
             true,           // is_cors_enabled (CORS有効化)
-            false,          // is_csp_bypassing
+            true,           // is_csp_bypassing (CSPをバイパス - インラインスタイル/スクリプト許可)
             true            // is_fetch_enabled (fetch API対応)
         );
 
@@ -111,7 +112,7 @@ public class ChromiumAppHandler extends CefAppHandlerAdapter {
                 false,      // is_display_isolated
                 true,       // is_secure (セキュアとして扱う)
                 true,       // is_cors_enabled (CORS有効化)
-                false,      // is_csp_bypassing
+                true,       // is_csp_bypassing (CSPをバイパス - インラインスタイル/スクリプト許可)
                 true        // is_fetch_enabled (fetch API対応)
             );
 

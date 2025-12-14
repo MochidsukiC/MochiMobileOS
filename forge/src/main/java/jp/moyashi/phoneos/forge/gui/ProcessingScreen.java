@@ -721,6 +721,19 @@ public class ProcessingScreen extends Screen {
      */
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        // 修飾キーの状態を取得
+        boolean isCtrlPressed = (modifiers & 2) != 0; // GLFW_MOD_CONTROL = 2
+        boolean isAltPressed = (modifiers & 4) != 0; // GLFW_MOD_ALT = 4
+
+        // Ctrl+Space でホームに戻る（プラットフォーム固有のホームボタンショートカット）
+        if (isCtrlPressed && !isAltPressed && keyCode == 32) {
+            LOGGER.info("[ProcessingScreen] Ctrl+Space detected - requesting go home");
+            if (kernel != null) {
+                kernel.requestGoHome();
+            }
+            return true; // イベント消費
+        }
+
         // ESCキーでスリープしてから画面を閉じる
         if (keyCode == 256) { // ESC key
             LOGGER.info("[ProcessingScreen] ESC pressed, entering sleep mode and closing screen");
@@ -732,16 +745,16 @@ public class ProcessingScreen extends Screen {
             return true;
         }
 
-        // 特殊キー（矢印、Backspace、Delete、Space、Shift、Ctrl等）のみここで処理
+        // 特殊キー（矢印、Backspace、Delete、Shift、Ctrl等）のみここで処理
         // 通常の文字入力はcharTyped()で処理される
-        // Minecraftキーコード: 259=Backspace, 261=Delete, 257=Enter, 262-265=矢印, 268=Home, 269=End, 32=Space
+        // Minecraftキーコード: 259=Backspace, 261=Delete, 257=Enter, 262-265=矢印, 268=Home, 269=End
         // 修飾キー: 340=Shift Left, 344=Shift Right, 341=Ctrl Left, 345=Ctrl Right
+        // スペースキー（32）は通常の文字として扱う（charTyped()で処理）
         boolean isSpecialKey = (keyCode == 259 || keyCode == 261 || keyCode == 257 ||
-                               (keyCode >= 262 && keyCode <= 265) || keyCode == 268 || keyCode == 269 || keyCode == 32 ||
+                               (keyCode >= 262 && keyCode <= 265) || keyCode == 268 || keyCode == 269 ||
                                keyCode == 340 || keyCode == 344 || keyCode == 341 || keyCode == 345);
 
         // Ctrlが押されている場合、通常文字キーもkeyPressed()に転送（Ctrl+C/V/A等のショートカット用）
-        boolean isCtrlPressed = (modifiers & 2) != 0; // GLFW_MOD_CONTROL = 2
         boolean shouldForwardKey = isSpecialKey || isCtrlPressed;
 
         if (graphicsEnabled && kernel != null && shouldForwardKey) {
@@ -794,10 +807,11 @@ public class ProcessingScreen extends Screen {
     public boolean charTyped(char codePoint, int modifiers) {
         LOGGER.info("[ProcessingScreen] charTyped - char: '" + codePoint + "' (Unicode: " + (int)codePoint + ")");
 
-        // 制御文字とスペース（Enter、Backspace、Delete、Space等）は除外
+        // 制御文字（Enter、Backspace、Delete等）は除外
         // これらはkeyPressed()で既に処理されている
-        if (codePoint <= 32 || codePoint == 127) {
-            LOGGER.info("[ProcessingScreen] Skipping control character/space in charTyped()");
+        // スペース（32）は通常の文字として扱う
+        if (codePoint < 32 || codePoint == 127) {
+            LOGGER.info("[ProcessingScreen] Skipping control character in charTyped()");
             return super.charTyped(codePoint, modifiers);
         }
 
@@ -1056,18 +1070,13 @@ public class ProcessingScreen extends Screen {
     }
 
     /**
-     * Chromiumブラウザ画面が表示されているかを確認し、ホームボタンの表示状態を更新する。
+     * ホームボタンの表示状態を更新する。
+     * スペースキーがホームボタンとして使えないForge環境では常時表示する。
      */
     private void updateHomeButtonVisibility() {
-        homeButtonVisible = false;
-        if (kernel != null && kernel.getScreenManager() != null) {
-            jp.moyashi.phoneos.core.ui.Screen currentScreen = kernel.getScreenManager().getCurrentScreen();
-            if (currentScreen != null) {
-                String screenClassName = currentScreen.getClass().getSimpleName();
-                // ChromiumBrowserScreenが表示されている場合のみホームボタンを表示
-                homeButtonVisible = screenClassName.contains("ChromiumBrowser");
-            }
-        }
+        // Forge環境ではスペースキーがMinecraftジャンプと競合するため、
+        // ホームボタンを常時表示する
+        homeButtonVisible = (kernel != null);
 
         // ホームボタンの位置を更新（スマートフォンUIの右下外側）
         if (homeButtonVisible) {
@@ -1129,8 +1138,8 @@ public class ProcessingScreen extends Screen {
     private void handleHomeButtonClick() {
         if (kernel != null) {
             LOGGER.info("[ProcessingScreen] Home button clicked - going to home screen");
-            // Kernel.handleHomeButton()を呼び出してホーム画面に戻る
-            kernel.handleHomeButton();
+            // Kernel.requestGoHome()を呼び出してホーム画面に戻る
+            kernel.requestGoHome();
         }
     }
 }

@@ -167,29 +167,157 @@ public class WebScreen implements Screen {
         String url = buildUrl();
         log("Target URL: " + url);
 
-        // デバッグ用：通常のHTTPS URLでテスト
-        // String testUrl = "https://www.google.com";
-        // log("DEBUG: Using test URL: " + testUrl);
-
         // タブを作成
+        // MCEF環境（Forge）ではカスタムスキームで直接読み込み
+        // スタンドアロン環境ではabout:blankで初期化してからloadContent()で読み込む
+        // （JCEFのOSR再描画問題を回避するため）
         ChromiumSurface surface = kernel.getChromiumService().createTab(contentWidth, contentHeight, url);
         initialized = true;
 
-        // カスタムスキームURLは即座にリソースを読み込むため、
-        // ブラウザのGLCanvasが初期化される前にレンダリングが開始される
-        // 遅延してからURLを再読み込みすることで正しいサイズでレンダリングさせる
         if (surface != null) {
+            final ChromiumSurface surfaceRef = surface;
             final String targetUrl = url;
-            new Thread(() -> {
-                try {
-                    // GLCanvasの初期化を待つ（Hidden JFrame設定完了後）
-                    Thread.sleep(500);
-                    log("Reloading URL after GLCanvas initialization: " + targetUrl);
-                    surface.reload();
-                } catch (InterruptedException e) {
-                    logError("Reload interrupted: " + e.getMessage());
+
+            // MCEF環境かどうかを判定
+            if (surfaceRef.isMCEF()) {
+                // MCEF環境: カスタムスキームで正常に動作するため、GLContext初期化後にreloadするだけ
+                log("MCEF environment detected - using direct URL loading");
+                new Thread(() -> {
+                    try {
+                        int maxRetries = 50; // 5秒 (100ms * 50)
+                        int retry = 0;
+
+                        while (retry < maxRetries) {
+                            if (surfaceRef.isReadyToRender()) {
+                                log("GLContext ready (retry " + retry + "), reloading URL: " + targetUrl);
+                                surfaceRef.reload();
+                                break;
+                            }
+
+                            Thread.sleep(100);
+                            retry++;
+
+                            if (retry % 5 == 0) {
+                                log("Waiting for GLContext initialization... (" + retry + "/" + maxRetries + ")");
+                            }
+                        }
+
+                        if (retry >= maxRetries) {
+                            log("Warning: GLContext initialization timed out, forcing reload");
+                            surfaceRef.reload();
+                        }
+                    } catch (InterruptedException e) {
+                        logError("Reload interrupted: " + e.getMessage());
+                    }
+                }, "WebScreen-Reload").start();
+            } else {
+                // スタンドアロン環境: data: URLを使用してOSR再描画問題を回避
+                log("Standalone environment detected - using loadContent()");
+                new Thread(() -> {
+                    try {
+                        int maxRetries = 50; // 5秒 (100ms * 50)
+                        int retry = 0;
+
+                        while (retry < maxRetries) {
+                            if (surfaceRef.isReadyToRender()) {
+                                log("GLContext ready (retry " + retry + ")");
+
+                                // リソースからHTMLを読み込む
+                                String htmlContent = loadHtmlFromResource();
+                                if (htmlContent != null) {
+                                    log("Loaded HTML content: " + htmlContent.length() + " chars");
+                                    // loadContent()でHTMLを直接レンダリング
+                                    surfaceRef.loadContent(htmlContent, targetUrl);
+                                } else {
+                                    logError("Failed to load HTML content, falling back to URL");
+                                    surfaceRef.loadUrl(targetUrl);
+                                }
+                                break;
+                            }
+
+                            Thread.sleep(100);
+                            retry++;
+
+                            if (retry % 5 == 0) {
+                                log("Waiting for GLContext initialization... (" + retry + "/" + maxRetries + ")");
+                            }
+                        }
+
+                        if (retry >= maxRetries) {
+                            log("Warning: GLContext initialization timed out");
+                            surfaceRef.loadUrl(targetUrl);
+                        }
+                    } catch (InterruptedException e) {
+                        logError("Load interrupted: " + e.getMessage());
+                    }
+                }, "WebScreen-Load").start();
+            }
+        }
+    }
+
+    /**
+     * リソースからHTMLコンテンツを読み込む。
+     *
+     * @return HTMLコンテンツ、読み込みに失敗した場合はnull
+     */
+    private String loadHtmlFromResource() {
+        String resourcePath = "assets/" + modId + "/" + this.resourcePath;
+        log("Loading HTML from resource: " + resourcePath);
+
+        java.io.InputStream inputStream = null;
+
+        // 1. 渡されたClassLoaderから試す
+        if (classLoader != null) {
+            inputStream = classLoader.getResourceAsStream(resourcePath);
+            if (inputStream != null) {
+                log("Found in provided ClassLoader");
+            }
+        }
+
+        // 2. このクラスのClassLoaderから試す
+        if (inputStream == null) {
+            inputStream = getClass().getResourceAsStream("/" + resourcePath);
+            if (inputStream != null) {
+                log("Found in class ClassLoader");
+            }
+        }
+
+        // 3. コンテキストClassLoaderから試す
+        if (inputStream == null) {
+            ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+            if (contextClassLoader != null) {
+                inputStream = contextClassLoader.getResourceAsStream(resourcePath);
+                if (inputStream != null) {
+                    log("Found in context ClassLoader");
                 }
-            }, "WebScreen-Reload").start();
+            }
+        }
+
+        // 4. システムClassLoaderから試す
+        if (inputStream == null) {
+            inputStream = ClassLoader.getSystemResourceAsStream(resourcePath);
+            if (inputStream != null) {
+                log("Found in system ClassLoader");
+            }
+        }
+
+        if (inputStream == null) {
+            logError("Resource not found: " + resourcePath);
+            return null;
+        }
+
+        try {
+            java.io.ByteArrayOutputStream buffer = new java.io.ByteArrayOutputStream();
+            byte[] chunk = new byte[8192];
+            int bytesRead;
+            while ((bytesRead = inputStream.read(chunk)) != -1) {
+                buffer.write(chunk, 0, bytesRead);
+            }
+            inputStream.close();
+            return buffer.toString("UTF-8");
+        } catch (java.io.IOException e) {
+            logError("Error reading resource: " + e.getMessage());
+            return null;
         }
     }
 
@@ -211,8 +339,14 @@ public class WebScreen implements Screen {
         return Optional.empty();
     }
 
+    // デバッグ用: draw()呼び出しカウンター
+    private int drawCount = 0;
+    private long lastDrawLogTime = 0;
+
     @Override
     public void draw(PGraphics g) {
+        drawCount++;
+
         ThemeEngine theme = ThemeContext.getTheme();
         if (theme == null) return;
 
@@ -224,10 +358,40 @@ public class WebScreen implements Screen {
         Optional<ChromiumSurface> activeSurfaceOpt = getActiveSurface();
         if (activeSurfaceOpt.isPresent()) {
             PImage frame = activeSurfaceOpt.get().acquireFrame();
+
+            // デバッグログ: 1秒ごとにフレーム状態を出力
+            long now = System.currentTimeMillis();
+            if (now - lastDrawLogTime > 1000) {
+                lastDrawLogTime = now;
+                if (frame != null) {
+                    // フレームの最初の100ピクセルを確認して白かどうか判定
+                    frame.loadPixels();
+                    int whiteCount = 0;
+                    int sampleSize = Math.min(100, frame.pixels.length);
+                    for (int i = 0; i < sampleSize; i++) {
+                        if (frame.pixels[i] == 0xFFFFFFFF) {
+                            whiteCount++;
+                        }
+                    }
+                    log("draw() #" + drawCount + ": frame=" + frame.width + "x" + frame.height +
+                        ", whitePixels=" + whiteCount + "/" + sampleSize +
+                        " (" + (whiteCount * 100 / sampleSize) + "%)");
+                } else {
+                    log("draw() #" + drawCount + ": frame=null");
+                }
+            }
+
             if (frame != null) {
                 g.image(frame, 0, 0);
             }
         } else {
+            // デバッグログ
+            long now = System.currentTimeMillis();
+            if (now - lastDrawLogTime > 1000) {
+                lastDrawLogTime = now;
+                log("draw() #" + drawCount + ": No active surface");
+            }
+
             // サーフェスがない場合のフォールバック表示
             g.fill(theme.colorSurface());
             g.rect(10, 10, g.width - 20, g.height - 20, 8);
@@ -270,12 +434,19 @@ public class WebScreen implements Screen {
 
     @Override
     public void keyPressed(PGraphics g, char key, int keyCode) {
-        if (!initialized || kernel == null) return;
+        log("keyPressed: key='" + key + "' (" + (int)key + "), keyCode=" + keyCode);
+        if (!initialized || kernel == null) {
+            log("keyPressed: not initialized or kernel null");
+            return;
+        }
         boolean shiftPressed = kernel.isShiftPressed();
         boolean ctrlPressed = kernel.isCtrlPressed();
         boolean altPressed = kernel.isAltPressed();
         boolean metaPressed = kernel.isMetaPressed();
-        getActiveSurface().ifPresent(s -> s.sendKeyPressed(keyCode, key, shiftPressed, ctrlPressed, altPressed, metaPressed));
+        getActiveSurface().ifPresent(s -> {
+            log("keyPressed: sending to surface");
+            s.sendKeyPressed(keyCode, key, shiftPressed, ctrlPressed, altPressed, metaPressed);
+        });
     }
 
     @Override
@@ -314,8 +485,12 @@ public class WebScreen implements Screen {
 
     @Override
     public boolean hasFocusedComponent() {
-        // WebScreenでは常にtrueを返す（スペースキーをHTML側に転送）
-        return true;
+        // MCEF環境（Forge）ではJSコンソールが読み取れずテキストフォーカス検出が動作しないため、
+        // 常にtrueを返す（スペースキーをMinecraftに渡さない）
+        // スタンドアロン環境ではテキスト入力フィールドにフォーカスがある場合のみtrueを返す
+        return getActiveSurface()
+                .map(surface -> surface.isMCEF() || surface.hasTextInputFocus())
+                .orElse(false);
     }
 
     @Override

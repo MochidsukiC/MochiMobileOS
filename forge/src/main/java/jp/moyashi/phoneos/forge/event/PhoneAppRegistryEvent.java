@@ -2,6 +2,7 @@ package jp.moyashi.phoneos.forge.event;
 
 import jp.moyashi.phoneos.core.app.IApplication;
 import net.minecraftforge.eventbus.api.Event;
+import net.minecraftforge.fml.event.IModBusEvent;
 
 /**
  * ForgeのMODが自身のアプリケーションをMochiMobileOSに登録するためのカスタムイベント。
@@ -18,7 +19,7 @@ import net.minecraftforge.eventbus.api.Event;
  * @version 1.0
  * @since 1.0
  */
-public class PhoneAppRegistryEvent extends Event {
+public class PhoneAppRegistryEvent extends Event implements IModBusEvent {
 
     /** 登録されたアプリケーションの数 */
     private int registeredAppsCount = 0;

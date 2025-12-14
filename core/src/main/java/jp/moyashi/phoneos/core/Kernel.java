@@ -764,40 +764,9 @@ public class Kernel implements GestureListener {
                 return;
             }
 
-            // スペースキー（ホームボタン）の階層管理処理
-            if (key == ' ' || keyCode == 32) {
-                System.out.println("Kernel: Space key pressed - checking lock screen and focus status");
-
-                // ロック画面が表示されている場合は、ロック画面に処理を委譲
-                // Phase 3: LayerControllerを使用してレイヤーを確認
-                boolean isLockScreen = false;
-                if (layerController != null) {
-                    isLockScreen = layerController.hasLayer(LayerType.LOCK_SCREEN);
-                } else if (layerStack != null) {
-                    // 後方互換性のため、layerControllerがない場合は従来のlayerStackを使用
-                    isLockScreen = layerStack.contains(LayerType.LOCK_SCREEN);
-                }
-
-                if (isLockScreen) {
-                    System.out.println("Kernel: Lock screen is active - forwarding space key to screen manager");
-                    if (screenManager != null) {
-                        screenManager.keyPressed(key, keyCode);
-                    }
-                    return;
-                }
-
-                // テキスト入力フォーカスがある場合は、スペースキーをスクリーンに転送
-                if (screenManager != null && screenManager.hasFocusedComponent()) {
-                    System.out.println("Kernel: Text input focused - forwarding space key to screen manager");
-                    screenManager.keyPressed(key, keyCode);
-                    return;
-                }
-
-                // フォーカスがない場合は、通常のホームボタン処理
-                System.out.println("Kernel: No focus - handling home button");
-                handleHomeButton();
-                return;
-            }
+            // スペースキーは通常のキー入力として扱う（ホームボタン機能はプラットフォーム層で実装）
+            // Standalone: Ctrl+Space または HomeButtonWindow
+            // Forge: Ctrl+Space または 画面上ホームボタン
 
             // バックスペースキー処理（テキスト入力にフォーカスがある場合）
             if (keyCode == 8) { // Backspace key
@@ -1695,6 +1664,18 @@ public class Kernel implements GestureListener {
         appLoader.registerApplication(sampleWebApp);
 
         System.out.println("Kernel: " + appLoader.getLoadedApps().size() + " 個のアプリケーションを登録");
+
+        // MODアプリケーションを同期して自動登録
+        System.out.println("  -> MODアプリケーションを同期中...");
+        appLoader.syncWithModRegistry();
+        // availableModAppsから直接loadedAppsに追加（自動インストール）
+        for (IApplication modApp : appLoader.getAvailableModApps()) {
+            if (appLoader.registerApplication(modApp)) {
+                System.out.println("Kernel: MODアプリを登録: " + modApp.getName());
+                modApp.onInitialize(this);
+            }
+        }
+        System.out.println("Kernel: MODアプリ同期完了 - 合計 " + appLoader.getLoadedApps().size() + " 個のアプリ");
 
         // すべてのアプリ登録後に初期化を実行
         System.out.println("  -> アプリケーションを初期化中...");
@@ -2756,6 +2737,29 @@ public class Kernel implements GestureListener {
             System.err.println("Kernel: handleHomeButton処理エラー: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    /**
+     * ホームに戻るリクエストを処理する公開API。
+     * プラットフォーム層（Standalone/Forge）から呼び出される。
+     * 内部的にhandleHomeButton()を呼び出す。
+     */
+    public void requestGoHome() {
+        System.out.println("Kernel: requestGoHome() called");
+        handleHomeButton();
+    }
+
+    /**
+     * テキスト入力にフォーカスがあるかを返す。
+     * プラットフォーム層でホームボタンショートカットの判定に使用される。
+     *
+     * @return テキスト入力フィールドにフォーカスがある場合true
+     */
+    public boolean hasTextInputFocus() {
+        if (screenManager != null) {
+            return screenManager.hasFocusedComponent();
+        }
+        return false;
     }
 
     /**

@@ -39,6 +39,16 @@ public interface ChromiumSurface {
     void loadUrl(String url);
 
     /**
+     * HTMLコンテンツを直接読み込みます。
+     * CefFrame.loadString()を使用してHTMLを直接レンダリングします。
+     * カスタムスキーム（mochiapp://等）でOSR再描画がトリガーされない問題を回避するために使用。
+     *
+     * @param html HTMLコンテンツ
+     * @param baseUrl ベースURL（相対パス解決に使用）
+     */
+    void loadContent(String html, String baseUrl);
+
+    /**
      * 現在表示中の URL を取得します。
      */
     String getCurrentUrl();
@@ -142,6 +152,15 @@ public interface ChromiumSurface {
      */
     void dispose();
 
+    /**
+     * レンダリング準備が整っているか（GLContextが初期化されているか）を確認する。
+     * JCEFのOSR実装はGLContextがないとonPaintイベントを発火しないため、
+     * このメソッドで確認してからURLロードや再描画を行うことが望ましい。
+     *
+     * @return 準備完了ならtrue
+     */
+    boolean isReadyToRender();
+
     // ========== TextInputProtocol用メソッド ==========
 
     /**
@@ -166,4 +185,13 @@ public interface ChromiumSurface {
      * @param script 実行するJavaScriptコード
      */
     void executeScript(String script);
+
+    /**
+     * MCEF環境（Forge）かどうかを返します。
+     * MCEF環境ではJavaScriptコンソールメッセージが読み取れないため、
+     * テキストフォーカス検出が動作しません。
+     *
+     * @return MCEF環境の場合true
+     */
+    boolean isMCEF();
 }

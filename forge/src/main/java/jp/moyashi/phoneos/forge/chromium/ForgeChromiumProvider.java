@@ -41,6 +41,30 @@ public class ForgeChromiumProvider implements ChromiumProvider {
             // MCEFから既存のCefAppを取得
             CefApp cefApp = com.cinemamod.mcef.MCEF.getApp().getHandle();
 
+            // SchemeHandlerFactoryの登録 (Forge環境用)
+            // Standalone環境ではChromiumAppHandlerで登録されるが、
+            // Forge環境ではMCEFが初期化済みのため、ここで既存のCefAppに追加登録する必要がある
+            try {
+                System.out.println(TAG + " Registering SchemeHandlerFactories for Forge...");
+
+                // mochiapp:// スキームの登録
+                jp.moyashi.phoneos.core.service.chromium.webapp.AppAssetSchemeHandlerFactory appFactory =
+                        new jp.moyashi.phoneos.core.service.chromium.webapp.AppAssetSchemeHandlerFactory(kernel);
+                cefApp.registerSchemeHandlerFactory("mochiapp", "", appFactory);
+                System.out.println(TAG + " Registered AppAssetSchemeHandlerFactory for mochiapp://");
+
+                // httpm:// スキームの登録
+                jp.moyashi.phoneos.core.service.chromium.httpm.HttpmSchemeHandlerFactory httpmFactory =
+                        new jp.moyashi.phoneos.core.service.chromium.httpm.HttpmSchemeHandlerFactory(kernel);
+                cefApp.registerSchemeHandlerFactory("httpm", "", httpmFactory);
+                System.out.println(TAG + " Registered HttpmSchemeHandlerFactory for httpm://");
+
+                System.out.println(TAG + " SchemeHandlerFactories registered successfully");
+            } catch (Exception e) {
+                System.err.println(TAG + " Failed to register SchemeHandlerFactories: " + e.getMessage());
+                e.printStackTrace();
+            }
+
             try {
                 com.cinemamod.mcef.MCEF.getSettings().setUserAgent(MOBILE_USER_AGENT);
                 System.out.println(TAG + " Custom mobile user agent applied: " + MOBILE_USER_AGENT);
