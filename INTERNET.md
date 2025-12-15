@@ -554,7 +554,7 @@ NetworkHandler.sendToServer(packet);
    - `[SystemPacketHandler]`
 
 2. **チェックポイント**:
-   - アドレス形式が正しいか（`^([0-3])-((?:[0-9a-fA-F]{4}-?){1,8})$`）
+   - アドレス形式が正しいか（Player/Device: `^[0-3]-[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`, Server/System: `^[2-3]-[a-zA-Z0-9][a-zA-Z0-9_-]*$`）
    - パケットタイプが正しいか
    - ハンドラーが登録されているか
 

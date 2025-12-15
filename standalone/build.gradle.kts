@@ -33,9 +33,8 @@ dependencies {
     implementation("org.apache.logging.log4j:log4j-core:2.20.0")
     implementation("org.apache.logging.log4j:log4j-slf4j-impl:2.20.0")
 
-    // JCEF (Java Chromium Embedded Framework) for Chromium browser integration
-    // standaloneモジュールがjcefmavenを提供し、coreモジュールで使用する
-    implementation("me.friwi:jcefmaven:135.0.20")
+    // JCEF (jcefmaven) はcoreモジュールで一元管理
+    // transitive依存として自動的に含まれる
 }
 
 // Configuration for the main class

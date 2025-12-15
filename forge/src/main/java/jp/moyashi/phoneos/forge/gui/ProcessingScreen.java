@@ -3,7 +3,7 @@ package jp.moyashi.phoneos.forge.gui;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import com.mojang.blaze3d.platform.NativeImage;
-import jp.moyashi.phoneos.core.Kernel;
+import jp.moyashi.phoneos.core.ipc.KernelProxy;
 import jp.moyashi.phoneos.forge.service.SmartphoneBackgroundService;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -39,8 +39,8 @@ public class ProcessingScreen extends Screen {
     private static final int PHONE_WIDTH = 400;
     private static final int PHONE_HEIGHT = 600;
 
-    /** 共有カーネル参照 */
-    private Kernel kernel;
+    /** 共有カーネルプロキシ参照 */
+    private KernelProxy kernel;
 
     /** グラフィック描画フラグ */
     private boolean graphicsEnabled = false;
@@ -139,11 +139,11 @@ public class ProcessingScreen extends Screen {
                 ", Scaled size: " + this.scaledWidth + "x" + this.scaledHeight +
                 ", Offset: (" + offsetX + "," + offsetY + ")");
 
-            // MOD起動時に作成済みの共有Kernelを取得
-            this.kernel = SmartphoneBackgroundService.getKernel();
+            // MOD起動時に作成済みの共有KernelProxyを取得
+            this.kernel = SmartphoneBackgroundService.getKernelProxy();
 
             if (this.kernel != null) {
-                LOGGER.info("[ProcessingScreen] Found shared kernel - frameCount: " + this.kernel.frameCount);
+                LOGGER.info("[ProcessingScreen] Found shared kernel - frameCount: " + this.kernel.getFrameCount());
 
                 // カーネルがスリープ中の場合はウェイクする
                 if (this.kernel.isSleeping()) {
@@ -180,9 +180,9 @@ public class ProcessingScreen extends Screen {
             LOGGER.info("[ProcessingScreen] Enabling graphics for kernel...");
 
             if (kernel != null) {
-                // グラフィック関連の設定を復元
-                kernel.width = 300;
-                kernel.height = 450;
+                // 注: KernelはSmartphoneBackgroundServiceで既に正しいサイズ(400x600)で初期化されている
+                // KernelProxyインターフェースは直接フィールドアクセスを提供しないため、
+                // サイズ変更は行わない
 
                 // PGraphicsバッファが適切に初期化されているかチェック
                 try {
@@ -330,8 +330,8 @@ public class ProcessingScreen extends Screen {
                 kernel.render();
 
                 // デバッグ用: 60フレームごとにログ出力
-                if (kernel.frameCount % 60 == 0) {
-                    LOGGER.info("[ProcessingScreen] Kernel rendered at full speed, frame: " + kernel.frameCount);
+                if (kernel.getFrameCount() % 60 == 0) {
+                    LOGGER.info("[ProcessingScreen] Kernel rendered at full speed, frame: " + kernel.getFrameCount());
                 }
             } else {
                 LOGGER.debug("[ProcessingScreen] Skipping graphics - kernel: " + (kernel != null) + ", graphics: " + graphicsEnabled);
@@ -379,7 +379,7 @@ public class ProcessingScreen extends Screen {
     private int[] getKernelPixels() {
         try {
             if (kernel != null) {
-                LOGGER.info("[ProcessingScreen] Getting pixels from kernel - frameCount: " + kernel.frameCount);
+                LOGGER.info("[ProcessingScreen] Getting pixels from kernel - frameCount: " + kernel.getFrameCount());
 
                 // loadPixels()を使わず、バックグラウンドサービスで直接設定されたピクセル配列を使用
                 LOGGER.info("[ProcessingScreen] Using pixels directly from background service (skipping loadPixels)");
@@ -919,7 +919,7 @@ public class ProcessingScreen extends Screen {
     private void executeKernelDrawing() {
         try {
             if (kernel != null) {
-                LOGGER.info("[ProcessingScreen] Executing kernel draw() - frameCount: " + kernel.frameCount);
+                LOGGER.info("[ProcessingScreen] Executing kernel draw() - frameCount: " + kernel.getFrameCount());
 
                 // TODO: PGraphics統一アーキテクチャに移行後、描画サイクルを再実装
                 // kernel.draw(); // 古いAPI - 削除済み

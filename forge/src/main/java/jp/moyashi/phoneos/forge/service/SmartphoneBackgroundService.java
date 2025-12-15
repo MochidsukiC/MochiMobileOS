@@ -1,8 +1,11 @@
 package jp.moyashi.phoneos.forge.service;
 
 import jp.moyashi.phoneos.core.Kernel;
+import jp.moyashi.phoneos.core.ipc.KernelProxy;
 import jp.moyashi.phoneos.core.service.chromium.ChromiumService;
 import jp.moyashi.phoneos.core.service.chromium.DefaultChromiumService;
+import jp.moyashi.phoneos.forge.bridge.KernelLocalWrapper;
+import jp.moyashi.phoneos.forge.bridge.MMOSBridge;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraftforge.api.distmarker.Dist;
@@ -28,8 +31,25 @@ public class SmartphoneBackgroundService {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
-    /** 共有カーネルインスタンス（常に稼働） */
+    /**
+     * 外部プロセスモードフラグ。
+     * trueの場合、MMOSサーバーを別プロセスで起動し、共有メモリでIPC通信する。
+     * HeadlessException回避のために必要（JCEF使用時）。
+     * Forge環境ではデフォルトでtrue（java.awt.headless=trueのため）。
+     *
+     * publicにしてMMOSInstallMixinからアクセス可能にする。
+     * 外部プロセスモードではForge側でのJCEFインストールは不要（サーバー側でcoreが管理）。
+     */
+    public static final boolean EXTERNAL_PROCESS_MODE = true;
+
+    /** 共有カーネルインスタンス（ローカルモード時のみ使用） */
     private static Kernel sharedKernel = null;
+
+    /** MMOSブリッジ（外部プロセスモード時のみ使用） */
+    private static MMOSBridge mmosBridge = null;
+
+    /** カーネルプロキシ（ProcessingScreenが使用） */
+    private static KernelProxy kernelProxy = null;
 
     /** 現在のワールドID */
     private static String currentWorldId = null;
@@ -64,14 +84,29 @@ public class SmartphoneBackgroundService {
                     currentWorldId = worldName;
 
                     // 既存のKernelをシャットダウン
-                    if (sharedKernel != null) {
-                        LOGGER.info("[SmartphoneBackgroundService] Shutting down previous kernel...");
-                        shutdownKernel();
-                    }
+                    shutdownAll();
 
-                    // 新しいワールドID用のKernelを作成
-                    sharedKernel = createKernel(currentWorldId);
-                    LOGGER.info("[SmartphoneBackgroundService] Kernel created for world: " + currentWorldId);
+                    if (EXTERNAL_PROCESS_MODE) {
+                        // 外部プロセスモード：MMOSBridgeを使用
+                        LOGGER.info("[SmartphoneBackgroundService] Using EXTERNAL PROCESS MODE for world: " + currentWorldId);
+                        mmosBridge = new MMOSBridge();
+                        if (mmosBridge.initialize(currentWorldId)) {
+                            kernelProxy = mmosBridge.getRemoteKernel();
+                            LOGGER.info("[SmartphoneBackgroundService] MMOSBridge initialized for world: " + currentWorldId);
+                        } else {
+                            LOGGER.error("[SmartphoneBackgroundService] Failed to initialize MMOSBridge, falling back to local mode");
+                            mmosBridge = null;
+                            // フォールバック：ローカルモード
+                            sharedKernel = createKernel(currentWorldId);
+                            kernelProxy = new KernelLocalWrapper(sharedKernel);
+                        }
+                    } else {
+                        // ローカルモード：直接Kernelを作成
+                        LOGGER.info("[SmartphoneBackgroundService] Using LOCAL MODE for world: " + currentWorldId);
+                        sharedKernel = createKernel(currentWorldId);
+                        kernelProxy = new KernelLocalWrapper(sharedKernel);
+                        LOGGER.info("[SmartphoneBackgroundService] Kernel created for world: " + currentWorldId);
+                    }
                 }
 
             } catch (Exception e) {
@@ -91,18 +126,36 @@ public class SmartphoneBackgroundService {
             try {
                 LOGGER.info("[SmartphoneBackgroundService] World unloading: " + currentWorldId);
 
-                // Kernelをシャットダウン
-                if (sharedKernel != null) {
-                    shutdownKernel();
-                    sharedKernel = null;
-                    currentWorldId = null;
-                    LOGGER.info("[SmartphoneBackgroundService] Kernel shut down successfully");
-                }
+                // すべてをシャットダウン
+                shutdownAll();
+                currentWorldId = null;
+                LOGGER.info("[SmartphoneBackgroundService] Shutdown complete");
 
             } catch (Exception e) {
                 LOGGER.error("[SmartphoneBackgroundService] Failed to handle world unload", e);
             }
         }
+    }
+
+    /**
+     * すべてのリソースをシャットダウンする。
+     */
+    private static void shutdownAll() {
+        // MMOSBridgeをシャットダウン（外部プロセスモード）
+        if (mmosBridge != null) {
+            LOGGER.info("[SmartphoneBackgroundService] Shutting down MMOSBridge...");
+            mmosBridge.shutdown();
+            mmosBridge = null;
+        }
+
+        // ローカルKernelをシャットダウン
+        if (sharedKernel != null) {
+            LOGGER.info("[SmartphoneBackgroundService] Shutting down local kernel...");
+            shutdownKernel();
+            sharedKernel = null;
+        }
+
+        kernelProxy = null;
     }
 
     /**
@@ -118,6 +171,8 @@ public class SmartphoneBackgroundService {
             Kernel kernel = new Kernel();
 
             // **重要**: ChromiumServiceを初期化前にカーネルへ注入する
+            // ForgeChromiumProviderはjcefmavenのbuild()をバイパスし、
+            // MMOSInstallerでインストールしたネイティブライブラリを直接使用する
             LOGGER.info("[SmartphoneBackgroundService] Configuring ChromiumService with ForgeChromiumProvider before kernel initialization...");
             ChromiumService chromiumService = new DefaultChromiumService(new jp.moyashi.phoneos.forge.chromium.ForgeChromiumProvider());
             kernel.setChromiumService(chromiumService);
@@ -241,10 +296,21 @@ public class SmartphoneBackgroundService {
     }
 
     /**
-     * 共有カーネルを取得する。
+     * カーネルプロキシを取得する。
      * GUIから呼び出されて、描画とインタラクションに使用される。
+     * ローカルモードではKernelLocalWrapper、外部プロセスモードではRemoteKernelが返される。
      *
-     * @return 共有Kernelインスタンス
+     * @return KernelProxyインスタンス
+     */
+    public static KernelProxy getKernelProxy() {
+        return kernelProxy;
+    }
+
+    /**
+     * 実際のKernelインスタンスを取得する（ローカルモードのみ）。
+     * ハードウェアAPI更新など、Kernel固有の操作に使用。
+     *
+     * @return Kernelインスタンス（外部プロセスモードではnull）
      */
     public static Kernel getKernel() {
         return sharedKernel;
@@ -253,10 +319,12 @@ public class SmartphoneBackgroundService {
     /**
      * ハードウェアAPIのプレイヤー情報を更新する。
      * ProcessingScreenから毎フレーム呼び出される。
+     * 注: 外部プロセスモードではハードウェアAPIはサーバー側で管理されるため、この処理はスキップされる。
      */
     public static void updateHardwareAPIs() {
+        // 外部プロセスモードではローカルのハードウェアAPIは使用しない
         if (sharedKernel == null) {
-            LOGGER.warn("[SmartphoneBackgroundService] updateHardwareAPIs: sharedKernel is null");
+            // 外部プロセスモードまたは未初期化の場合はスキップ（警告は出さない）
             return;
         }
 
@@ -349,12 +417,25 @@ public class SmartphoneBackgroundService {
     public static void shutdown() {
         LOGGER.info("[SmartphoneBackgroundService] Shutting down service");
         try {
-            shutdownKernel();
-            sharedKernel = null;
+            shutdownAll();
             currentWorldId = null;
 
         } catch (Exception e) {
             LOGGER.error("[SmartphoneBackgroundService] Error during shutdown", e);
         }
+    }
+
+    /**
+     * 外部プロセスモードかどうかを返す。
+     */
+    public static boolean isExternalProcessMode() {
+        return EXTERNAL_PROCESS_MODE;
+    }
+
+    /**
+     * MMOSBridgeを取得する（外部プロセスモードのみ）。
+     */
+    public static MMOSBridge getMMOSBridge() {
+        return mmosBridge;
     }
 }

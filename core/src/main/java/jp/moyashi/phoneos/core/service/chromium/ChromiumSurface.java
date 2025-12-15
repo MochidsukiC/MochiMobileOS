@@ -11,6 +11,34 @@ import processing.core.PImage;
 public interface ChromiumSurface {
 
     /**
+     * ロード状態の変化を通知するリスナー。
+     */
+    interface LoadListener {
+        /**
+         * ページの読み込みが開始されたときに呼ばれます。
+         *
+         * @param url 読み込み開始URL
+         */
+        void onLoadStart(String url);
+
+        /**
+         * ページの読み込みが完了したときに呼ばれます。
+         *
+         * @param url 読み込み完了URL
+         * @param title ページタイトル
+         * @param httpStatusCode HTTPステータスコード
+         */
+        void onLoadEnd(String url, String title, int httpStatusCode);
+    }
+
+    /**
+     * ロードリスナーを登録します。
+     *
+     * @param listener ロードリスナー
+     */
+    void addLoadListener(LoadListener listener);
+
+    /**
      * サーフェスを識別する ID を返します。
      */
     String getSurfaceId();

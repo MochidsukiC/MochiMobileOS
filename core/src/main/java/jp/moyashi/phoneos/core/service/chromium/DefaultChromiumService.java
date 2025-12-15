@@ -365,6 +365,21 @@ public class DefaultChromiumService implements ChromiumService {
         public boolean isMCEF() {
             return browser.isMCEF();
         }
+
+        @Override
+        public void addLoadListener(ChromiumSurface.LoadListener listener) {
+            browser.addLoadListener(new ChromiumBrowser.LoadListener() {
+                @Override
+                public void onLoadStart(String url) {
+                    listener.onLoadStart(url);
+                }
+
+                @Override
+                public void onLoadEnd(String url, String title, int httpStatusCode) {
+                    listener.onLoadEnd(url, title, httpStatusCode);
+                }
+            });
+        }
     }
 
     private static class PumpThreadFactory implements ThreadFactory {

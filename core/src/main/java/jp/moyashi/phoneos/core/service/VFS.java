@@ -13,52 +13,85 @@ import java.util.ArrayList;
 /**
  * スマートフォンOS用の仮想ファイルシステムサービス。
  * このクラスはファイル操作を管理し、実際のファイルシステムへの永続化機能を提供する。
- * 実行ディレクトリに「mochi_os_data」フォルダを作成し、そこにOSデータを保存する。
- * 
- * @author YourName
- * @version 2.0
+ *
+ * 階層型VFS構造:
+ * - /system/ : グローバル共有（読み取り専用） - JCEF、フォント、システムWebアプリ等
+ * - /data/   : ワールド固有（読み書き可能） - アプリデータ、ユーザー設定等
+ *
+ * 後方互換性: /system/, /data/ プレフィックスなしのパスは /data/ にマッピングされる。
+ *
+ * @author MochiOS Team
+ * @version 3.0
  */
 public class VFS {
-    
-    /** OSデータを格納するルートディレクトリパス */
+
+    /** システムVFS実体ディレクトリ（グローバル共有、読み取り専用） */
+    private final Path systemRootPath;
+
+    /** データVFS実体ディレクトリ（ワールド固有、読み書き可能） */
+    private final Path dataRootPath;
+
+    /** 後方互換用: 従来のrootPathはdataRootPathを指す */
     private final Path rootPath;
     
-    /** システムファイル用のサブディレクトリパス */
-    private final Path systemPath;
-    
     /**
-     * 新しいVFSインスタンスを構築する。
-     * 実行ディレクトリにmochi_os_dataフォルダを作成し、必要なサブディレクトリを初期化する。
+     * 新しいVFSインスタンスを構築する（スタンドアロン環境用）。
+     * システムVFSは mods/mmos-system/、データVFSは mochi_os_data/ を使用する。
      */
     public VFS() {
-        this(null);
+        this(null, null);
     }
 
     /**
      * ワールドIDを指定して新しいVFSインスタンスを構築する。
      * ワールド毎にデータを分離する。
-     * Forge環境で使用され、./mochi_os_data/{worldId}/mochi_os_data/ にデータを保存する。
      *
      * @param worldId ワールドID（nullの場合は共通データ）
      */
     public VFS(String worldId) {
+        this(worldId, null);
+    }
+
+    /**
+     * ワールドIDとシステムパスを指定して新しいVFSインスタンスを構築する。
+     *
+     * 階層型VFS:
+     * - /system/ → systemPath（グローバル共有）
+     * - /data/   → dataPath（ワールド固有）
+     *
+     * @param worldId    ワールドID（nullの場合は共通データ）
+     * @param systemPath システムVFSの実体パス（nullの場合はデフォルト）
+     */
+    public VFS(String worldId, Path systemPath) {
         try {
-            // ルートディレクトリパスを設定（ワールドID毎に分離）
+            // システムVFSのパスを設定（グローバル共有）
+            if (systemPath != null) {
+                this.systemRootPath = systemPath;
+            } else {
+                // デフォルト: mods/mmos-system/
+                this.systemRootPath = Paths.get("mods", "mmos-system");
+            }
+
+            // データVFSのパスを設定（ワールド固有）
             if (worldId != null && !worldId.isEmpty()) {
                 // Forge環境: mochi_os_data/{worldId}/mochi_os_data/
-                this.rootPath = Paths.get("mochi_os_data", worldId, "mochi_os_data");
+                this.dataRootPath = Paths.get("mochi_os_data", worldId, "mochi_os_data");
             } else {
                 // スタンドアロン環境: mochi_os_data/
-                this.rootPath = Paths.get("mochi_os_data");
+                this.dataRootPath = Paths.get("mochi_os_data");
             }
-            this.systemPath = rootPath.resolve("system");
+
+            // 後方互換: rootPathはdataRootPathを指す
+            this.rootPath = this.dataRootPath;
 
             // 必要なディレクトリを作成
-            Files.createDirectories(rootPath);
-            Files.createDirectories(systemPath);
+            Files.createDirectories(systemRootPath);
+            Files.createDirectories(dataRootPath);
+            Files.createDirectories(dataRootPath.resolve("system"));  // 後方互換用
 
-            System.out.println("VFS: 仮想ファイルシステムを初期化完了");
-            System.out.println("VFS: ルートパス: " + rootPath.toAbsolutePath());
+            System.out.println("VFS: 階層型仮想ファイルシステムを初期化完了");
+            System.out.println("VFS: システムパス (/system/): " + systemRootPath.toAbsolutePath());
+            System.out.println("VFS: データパス (/data/): " + dataRootPath.toAbsolutePath());
 
         } catch (IOException e) {
             System.err.println("VFS: ディレクトリ初期化エラー: " + e.getMessage());
@@ -178,14 +211,63 @@ public class VFS {
     
     /**
      * VFS内の相対パスを実際のファイルシステムパスに変換する。
-     * 
+     *
+     * 階層型VFSパス解決:
+     * - /system/* → systemRootPath
+     * - /data/*   → dataRootPath
+     * - その他    → dataRootPath（後方互換）
+     *
      * @param vfsPath VFS内の相対パス
      * @return 実際のファイルシステムパス
      */
     private Path resolveVFSPath(String vfsPath) {
-        // パスの正規化（先頭の/を除去など）
+        if (vfsPath == null || vfsPath.isEmpty()) {
+            return dataRootPath;
+        }
+
+        // /system/ プレフィックスの場合はシステムVFSを使用
+        if (vfsPath.startsWith("/system/")) {
+            String relativePath = vfsPath.substring(8);  // "/system/" を除去
+            return systemRootPath.resolve(relativePath);
+        }
+
+        // /data/ プレフィックスの場合はデータVFSを使用
+        if (vfsPath.startsWith("/data/")) {
+            String relativePath = vfsPath.substring(6);  // "/data/" を除去
+            return dataRootPath.resolve(relativePath);
+        }
+
+        // 後方互換: プレフィックスなしのパスはデータVFSにマッピング
         String normalizedPath = vfsPath.startsWith("/") ? vfsPath.substring(1) : vfsPath;
-        return rootPath.resolve(normalizedPath);
+        return dataRootPath.resolve(normalizedPath);
+    }
+
+    /**
+     * パスがシステムVFS（読み取り専用）かどうかを判定する。
+     *
+     * @param vfsPath VFS内の相対パス
+     * @return システムVFSパスの場合true
+     */
+    public boolean isSystemPath(String vfsPath) {
+        return vfsPath != null && vfsPath.startsWith("/system/");
+    }
+
+    /**
+     * システムVFSのルートパスを取得する。
+     *
+     * @return システムVFSルートパス
+     */
+    public Path getSystemRootPath() {
+        return systemRootPath;
+    }
+
+    /**
+     * データVFSのルートパスを取得する。
+     *
+     * @return データVFSルートパス
+     */
+    public Path getDataRootPath() {
+        return dataRootPath;
     }
     
     /**

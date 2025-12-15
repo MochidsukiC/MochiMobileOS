@@ -347,7 +347,7 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
         }
 
         // 初回draw()呼び出し時に、未初期化のスクリーンのsetup()を呼び出す
-        ensureCurrentScreenSetup();
+        ensureCurrentScreenSetup(g);
 
         // アニメーション更新（一時的にスキップ - ScreenTransitionのPGraphics対応が必要）
         if (screenTransition != null && screenTransition.isAnimating()) {
@@ -373,7 +373,19 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
                     }
                     currentScreen.draw(g);
                 } catch (Exception e) {
-                    logError("Error drawing current screen: " + e.getMessage(), e);
+                    // 詳細なエラーログを出力
+                    String screenInfo = currentScreen.getScreenTitle() + " (" + currentScreen.getClass().getName() + ")";
+                    logError("======== SCREEN DRAW ERROR ========");
+                    logError("Screen: " + screenInfo);
+                    logError("Exception: " + e.getClass().getName() + ": " + e.getMessage(), e);
+
+                    // スタックトレースを文字列化してログに出力
+                    java.io.StringWriter sw = new java.io.StringWriter();
+                    e.printStackTrace(new java.io.PrintWriter(sw));
+                    for (String line : sw.toString().split("\n")) {
+                        logError("  " + line);
+                    }
+                    logError("====================================");
 
                     // エラーメッセージを描画
                     g.fill(255, 0, 0);
@@ -383,7 +395,11 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
                     g.textSize(18);
                     g.text("画面描画エラー", 200, 230);
                     g.textSize(12);
-                    g.text("Error: " + e.getMessage(), 200, 250);
+                    String errorMsg = e.getMessage();
+                    if (errorMsg == null || errorMsg.isEmpty()) {
+                        errorMsg = e.getClass().getSimpleName();
+                    }
+                    g.text("Error: " + errorMsg, 200, 250);
                 }
             }
         }
@@ -623,14 +639,26 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
      * PAppletが利用可能になった際の初回draw()で呼び出される。
      */
     private void ensureCurrentScreenSetup() {
-        if (currentPApplet != null && !unsetupScreens.isEmpty()) {
+        if (currentPApplet != null) {
+            ensureCurrentScreenSetup(currentPApplet.g);
+        }
+    }
+
+    /**
+     * 現在のスクリーンがまだsetup()されていない場合、遅延setup()を実行する。
+     * PGraphics版 - Forge環境用。
+     *
+     * @param g 描画操作用のPGraphicsインスタンス
+     */
+    private void ensureCurrentScreenSetup(PGraphics g) {
+        if (g != null && !unsetupScreens.isEmpty()) {
             // 未初期化スクリーンのセットアップを実行
             java.util.Iterator<Screen> iterator = unsetupScreens.iterator();
             while (iterator.hasNext()) {
                 Screen screen = iterator.next();
                 try {
                     log("Delayed setup for screen - " + screen.getScreenTitle());
-                    screen.setup(currentPApplet.g);
+                    screen.setup(g);
                     iterator.remove(); // セットアップ完了後にリストから削除
                 } catch (Exception e) {
                     logError("Error in delayed setup for " + screen.getScreenTitle() + ": " + e.getMessage(), e);

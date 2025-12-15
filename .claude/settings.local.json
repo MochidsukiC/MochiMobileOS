@@ -61,7 +61,12 @@
       "Bash(grep:*)",
       "Bash(timeout 60 ./gradlew standalone:run:*)",
       "Bash(timeout 70 ./gradlew:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nChromium/WebScreen機能強化とバグ修正\n\n- WebScreen: MCEF/JCEF環境でのHTML表示処理を改善\n- ChromiumBrowser: テキスト入力フォーカス検出を追加\n- ChromiumRenderHandler: GLContext初期化問題を修正\n- ScreenManager: 画面遷移のデバッグログを強化\n- ForgeChromiumProvider: コンソールメッセージリスナーを追加\n- HardwareWindow: 新規追加（Standalone環境用）\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git checkout:*)",
+      "Bash(unzip:*)",
+      "WebFetch(domain:repo1.maven.org)",
+      "WebFetch(domain:jogamp.org)"
     ],
     "deny": [],
     "ask": [],

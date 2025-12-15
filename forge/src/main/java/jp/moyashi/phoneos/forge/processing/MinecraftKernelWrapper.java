@@ -54,6 +54,9 @@ public class MinecraftKernelWrapper {
             kernel.initializeForMinecraft(width, height);
             System.out.println("[MinecraftKernelWrapper] Kernel instance created and initialized");
 
+            // ネットワークアダプターの初期化（ForgeVirtualSocketをバインド）
+            jp.moyashi.phoneos.forge.network.ForgeNetworkInitializer.initialize(kernel);
+
             initialized = true;
             System.out.println("[MinecraftKernelWrapper] Kernel initialized successfully (size: " + width + "x" + height + ")");
 

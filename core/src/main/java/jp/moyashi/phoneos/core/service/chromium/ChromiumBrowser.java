@@ -1,6 +1,7 @@
 package jp.moyashi.phoneos.core.service.chromium;
 
 import jp.moyashi.phoneos.core.Kernel;
+import jp.moyashi.phoneos.core.service.chromium.interceptor.MochiResourceRequestHandler;
 import org.cef.CefApp;
 import org.cef.CefClient;
 import org.cef.browser.CefBrowser;
@@ -10,6 +11,7 @@ import org.cef.handler.CefFocusHandlerAdapter;
 import org.cef.handler.CefLoadHandlerAdapter;
 import org.cef.handler.CefRequestContextHandlerAdapter;
 import org.cef.handler.CefRequestHandlerAdapter;
+import org.cef.handler.CefResourceRequestHandler;
 import org.cef.handler.CefWindowHandlerAdapter;
 import org.cef.network.CefRequest;
 import processing.core.PGraphics;
@@ -120,7 +122,10 @@ public class ChromiumBrowser {
             }
         });
 
-        // Intent URLを処理するリクエストハンドラーを追加
+        // リクエストハンドラーを追加（IPvM over HTTP + Intent URL処理）
+        // MochiResourceRequestHandlerでIPvMアドレスとapp.localをインターセプト
+        final MochiResourceRequestHandler mochiResourceHandler = new MochiResourceRequestHandler(kernel);
+
         client.addRequestHandler(new CefRequestHandlerAdapter() {
             @Override
             public boolean onBeforeBrowse(CefBrowser browser, CefFrame frame, CefRequest request,
@@ -138,6 +143,55 @@ public class ChromiumBrowser {
                     }
                 }
                 return false; // 通常のナビゲーションを続行
+            }
+
+            @Override
+            public CefResourceRequestHandler getResourceRequestHandler(CefBrowser browser, CefFrame frame,
+                    CefRequest request, boolean isNavigation, boolean isDownload, String requestInitiator,
+                    org.cef.misc.BoolRef disableDefaultHandling) {
+                // IPvM over HTTP: MochiResourceRequestHandlerでリクエストをインターセプト
+                // IPvMアドレス（http://[0-3]-uuid/path）とapp.local（http://app.local/modid/path）を処理
+                return mochiResourceHandler;
+            }
+        });
+
+        // ロードハンドラーを追加（ローディング状態管理）
+        // 重要: ブラウザ作成前に登録しないと、about:blankのonLoadEndを受け取れない
+        client.addLoadHandler(new CefLoadHandlerAdapter() {
+            @Override
+            public void onLoadStart(CefBrowser browser, CefFrame frame, org.cef.network.CefRequest.TransitionType transitionType) {
+                if (frame.isMain()) {
+                    isLoading = true;
+                    currentUrl = frame.getURL();
+                    currentTitle = currentUrl;
+                    // 新しいページをロードする時、Webページクリック状態をリセット
+                    webPageClicked = false;
+
+                    log("LoadHandler onLoadStart: " + currentUrl);
+                    for (LoadListener listener : loadListeners) {
+                        listener.onLoadStart(currentUrl);
+                    }
+                }
+            }
+
+            @Override
+            public void onLoadEnd(CefBrowser browser, CefFrame frame, int httpStatusCode) {
+                if (frame.isMain()) {
+                    isLoading = false;
+                    currentUrl = frame.getURL();
+                    if (currentTitle == null || currentTitle.isBlank()) {
+                        currentTitle = currentUrl;
+                    }
+
+                    log("LoadHandler onLoadEnd: " + currentUrl + " (status: " + httpStatusCode + ")");
+
+                    // ページロード完了時にテキスト入力フォーカス監視スクリプトを注入
+                    injectFocusDetectionScript(browser);
+
+                    for (LoadListener listener : loadListeners) {
+                        listener.onLoadEnd(currentUrl, currentTitle, httpStatusCode);
+                    }
+                }
             }
         });
 
@@ -479,8 +533,10 @@ public class ChromiumBrowser {
      */
     public void loadURL(String url) {
         if (browser != null) {
-            // GLContext初期化を待機（最大3秒）
-            waitForGLContext(3000);
+            // MCEF環境ではGLContext待機不要
+            if (!isMCEF()) {
+                waitForGLContext(3000);
+            }
             log("Loading URL: " + url);
             currentUrl = url;
             browser.loadURL(url);
@@ -533,23 +589,31 @@ public class ChromiumBrowser {
      */
     public void loadContent(String html, String baseUrl) {
         if (browser != null) {
-            // GLContext初期化を待機（最大3秒）
-            waitForGLContext(3000);
-            log("Loading HTML content via data URL (base: " + baseUrl + ")");
+            // MCEF環境ではGLContext待機不要（MCEFが独自にテクスチャレンダリングを管理）
+            if (!isMCEF()) {
+                // JCEF環境ではGLContext初期化を待機（最大3秒）
+                waitForGLContext(3000);
+            } else {
+                log("MCEF environment - skipping GLContext wait");
+            }
+            log("Loading HTML content (base: " + baseUrl + ")");
             currentUrl = baseUrl;
 
             // HTMLに<base>タグを挿入して相対パスを解決可能にする
-            // これによりCSS/JS/画像の相対パスがmochiapp://で正しく解決される
             String htmlWithBase = injectBaseTag(html, baseUrl);
 
-            // data: URLを使用してHTMLを読み込む
-            // エンコーディングの問題を避けるため、Base64エンコードを使用
+            // data URLを使用してHTMLを直接読み込む
+            // 注: CefFrame.loadString()はMCEFのJCEFバージョンに存在しないため、
+            //     互換性のためdata URLを使用する
             String base64Html = java.util.Base64.getEncoder().encodeToString(
                 htmlWithBase.getBytes(java.nio.charset.StandardCharsets.UTF_8)
             );
             String dataUrl = "data:text/html;charset=utf-8;base64," + base64Html;
+            log("Loading HTML via data URL (base64 length: " + base64Html.length() + " chars)");
             browser.loadURL(dataUrl);
-            log("Loaded HTML via data URL (" + html.length() + " chars -> " + base64Html.length() + " base64)");
+            log("loadURL(data:) called successfully");
+        } else {
+            logError("loadContent called but browser is null!");
         }
     }
 
@@ -1524,6 +1588,12 @@ public class ChromiumBrowser {
      * @return 準備完了ならtrue
      */
     public boolean isReadyToRender() {
+        // MCEF環境では独自のOpenGLテクスチャベースレンダリングを行うため、
+        // GLContext初期化を待つ必要がない。常にtrueを返す。
+        if (isMCEF()) {
+            return true;
+        }
+
         // まずglContextReadyフラグをチェック（高速パス）
         if (glContextReady) {
             return true;
@@ -1557,12 +1627,16 @@ public class ChromiumBrowser {
 
     /**
      * MCEF環境（Forge）かどうかを返す。
-     * MCEF環境ではJavaScriptコンソールメッセージが読み取れないため、
-     * テキストフォーカス検出が動作しない。
      *
-     * @return MCEF環境の場合true
+     * 注意: 外部プロセスアーキテクチャ移行後、MCEFは使用されなくなった。
+     * サーバー側ではJCEFChromiumProvider（jcefmaven）のみが使用される。
+     * このメソッドは互換性のために残されているが、常にfalseを返す。
+     *
+     * @return 常にfalse（MCEFは使用されない）
      */
     public boolean isMCEF() {
-        return provider != null && "MCEF".equals(provider.getName());
+        // 外部プロセスモードではMCEFは使用されない
+        // 全てのChromium処理はサーバー側でJCEFChromiumProviderを使用
+        return false;
     }
 }

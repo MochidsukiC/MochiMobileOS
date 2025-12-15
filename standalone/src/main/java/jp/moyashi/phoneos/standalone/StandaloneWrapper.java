@@ -233,10 +233,15 @@ public class StandaloneWrapper extends PApplet {
         }
 
         // Kernelを作成し、ChromiumServiceを注入してから初期化する
+        // JCEFChromiumProviderはcoreモジュールで一元管理されている
         kernel = new Kernel();
-        ChromiumService chromiumService = new DefaultChromiumService(new StandaloneChromiumProvider());
+        ChromiumService chromiumService = new DefaultChromiumService(new jp.moyashi.phoneos.core.service.chromium.JCEFChromiumProvider());
         kernel.setChromiumService(chromiumService);
         kernel.initialize(this, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+        // ネットワークアダプターの初期化（StandaloneVirtualSocketをバインド）
+        jp.moyashi.phoneos.standalone.network.StandaloneNetworkInitializer.initialize(kernel);
+
         // AWT EventQueue を計測するラッパーを登録
         try {
             java.awt.Toolkit.getDefaultToolkit().getSystemEventQueue().push(new InstrumentedEventQueue(kernel));

@@ -36,6 +36,10 @@
 - **[09_Known_Issues_And_TODO.md](./docs/development/09_Known_Issues_And_TODO.md)**
   - 現在把握している既知の問題点と、今後の開発タスク（TODO）を管理します。
 
+- **[10_Proposal_IPvM_over_HTTP.md](./docs/development/10_Proposal_IPvM_over_HTTP.md)**
+  - 仮想インターネットのアーキテクチャ刷新案（独自スキーム `httpm` の廃止と、標準 `http` プロトコル上でのIPvMルーティング導入）について詳述します。
+  - **2025-12-14: 実装完了** - 提案内容に基づきアーキテクチャを刷新
+
 ## 開発ログ
 
 日々の詳細な開発ログは `devlogs` ディレクトリに格納されています。
@@ -224,6 +228,69 @@
 - App Library: 検索のIME/テキスト入力周りの強化、検索対象の拡張（説明/ID）
 - 低電力モードの適用実装（ScreenTransitionのフェード切替、影段階の調整、速度最適化）
 - 設定アプリの残りセクション実装（Sound & Vibration、Storage、Apps & Notifications）
+
+### 外部プロセスアーキテクチャ（完了 2025-12-15）
+- **概要**: MMOS Kernelを別JVMプロセスで実行し、共有メモリでIPC通信するアーキテクチャ
+- **目的**:
+  - Minecraftの`java.awt.headless=true`制約を回避（JCEF/AWTが使用不可）
+  - HeadlessException問題の根本的解決
+- **アーキテクチャ**:
+  ```
+  Minecraft JVM          共有メモリ          MMOS JVM（外部プロセス）
+  ┌─────────────┐        ┌──────┐           ┌─────────────────┐
+  │ Forge MOD   │◄──────►│ IPC  │◄─────────►│ MMOS Core       │
+  │ (薄いブリッジ)│        │      │           │ - JCEF (制約なし)│
+  │ - 画面表示   │        │      │           │ - Processing    │
+  │ - 入力転送   │        │      │           │ - 完全なAWT     │
+  └─────────────┘        └──────┘           └─────────────────┘
+  ```
+- **実装状況**:
+  - ✅ Phase 1: core/ipc パッケージ作成（IPCConstants, InputEvent, ServerState, KernelProxy）
+  - ✅ Phase 2: serverモジュール作成（MMOSServer, SharedMemory）
+  - ✅ Phase 3: forge/bridgeパッケージ作成（MMOSBridge, SharedMemoryClient, RemoteKernel, ProcessLauncher, KernelLocalWrapper）
+  - ✅ ProcessingScreenとSmartphoneBackgroundServiceのKernelProxy対応
+  - ✅ サーバーJARのMODファイル埋め込み対応（forge/build.gradle: copyServerJarタスク）
+  - ✅ ProcessLauncherの埋め込みJAR自動抽出対応
+  - ✅ MMOSServerでJCEFChromiumProviderを使用したChromiumService設定
+  - ✅ Phase 4: 統合テスト完了（2025-12-15）
+    - Chromiumブラウザ: タブ作成・Web表示動作確認
+    - Sample Web App: HTML/CSS/JS表示動作確認
+    - jcefmavenによるJCEF自動ダウンロード・セットアップ正常動作
+- **新規ファイル**:
+  - `core/src/main/java/jp/moyashi/phoneos/core/ipc/` - IPC定数・DTO・インターフェース
+  - `server/` - 外部プロセスサーバーモジュール（新規）
+  - `forge/src/main/java/jp/moyashi/phoneos/forge/bridge/` - ブリッジ層
+- **切り替え方法**:
+  - `SmartphoneBackgroundService.EXTERNAL_PROCESS_MODE`フラグで切り替え
+  - **現在はデフォルト`true`（外部プロセスモード）**
+  - サーバーJAR（約37MB）はMODファイル内に埋め込み済み
+  - 実行時に一時ディレクトリ（`java.io.tmpdir/mmos/`）へ自動抽出
+  - **ユーザーは単一のMODファイルをmodsフォルダに配置するだけでOK**
+- **JCEF責任分離（2025-12-15）**:
+  - JCEFのダウンロード・セットアップはcoreモジュール（JCEFChromiumProvider + jcefmaven）の責務
+  - Forge側からのパス指定（`jcef.path`）は不要
+  - サーバープロセス起動時にjcefmavenが自動的にJCEFをダウンロード・セットアップ
+  - **mmos-systemフォルダの手動設置が不要に**（以前はmodsフォルダに配置が必要だった）
+
+### MMOSインストーラーシステム（レガシー - 外部プロセスモードでは不要）
+- **状態**: 外部プロセスモードでは使用されない（JCEFはサーバー側でcoreモジュールが管理）
+- **概要**: MCEFを参考にした初回起動時の自動ライブラリインストール機構（内部プロセスモード用）
+- **目的**:
+  - JCEF（java-cef）のネイティブライブラリを初回起動時に自動ダウンロード
+  - ForgeのModuleClassLoader問題を回避（jcefmavenが動的にダウンロードするorg.cefクラスを認識しない問題）
+- **アーキテクチャ**:
+  - Mixin注入でMinecraft起動早期にバックグラウンドダウンロード開始
+  - PackSource.<clinit>()でMMOSInstallerスレッド起動
+  - Minecraft.setScreen()をインターセプトしてインストール待機画面表示
+- **実装ファイル**:
+  - `forge/.../installer/MMOSInstaller.java` - jcefmavenを使用したインストール処理
+  - `forge/.../installer/MMOSInstallListener.java` - 状態管理シングルトン
+  - `forge/.../installer/MMOSPlatform.java` - プラットフォーム検出
+  - `forge/.../installer/MMOSInstallerSettings.java` - 設定永続化
+  - `forge/.../gui/MMOSInstallerScreen.java` - プログレスバー付き待機GUI
+  - `forge/.../mixins/MMOSInstallMixin.java` - PackSource注入
+  - `forge/.../mixins/MMOSInitMixin.java` - setScreen注入
+  - `forge/src/main/resources/mmos.mixins.json` - Mixin設定
 
 ### 初期マイルストーン実装タスク
 - **ダッシュボードカードの実装:**
@@ -877,3 +944,82 @@ MochiMobileOS上でProcessingスケッチ（.pde）をアプリケーション�
     通常のキー入力として処理（テキスト入力フィールドに ' ' 入力）
     ```
   - 結果: **BUILD SUCCESSFUL** - スペースキーがテキスト入力として正常動作、ホームへの移動はCtrl+Spaceまたは専用ボタンで実現
+
+- **WebScreen白画面問題の修正（MCEF環境・Phase 0）**
+  - 問題: Forge環境でWebScreenベースのHTMLアプリを開くと画面が真っ白
+  - 調査結果（MCEF vs JCEF の違い）:
+    - MCEFClientはCefClientをラップするが、**RequestHandlerは委譲されない**
+    - カスタムスキーム登録は不可（CEFが既に初期化済み）
+    - CefFrame.loadString() はMCEFのJCEFバージョンに存在しない
+  - 根本原因（タイミング問題）:
+    - about:blank作成直後に`loadContent()`を呼び出していた
+    - `mainFrame`がnullでdata URLフォールバックが発生
+    - ブラウザ初期化完了前にdata URLをロードするため白画面
+  - 修正内容:
+    - **ChromiumSurface.java**: `LoadListener`インターフェースと`addLoadListener()`メソッドを追加
+    - **DefaultChromiumService.java**: `DefaultChromiumSurface`に`addLoadListener()`を実装
+    - **WebScreen.java**: about:blankの`onLoadEnd`を待ってから`loadContent()`を呼び出すように修正
+    - **ChromiumBrowser.java**: 常にdata URLを使用するように簡略化（loadString()非互換のため）
+  - **追加修正（LoadHandlerタイミング問題）**:
+    - 問題: LoadListenerのonLoadEndが呼ばれない
+    - 原因: LoadHandlerがブラウザ作成**後**（旧Line 249）に登録されていた
+    - about:blankは即座にロードされるため、ハンドラー登録前にonLoadEndが発火していた
+    - 修正: LoadHandlerの登録をブラウザ作成**前**（新Line 158-196）に移動
+  - 結果: **動作確認完了** - WebScreen Testが正常に表示されるようになった
+
+- **ネットワークアダプター・アーキテクチャ再設計**
+  - 目的: 依存性逆転の原則に基づき、Core層にインターフェースのみ定義し、実行モジュールが実装を提供する設計
+  - アーキテクチャ概要:
+    - **NetworkAdapter**: すべてのネットワーク通信の統一エントリーポイント
+    - **VirtualAdapter**: IPvM（仮想ネットワーク）用アダプター、VirtualSocketを外部から注入
+    - **RealAdapter**: 実インターネット（IPv4/IPv6）用アダプター、Java HttpClient使用
+    - **VirtualSocket**: 外部モジュール実装用インターフェース
+  - 実装内容:
+    - **Core層インターフェース** (`core/src/main/java/jp/moyashi/phoneos/core/service/network/`):
+      - `NetworkAdapter.java`: 統一API、URLに基づいて適切なアダプターにルーティング
+      - `VirtualAdapter.java`: IPvM用アダプター、ソケット未設定時は「圏外」状態
+      - `RealAdapter.java`: Java HttpClient使用の実インターネットアダプター
+      - `VirtualSocket.java`: 外部モジュールが実装するインターフェース
+      - `NetworkStatus.java`: 接続状態enum（NO_SERVICE, CONNECTED, CONNECTING等）
+      - `NetworkException.java`: ネットワーク例外（エラータイプ付き）
+    - **Forge実装** (`forge/src/main/java/jp/moyashi/phoneos/forge/network/`):
+      - `ForgeVirtualSocket.java`: Minecraft ForgeのSimpleChannel使用、Y座標で電波強度計算
+      - `ForgeNetworkInitializer.java`: Kernel初期化後にソケットをバインド
+    - **Standalone実装** (`standalone/src/main/java/jp/moyashi/phoneos/standalone/network/`):
+      - `StandaloneVirtualSocket.java`: ローカルルーティング、常に電波最大
+      - `StandaloneNetworkInitializer.java`: Kernel初期化後にソケットをバインド
+    - **Chromium統合**:
+      - `VirtualNetworkResourceHandler.java`: NetworkAdapter経由でIPvMリクエストを処理
+      - IPvMアドレスのみNetworkAdapter経由、通常URLは直接通信
+  - 設計原則:
+    - **依存性逆転**: Core層はインターフェース定義のみ、実装は実行モジュールが提供
+    - **圏外状態管理**: VirtualSocket未設定時は「圏外」（SIMカード無しの携帯電話と同様）
+    - **拡張性**: 新モジュール追加時（GTA、Rust等）にCore変更不要
+  - 仕様書作成:
+    - `docs/development/NetworkSystem_Specification.md`: 外部開発者向け包括的ドキュメント
+      - IPvMアドレス体系、NetworkAdapter API、VirtualSocketインターフェース
+      - ゲーム内仮想インターネット回線、アプリ開発者向けガイド、外部MOD連携
+  - 結果: **BUILD SUCCESSFUL** - ネットワークシステムのアーキテクチャ再設計と仕様書作成完了
+
+- **Chromiumサービス一元化（JCEF統合）**
+  - 背景: MCEFがCefRequestHandlerをデリゲートしないため、Forge環境でIPvM URLインターセプトが動作しない問題
+  - 解決策: jcefmavenを使用したJCEFをcoreモジュールで一元管理し、全環境で同じChromium実装を使用
+  - アーキテクチャ変更:
+    - **JCEFChromiumProvider**: coreモジュールに新規作成（`core/src/main/java/jp/moyashi/phoneos/core/service/chromium/JCEFChromiumProvider.java`）
+      - jcefmaven 135.0.20を使用
+      - CefRequestHandler完全サポート（IPvMインターセプト可能）
+      - Mac/Windows/Linux対応（サンドボックス設定等の環境別最適化）
+    - **core/build.gradle.kts**: jcefmaven依存を`implementation`に変更（transitive依存として継承）
+    - **standalone**: StandaloneChromiumProvider削除、JCEFChromiumProviderを使用
+    - **forge**:
+      - ForgeChromiumProvider、MCEFRenderHandlerAdapter等のMCEF関連ファイル削除
+      - SmartphoneBackgroundService、MMOSWorkerThread: JCEFChromiumProviderを使用
+  - 削除ファイル:
+    - `standalone/src/main/java/jp/moyashi/phoneos/standalone/StandaloneChromiumProvider.java`
+    - `forge/src/main/java/jp/moyashi/phoneos/forge/chromium/` ディレクトリ全体（MCEF依存）
+    - `forge/src/main/java/jp/moyashi/phoneos/forge/worker/ForgeJCEFProvider.java`
+  - メリット:
+    - 全環境でCefRequestHandler使用可能（IPvMインターセプト）
+    - コードの重複排除（Chromium実装がcoreに集約）
+    - MCEF依存の完全除去（jcefmavenのみ使用）
+  - 結果: **BUILD SUCCESSFUL** - 全モジュールコンパイル成功

@@ -147,6 +147,7 @@ public class WebScreen implements Screen {
     @Override
     public void setup(PGraphics p) {
         log("setup() called - PGraphics size: " + p.width + "x" + p.height);
+        log("modId=" + modId + ", resourcePath=" + resourcePath);
 
         // コンテンツエリアのサイズ（画面全体を使用）
         contentWidth = p.width;
@@ -167,91 +168,58 @@ public class WebScreen implements Screen {
         String url = buildUrl();
         log("Target URL: " + url);
 
-        // タブを作成
-        // MCEF環境（Forge）ではカスタムスキームで直接読み込み
-        // スタンドアロン環境ではabout:blankで初期化してからloadContent()で読み込む
-        // （JCEFのOSR再描画問題を回避するため）
-        ChromiumSurface surface = kernel.getChromiumService().createTab(contentWidth, contentHeight, url);
+        // タブを作成（about:blankで初期化）
+        // MCEFではCefRequestHandlerがMCEFClientでラップされるため、
+        // MochiResourceRequestHandlerが機能しない。
+        // そのため、about:blankで作成してからloadContent()でHTMLを読み込む。
+        ChromiumSurface surface = kernel.getChromiumService().createTab(contentWidth, contentHeight, "about:blank");
+        log("Tab created: " + (surface != null ? "success" : "null"));
         initialized = true;
 
         if (surface != null) {
             final ChromiumSurface surfaceRef = surface;
             final String targetUrl = url;
 
-            // MCEF環境かどうかを判定
-            if (surfaceRef.isMCEF()) {
-                // MCEF環境: カスタムスキームで正常に動作するため、GLContext初期化後にreloadするだけ
-                log("MCEF environment detected - using direct URL loading");
-                new Thread(() -> {
-                    try {
-                        int maxRetries = 50; // 5秒 (100ms * 50)
-                        int retry = 0;
+            // MCEF環境・スタンドアロン環境共通: loadContent()を使用
+            // リソースからHTMLを直接読み込んでCefFrame.loadString()でレンダリングする。
+            String envName = surfaceRef.isMCEF() ? "MCEF" : "Standalone";
+            log(envName + " environment detected - using loadContent() with LoadListener");
 
-                        while (retry < maxRetries) {
-                            if (surfaceRef.isReadyToRender()) {
-                                log("GLContext ready (retry " + retry + "), reloading URL: " + targetUrl);
-                                surfaceRef.reload();
-                                break;
-                            }
+            // DEBUG: まずテスト用HTMLを表示してloadContent()が動作するか確認
+            final String testHtml = "<!DOCTYPE html><html><head><meta charset='UTF-8'>" +
+                "<style>body{font-family:sans-serif;text-align:center;padding:50px;background:#2d2d2d;color:#fff;}" +
+                "h1{color:#4CAF50;}</style></head><body>" +
+                "<h1>WebScreen Test</h1>" +
+                "<p>If you see this, loadContent() is working!</p>" +
+                "<p>ModId: " + modId + "</p>" +
+                "<p>ResourcePath: " + resourcePath + "</p>" +
+                "</body></html>";
 
-                            Thread.sleep(100);
-                            retry++;
+            // 重要: about:blankの読み込み完了を待ってからloadContent()を呼び出す
+            // これにより mainFrame が確実に初期化されてから HTML をロードする
+            surfaceRef.addLoadListener(new ChromiumSurface.LoadListener() {
+                private boolean htmlLoaded = false;
 
-                            if (retry % 5 == 0) {
-                                log("Waiting for GLContext initialization... (" + retry + "/" + maxRetries + ")");
-                            }
-                        }
+                @Override
+                public void onLoadStart(String loadedUrl) {
+                    log("LoadListener: onLoadStart - " + loadedUrl);
+                }
 
-                        if (retry >= maxRetries) {
-                            log("Warning: GLContext initialization timed out, forcing reload");
-                            surfaceRef.reload();
-                        }
-                    } catch (InterruptedException e) {
-                        logError("Reload interrupted: " + e.getMessage());
+                @Override
+                public void onLoadEnd(String loadedUrl, String title, int httpStatusCode) {
+                    log("LoadListener: onLoadEnd - " + loadedUrl + " (status: " + httpStatusCode + ")");
+
+                    // about:blankの読み込み完了後にHTMLをロード（1回のみ）
+                    if ("about:blank".equals(loadedUrl) && !htmlLoaded) {
+                        htmlLoaded = true;
+                        log("about:blank loaded, now loading HTML content via loadString()");
+                        surfaceRef.loadContent(testHtml, targetUrl);
+                        log("loadContent() called after about:blank loaded");
                     }
-                }, "WebScreen-Reload").start();
-            } else {
-                // スタンドアロン環境: data: URLを使用してOSR再描画問題を回避
-                log("Standalone environment detected - using loadContent()");
-                new Thread(() -> {
-                    try {
-                        int maxRetries = 50; // 5秒 (100ms * 50)
-                        int retry = 0;
+                }
+            });
 
-                        while (retry < maxRetries) {
-                            if (surfaceRef.isReadyToRender()) {
-                                log("GLContext ready (retry " + retry + ")");
-
-                                // リソースからHTMLを読み込む
-                                String htmlContent = loadHtmlFromResource();
-                                if (htmlContent != null) {
-                                    log("Loaded HTML content: " + htmlContent.length() + " chars");
-                                    // loadContent()でHTMLを直接レンダリング
-                                    surfaceRef.loadContent(htmlContent, targetUrl);
-                                } else {
-                                    logError("Failed to load HTML content, falling back to URL");
-                                    surfaceRef.loadUrl(targetUrl);
-                                }
-                                break;
-                            }
-
-                            Thread.sleep(100);
-                            retry++;
-
-                            if (retry % 5 == 0) {
-                                log("Waiting for GLContext initialization... (" + retry + "/" + maxRetries + ")");
-                            }
-                        }
-
-                        if (retry >= maxRetries) {
-                            log("Warning: GLContext initialization timed out");
-                            surfaceRef.loadUrl(targetUrl);
-                        }
-                    } catch (InterruptedException e) {
-                        logError("Load interrupted: " + e.getMessage());
-                    }
-                }, "WebScreen-Load").start();
-            }
+            log("LoadListener registered, waiting for about:blank to load...");
         }
     }
 
@@ -266,6 +234,13 @@ public class WebScreen implements Screen {
 
         java.io.InputStream inputStream = null;
 
+        // デバッグ: ClassLoader情報を出力
+        log("ClassLoader debug info:");
+        log("  - provided classLoader: " + (classLoader != null ? classLoader.getClass().getName() : "null"));
+        log("  - this.getClass().getClassLoader(): " + getClass().getClassLoader().getClass().getName());
+        log("  - Thread context ClassLoader: " + (Thread.currentThread().getContextClassLoader() != null ?
+            Thread.currentThread().getContextClassLoader().getClass().getName() : "null"));
+
         // 1. 渡されたClassLoaderから試す
         if (classLoader != null) {
             inputStream = classLoader.getResourceAsStream(resourcePath);
@@ -274,11 +249,19 @@ public class WebScreen implements Screen {
             }
         }
 
-        // 2. このクラスのClassLoaderから試す
+        // 2. このクラスのClassLoaderから試す（先頭スラッシュあり）
         if (inputStream == null) {
             inputStream = getClass().getResourceAsStream("/" + resourcePath);
             if (inputStream != null) {
-                log("Found in class ClassLoader");
+                log("Found in class ClassLoader (with leading slash)");
+            }
+        }
+
+        // 2b. このクラスのClassLoaderから試す（先頭スラッシュなし）
+        if (inputStream == null) {
+            inputStream = getClass().getClassLoader().getResourceAsStream(resourcePath);
+            if (inputStream != null) {
+                log("Found in class ClassLoader (without leading slash)");
             }
         }
 
@@ -299,6 +282,12 @@ public class WebScreen implements Screen {
             if (inputStream != null) {
                 log("Found in system ClassLoader");
             }
+        }
+
+        // 5. Class.getResourceのURLを確認
+        if (inputStream == null) {
+            java.net.URL url = getClass().getResource("/" + resourcePath);
+            log("URL check: " + (url != null ? url.toString() : "null"));
         }
 
         if (inputStream == null) {
@@ -323,10 +312,11 @@ public class WebScreen implements Screen {
 
     /**
      * リソースパスからURLを構築する。
+     * IPvM over HTTP アーキテクチャ: http://app.local/modid/path 形式
      */
     private String buildUrl() {
-        // mochiapp://modid/path 形式
-        return "mochiapp://" + modId + "/" + resourcePath;
+        // http://app.local/modid/path 形式（IPvM over HTTP）
+        return "http://app.local/" + modId + "/" + resourcePath;
     }
 
     /**
@@ -584,14 +574,12 @@ public class WebScreen implements Screen {
     // ========== ログ出力 ==========
 
     private void log(String message) {
-        System.out.println("[WebScreen:" + modId + "] " + message);
         if (kernel != null && kernel.getLogger() != null) {
             kernel.getLogger().info("WebScreen:" + modId, message);
         }
     }
 
     private void logError(String message) {
-        System.err.println("[WebScreen:" + modId + "] " + message);
         if (kernel != null && kernel.getLogger() != null) {
             kernel.getLogger().error("WebScreen:" + modId, message);
         }

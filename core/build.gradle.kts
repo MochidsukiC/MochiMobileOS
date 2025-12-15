@@ -35,11 +35,10 @@ dependencies {
     // JSON processing library for layout persistence
     implementation("com.google.code.gson:gson:2.10.1")
 
-    // JCEF API (org.cef.*) はコンパイル時のみ必要（実行時は上位モジュールが提供）
-    // - Standalone環境: standalone moduleがjcefmaven:135.0.20を提供
-    // - Forge環境: MCEF MODがorg.cef.* API実装を提供
-    // coreモジュールはChromiumProviderインターフェースを通じて依存性注入を受ける
-    compileOnly("me.friwi:jcefmaven:135.0.20")
+    // JCEF (jcefmaven) - Chromium Embedded Frameworkの実装
+    // coreモジュールでJCEFを一元管理し、standaloneとforgeの両方で使用
+    // jcefmavenはネイティブライブラリの自動ダウンロード機能を提供
+    implementation("me.friwi:jcefmaven:135.0.20")
 }
 
 tasks.withType<JavaCompile> {

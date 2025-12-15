@@ -43,6 +43,7 @@ public class MochiMobileOSMod {
     public MochiMobileOSMod() {
         System.out.println("[MochiMobileOSMod] ==================== CONSTRUCTOR START ====================");
         System.out.println("[MochiMobileOSMod] Initializing MochiMobileOS Forge Integration");
+        System.out.println("[MochiMobileOSMod] Using IPvM over HTTP architecture (no custom schemes)");
 
         try {
             // アイテム登録

@@ -1,30 +1,914 @@
-[12/13 11:57:09.420] [DEBUG] [AppAssetSchemeHandler:mochiapp] Resource loaded: 7037 bytes, MIME: text/html; charset=utf-8
-[12/13 11:57:09.421] [DEBUG] [StandaloneWrapper] mouseReleased event received at (304, 182)
-[12/13 11:57:09.423] [DEBUG] [Kernel] mouseReleased at (304, 182)
-[12/13 11:57:09.424] [DEBUG] [GestureManager] Dispatch gesture TAP handledIndex=-1 listeners=4
-[12/13 11:57:09.427] [ERROR] [ChromiumBrowser] Loading error: mochiapp://mochios/webapp/sample/index.html - ERR_ABORTED
-[12/13 11:57:09.427] [DEBUG] [Kernel] Forwarding mouseReleased to ScreenManager
-[12/13 11:57:09.428] [DEBUG] [KernelInput] mouseReleased screen latency=3.824ms coord=(304,182)
-[12/13 11:57:09.430] [WARN] [KernelInput] mouseReleased total latency=8.332ms coord=(304,182)
-[12/13 11:57:09.445] [DEBUG] [AppAssetSchemeHandler:mochiapp] Processing request: mochiapp://mochios/webapp/sample/index.html
-[12/13 11:57:09.446] [DEBUG] [AppAssetSchemeHandler:mochiapp] ModId: mochios, Path: webapp/sample/index.html
-[12/13 11:57:09.448] [DEBUG] [AppAssetSchemeHandler:mochiapp] Trying to load resource: assets/mochios/webapp/sample/index.html
-[12/13 11:57:09.450] [DEBUG] [AppAssetSchemeHandler:mochiapp] Found in class ClassLoader: /assets/mochios/webapp/sample/index.html
-[12/13 11:57:09.451] [DEBUG] [AppAssetSchemeHandler:mochiapp] Resource loaded: 7037 bytes, MIME: text/html; charset=utf-8
-[12/13 11:57:09.689] [DEBUG] [ChromiumBrowser] Hidden JFrame configured: focusable=false, IME disabled on GLCanvas
-[12/13 11:57:09.711] [DEBUG] [ChromiumBrowser] Text input focus and selection detection script injected
-[12/13 11:57:09.713] [DEBUG] [ChromiumBrowser] Console message received: [MochiOS:Init] Focus detection script starting
-[12/13 11:57:09.714] [DEBUG] [ChromiumBrowser] Console message received: [MochiOS:FocusDebug] tag=BODY, type=undefined, role=null, contentEditable=false, isTextInput=false
-[12/13 11:57:09.722] [DEBUG] [ScreenManager] Animation completed - ZOOM_IN
-[12/13 11:57:09.726] [DEBUG] [ScreenManager] Animation completed - allowing mochiapp://mochios/webapp/sample/index.html to be drawn
-[12/13 11:57:09.727] [DEBUG] [ScreenManager] Animation completed - NONE
-[12/13 11:57:09.729] [DEBUG] [ScreenManager] Unhandled animation completion - NONE
-[12/13 11:57:09.889] [INFO] [WebScreen:mochios] Reloading URL after GLCanvas initialization: mochiapp://mochios/webapp/sample/index.html
-[12/13 11:57:09.901] [DEBUG] [AppAssetSchemeHandler:mochiapp] Processing request: mochiapp://mochios/webapp/sample/index.html
-[12/13 11:57:09.902] [DEBUG] [AppAssetSchemeHandler:mochiapp] ModId: mochios, Path: webapp/sample/index.html
-[12/13 11:57:09.904] [DEBUG] [AppAssetSchemeHandler:mochiapp] Trying to load resource: assets/mochios/webapp/sample/index.html
-[12/13 11:57:09.904] [DEBUG] [AppAssetSchemeHandler:mochiapp] Found in class ClassLoader: /assets/mochios/webapp/sample/index.html
-[12/13 11:57:09.906] [DEBUG] [AppAssetSchemeHandler:mochiapp] Resource loaded: 7037 bytes, MIME: text/html; charset=utf-8
-[12/13 11:57:09.911] [DEBUG] [ChromiumBrowser] Text input focus and selection detection script injected
-[12/13 11:57:09.913] [DEBUG] [ChromiumBrowser] Console message received: [MochiOS:Init] Focus detection script starting
-[12/13 11:57:09.914] [DEBUG] [ChromiumBrowser] Console message received: [MochiOS:FocusDebug] tag=BODY, type=undefined, role=null, contentEditable=false, isTextInput=false
+[12/15 01:27:02.839] [DEBUG] [StandaloneWrapper] mouseDragged event received at (381, 157)
+[12/15 01:27:02.841] [DEBUG] [StandaloneWrapper] mouseDragged event received at (381, 162)
+255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:02.841] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:02.855] [DEBUG] [StandaloneWrapper] mouseDragged event received at (381, 168)
+[12/15 01:27:02.902] [DEBUG] [StandaloneWrapper] mouseDragged event received at (381, 175)
+se, buffer=729600 bytes
+[12/15 01:27:02.904] [DEBUG] [StandaloneWrapper] mouseDragged event received at (381, 183)
+[12/15 01:27:02.904] [DEBUG] [StandaloneWrapper] mouseDragged event received at (381, 190)
+[12/15 01:27:02.906] [DEBUG] [StandaloneWrapper] mouseDragged event received at (381, 200)
+[12/15 01:27:02.906] [DEBUG] [StandaloneWrapper] mouseDragged event received at (381, 210)
+[12/15 01:27:02.906] [DEBUG] [ChromiumRenderHandler] onPaint called #50: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:02.907] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:02.907] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:02.909] [DEBUG] [ChromiumRenderHandler] Frame skipped (too soon)
+[12/15 01:27:02.922] [DEBUG] [StandaloneWrapper] mouseDragged event received at (381, 220)
+[12/15 01:27:02.969] [DEBUG] [StandaloneWrapper] mouseDragged event received at (381, 230)
+[12/15 01:27:02.970] [DEBUG] [StandaloneWrapper] mouseDragged event received at (381, 239)
+[12/15 01:27:02.971] [DEBUG] [StandaloneWrapper] mouseDragged event received at (381, 246)
+[12/15 01:27:02.972] [DEBUG] [StandaloneWrapper] mouseDragged event received at (381, 252)
+[12/15 01:27:02.972] [DEBUG] [StandaloneWrapper] mouseDragged event received at (380, 259)
+[12/15 01:27:03.018] [DEBUG] [ChromiumRenderHandler] onPaint called #52: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:03.019] [DEBUG] [StandaloneWrapper] mouseDragged event received at (380, 264)
+[12/15 01:27:03.021] [DEBUG] [StandaloneWrapper] mouseDragged event received at (379, 265)
+5 A:255]
+[12/15 01:27:03.022] [DEBUG] [StandaloneWrapper] mouseDragged event received at (379, 270)
+[12/15 01:27:03.022] [DEBUG] [StandaloneWrapper] mouseDragged event received at (378, 276)
+[12/15 01:27:03.023] [DEBUG] [StandaloneWrapper] mouseDragged event received at (377, 281)
+[12/15 01:27:03.023] [DEBUG] [StandaloneWrapper] mouseDragged event received at (377, 286)
+[12/15 01:27:03.068] [DEBUG] [ChromiumRenderHandler] onPaint called #53: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:03.070] [DEBUG] [StandaloneWrapper] mouseDragged event received at (377, 291)
+255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:03.070] [DEBUG] [StandaloneWrapper] mouseDragged event received at (377, 295)
+5 A:255]
+[12/15 01:27:03.072] [DEBUG] [StandaloneWrapper] mouseDragged event received at (377, 299)
+[12/15 01:27:03.072] [DEBUG] [StandaloneWrapper] mouseDragged event received at (377, 302)
+[12/15 01:27:03.072] [DEBUG] [StandaloneWrapper] mouseDragged event received at (377, 305)
+[12/15 01:27:03.119] [DEBUG] [ChromiumRenderHandler] onPaint called #54: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:03.120] [DEBUG] [StandaloneWrapper] mouseDragged event received at (377, 309)
+255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:03.121] [DEBUG] [StandaloneWrapper] mouseDragged event received at (377, 314)
+[12/15 01:27:03.122] [DEBUG] [StandaloneWrapper] mouseDragged event received at (377, 318)
+[12/15 01:27:03.123] [DEBUG] [StandaloneWrapper] mouseDragged event received at (377, 323)
+[12/15 01:27:03.124] [DEBUG] [StandaloneWrapper] mouseDragged event received at (377, 328)
+[12/15 01:27:03.168] [DEBUG] [ChromiumRenderHandler] onPaint called #55: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:03.170] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:03.170] [DEBUG] [StandaloneWrapper] mouseDragged event received at (378, 338)
+5 A:255]
+[12/15 01:27:03.171] [DEBUG] [StandaloneWrapper] mouseDragged event received at (378, 343)
+[12/15 01:27:03.171] [DEBUG] [StandaloneWrapper] mouseDragged event received at (379, 348)
+[12/15 01:27:03.173] [DEBUG] [ChromiumRenderHandler] onPaint called #56: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:03.173] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:03.174] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:03.174] [DEBUG] [ChromiumRenderHandler] Frame skipped (too soon)
+[12/15 01:27:03.189] [DEBUG] [StandaloneWrapper] mouseDragged event received at (379, 352)
+[12/15 01:27:03.190] [DEBUG] [StandaloneWrapper] mouseDragged event received at (379, 357)
+[12/15 01:27:03.190] [DEBUG] [StandaloneWrapper] mouseDragged event received at (379, 358)
+[12/15 01:27:03.235] [DEBUG] [StandaloneWrapper] mouseDragged event received at (379, 363)
+[12/15 01:27:03.237] [DEBUG] [StandaloneWrapper] mouseDragged event received at (379, 368)
+[12/15 01:27:03.237] [DEBUG] [StandaloneWrapper] mouseDragged event received at (379, 373)
+[12/15 01:27:03.239] [DEBUG] [StandaloneWrapper] mouseDragged event received at (379, 378)
+[12/15 01:27:03.256] [DEBUG] [StandaloneWrapper] mouseDragged event received at (379, 382)
+[12/15 01:27:03.258] [DEBUG] [StandaloneWrapper] mouseDragged event received at (379, 385)
+[12/15 01:27:03.303] [DEBUG] [StandaloneWrapper] mouseDragged event received at (378, 387)
+se, buffer=729600 bytes
+[12/15 01:27:03.305] [DEBUG] [StandaloneWrapper] mouseDragged event received at (377, 389)
+[12/15 01:27:03.305] [DEBUG] [StandaloneWrapper] mouseDragged event received at (377, 390)
+[12/15 01:27:03.306] [DEBUG] [StandaloneWrapper] mouseDragged event received at (377, 391)
+[12/15 01:27:03.353] [DEBUG] [StandaloneWrapper] mouseDragged event received at (377, 392)
+[12/15 01:27:03.354] [DEBUG] [StandaloneWrapper] mouseDragged event received at (376, 393)
+[12/15 01:27:03.403] [DEBUG] [StandaloneWrapper] mouseDragged event received at (376, 394)
+[12/15 01:27:03.436] [DEBUG] [StandaloneWrapper] mouseDragged event received at (376, 395)
+[12/15 01:27:03.437] [DEBUG] [StandaloneWrapper] mouseDragged event received at (376, 396)
+[12/15 01:27:03.455] [DEBUG] [StandaloneWrapper] mouseDragged event received at (376, 397)
+[12/15 01:27:03.473] [DEBUG] [StandaloneWrapper] mouseDragged event received at (376, 398)
+[12/15 01:27:03.475] [DEBUG] [StandaloneWrapper] mouseDragged event received at (376, 399)
+[12/15 01:27:03.624] [DEBUG] [StandaloneWrapper] mouseDragged event received at (376, 398)
+[12/15 01:27:03.640] [DEBUG] [StandaloneWrapper] mouseDragged event received at (376, 395)
+[12/15 01:27:03.657] [DEBUG] [StandaloneWrapper] mouseDragged event received at (378, 389)
+[12/15 01:27:03.657] [DEBUG] [StandaloneWrapper] mouseDragged event received at (379, 383)
+[12/15 01:27:03.673] [DEBUG] [StandaloneWrapper] mouseDragged event received at (382, 372)
+[12/15 01:27:03.691] [DEBUG] [StandaloneWrapper] mouseDragged event received at (384, 358)
+[12/15 01:27:03.691] [DEBUG] [StandaloneWrapper] mouseDragged event received at (387, 339)
+[12/15 01:27:03.707] [DEBUG] [StandaloneWrapper] mouseDragged event received at (390, 319)
+[12/15 01:27:03.709] [DEBUG] [StandaloneWrapper] mouseDragged event received at (392, 298)
+[12/15 01:27:03.722] [DEBUG] [ChromiumRenderHandler] onPaint called #59: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:03.723] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:03.723] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:03.740] [DEBUG] [StandaloneWrapper] mouseDragged event received at (396, 258)
+[12/15 01:27:03.742] [DEBUG] [StandaloneWrapper] mouseDragged event received at (397, 242)
+[12/15 01:27:03.785] [DEBUG] [StandaloneWrapper] mouseDragged event received at (397, 227)
+[12/15 01:27:03.785] [DEBUG] [StandaloneWrapper] mouseDragged event received at (397, 217)
+[12/15 01:27:03.788] [DEBUG] [StandaloneWrapper] mouseDragged event received at (397, 216)
+[12/15 01:27:03.788] [DEBUG] [StandaloneWrapper] mouseDragged event received at (396, 208)
+[12/15 01:27:03.788] [DEBUG] [StandaloneWrapper] mouseDragged event received at (394, 202)
+[12/15 01:27:03.806] [DEBUG] [StandaloneWrapper] mouseDragged event received at (392, 195)
+[12/15 01:27:03.807] [DEBUG] [StandaloneWrapper] mouseDragged event received at (390, 190)
+[12/15 01:27:03.824] [DEBUG] [StandaloneWrapper] mouseDragged event received at (389, 186)
+[12/15 01:27:03.840] [DEBUG] [ChromiumRenderHandler] onPaint called #60: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:03.840] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:03.841] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:03.843] [DEBUG] [StandaloneWrapper] mouseDragged event received at (387, 180)
+[12/15 01:27:03.887] [DEBUG] [ChromiumRenderHandler] onPaint called #61: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:03.889] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:03.889] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:03.891] [DEBUG] [StandaloneWrapper] mouseDragged event received at (385, 175)
+[12/15 01:27:03.892] [DEBUG] [StandaloneWrapper] mouseDragged event received at (385, 173)
+[12/15 01:27:03.892] [DEBUG] [StandaloneWrapper] mouseDragged event received at (385, 172)
+[12/15 01:27:03.893] [DEBUG] [StandaloneWrapper] mouseDragged event received at (384, 171)
+[12/15 01:27:03.938] [DEBUG] [ChromiumRenderHandler] onPaint called #62: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:03.938] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:03.939] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:03.941] [DEBUG] [StandaloneWrapper] mouseDragged event received at (383, 168)
+[12/15 01:27:03.942] [DEBUG] [StandaloneWrapper] mouseDragged event received at (382, 167)
+[12/15 01:27:03.943] [DEBUG] [StandaloneWrapper] mouseReleased event received at (382, 167)
+e, buffer=729600 bytes
+[12/15 01:27:03.943] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:03.944] [DEBUG] [GestureManager] Dispatch gesture DRAG_END handledIndex=-1 listeners=4
+[12/15 01:27:03.945] [DEBUG] [KernelInput] mouseReleased gesture latency=1.916ms coord=(382,167)
+[12/15 01:27:03.946] [DEBUG] [Kernel] Forwarding mouseReleased to ScreenManager
+[12/15 01:27:03.947] [DEBUG] [KernelInput] mouseReleased screen latency=1.824ms coord=(382,167)
+[12/15 01:27:03.948] [DEBUG] [KernelInput] mouseReleased total latency=4.784ms coord=(382,167)
+[12/15 01:27:03.986] [DEBUG] [ChromiumRenderHandler] onPaint called #64: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:03.987] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:03.988] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:04.053] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/gen_204?atyp=csi&ei=UeU-aYCvDOyo0-kPmtG4-A0&s=webhp&nt=navigate&t=fi&st=5581&fid=2&zx=1765729624001&opi=89978449
+[12/15 01:27:04.102] [DEBUG] [ChromiumRenderHandler] onPaint called #65: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:04.103] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:04.105] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:04.123] [DEBUG] [ChromiumRenderHandler] onPaint called #66: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:04.125] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:04.125] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:04.237] [DEBUG] [Kernel] mouseWheel at (248, 263) delta=-1.0
+[12/15 01:27:04.239] [DEBUG] [KernelInput] mouseWheel screen latency=1.071ms coord=(248,263)
+[12/15 01:27:04.239] [DEBUG] [KernelInput] mouseWheel total latency=1.875ms coord=(248,263)
+[12/15 01:27:04.256] [DEBUG] [ChromiumRenderHandler] onPaint called #67: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:04.257] [DEBUG] [KernelInput] mouseWheel screen latency=1.218ms coord=(247,265)
+5 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:04.259] [DEBUG] [KernelInput] mouseWheel total latency=2.237ms coord=(247,265)
+ A:255]
+[12/15 01:27:04.259] [DEBUG] [Kernel] mouseWheel at (247, 268) delta=-1.0
+[12/15 01:27:04.322] [DEBUG] [Kernel] mouseWheel at (247, 272) delta=-1.0
+[12/15 01:27:04.322] [DEBUG] [KernelInput] mouseWheel screen latency=1.011ms coord=(247,272)
+[12/15 01:27:04.323] [DEBUG] [KernelInput] mouseWheel total latency=1.923ms coord=(247,272)
+[12/15 01:27:04.325] [DEBUG] [Kernel] mouseWheel at (247, 273) delta=-1.0
+[12/15 01:27:04.341] [DEBUG] [Kernel] mouseWheel at (246, 273) delta=-1.0
+[12/15 01:27:04.342] [DEBUG] [KernelInput] mouseWheel screen latency=1.165ms coord=(246,273)
+[12/15 01:27:04.342] [DEBUG] [KernelInput] mouseWheel total latency=1.903ms coord=(246,273)
+[12/15 01:27:04.407] [DEBUG] [Kernel] mouseWheel at (244, 275) delta=1.0
+[12/15 01:27:04.441] [DEBUG] [Kernel] mouseWheel at (244, 275) delta=1.0
+[12/15 01:27:04.443] [DEBUG] [KernelInput] mouseWheel screen latency=1.100ms coord=(244,275)
+[12/15 01:27:04.443] [DEBUG] [KernelInput] mouseWheel total latency=1.936ms coord=(244,275)
+[12/15 01:27:04.458] [DEBUG] [Kernel] mouseWheel at (244, 275) delta=1.0
+[12/15 01:27:04.459] [DEBUG] [KernelInput] mouseWheel screen latency=1.056ms coord=(244,275)
+[12/15 01:27:04.460] [DEBUG] [KernelInput] mouseWheel total latency=1.874ms coord=(244,275)
+[12/15 01:27:04.476] [DEBUG] [Kernel] mouseWheel at (244, 275) delta=1.0
+[12/15 01:27:04.477] [DEBUG] [KernelInput] mouseWheel screen latency=1.034ms coord=(244,275)
+[12/15 01:27:04.478] [DEBUG] [KernelInput] mouseWheel total latency=1.772ms coord=(244,275)
+[12/15 01:27:04.491] [DEBUG] [Kernel] mouseWheel at (244, 275) delta=1.0
+[12/15 01:27:04.491] [DEBUG] [KernelInput] mouseWheel screen latency=1.045ms coord=(244,275)
+[12/15 01:27:04.493] [DEBUG] [KernelInput] mouseWheel total latency=1.885ms coord=(244,275)
+[12/15 01:27:04.508] [DEBUG] [Kernel] mouseWheel at (244, 275) delta=1.0
+[12/15 01:27:04.509] [DEBUG] [KernelInput] mouseWheel screen latency=1.018ms coord=(244,275)
+[12/15 01:27:04.509] [DEBUG] [KernelInput] mouseWheel total latency=1.739ms coord=(244,275)
+[12/15 01:27:04.539] [DEBUG] [ChromiumRenderHandler] onPaint called #68: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:04.541] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:04.542] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:04.605] [DEBUG] [ChromiumRenderHandler] onPaint called #69: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:04.606] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:04.608] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:04.622] [DEBUG] [ChromiumRenderHandler] onPaint called #70: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:04.624] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:04.624] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:04.640] [DEBUG] [ChromiumRenderHandler] onPaint called #71: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:04.642] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:04.643] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:04.704] [DEBUG] [ChromiumRenderHandler] onPaint called #72: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:04.705] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:04.706] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:04.723] [DEBUG] [ChromiumRenderHandler] onPaint called #73: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:04.723] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:04.724] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:04.788] [DEBUG] [ChromiumRenderHandler] onPaint called #74: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:04.789] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:04.791] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:04.855] [DEBUG] [ChromiumRenderHandler] onPaint called #75: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:04.856] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:04.857] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:04.986] [DEBUG] [ChromiumRenderHandler] onPaint called #76: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:04.988] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:04.989] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:05.129] [DEBUG] [ChromiumRenderHandler] onPaint called #77: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:05.130] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:05.131] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:05.241] [DEBUG] [StandaloneWrapper] mousePressed event received at (144, 300)
+[12/15 01:27:05.248] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/gen_204?atyp=csi&ei=UeU-aYCvDOyo0-kPmtG4-A0&s=jsa&jsi=hm,st.8019,t.0,at.1,et.focus,n.V6oqv,an.Jt1EX,cn.1,ie.0,vi.1&zx=1765729625247&opi=89978449
+[12/15 01:27:05.252] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/gen_204?atyp=i&ei=UeU-aYCvDOyo0-kPmtG4-A0&ct=sugRespRen:t&zx=1765729625250&opi=89978449
+[12/15 01:27:05.258] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.gstatic.com/images/icons/material/system/2x/trending_up_grey600_24dp.png
+[12/15 01:27:05.274] [DEBUG] [ChromiumRenderHandler] onPaint called #78: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:05.274] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:05.276] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:05.277] [DEBUG] [ChromiumBrowser] Console message received: [MochiOS:FocusDebug] tag=TEXTAREA, type=textarea, role=textbox, contentEditable=false, isTextInput=true
+[12/15 01:27:05.277] [DEBUG] [ChromiumBrowser] Console message received: [MochiOS:TextFocus]true
+[12/15 01:27:05.279] [DEBUG] [ChromiumBrowser] Text input focus changed: true
+[12/15 01:27:05.291] [DEBUG] [ChromiumBrowser] Console message received: [MochiOS:Selection]
+[12/15 01:27:05.338] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/gen_204?atyp=csi&ei=UeU-aYCvDOyo0-kPmtG4-A0&s=jsa&jsi=hm,st.8019,t.0,at.1,et.focus,n.V6oqv,an.Jt1EX,cn.1,ie.0,vi.1,af.34&zx=1765729625282&opi=89978449
+[12/15 01:27:05.339] [DEBUG] [StandaloneWrapper] mouseReleased event received at (144, 300)
+55 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:05.340] [DEBUG] [Kernel] mouseReleased at (144, 300)
+(BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:05.341] [DEBUG] [GestureManager] Dispatch gesture TAP handledIndex=-1 listeners=4
+[12/15 01:27:05.342] [DEBUG] [KernelInput] mouseReleased gesture latency=1.618ms coord=(144,300)
+[12/15 01:27:05.342] [DEBUG] [Kernel] Forwarding mouseReleased to ScreenManager
+[12/15 01:27:05.343] [DEBUG] [KernelInput] mouseReleased screen latency=1.324ms coord=(144,300)
+[12/15 01:27:05.343] [DEBUG] [KernelInput] mouseReleased total latency=3.628ms coord=(144,300)
+[12/15 01:27:05.403] [DEBUG] [ChromiumRenderHandler] onPaint called #80: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:05.404] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:05.404] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:05.471] [DEBUG] [ChromiumRenderHandler] onPaint called #81: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:05.472] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:05.474] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:05.608] [DEBUG] [ChromiumRenderHandler] onPaint called #82: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:05.609] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:05.609] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:05.741] [DEBUG] [ChromiumRenderHandler] onPaint called #83: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:05.743] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:05.743] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:05.823] [DEBUG] [ChromiumRenderHandler] onPaint called #84: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:05.825] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:05.825] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:05.907] [DEBUG] [ChromiumRenderHandler] onPaint called #85: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:05.910] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:05.910] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:05.927] [DEBUG] [Kernel] keyPressed - key=' ' (charCode=32), keyCode=0
+[12/15 01:27:05.991] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/gen_204?atyp=i&ei=UeU-aYCvDOyo0-kPmtG4-A0&ct=sugRespRen:t&zx=1765729625990&opi=89978449
+[12/15 01:27:05.997] [DEBUG] [ChromiumBrowser] Console message received: [MochiOS:Selection]
+[12/15 01:27:06.008] [DEBUG] [ChromiumRenderHandler] onPaint called #86: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:06.010] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:06.010] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:06.072] [DEBUG] [ChromiumRenderHandler] onPaint called #87: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:06.074] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:06.075] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:06.144] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/gen_204?atyp=i&ei=UeU-aYCvDOyo0-kPmtG4-A0&ct=sugRespRen:t&zx=1765729626143&opi=89978449
+[12/15 01:27:06.147] [DEBUG] [ChromiumBrowser] Console message received: [MochiOS:Selection]
+[12/15 01:27:06.158] [DEBUG] [ChromiumRenderHandler] onPaint called #88: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:06.159] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:06.160] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:06.224] [DEBUG] [ChromiumRenderHandler] onPaint called #89: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:06.224] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:06.225] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:06.358] [DEBUG] [ChromiumRenderHandler] onPaint called #90: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:06.360] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:06.360] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:06.426] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/complete/search?q=d&cp=1&client=mobile-gws-wiz-hp&xssi=t&gs_pcrt=undefined&hl=ja&authuser=0&psi=UeU-aYCvDOyo0-kPmtG4-A0.1765729618087&dpr=1
+[12/15 01:27:06.427] [DEBUG] [ChromiumBrowser] Console message received: [MochiOS:Selection]
+[12/15 01:27:06.443] [DEBUG] [ChromiumRenderHandler] onPaint called #91: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:06.443] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:06.445] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:06.506] [DEBUG] [ChromiumRenderHandler] onPaint called #92: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:06.508] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:06.508] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:06.571] [DEBUG] [ChromiumRenderHandler] onPaint called #93: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:06.573] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:06.574] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:06.576] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/gen_204?atyp=i&ei=UeU-aYCvDOyo0-kPmtG4-A0&ct=sugRespRen:t&zx=1765729626548&opi=89978449
+[12/15 01:27:06.638] [DEBUG] [ChromiumRenderHandler] onPaint called #94: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:06.640] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:06.642] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:06.706] [DEBUG] [ChromiumBrowser] Console message received: [MochiOS:Selection]
+[12/15 01:27:06.707] [DEBUG] [ChromiumRenderHandler] onPaint called #95: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:06.709] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:06.710] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:06.711] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/complete/search?q=dg&cp=2&client=mobile-gws-wiz-hp&xssi=t&gs_pcrt=undefined&hl=ja&authuser=0&psi=UeU-aYCvDOyo0-kPmtG4-A0.1765729618087&dpr=1
+[12/15 01:27:06.772] [DEBUG] [ChromiumBrowser] Console message received: [MochiOS:Selection]
+[12/15 01:27:06.774] [DEBUG] [ChromiumRenderHandler] onPaint called #96: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:06.775] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:06.775] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:06.777] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/complete/search?q=dgf&cp=3&client=mobile-gws-wiz-hp&xssi=t&gs_pcrt=undefined&hl=ja&authuser=0&psi=UeU-aYCvDOyo0-kPmtG4-A0.1765729618087&dpr=1
+[12/15 01:27:06.839] [DEBUG] [ChromiumBrowser] Console message received: [MochiOS:Selection]
+[12/15 01:27:06.840] [DEBUG] [ChromiumRenderHandler] onPaint called #97: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:06.842] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:06.842] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:06.844] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/complete/search?q=dgfs&cp=4&client=mobile-gws-wiz-hp&xssi=t&gs_pcrt=undefined&hl=ja&authuser=0&psi=UeU-aYCvDOyo0-kPmtG4-A0.1765729618087&dpr=1
+[12/15 01:27:06.906] [DEBUG] [ChromiumRenderHandler] onPaint called #98: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:06.907] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:06.909] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:06.926] [DEBUG] [ChromiumRenderHandler] onPaint called #99: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:06.927] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:06.928] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:06.929] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/gen_204?atyp=i&ei=UeU-aYCvDOyo0-kPmtG4-A0&ct=sugRespRen:t&zx=1765729626845&opi=89978449
+[12/15 01:27:06.988] [DEBUG] [ChromiumRenderHandler] onPaint called #100: 380x480, popup=false, buffer=729600 bytes
+/gen_204?atyp=i&ei=UeU-aYCvDOyo0-kPmtG4-A0&ct=sugRespRen:t&zx=1765729626901&opi=89978449
+[12/15 01:27:06.991] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:06.991] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:07.057] [DEBUG] [ChromiumRenderHandler] onPaint called #101: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:07.057] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:07.058] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:07.060] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/gen_204?atyp=i&ei=UeU-aYCvDOyo0-kPmtG4-A0&ct=sugRespRen:t&zx=1765729626951&opi=89978449
+[12/15 01:27:07.124] [DEBUG] [ChromiumRenderHandler] onPaint called #102: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:07.126] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:07.126] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:07.143] [DEBUG] [Kernel] keyPressed - key=' ' (charCode=32), keyCode=0
+[12/15 01:27:07.240] [DEBUG] [ChromiumBrowser] Console message received: [MochiOS:Selection]
+[12/15 01:27:07.243] [DEBUG] [ChromiumRenderHandler] onPaint called #103: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:07.244] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:07.244] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:07.246] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/complete/search?q=dgfs%20&cp=5&client=mobile-gws-wiz-hp&xssi=t&gs_pcrt=undefined&hl=ja&authuser=0&psi=UeU-aYCvDOyo0-kPmtG4-A0.1765729618087&dpr=1
+[12/15 01:27:07.259] [DEBUG] [ChromiumRenderHandler] onPaint called #104: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:07.259] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:07.260] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:07.380] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/gen_204?atyp=i&ei=UeU-aYCvDOyo0-kPmtG4-A0&ct=sugRespRen:t&zx=1765729627379&opi=89978449
+[12/15 01:27:07.393] [DEBUG] [ChromiumRenderHandler] onPaint called #105: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:07.394] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:07.395] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:07.475] [DEBUG] [ChromiumRenderHandler] onPaint called #106: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:07.477] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:07.477] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:07.540] [DEBUG] [ChromiumRenderHandler] onPaint called #107: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:07.541] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:07.543] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:07.693] [DEBUG] [ChromiumRenderHandler] onPaint called #108: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:07.694] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:07.696] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:07.758] [DEBUG] [ChromiumRenderHandler] onPaint called #109: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:07.759] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:07.759] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:07.759] [DEBUG] [ChromiumBrowserScreen] getFocusedTextInput: returning ChromiumTextInput (always-on mode)
+[12/15 01:27:07.843] [DEBUG] [ChromiumRenderHandler] onPaint called #110: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:07.843] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:07.845] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:07.910] [DEBUG] [ScreenManager] Removed APPLICATION layer from Kernel stack for screen: Chromium Browser
+[12/15 01:27:07.911] [DEBUG] [ScreenManager] New top screen moved to foreground: Home Screen
+[12/15 01:27:07.911] [DEBUG] [ScreenManager] Popped screen - Chromium Browser
+[12/15 01:27:07.913] [DEBUG] [GestureManager] Removed gesture listener HomeScreen
+[12/15 01:27:07.913] [INFO] [SensorManager] センサーリスナー解除: MochiOS Light Sensor
+[12/15 01:27:07.915] [INFO] [SensorManager] センサーリスナー解除: MochiOS Humidity Sensor
+[12/15 01:27:07.915] [DEBUG] [ScreenManager] Popped screen - Home Screen
+[12/15 01:27:07.915] [DEBUG] [ScreenManager] All screens cleared
+[12/15 01:27:07.917] [DEBUG] [GestureManager] Added gesture listener HomeScreen (priority: 50)
+[12/15 01:27:07.918] [DEBUG] [GestureManager] Current listener order: NotificationManager(priority=900) -> HomeScreen(priority=50) -> ControlCenterManager(priority=0) -> Kernel(priority=-1000)
+[12/15 01:27:07.918] [INFO] [SensorManager] センサーリスナー登録: MochiOS Humidity Sensor, 200000us
+[12/15 01:27:07.920] [INFO] [SensorManager] センサーリスナー登録: MochiOS Light Sensor, 200000us
+[12/15 01:27:07.921] [DEBUG] [ScreenManager] New screen moved to foreground: Home Screen
+[12/15 01:27:07.921] [DEBUG] [ScreenManager] Screen analysis - Title: 'Home Screen', ClassName: 'HomeScreen', isLauncher: true
+[12/15 01:27:07.923] [DEBUG] [ScreenManager] Skipped APPLICATION layer addition - kernel=true, isLauncher=true
+[12/15 01:27:07.923] [DEBUG] [ScreenManager] Pushed screen - Home Screen
+[12/15 01:27:07.924] [DEBUG] [Kernel] keyPressed - key=' ' (charCode=32), keyCode=0
+[12/15 01:27:07.978] [DEBUG] [ChromiumRenderHandler] onPaint called #111: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:07.980] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:07.980] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:08.143] [DEBUG] [ChromiumRenderHandler] onPaint called #112: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:08.144] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:08.146] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:08.278] [DEBUG] [ChromiumRenderHandler] onPaint called #113: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:08.279] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:08.280] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:08.341] [DEBUG] [ChromiumRenderHandler] onPaint called #114: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:08.342] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:08.344] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:08.443] [DEBUG] [ChromiumRenderHandler] onPaint called #115: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:08.445] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:08.446] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:08.594] [DEBUG] [ChromiumRenderHandler] onPaint called #116: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:08.595] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:08.595] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:08.730] [DEBUG] [ChromiumRenderHandler] onPaint called #117: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:08.730] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:08.731] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:08.793] [DEBUG] [ChromiumRenderHandler] onPaint called #118: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:08.797] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:08.798] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:08.895] [DEBUG] [ChromiumRenderHandler] onPaint called #119: 380x480, popup=false, buffer=729600 bytes
+[12/15 01:27:08.896] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 01:27:08.897] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 01:27:08.933] [DEBUG] [ChromiumBrowser] Disposing ChromiumBrowser
+[12/15 01:27:08.979] [DEBUG] [ChromiumBrowser] Hidden JFrame disposed
+[12/15 01:27:08.980] [INFO] [ChromiumManager] Shutting down Chromium...
+[12/15 01:27:08.981] [INFO] [ChromiumManager] Chromium shutdown complete
+[12/15 01:27:08.983] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://play.google.com/log?hasfast=true&authuser=0&format=json
+[12/15 01:27:08.986] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/gen_204?oq=*******&gs_lp=EhFtb2JpbGUtZ3dzLXdpei1ocCIHKioqKioqKjIHEAAYgAQYEzIHEAAYgAQYEzIHEAAYgAQYEzIHEAAYgAQYEzIHEAAYgAQYEzIHEAAYgAQYEzIHEAAYgAQYEzIHEAAYgAQYE0iVHVDjBViWD3ADeACQAQCYAccBoAHhBqoBAzAuNbgBFsgBAPgBAZgCCKAC-waoAhHCAhAQKRiABBixAxhDGIMBGIoFwgIKECkYgAQYsQMYBMICEBAAGAMYtAIY6gIYjwHYAQHCAgoQABiABBixAxgEwgINEAAYgAQYsQMYgwEYBMICEBAAGIAEGLEDGIMBGAQYigXCAggQABiABBixA8ICBRAAGIAEwgILEAAYgAQYsQMYgwHCAgcQABiABBgEwgIEEAAYHpgDCPEFNpl8D_P3hT-6BgQIARgKkgcFMy40LjGgB8sTsgcFMC40LjG4B-sGwgcFMC41LjPIBxaACAA&sclient=mobile-gws-wiz-hp&ei=UeU-aYCvDOyo0-kPmtG4-A0&opi=0
+[12/15 09:20:08.410] [INFO] [LoggerService] Logger service initialized
+[12/15 09:20:08.482] [DEBUG] [GestureManager] Gesture system initialized
+[12/15 09:20:10.550] [INFO] [LoggerService] Log level set to DEBUG
+[12/15 09:20:10.553] [INFO] [Kernel] === MochiMobileOS カーネル初期化開始 ===
+[12/15 09:20:10.554] [INFO] [Kernel] 画面サイズ: 400x600
+[12/15 09:20:10.558] [INFO] [SensorManager] デフォルトセンサーを初期化: 9個
+[12/15 09:20:10.561] [INFO] [Kernel] サービスマネージャー初期化完了
+[12/15 09:20:10.564] [INFO] [Kernel] 日本語フォントを初期化中...
+[12/15 09:20:10.565] [INFO] [Kernel] 日本語フォント (Noto Sans JP) を正常に読み込みました
+[12/15 09:20:10.577] [INFO] [Kernel] InputManager初期化完了
+[12/15 09:20:10.579] [INFO] [Kernel] RenderPipeline初期化完了
+[12/15 09:20:10.769] [INFO] [NetworkAdapter] NetworkAdapter initialized
+[12/15 09:20:10.772] [INFO] [ChromiumManager] ChromiumProvider set: jcefmaven (JCEF)
+[12/15 09:20:10.774] [INFO] [ChromiumManager] Initializing Chromium with provider: jcefmaven (JCEF)
+[12/15 09:20:10.822] [INFO] [ChromiumManager] Chromium initialized successfully
+[12/15 09:20:10.826] [INFO] [ChromiumManager] Chromium version: JCEF Version = 135.0.20.333
+CEF Version = 135.0.20
+Chromium Version = 135.0.7049.85
+[12/15 09:20:10.842] [INFO] [Kernel] ChromiumService初期化完了
+[12/15 09:20:10.844] [INFO] [Kernel] パーミッション管理サービス初期化完了
+[12/15 09:20:10.847] [INFO] [Kernel] アクティビティ管理サービス初期化完了
+[12/15 09:20:10.850] [INFO] [ClipboardManager] 初期化: AWTClipboardProvider (利用可能: true)
+[12/15 09:20:10.852] [INFO] [Kernel] クリップボード管理サービス初期化完了
+[12/15 09:20:10.853] [INFO] [Kernel] クリップボードサービス（OS統一管理）初期化完了
+[12/15 09:20:10.855] [INFO] [Kernel] センサー管理サービス初期化完了
+[12/15 09:20:10.858] [DEBUG] [GestureManager] Added gesture listener ControlCenterManager (priority: 0)
+[12/15 09:20:10.861] [DEBUG] [GestureManager] Current listener order: ControlCenterManager(priority=0)
+[12/15 09:20:10.861] [DEBUG] [GestureManager] Added gesture listener NotificationManager (priority: 900)
+[12/15 09:20:10.862] [DEBUG] [GestureManager] Current listener order: NotificationManager(priority=900) -> ControlCenterManager(priority=0)
+[12/15 09:20:10.864] [DEBUG] [GestureManager] Added gesture listener Kernel (priority: -1000)
+[12/15 09:20:10.865] [DEBUG] [GestureManager] Current listener order: NotificationManager(priority=900) -> ControlCenterManager(priority=0) -> Kernel(priority=-1000)
+[12/15 09:20:10.872] [DEBUG] [ScreenManager] Kernel reference set for layer management integration
+[12/15 09:20:10.874] [DEBUG] [ScreenManager] PAppletを設定 - 成功
+[12/15 09:20:10.892] [DEBUG] [GestureManager] Added gesture listener HomeScreen (priority: 50)
+[12/15 09:20:10.894] [DEBUG] [GestureManager] Current listener order: NotificationManager(priority=900) -> HomeScreen(priority=50) -> ControlCenterManager(priority=0) -> Kernel(priority=-1000)
+[12/15 09:20:10.897] [INFO] [SensorManager] センサーリスナー登録: MochiOS Humidity Sensor, 200000us
+[12/15 09:20:10.899] [INFO] [SensorManager] センサーリスナー登録: MochiOS Light Sensor, 200000us
+[12/15 09:20:10.902] [DEBUG] [ScreenManager] New screen moved to foreground: Home Screen
+[12/15 09:20:10.904] [DEBUG] [ScreenManager] Screen analysis - Title: 'Home Screen', ClassName: 'HomeScreen', isLauncher: true
+[12/15 09:20:10.906] [DEBUG] [ScreenManager] Skipped APPLICATION layer addition - kernel=true, isLauncher=true
+[12/15 09:20:10.908] [DEBUG] [ScreenManager] Pushed screen - Home Screen
+[12/15 09:20:10.910] [DEBUG] [StandaloneVirtualSocket] StandaloneVirtualSocket initialized
+[12/15 09:20:10.912] [INFO] [VirtualAdapter] VirtualSocket set: StandaloneVirtualSocket (status: 接続中)
+[12/15 09:20:10.915] [INFO] [StandaloneWrapper] Instrumented AWT EventQueue installed
+[12/15 09:20:11.827] [DEBUG] [StandaloneWrapper] mousePressed event received at (353, 343)
+[12/15 09:20:11.844] [DEBUG] [StandaloneWrapper] mouseDragged event received at (347, 342)
+[12/15 09:20:11.860] [DEBUG] [StandaloneWrapper] mouseDragged event received at (333, 339)
+[12/15 09:20:11.867] [DEBUG] [GestureManager] Dispatch gesture DRAG_START handledIndex=-1 listeners=4
+[12/15 09:20:11.868] [WARN] [KernelInput] mouseDragged gesture latency=6.624ms coord=(333,339)
+[12/15 09:20:11.870] [DEBUG] [KernelInput] mouseDragged screen latency=1.408ms coord=(333,339)
+[12/15 09:20:11.872] [WARN] [KernelInput] mouseDragged total latency=9.283ms coord=(333,339)
+[12/15 09:20:11.873] [DEBUG] [StandaloneWrapper] mouseDragged event received at (307, 332)
+[12/15 09:20:11.873] [DEBUG] [StandaloneWrapper] mouseDragged event received at (274, 325)
+[12/15 09:20:11.898] [DEBUG] [StandaloneWrapper] mouseDragged event received at (233, 319)
+[12/15 09:20:11.899] [DEBUG] [StandaloneWrapper] mouseDragged event received at (184, 315)
+[12/15 09:20:11.901] [DEBUG] [StandaloneWrapper] mouseDragged event received at (171, 314)
+[12/15 09:20:11.902] [DEBUG] [StandaloneWrapper] mouseReleased event received at (171, 314)
+[12/15 09:20:11.903] [DEBUG] [Kernel] mouseReleased at (171, 314)
+[12/15 09:20:11.907] [DEBUG] [GestureManager] Dispatch gesture DRAG_END handledIndex=1 listeners=4
+[12/15 09:20:11.909] [DEBUG] [GestureManager] Dispatch gesture SWIPE_LEFT handledIndex=1 listeners=4
+[12/15 09:20:11.911] [WARN] [KernelInput] mouseReleased gesture latency=7.745ms coord=(171,314)
+[12/15 09:20:11.913] [DEBUG] [Kernel] Forwarding mouseReleased to ScreenManager
+[12/15 09:20:11.914] [DEBUG] [KernelInput] mouseReleased screen latency=2.951ms coord=(171,314)
+[12/15 09:20:11.914] [WARN] [KernelInput] mouseReleased total latency=11.902ms coord=(171,314)
+[12/15 09:20:13.297] [DEBUG] [StandaloneWrapper] mousePressed event received at (238, 192)
+[12/15 09:20:13.303] [DEBUG] [ScreenManager] pushScreenWithAnimation called
+[12/15 09:20:13.304] [DEBUG] [ScreenManager] screen=Chromium Browser
+[12/15 09:20:13.306] [DEBUG] [ScreenManager] currentPApplet=available
+[12/15 09:20:13.308] [DEBUG] [ScreenManager] iconImage=64x64
+[12/15 09:20:13.310] [DEBUG] [ScreenManager] iconPosition=(231.0, 187.0), iconSize=48.0
+[12/15 09:20:13.312] [DEBUG] [ScreenManager] Previous screen moved to background (animation): Home Screen
+[12/15 09:20:13.314] [DEBUG] [ScreenManager] Calling setup() on screen: Chromium Browser, PGraphics available: true
+[12/15 09:20:13.315] [INFO] [ChromiumBrowserScreen] setup() called - PGraphics size: 400x600
+[12/15 09:20:13.318] [INFO] [ChromiumBrowserScreen] ChromiumService available, checking surfaces...
+[12/15 09:20:13.321] [INFO] [ChromiumBrowserScreen] Current surfaces count: 0
+[12/15 09:20:13.325] [INFO] [ChromiumBrowserScreen] Creating initial tab with size: 380x480, URL: https://www.google.com
+[12/15 09:20:13.328] [INFO] [DefaultChromiumService] createTab called: 380x480, URL: https://www.google.com
+[12/15 09:20:13.329] [INFO] [DefaultChromiumService] Creating surface with ID: browser_tab_1765758013329
+[12/15 09:20:13.334] [INFO] [DefaultChromiumService] computeIfAbsent: creating browser for browser_tab_1765758013329
+[12/15 09:20:13.336] [INFO] [ChromiumManager] Creating ChromiumBrowser: https://www.google.com (380x480)
+[12/15 09:20:13.348] [INFO] [ChromiumAppHandler] onRegisterCustomSchemes called (no custom schemes to register - using IPvM over HTTP)
+[12/15 09:20:13.509] [INFO] [ChromiumAppHandler] Context initialized
+[12/15 09:20:13.581] [DEBUG] [ChromiumBrowser] Resizing browser from 380x480 to 380x480
+[12/15 09:20:13.585] [DEBUG] [ChromiumRenderHandler] Viewport resized to: 380x480
+[12/15 09:20:13.587] [DEBUG] [ChromiumBrowser] Updated browser_rect_ to 380x480
+[12/15 09:20:13.595] [DEBUG] [ChromiumBrowser] Called wasResized(380, 480)
+[12/15 09:20:13.597] [DEBUG] [ChromiumBrowser] Called setWindowVisibility(true)
+[12/15 09:20:13.601] [DEBUG] [ChromiumBrowser] Called notifyMoveOrResizeStarted()
+[12/15 09:20:13.604] [ERROR] [ChromiumBrowser] Failed to set windowless frame rate: class jp.moyashi.phoneos.core.service.chromium.ChromiumBrowser cannot access a member of class org.cef.browser.CefBrowser_N with modifiers "public"
+[12/15 09:20:13.606] [DEBUG] [ChromiumBrowser] Successfully registered onPaint listener via reflection
+[12/15 09:20:13.609] [INFO] [DefaultChromiumService] computeIfAbsent: browser created
+[12/15 09:20:13.611] [INFO] [DefaultChromiumService] computeIfAbsent: returning new surface
+[12/15 09:20:13.613] [INFO] [DefaultChromiumService] Surface created, total surfaces: 1
+[12/15 09:20:13.615] [INFO] [ChromiumBrowserScreen] Tab created, surfaces count: 1
+[12/15 09:20:13.617] [DEBUG] [ScreenManager] setup() completed successfully for: Chromium Browser
+[12/15 09:20:13.619] [DEBUG] [ScreenManager] New screen moved to foreground (animation): Chromium Browser
+[12/15 09:20:13.622] [DEBUG] [ScreenManager] Animated screen analysis - Title: 'Chromium Browser', ClassName: 'ChromiumBrowserScreen', isLauncher: false
+[12/15 09:20:13.624] [DEBUG] [ScreenManager] Added APPLICATION layer to Kernel stack for animated screen: Chromium Browser
+[12/15 09:20:13.626] [DEBUG] [ScreenManager] Setting target dimensions: 400x600
+[12/15 09:20:13.627] [DEBUG] [ScreenManager] Starting zoom-in animation...
+[12/15 09:20:13.631] [DEBUG] [ScreenManager] Animation setup complete for screen - Chromium Browser
+[12/15 09:20:13.635] [DEBUG] [StandaloneWrapper] mouseReleased event received at (238, 192)
+[12/15 09:20:13.636] [DEBUG] [Kernel] mouseReleased at (238, 192)
+[12/15 09:20:13.638] [DEBUG] [GestureManager] Dispatch gesture TAP handledIndex=-1 listeners=4
+[12/15 09:20:13.641] [DEBUG] [KernelInput] mouseReleased gesture latency=4.236ms coord=(238,192)
+[12/15 09:20:13.643] [DEBUG] [Kernel] Forwarding mouseReleased to ScreenManager
+[12/15 09:20:13.645] [DEBUG] [KernelInput] mouseReleased screen latency=4.279ms coord=(238,192)
+[12/15 09:20:13.648] [WARN] [KernelInput] mouseReleased total latency=10.719ms coord=(238,192)
+[12/15 09:20:13.859] [DEBUG] [ChromiumBrowser] Hidden JFrame configured: focusable=false, IME disabled on GLCanvas
+[12/15 09:20:13.860] [DEBUG] [ChromiumBrowser] UIComponent class: org.cef.browser.CefBrowserOsr$1
+[12/15 09:20:13.862] [DEBUG] [ChromiumBrowser] Calling display() via reflection...
+[12/15 09:20:13.912] [DEBUG] [ChromiumBrowser] display() called successfully via reflection
+[12/15 09:20:13.946] [DEBUG] [ScreenManager] Animation completed - ZOOM_IN
+[12/15 09:20:13.948] [DEBUG] [ScreenManager] Animation completed - allowing Chromium Browser to be drawn
+[12/15 09:20:13.948] [DEBUG] [ScreenManager] Animation completed - NONE
+[12/15 09:20:13.949] [DEBUG] [ScreenManager] Unhandled animation completion - NONE
+[12/15 09:20:14.115] [DEBUG] [ChromiumBrowser] GLContext initialization signaled (latch released)
+[12/15 09:20:14.119] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/
+[12/15 09:20:14.278] [DEBUG] [ChromiumBrowser] LoadHandler onLoadStart: https://www.google.com/
+[12/15 09:20:14.306] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/logos/high-resolution/experiments/seasonal-holidays-2025-6753651837110711.2-law.gif
+[12/15 09:20:14.332] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/images/searchbox/searchbox_sprites350_hr.webp
+[12/15 09:20:14.336] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/async/hpba?yv=3&cs=0&ei=PVQ_aat-waXaug-Am8yYBg&async=_basejs:/xjs/_/js/k%3Dxjs.hm.ja.CBWSaxLF3qc.2019.O/am%3DAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAgAACBAAAAAAAAAIAAAAAAAAAAAAAAAACUAAAAAAAAAAAAAAAAAAAAIAAAABAAAAAAAYAAQAQAABBAACMAAAAAAAAAAAAAAAACAQQAAAAIAAAP8AGAEAAAASAGABZAAAAIEAAAAAAEAAAAAAACAAAAAAAAAAgAAAAAAAAAACAIIAACAAAAAAAQAAAAAAAAAAAAAAAAAAADAIAAAAAAAAAAAAgAMAhAAAADiAIgIAgAAAAACAHgA8EBhSUAAAAAAAAAAAAAAAAAAAAMABDMEZBBCAAAAAAAAAAAAAAAAAAAAAAAAAICHsakA/dg%3D0/br%3D1/rs%3DACT90oGU5zVr2s5jGebJGKY4-oT4Xj7c3w,_basecss:/xjs/_/ss/k%3Dxjs.hm.RdhFQ4fxj44.L.B1.O/am%3DAEAACAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAQABAAAAAIAAAAAAAAAYAAIQCAAAAAAAAAAAAAAQAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwAQAAhAAAAAAAAAAAAAAAAAAAAACAAQGDDAQAAAAAAAAAgABiAAQAACAAAAAAMIAAEwEIICgpBAAAAAAEAAAAAAAAAAAAAAAAAAAJAACAAAAAAAAABAQDhYgoGAAAAwAgAECAIgAAAAAAAAAAAgAkAAAAAADiIIgIAAAAAAAAAAg/br%3D1/rs%3DACT90oHLU2Rtm2_F763jbIFDuVwyDGxzjQ,_basecomb:/xjs/_/js/k%3Dxjs.hm.ja.CBWSaxLF3qc.2019.O/ck%3Dxjs.hm.RdhFQ4fxj44.L.B1.O/am%3DAEAACAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAASABAAgAAKBAAAAAAAAYIAIQCAAAAAAAAAAAACUQAAAACAAAAAAAAAAAAAAIAAAABAAAAAAAYAAwAQAAhBAACMAAAAAAAAAAAAAAAACAQQGDDAYAAAP8AGAEgABiSAWABbAAAAIEMIAAEwEIICgpBACAAAAEAAAAAgAAAAAAAAAACAIJAACAAAAAAAQABAQDhYgoGAAAAwAgAEDAIgAAAAAAAAAAAgAsAhAAAADiIIgIAgAAAAACAHgA8EBhSUAAAAAAAAAAAAAAAAAAAAMABDMEZBBCAAAAAAAAAAAAAAAAAAAAAAAAAICHsakA/d%3D1/ed%3D1/dg%3D0/br%3D1/ujg%3D1/rs%3DACT90oGWQlbLSWJpfrd2LPMOaMfuhyioBA,_fmt:prog,_id:_PVQ_aat-waXaug-Am8yYBg_8&sp_imghp=false&sp_hpep=2&sp_hpte=0&vet=10ahUKEwjrkICZqb6RAxXBklYBHYANE2MQj-0KCBY..i
+[12/15 09:20:14.340] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.gstatic.com/og/_/js/k=og.qtm.en_US.7dJaazoZhv0.2019.O/rt=j/m=qabr,q_d,qcwid,qapid,qads,q_dg/exm=qaaw,qadd,qaid,qein,qhaw,qhba,qhbr,qhch,qhga,qhid,qhin/d=1/ed=1/rs=AA2YrTvcKiXWli20h4OGSvUlhh1qh1qunA
+[12/15 09:20:14.343] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.gstatic.com/og/_/ss/k=og.qtm.5FRATi95ryM.L.W.O/m=qcwid,d_b_gm3,d_wi_gm3,d_lo_gm3/excm=qaaw,qadd,qaid,qein,qhaw,qhba,qhbr,qhch,qhga,qhid,qhin/d=1/ed=1/ct=zgms/rs=AA2YrTua5H2y_CiqILFqrP-1NxZIbU6S_g
+[12/15 09:20:14.352] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/gen_204?s=webhp&t=aft&atyp=csi&ei=PVQ_aat-waXaug-Am8yYBg&rt=wsrt.601,hst.32,dlt.83,prt.99,aft.99&folr=_PVQ_aat-waXaug-Am8yYBg_8&imn=1&dtc=145&stc=26&ima=0&imad=0&imac=1&wh=480&nt=navigate&dt=&ts=56366&nhp=h3&ant=replace&opi=89978449
+[12/15 09:20:14.354] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/xjs/_/ss/k=xjs.hm.RdhFQ4fxj44.L.B1.O/am=AEAACAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAQABAAAAAIAAAAAAAAAYAAIQCAAAAAAAAAAAAAAQAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwAQAAhAAAAAAAAAAAAAAAAAAAAACAAQGDDAQAAAAAAAAAgABiAAQAACAAAAAAMIAAEwEIICgpBAAAAAAEAAAAAAAAAAAAAAAAAAAJAACAAAAAAAAABAQDhYgoGAAAAwAgAECAIgAAAAAAAAAAAgAkAAAAAADiIIgIAAAAAAAAAAg/d=1/ed=1/br=1/rs=ACT90oHLU2Rtm2_F763jbIFDuVwyDGxzjQ/m=bct,cdos,hsm,jsa,qim,rr4R9e,cEt90b,SNUn3,qddgKe,sTsDMc,dtl0hd,eHDfl,YV5bee,d,csi
+[12/15 09:20:14.362] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://apis.google.com/_/scs/abc-static/_/js/k=gapi.gapi.en.xIIXllDMgoQ.O/m=gapi_iframes,googleapis_client/rt=j/sv=1/d=1/ed=1/rs=AHpOoo_cueiiNxpxjZ_7F-kc6luptDmX0A/cb=gapi.loaded_0
+[12/15 09:20:14.367] [DEBUG] [ChromiumRenderHandler] onPaint called #1: 380x480, popup=false, buffer=729600 bytes
+[12/15 09:20:14.369] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 09:20:14.371] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 09:20:14.389] [DEBUG] [ChromiumRenderHandler] PImage after conversion: white=100, nonWhite=0/100
+[12/15 09:20:14.409] [DEBUG] [ChromiumRenderHandler] onPaint called #2: 380x480, popup=false, buffer=729600 bytes
+[12/15 09:20:14.410] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 09:20:14.412] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 09:20:14.415] [DEBUG] [ChromiumRenderHandler] PImage after conversion: white=100, nonWhite=0/100
+[12/15 09:20:14.416] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/xjs/_/js/k=xjs.hm.ja.CBWSaxLF3qc.2019.O/am=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAgAACBAAAAAAAAAIAAAAAAAAAAAAAAAACUQAAAAAAAAAAAAAAAAAAAIAAAABAAAAAAAYAAQAQAAhBAACMAAAAAAAAAAAAAAAACAQQAAAAIAAAP8AGAEAAAASAGABZAAAAIEAAAAAAEAAAAABACAAAAAAAAAAgAAAAAAAAAACAIIAACAAAAAAAQAAAAAAAAAAAAAAAAAAADAIAAAAAAAAAAAAgAMAhAAAADiIIgIAgAAAAACAHgA8EBhSUAAAAAAAAAAAAAAAAAAAAMABDMEZBBCAAAAAAAAAAAAAAAAAAAAAAAAAICHsakA/d=1/ed=1/dg=4/br=1/rs=ACT90oFAbJ7rpMmzpLTEzTfR--GzgjNUYA/ee=ALeJib:B8gLwd;AfeaP:TkrAjf;BMxAGc:E5bFse;BgS6mb:fidj5d;BjwMce:cXX2Wb;CIZTGb:Kqhykb;CxXAWb:YyRLvc;DQEued:Fevhcf;DULqB:RKfG5c;Dkk6ge:JZmW9e;DpcR3d:zL72xf;Du7NI:C6zLgf;EABSZ:MXZt9d;EVNhjf:pw70Gc;EjXHpb:pSHqh;EmZ2Bf:zr1jrb;EnlcNd:WeHg4;F9mqte:rlHKFc;FSxmUe:fiZR8b;Fkukfc:i8H2c;Fmv9Nc:O1Tzwc;G0KhTb:LIaoZ;GEkGdd:e1RzQd;GleZL:J1A7Od;HMDDWe:G8QUdb;HgsCtf:jLgnvd;IBADCc:RYquRb;IoGlCf:b5lhvb;JXJSm:ii1RGf;JXS8fb:k0T3Ub;JqSq7d:y9ePhe;JsbNhc:Xd8iUd;K5nYTd:ZDZcre;KOxcK:OZqGte;KQzWid:ZMKkN;KcokUb:KiuZBf;KpRAue:Tia57b;LBgRLc:SdcwHb,XVMNvd;LBn8Cf:bJ9L0c;LEikZe:byfTOb,lsjVmc;LXA8b:q7OdKd;LsNahb:ucGLNb;NJ1rfe:qTnoBf;NPKaK:SdcwHb;NSEoX:lazG7b;Np8Qkd:Dpx6qc;Nyt6ic:jn2sGd;OIfWUb:qfOYcd;OgagBe:cNTe0;OiqE2c:TFpEK;OoK5v:Sp69O;OohIYe:mpEAQb;Pjplud:PoEs9b;PpTLXd:pJYjx;Q1Ow7b:x5CSu;QGR0gd:Mlhmy;QYLF2b:pAQYUd;Qw8Feb:jpavUe;R4IIIb:QWfeKf;R9Ulx:CR7Ufe;RCF5Sd:X1kBmd;SLtqO:Kh1xYe;SMDL4c:fTfGO;SNUn3:ZwDk9d,xD8Kp;ScI3Yc:e7Hzgb,e7Hzgb;ShpF6e:N0pvGc;SwCqAd:fXbCZc;SzQQ3e:dNhofb;TIUVQd:M8uRWb;TroZ1d:vVVzjb;U96pRd:FsR04;UBKJZ:LGDJGb;UDrY1c:eps46d;UVmjEd:EesRsb;UVzb9c:IvPZ6d;UYRIEb:HzTAQc;UyG7Kb:wQd0G;V2HTTe:RolTY;VGRfx:VFqbr;VN6jIc:ddQyuf;VOcgDe:YquhTb;VhA7bd:vAmQFf;VsAqSb:PGf2Re;WCEKNd:I46Hvd;WDGyFe:jcVOxd;Wfmdue:g3MJlb;Y3c5sd:FGbfLe;YIZmRd:A1yn5d;YV5bee:IvPZ6d;ZSH6tc:QAvyLe;ZWEUA:afR4Cf;ZlOOMb:P0I0Ec;a56pNe:JEfCwb;aAJE9c:WHW6Ef;aCJ9tf:qKftvc;aVZq3e:EMeVIb;aZ61od:arTwJ;aci7y:Z5Tr6c;bDXwRe:UsyOtc;bUIkwb:WMwEHe;bcPXSc:gSZLJb;cEt90b:ws9Tlc;cFTWae:gT8qnd;dIoSBb:ZgGg9b;dLlj2:Qqt3Gf;dowIGb:ebZ3mb,ebZ3mb;dtl0hd:lLQWFe;eBAeSb:Ck63tb;eBZ5Nd:audvde;eHDfl:ofjVkb;eJKchc:ATg1be;eO3lse:UefOmb;euOXY:OZjbQ;g8nkx:U4MzKc;gaub4:TN6bMe;gtVSi:ekUOYd;h3MYod:ws9Tlc;hK67qb:QWEO5b;hVic1b:Kqhykb;heHB1:sFczq;hjRo6e:F62sG;hlqGX:FWz1ic;hsLsYc:Vl118;hwoVHd:zw4U8c;iFQyKf:QIhFr;iySzae:a6xXfd;jJj2G:kF2o2b;k2Qxcb:XY51pe;kbAm9d:MkHyGd;lOO0Vd:OTA3Ae;lbfkyf:MqGdUd;liAz7d:kF2o2b;lkq0A:JyBE3e;mWzs9c:fz5ukf;nJw4Gd:dPFZH;nrDcw:SuEoDe;oGtAuc:sOXFj;oSUNyd:fTfGO,fTfGO;oUlnpc:BO43gd;okUaUd:wItadb;pKJiXd:VCenhc;pNsl2d:j9Yuyc;pXdRYb:JKoKVe;pj82le:ww04Df;qGV2uc:HHi04c;qZx2Fc:j0xrE;qaS3gd:yiLg6e;qafBPd:sgY6Zb;qavrXe:zQzcXe;qddgKe:d7YSfd,x4FYXe;rmWaj:PMS6Sd;ropkZ:hjoqoe;sTsDMc:kHVSUb;sZmdvc:rdGEfc;slIQ5d:pnOULd;tH4IIe:Ymry6;teSRSb:hjoqoe;tosKvd:ZCqP3;trZL0b:qY8PFe;uuQkY:u2V3ud;vEYCNb:FaqsVd;vRlMvf:Iw9Xo;vfVwPd:lcrkwe;w3bZCb:ZPGaIb;w4rSdf:XKiZ9;w9w86d:dt4g2b;wQlYve:aLUfP;wR5FRb:O1Gjze,TtcOte;wV5Pjc:L8KGxe;xBbsrc:NEW1Qc;ysNiMc:CpIBjd;yxTchf:KUM7Z;z97YGf:oug9te;zOsCQe:Ko78Df;zaIgPb:Sl0pxd/m=bct,cdos,hsm,jsa,qim,rr4R9e,cEt90b,SNUn3,qddgKe,sTsDMc,dtl0hd,eHDfl,YV5bee,d,csi
+[12/15 09:20:14.418] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/images/nav_logo325_hr.webp
+[12/15 09:20:14.521] [DEBUG] [ChromiumRenderHandler] onPaint called #3: 380x480, popup=false, buffer=729600 bytes
+[12/15 09:20:14.523] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 09:20:14.524] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 09:20:14.527] [DEBUG] [ChromiumRenderHandler] PImage after conversion: white=100, nonWhite=0/100
+[12/15 09:20:14.529] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/xjs/_/js/md=2/k=xjs.hm.ja.CBWSaxLF3qc.2019.O/am=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAgAACBAAAAAAAAAIAAAAAAAAAAAAAAAACUQAAAAAAAAAAAAAAAAAAAIAAAABAAAAAAAYAAQAQAAhBAACMAAAAAAAAAAAAAAAACAQQAAAAIAAAP8AGAEAAAASAGABZAAAAIEAAAAAAEAAAAABACAAAAAAAAAAgAAAAAAAAAACAIIAACAAAAAAAQAAAAAAAAAAAAAAAAAAADAIAAAAAAAAAAAAgAMAhAAAADiIIgIAgAAAAACAHgA8EBhSUAAAAAAAAAAAAAAAAAAAAMABDMEZBBCAAAAAAAAAAAAAAAAAAAAAAAAAICHsakA/rs=ACT90oFAbJ7rpMmzpLTEzTfR--GzgjNUYA
+[12/15 09:20:14.530] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/client_204?atyp=i&biw=380&bih=480&dpr=1&ei=PVQ_aat-waXaug-Am8yYBg&opi=89978449
+[12/15 09:20:14.532] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/complete/search?q&cp=0&client=mobile-gws-wiz-hp&xssi=t&gs_pcrt=2&hl=ja&authuser=0&psi=PVQ_aat-waXaug-Am8yYBg.1765758014469&dpr=1&pfq=%E3%81%82%E3%81%82
+[12/15 09:20:14.534] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/gen_204?atyp=i&ei=PVQ_aat-waXaug-Am8yYBg&ct=chipC:t&zx=1765758014453&opi=89978449
+[12/15 09:20:14.535] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/gen_204?atyp=csi&ei=PVQ_aat-waXaug-Am8yYBg&s=webhp&t=all&folr=_PVQ_aat-waXaug-Am8yYBg_8&imn=1&dtc=145&stc=26&ima=0&imad=0&imac=1&wh=480&nt=navigate&dt=&ts=56366&nhp=h3&ant=replace&cls=0.16844451579147643&ime=0&imeh=0&imeha=0&imehb=0&imea=0&imeb=0&imel=0&imed=0&imeeb=0&imexb=0&scp=0&cb=56066&ucb=189276&lts=56366&adh=&mem=ujhs.9,tjhs.13,jhsl.4295,dm.8&nv=ne.1,feid.6bfb0b03-872d-45bf-bc30-68deeca31d57&net=dl.1500,ect.4g,rtt.100,sd.0&hp=&p=bs.false&rt=hst.32,dlt.83,prt.99,aft.99,xjspls.115,xjsls.115,dcl.116,xjses.179,xjsee.205,xjs.205,lcp.123,fcp.111,wsrt.601,cst.0,dnst.0,rqst.200,rspt.75,sslt.0,rqstt.476,unt.19,cstt.475,dit.717&zx=1765758014455&opi=89978449
+[12/15 09:20:14.537] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/gen_204?s=async&astyp=hpba&t=all&atyp=csi&ei=PVQ_ab20DrCP2roPiIzB8AE&rt=ipf.0,ttfb.123,st.123,ipfrl.124,acrt.124,aaft.124,art.124,ns.-685&twt=1&mwt=1&imn=0&ima=0&folid=_PVQ_aat-waXaug-Am8yYBg_8
+[12/15 09:20:14.573] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/xjs/_/js/k=xjs.hm.ja.CBWSaxLF3qc.2019.O/ck=xjs.hm.RdhFQ4fxj44.L.B1.O/am=AEAACAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAASABAAgAAKBAAAAAAAAYIAIQCAAAAAAAAAAAACUQAAAACAAAAAAAAAAAAAAIAAAABAAAAAAAYAAwAQAAhBAACMAAAAAAAAAAAAAAAACAQQGDDAYAAAP8AGAEgABiSAWABbAAAAIEMIAAEwEIICgpBACAAAAEAAAAAgAAAAAAAAAACAIJAACAAAAAAAQABAQDhYgoGAAAAwAgAEDAIgAAAAAAAAAAAgAsAhAAAADiIIgIAgAAAAACAHgA8EBhSUAAAAAAAAAAAAAAAAAAAAMABDMEZBBCAAAAAAAAAAAAAAAAAAAAAAAAAICHsakA/d=0/dg=0/br=1/ujg=1/rs=ACT90oGWQlbLSWJpfrd2LPMOaMfuhyioBA/m=sy1qa,loL8vb,sy1qb,sy1q7,sy18j,ms4mZb,sy1ni,HoZvlf,sy1os,eT8Xz,syeh,syeg,mI3LFb,syen,lazG7b,sysh,xRxDld,syf5,Wq6lxf,sysy,sysx,sysv,syov,syo5,syj8,syk5,syj9,syjc,syiy,syiz,sygf,sygg,syh6,sygx,syow,OZLguc,sy18d,sysz,syr4,syog,syr5,Mbif2,ipWLfe,sy18f,QVaUhf,sy84,sy83,syg3,syfz,syfy,syg9,syg7,syfx,sy8h,sy8k,syfv,syfu,syc7,sybk,syb7,sybj,sybc,sybf,sybb,syb0,syb9,sybh,syb8,syav,sybm,syc5,sybz,sybu,sya9,sya8,sybs,syby,sybv,syb2,syb3,syb4,syb5,syb1,syb6,sycd,syaw,sya7,sycb,syal,syac,syah,syar,syaz,sybw,syft,syfs,syfp,syfn,sy8p,uxMpU,syfc,sycg,syc0,sycj,sybp,sycf,syca,sy98,sy95,sy94,sy93,sy92,sy91,Mlhmy,QGR0gd,PoEs9b,Pjplud,OTA3Ae,sy8y,A1yn5d,YIZmRd,sy8e,sy8c,sy8b,sy8a,sy88,byfTOb,lsjVmc,LEikZe,sy86,kWgXee,ovKuLd,sgY6Zb,qafBPd,ebZ3mb,dowIGb,sy18i,sy18h,sy18g,SJpD2c,SMquOb,syyg,syyd,sye2,d5EhJe,sy10n,sy1l5,sy1l4,sy1l3,sy1l2,syuw,sy11d,sy11c,syyp,syyq,syvm,syvg,T1HOxc,sy15t,fCxEDd,syyn,syyk,syyl,syyi,syny,zx30Y,sy1l7,sy1l6,sy1ie,syyw,Wo3n8,sy3u5,sy3to,sy43a,sy3wc,sy3u2,sy3tu,sy3ts,sy3ty,sy3tx,sy3tp,sy54a,sy2oj,hmxkV,sy1k1,sy1jz,sy1k0,Ix7YEd,sy158,nqQ5fe,sy1k4,sy1k3,sy1k2,dp6JMc,sy1ow,L3vX2d,sy1ov,KWMuje,sy1oy,syxv?xjs=s3
+[12/15 09:20:14.576] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/xjs/_/js/k=xjs.hm.ja.CBWSaxLF3qc.2019.O/ck=xjs.hm.RdhFQ4fxj44.L.B1.O/am=AEAACAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAASABAAgAAKBAAAAAAAAYIAIQCAAAAAAAAAAAACUQAAAACAAAAAAAAAAAAAAIAAAABAAAAAAAYAAwAQAAhBAACMAAAAAAAAAAAAAAAACAQQGDDAYAAAP8AGAEgABiSAWABbAAAAIEMIAAEwEIICgpBACAAAAEAAAAAgAAAAAAAAAACAIJAACAAAAAAAQABAQDhYgoGAAAAwAgAEDAIgAAAAAAAAAAAgAsAhAAAADiIIgIAgAAAAACAHgA8EBhSUAAAAAAAAAAAAAAAAAAAAMABDMEZBBCAAAAAAAAAAAAAAAAAAAAAAAAAICHsakA/d=0/dg=0/br=1/ujg=1/rs=ACT90oGWQlbLSWJpfrd2LPMOaMfuhyioBA/m=sy1ox,syxw,sy1lq,syy7,syxs,syy8,syy0,syxu,syy1,V23Ql,sy1oz,OPwjEf,sy16o,EbPKJf,sy12e,sy12c,sykg,syp2,CnSW2d,sytl,sytj,syti,DPreE,sy16r,sy16q,sy12g,pFsdhd,sy1p0,aBr2Mc,sy1p4,sy1p3,sy1p1,syvi,syrp,syqs,syrr,syvl,sy1p2,EkevXb,bIMMof,sy12k,sy12j,KbYvUc,sy1nh,sy128,sy10l,sy10g,sy10e,sy10m,sy10f,sy10p,sy1ng,KHourd,sy177,oSkgIf?xjs=s3
+[12/15 09:20:14.608] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/gen_204?atyp=csi&ei=PVQ_aat-waXaug-Am8yYBg&s=promo&rt=hpbas.359&zx=1765758014608&opi=89978449
+[12/15 09:20:14.611] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/gen_204?atyp=csi&ei=PVQ_aat-waXaug-Am8yYBg&s=promo&rt=hpbas.359,hpbarr.1&zx=1765758014609&opi=89978449
+[12/15 09:20:14.617] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/async/hpba?vet=10ahUKEwjrkICZqb6RAxXBklYBHYANE2MQj-0KCAE..i&ei=PVQ_aat-waXaug-Am8yYBg&opi=89978449&yv=3&sp_imghp=false&sp_hpte=0&sp_hpep=1&stick=&cs=0&async=_basejs:%2Fxjs%2F_%2Fjs%2Fk%3Dxjs.hm.ja.CBWSaxLF3qc.2019.O%2Fam%3DAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAgAACBAAAAAAAAAIAAAAAAAAAAAAAAAACUAAAAAAAAAAAAAAAAAAAAIAAAABAAAAAAAYAAQAQAABBAACMAAAAAAAAAAAAAAAACAQQAAAAIAAAP8AGAEAAAASAGABZAAAAIEAAAAAAEAAAAAAACAAAAAAAAAAgAAAAAAAAAACAIIAACAAAAAAAQAAAAAAAAAAAAAAAAAAADAIAAAAAAAAAAAAgAMAhAAAADiAIgIAgAAAAACAHgA8EBhSUAAAAAAAAAAAAAAAAAAAAMABDMEZBBCAAAAAAAAAAAAAAAAAAAAAAAAAICHsakA%2Fdg%3D0%2Fbr%3D1%2Frs%3DACT90oGU5zVr2s5jGebJGKY4-oT4Xj7c3w,_basecss:%2Fxjs%2F_%2Fss%2Fk%3Dxjs.hm.RdhFQ4fxj44.L.B1.O%2Fam%3DAEAACAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAQABAAAAAIAAAAAAAAAYAAIQCAAAAAAAAAAAAAAQAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwAQAAhAAAAAAAAAAAAAAAAAAAAACAAQGDDAQAAAAAAAAAgABiAAQAACAAAAAAMIAAEwEIICgpBAAAAAAEAAAAAAAAAAAAAAAAAAAJAACAAAAAAAAABAQDhYgoGAAAAwAgAECAIgAAAAAAAAAAAgAkAAAAAADiIIgIAAAAAAAAAAg%2Fbr%3D1%2Frs%3DACT90oHLU2Rtm2_F763jbIFDuVwyDGxzjQ,_basecomb:%2Fxjs%2F_%2Fjs%2Fk%3Dxjs.hm.ja.CBWSaxLF3qc.2019.O%2Fck%3Dxjs.hm.RdhFQ4fxj44.L.B1.O%2Fam%3DAEAACAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAASABAAgAAKBAAAAAAAAYIAIQCAAAAAAAAAAAACUQAAAACAAAAAAAAAAAAAAIAAAABAAAAAAAYAAwAQAAhBAACMAAAAAAAAAAAAAAAACAQQGDDAYAAAP8AGAEgABiSAWABbAAAAIEMIAAEwEIICgpBACAAAAEAAAAAgAAAAAAAAAACAIJAACAAAAAAAQABAQDhYgoGAAAAwAgAEDAIgAAAAAAAAAAAgAsAhAAAADiIIgIAgAAAAACAHgA8EBhSUAAAAAAAAAAAAAAAAAAAAMABDMEZBBCAAAAAAAAAAAAAAAAAAAAAAAAAICHsakA%2Fd%3D1%2Fed%3D1%2Fdg%3D0%2Fbr%3D1%2Fujg%3D1%2Frs%3DACT90oGWQlbLSWJpfrd2LPMOaMfuhyioBA,_fmt:prog,_id:_PVQ_aat-waXaug-Am8yYBg_1
+[12/15 09:20:14.620] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/xjs/_/js/k=xjs.hm.ja.CBWSaxLF3qc.2019.O/am=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAgAACBAAAAAAAAAIAAAAAAAAAAAAAAAACUAAAAAAAAAAAAAAAAAAAAIAAAABAAAAAAAYAAQAQAABBAACMAAAAAAAAAAAAAAAACAQQAAAAIAAAP8AGAEAAAASAGABZAAAAIEAAAAAAEAAAAAAACAAAAAAAAAAgAAAAAAAAAACAIIAACAAAAAAAQAAAAAAAAAAAAAAAAAAADAIAAAAAAAAAAAAgAMAhAAAADiAIgIAgAAAAACAHgA8EBhSUAAAAAAAAAAAAAAAAAAAAMABDMEZBBCAAAAAAAAAAAAAAAAAAAAAAAAAICHsakA/d=0/dg=0/br=1/rs=ACT90oGU5zVr2s5jGebJGKY4-oT4Xj7c3w/m=sy543,sy2bb,HFecgf,sy2bh,sy2bg,sy2bf,sy2be,sy2bd,sy2bc,FZSjO,sy3wd,sy2ok,sy151,sy150,HK6Tmb,WlNQGd,sy17m,XCToU,sy12a,lllQlf,sy12i,sy12h,nabPbb,syvo,syvn,nRwWne?xjs=s4
+[12/15 09:20:14.623] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/complete/search?q&pq&cp=0&client=mweb-insp&xssi=t&dpr=1
+[12/15 09:20:14.631] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/wizrpcui/_/WizRpcUi/data/batchexecute?rpcids=VeQe9d&source-path=%2F&hl=ja&_reqid=33615&rt=c
+[12/15 09:20:14.635] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/gen_204?atyp=i&ei=PVQ_aat-waXaug-Am8yYBg&vet=10ahUKEwjrkICZqb6RAxXBklYBHYANE2MQuqMJCCw..s&bl=r2T-&s=webhp&lpl=CAUYATAIOANiBhDgx47WAw&zx=1765758014635&opi=89978449
+[12/15 09:20:14.638] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/xjs/_/js/k=xjs.hm.ja.CBWSaxLF3qc.2019.O/am=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAgAACBAAAAAAAAAIAAAAAAAAAAAAAAAACUAAAAAAAAAAAAAAAAAAAAIAAAABAAAAAAAYAAQAQAABBAACMAAAAAAAAAAAAAAAACAQQAAAAIAAAP8AGAEAAAASAGABZAAAAIEAAAAAAEAAAAAAACAAAAAAAAAAgAAAAAAAAAACAIIAACAAAAAAAQAAAAAAAAAAAAAAAAAAADAIAAAAAAAAAAAAgAMAhAAAADiAIgIAgAAAAACAHgA8EBhSUAAAAAAAAAAAAAAAAAAAAMABDMEZBBCAAAAAAAAAAAAAAAAAAAAAAAAAICHsakA/d=0/dg=0/br=1/rs=ACT90oGU5zVr2s5jGebJGKY4-oT4Xj7c3w/m=syfj,aLUfP?xjs=s4
+[12/15 09:20:14.643] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/xjs/_/js/k=xjs.hm.ja.CBWSaxLF3qc.2019.O/am=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAgAACBAAAAAAAAAIAAAAAAAAAAAAAAAACUAAAAAAAAAAAAAAAAAAAAIAAAABAAAAAAAYAAQAQAABBAACMAAAAAAAAAAAAAAAACAQQAAAAIAAAP8AGAEAAAASAGABZAAAAIEAAAAAAEAAAAAAACAAAAAAAAAAgAAAAAAAAAACAIIAACAAAAAAAQAAAAAAAAAAAAAAAAAAADAIAAAAAAAAAAAAgAMAhAAAADiAIgIAgAAAAACAHgA8EBhSUAAAAAAAAAAAAAAAAAAAAMABDMEZBBCAAAAAAAAAAAAAAAAAAAAAAAAAICHsakA/d=0/dg=0/br=1/rs=ACT90oGU5zVr2s5jGebJGKY4-oT4Xj7c3w/m=lOO0Vd,sy8z,P6sQOc?xjs=s4
+[12/15 09:20:14.647] [DEBUG] [ChromiumRenderHandler] onPaint called #4: 380x480, popup=false, buffer=729600 bytes
+[12/15 09:20:14.649] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 09:20:14.651] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 09:20:14.653] [DEBUG] [ChromiumBrowser] LoadHandler onLoadEnd: https://www.google.com/?zx=1765758014614&no_sw_cr=1 (status: 200)
+[12/15 09:20:14.654] [DEBUG] [ChromiumBrowser] Text input focus and selection detection script injected
+[12/15 09:20:14.663] [DEBUG] [ChromiumBrowser] Console message received: [MochiOS:Init] Focus detection script starting
+_204?atyp=i&ct=psnt&cad=&nt=navigate&ei=PVQ_aat-waXaug-Am8yYBg&zx=1765758014649&opi=89978449
+[12/15 09:20:14.664] [DEBUG] [ChromiumBrowser] Console message received: [MochiOS:FocusDebug] tag=BODY, type=undefined, role=null, contentEditable=false, isTextInput=false
+[12/15 09:20:14.726] [DEBUG] [ChromiumRenderHandler] onPaint called #5: 380x480, popup=false, buffer=729600 bytes
+[12/15 09:20:14.728] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 09:20:14.729] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 09:20:14.733] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/gen_204?atyp=csi&ei=PVQ_aa-3H4mj0-kPs_juEQ&s=async&astyp=hpba&ima=0&imn=0&mem=ujhs.9,tjhs.13,jhsl.4295,dm.8&nv=ne.1,feid.d0b93ca1-94ab-4c8d-95d0-7cec53e59959&hp=&rt=ttfb.77,st.77,bs.27,aaft.78,acrt.79,art.79&zx=1765758014688&opi=89978449
+[12/15 09:20:14.794] [DEBUG] [ChromiumRenderHandler] onPaint called #6: 380x480, popup=false, buffer=729600 bytes
+[12/15 09:20:14.795] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 09:20:14.796] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 09:20:14.927] [DEBUG] [ChromiumRenderHandler] onPaint called #7: 380x480, popup=false, buffer=729600 bytes
+[12/15 09:20:14.928] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 09:20:14.931] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 09:20:15.093] [DEBUG] [ChromiumRenderHandler] onPaint called #8: 380x480, popup=false, buffer=729600 bytes
+[12/15 09:20:15.097] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 09:20:15.098] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 09:20:15.227] [DEBUG] [ChromiumRenderHandler] onPaint called #9: 380x480, popup=false, buffer=729600 bytes
+[12/15 09:20:15.230] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 09:20:15.231] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 09:20:15.292] [DEBUG] [ChromiumRenderHandler] onPaint called #10: 380x480, popup=false, buffer=729600 bytes
+[12/15 09:20:15.294] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 09:20:15.296] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 09:20:15.309] [DEBUG] [ChromiumRenderHandler] onPaint called #11: 380x480, popup=false, buffer=729600 bytes
+[12/15 09:20:15.313] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 09:20:15.314] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 09:20:15.328] [DEBUG] [ChromiumRenderHandler] onPaint called #12: 380x480, popup=false, buffer=729600 bytes
+[12/15 09:20:15.330] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 09:20:15.332] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 09:20:15.391] [DEBUG] [ChromiumRenderHandler] onPaint called #13: 380x480, popup=false, buffer=729600 bytes
+[12/15 09:20:15.394] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 09:20:15.395] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 09:20:15.410] [DEBUG] [ChromiumRenderHandler] onPaint called #14: 380x480, popup=false, buffer=729600 bytes
+[12/15 09:20:15.412] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 09:20:15.415] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 09:20:15.418] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://play.google.com/log?format=json&hasfast=true
+[12/15 09:20:15.428] [DEBUG] [ChromiumRenderHandler] onPaint called #15: 380x480, popup=false, buffer=729600 bytes
+[12/15 09:20:15.430] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 09:20:15.432] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 09:20:15.494] [DEBUG] [ChromiumRenderHandler] onPaint called #16: 380x480, popup=false, buffer=729600 bytes
+[12/15 09:20:15.496] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 09:20:15.497] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 09:20:15.509] [DEBUG] [ChromiumRenderHandler] onPaint called #17: 380x480, popup=false, buffer=729600 bytes
+[12/15 09:20:15.512] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 09:20:15.514] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 09:20:15.527] [DEBUG] [ChromiumRenderHandler] onPaint called #18: 380x480, popup=false, buffer=729600 bytes
+[12/15 09:20:15.529] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 09:20:15.532] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 09:20:15.591] [DEBUG] [ChromiumRenderHandler] onPaint called #19: 380x480, popup=false, buffer=729600 bytes
+[12/15 09:20:15.594] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 09:20:15.596] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 09:20:15.609] [DEBUG] [ChromiumRenderHandler] onPaint called #20: 380x480, popup=false, buffer=729600 bytes
+[12/15 09:20:15.612] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 09:20:15.614] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 09:20:15.677] [DEBUG] [ChromiumRenderHandler] onPaint called #21: 380x480, popup=false, buffer=729600 bytes
+[12/15 09:20:15.681] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 09:20:15.682] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 09:20:15.694] [DEBUG] [ChromiumRenderHandler] onPaint called #22: 380x480, popup=false, buffer=729600 bytes
+[12/15 09:20:15.697] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 09:20:15.698] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 09:20:15.700] [DEBUG] [ChromiumRenderHandler] Frame skipped (too soon)
+[12/15 09:20:15.858] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/gen_204?atyp=i&ei=PVQ_aat-waXaug-Am8yYBg&vet=10ahUKEwjrkICZqb6RAxXBklYBHYANE2MQ470GCB0..s&bl=r2T-&s=webhp&zx=1765758015805&opi=89978449
+[12/15 09:20:15.860] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 09:20:15.862] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 09:20:15.864] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/gen_204?atyp=i&ei=PVQ_aat-waXaug-Am8yYBg&vet=10ahUKEwjrkICZqb6RAxXBklYBHYANE2MQ470GCB0..s&bl=r2T-&s=webhp&zx=1765758015806&opi=89978449
+[12/15 09:20:15.865] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/gen_204?atyp=i&ei=PVQ_aat-waXaug-Am8yYBg&vet=10ahUKEwjrkICZqb6RAxXBklYBHYANE2MQ470GCB0..s&bl=r2T-&s=webhp&zx=1765758015806&opi=89978449
+[12/15 09:20:15.867] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/gen_204?atyp=i&ei=PVQ_aat-waXaug-Am8yYBg&vet=10ahUKEwjrkICZqb6RAxXBklYBHYANE2MQ470GCB0..s&bl=r2T-&s=webhp&zx=1765758015806&opi=89978449
+[12/15 09:20:15.869] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/gen_204?atyp=i&ei=PVQ_aat-waXaug-Am8yYBg&vet=10ahUKEwjrkICZqb6RAxXBklYBHYANE2MQ470GCB0..s&bl=r2T-&s=webhp&zx=1765758015806&opi=89978449
+[12/15 09:20:15.869] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/gen_204?atyp=i&ei=PVQ_aat-waXaug-Am8yYBg&vet=10ahUKEwjrkICZqb6RAxXBklYBHYANE2MQ470GCB0..s&bl=r2T-&s=webhp&zx=1765758015807&opi=89978449
+[12/15 09:20:15.871] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/gen_204?atyp=i&ei=PVQ_aat-waXaug-Am8yYBg&vet=10ahUKEwjrkICZqb6RAxXBklYBHYANE2MQ470GCB0..s&bl=r2T-&s=webhp&zx=1765758015807&opi=89978449
+[12/15 09:20:16.042] [DEBUG] [ChromiumRenderHandler] onPaint called #24: 380x480, popup=false, buffer=729600 bytes
+[12/15 09:20:16.045] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 09:20:16.047] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 09:20:16.140] [DEBUG] [ChromiumRenderHandler] onPaint called #25: 380x480, popup=false, buffer=729600 bytes
+[12/15 09:20:16.141] [DEBUG] [Kernel] keyPressed - key=' ' (charCode=32), keyCode=0
+:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 09:20:16.143] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 09:20:16.262] [DEBUG] [ChromiumRenderHandler] onPaint called #26: 380x480, popup=false, buffer=729600 bytes
+[12/15 09:20:16.264] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 09:20:16.266] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 09:20:16.278] [DEBUG] [ChromiumRenderHandler] onPaint called #27: 380x480, popup=false, buffer=729600 bytes
+[12/15 09:20:16.281] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 09:20:16.283] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 09:20:16.284] [DEBUG] [ChromiumRenderHandler] Frame skipped (too soon)
+[12/15 09:20:16.295] [DEBUG] [ChromiumRenderHandler] onPaint called #28: 380x480, popup=false, buffer=729600 bytes
+[12/15 09:20:16.298] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 09:20:16.301] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 09:20:16.304] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://www.google.com/gen_204?atyp=csi&ei=PVQ_aat-waXaug-Am8yYBg&s=webhp&nt=navigate&t=fi&st=2542&fid=8&zx=1765758016202&opi=89978449
+[12/15 09:20:16.313] [DEBUG] [ChromiumRenderHandler] onPaint called #29: 380x480, popup=false, buffer=729600 bytes
+[12/15 09:20:16.317] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 09:20:16.319] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 09:20:16.329] [DEBUG] [ChromiumRenderHandler] onPaint called #30: 380x480, popup=false, buffer=729600 bytes
+[12/15 09:20:16.332] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 09:20:16.334] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 09:20:16.336] [DEBUG] [ChromiumRenderHandler] Frame skipped (too soon)
+[12/15 09:20:16.409] [DEBUG] [ChromiumRenderHandler] onPaint called #31: 380x480, popup=false, buffer=729600 bytes
+[12/15 09:20:16.412] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 09:20:16.413] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 09:20:17.072] [DEBUG] [ChromiumBrowser] Disposing ChromiumBrowser
+[12/15 09:20:17.096] [DEBUG] [ChromiumBrowser] Hidden JFrame disposed
+[12/15 09:20:17.098] [INFO] [ChromiumManager] Shutting down Chromium...
+[12/15 09:20:17.099] [INFO] [ChromiumManager] Chromium shutdown complete
+[12/15 09:20:17.101] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: https://play.google.com/log?hasfast=true&authuser=0&format=json
+[12/15 11:14:02.737] [INFO] [LoggerService] Logger service initialized
+[12/15 11:14:02.834] [DEBUG] [GestureManager] Gesture system initialized
+[12/15 11:14:03.313] [INFO] [LoggerService] Log level set to DEBUG
+[12/15 11:14:03.314] [INFO] [Kernel] === MochiMobileOS カーネル初期化開始 ===
+[12/15 11:14:03.317] [INFO] [Kernel] 画面サイズ: 400x600
+[12/15 11:14:03.321] [INFO] [SensorManager] デフォルトセンサーを初期化: 9個
+[12/15 11:14:03.324] [INFO] [Kernel] サービスマネージャー初期化完了
+[12/15 11:14:03.326] [INFO] [Kernel] 日本語フォントを初期化中...
+[12/15 11:14:03.327] [INFO] [Kernel] 日本語フォント (Noto Sans JP) を正常に読み込みました
+[12/15 11:14:03.340] [INFO] [Kernel] InputManager初期化完了
+[12/15 11:14:03.342] [INFO] [Kernel] RenderPipeline初期化完了
+[12/15 11:14:03.612] [INFO] [NetworkAdapter] NetworkAdapter initialized
+[12/15 11:14:03.617] [INFO] [ChromiumManager] ChromiumProvider set: jcefmaven (JCEF)
+[12/15 11:14:03.619] [INFO] [ChromiumManager] Initializing Chromium with provider: jcefmaven (JCEF)
+[12/15 11:14:12.751] [INFO] [ChromiumManager] Chromium initialized successfully
+[12/15 11:14:12.752] [INFO] [ChromiumManager] Chromium version: JCEF Version = 135.0.20.333
+CEF Version = 135.0.20
+Chromium Version = 135.0.7049.85
+[12/15 11:14:12.769] [INFO] [Kernel] ChromiumService初期化完了
+[12/15 11:14:12.772] [INFO] [Kernel] パーミッション管理サービス初期化完了
+[12/15 11:14:12.774] [INFO] [Kernel] アクティビティ管理サービス初期化完了
+[12/15 11:14:12.778] [INFO] [ClipboardManager] 初期化: AWTClipboardProvider (利用可能: true)
+[12/15 11:14:12.780] [INFO] [Kernel] クリップボード管理サービス初期化完了
+[12/15 11:14:12.782] [INFO] [Kernel] クリップボードサービス（OS統一管理）初期化完了
+[12/15 11:14:12.783] [INFO] [Kernel] センサー管理サービス初期化完了
+[12/15 11:14:12.787] [DEBUG] [GestureManager] Added gesture listener ControlCenterManager (priority: 0)
+[12/15 11:14:12.792] [DEBUG] [GestureManager] Current listener order: ControlCenterManager(priority=0)
+[12/15 11:14:12.794] [DEBUG] [GestureManager] Added gesture listener NotificationManager (priority: 900)
+[12/15 11:14:12.795] [DEBUG] [GestureManager] Current listener order: NotificationManager(priority=900) -> ControlCenterManager(priority=0)
+[12/15 11:14:12.798] [DEBUG] [GestureManager] Added gesture listener Kernel (priority: -1000)
+[12/15 11:14:12.800] [DEBUG] [GestureManager] Current listener order: NotificationManager(priority=900) -> ControlCenterManager(priority=0) -> Kernel(priority=-1000)
+[12/15 11:14:12.807] [DEBUG] [ScreenManager] Kernel reference set for layer management integration
+[12/15 11:14:12.808] [DEBUG] [ScreenManager] PAppletを設定 - 成功
+[12/15 11:14:12.826] [DEBUG] [GestureManager] Added gesture listener HomeScreen (priority: 50)
+[12/15 11:14:12.830] [DEBUG] [GestureManager] Current listener order: NotificationManager(priority=900) -> HomeScreen(priority=50) -> ControlCenterManager(priority=0) -> Kernel(priority=-1000)
+[12/15 11:14:12.832] [INFO] [SensorManager] センサーリスナー登録: MochiOS Humidity Sensor, 200000us
+[12/15 11:14:12.833] [INFO] [SensorManager] センサーリスナー登録: MochiOS Light Sensor, 200000us
+[12/15 11:14:12.835] [DEBUG] [ScreenManager] New screen moved to foreground: Home Screen
+[12/15 11:14:12.838] [DEBUG] [ScreenManager] Screen analysis - Title: 'Home Screen', ClassName: 'HomeScreen', isLauncher: true
+[12/15 11:14:12.840] [DEBUG] [ScreenManager] Skipped APPLICATION layer addition - kernel=true, isLauncher=true
+[12/15 11:14:12.841] [DEBUG] [ScreenManager] Pushed screen - Home Screen
+[12/15 11:14:12.844] [DEBUG] [StandaloneVirtualSocket] StandaloneVirtualSocket initialized
+[12/15 11:14:12.847] [INFO] [VirtualAdapter] VirtualSocket set: StandaloneVirtualSocket (status: 接続中)
+[12/15 11:14:12.850] [INFO] [StandaloneWrapper] Instrumented AWT EventQueue installed
+[12/15 11:18:01.388] [INFO] [ChromiumManager] Shutting down Chromium...
+[12/15 11:18:01.391] [INFO] [ChromiumManager] Chromium shutdown complete
+[12/15 14:30:52.933] [INFO] [LoggerService] Logger service initialized
+[12/15 14:30:53.027] [DEBUG] [GestureManager] Gesture system initialized
+[12/15 14:30:53.471] [INFO] [LoggerService] Log level set to DEBUG
+[12/15 14:30:53.474] [INFO] [Kernel] === MochiMobileOS カーネル初期化開始 ===
+[12/15 14:30:53.477] [INFO] [Kernel] 画面サイズ: 400x600
+[12/15 14:30:53.480] [INFO] [SensorManager] デフォルトセンサーを初期化: 9個
+[12/15 14:30:53.485] [INFO] [Kernel] サービスマネージャー初期化完了
+[12/15 14:30:53.486] [INFO] [Kernel] 日本語フォントを初期化中...
+[12/15 14:30:53.488] [INFO] [Kernel] 日本語フォント (Noto Sans JP) を正常に読み込みました
+[12/15 14:30:53.499] [INFO] [Kernel] InputManager初期化完了
+[12/15 14:30:53.500] [INFO] [Kernel] RenderPipeline初期化完了
+[12/15 14:30:53.773] [INFO] [NetworkAdapter] NetworkAdapter initialized
+[12/15 14:30:53.776] [INFO] [ChromiumManager] ChromiumProvider set: jcefmaven (JCEF)
+[12/15 14:30:53.778] [INFO] [ChromiumManager] Initializing Chromium with provider: jcefmaven (JCEF)
+[12/15 14:30:53.908] [INFO] [ChromiumManager] Chromium initialized successfully
+[12/15 14:30:53.911] [INFO] [ChromiumManager] Chromium version: JCEF Version = 135.0.20.333
+CEF Version = 135.0.20
+Chromium Version = 135.0.7049.85
+[12/15 14:30:53.929] [INFO] [Kernel] ChromiumService初期化完了
+[12/15 14:30:53.932] [INFO] [Kernel] パーミッション管理サービス初期化完了
+[12/15 14:30:53.934] [INFO] [Kernel] アクティビティ管理サービス初期化完了
+[12/15 14:30:53.939] [INFO] [ClipboardManager] 初期化: AWTClipboardProvider (利用可能: true)
+[12/15 14:30:53.940] [INFO] [Kernel] クリップボード管理サービス初期化完了
+[12/15 14:30:53.942] [INFO] [Kernel] クリップボードサービス（OS統一管理）初期化完了
+[12/15 14:30:53.943] [INFO] [Kernel] センサー管理サービス初期化完了
+[12/15 14:30:53.946] [DEBUG] [GestureManager] Added gesture listener ControlCenterManager (priority: 0)
+[12/15 14:30:53.948] [DEBUG] [GestureManager] Current listener order: ControlCenterManager(priority=0)
+[12/15 14:30:53.951] [DEBUG] [GestureManager] Added gesture listener NotificationManager (priority: 900)
+[12/15 14:30:53.952] [DEBUG] [GestureManager] Current listener order: NotificationManager(priority=900) -> ControlCenterManager(priority=0)
+[12/15 14:30:53.954] [DEBUG] [GestureManager] Added gesture listener Kernel (priority: -1000)
+[12/15 14:30:53.955] [DEBUG] [GestureManager] Current listener order: NotificationManager(priority=900) -> ControlCenterManager(priority=0) -> Kernel(priority=-1000)
+[12/15 14:30:53.962] [DEBUG] [ScreenManager] Kernel reference set for layer management integration
+[12/15 14:30:53.965] [DEBUG] [ScreenManager] PAppletを設定 - 成功
+[12/15 14:30:53.985] [DEBUG] [GestureManager] Added gesture listener HomeScreen (priority: 50)
+[12/15 14:30:53.986] [DEBUG] [GestureManager] Current listener order: NotificationManager(priority=900) -> HomeScreen(priority=50) -> ControlCenterManager(priority=0) -> Kernel(priority=-1000)
+[12/15 14:30:53.990] [INFO] [SensorManager] センサーリスナー登録: MochiOS Humidity Sensor, 200000us
+[12/15 14:30:53.992] [INFO] [SensorManager] センサーリスナー登録: MochiOS Light Sensor, 200000us
+[12/15 14:30:53.995] [DEBUG] [ScreenManager] New screen moved to foreground: Home Screen
+[12/15 14:30:53.996] [DEBUG] [ScreenManager] Screen analysis - Title: 'Home Screen', ClassName: 'HomeScreen', isLauncher: true
+[12/15 14:30:53.997] [DEBUG] [ScreenManager] Skipped APPLICATION layer addition - kernel=true, isLauncher=true
+[12/15 14:30:53.999] [DEBUG] [ScreenManager] Pushed screen - Home Screen
+[12/15 14:30:54.002] [DEBUG] [StandaloneVirtualSocket] StandaloneVirtualSocket initialized
+[12/15 14:30:54.003] [INFO] [VirtualAdapter] VirtualSocket set: StandaloneVirtualSocket (status: 接続中)
+[12/15 14:30:54.007] [INFO] [StandaloneWrapper] Instrumented AWT EventQueue installed
+[12/15 14:30:56.975] [DEBUG] [StandaloneWrapper] mousePressed event received at (314, 207)
+[12/15 14:30:57.142] [DEBUG] [StandaloneWrapper] mouseDragged event received at (206, 207)
+[12/15 14:30:57.148] [DEBUG] [GestureManager] Dispatch gesture DRAG_START handledIndex=-1 listeners=4
+[12/15 14:30:57.150] [WARN] [KernelInput] mouseDragged gesture latency=6.167ms coord=(206,207)
+[12/15 14:30:57.151] [DEBUG] [KernelInput] mouseDragged screen latency=1.478ms coord=(206,207)
+[12/15 14:30:57.153] [WARN] [KernelInput] mouseDragged total latency=9.143ms coord=(206,207)
+[12/15 14:30:57.225] [DEBUG] [StandaloneWrapper] mouseDragged event received at (-63, 207)
+[12/15 14:30:57.227] [DEBUG] [StandaloneWrapper] mouseReleased event received at (-63, 207)
+[12/15 14:30:57.228] [DEBUG] [Kernel] mouseReleased at (-63, 207)
+[12/15 14:30:57.231] [DEBUG] [GestureManager] Dispatch gesture DRAG_END handledIndex=1 listeners=4
+[12/15 14:30:57.233] [DEBUG] [GestureManager] Dispatch gesture SWIPE_LEFT handledIndex=1 listeners=4
+[12/15 14:30:57.234] [WARN] [KernelInput] mouseReleased gesture latency=6.477ms coord=(-63,207)
+[12/15 14:30:57.236] [DEBUG] [Kernel] Forwarding mouseReleased to ScreenManager
+[12/15 14:30:57.238] [DEBUG] [KernelInput] mouseReleased screen latency=3.313ms coord=(-63,207)
+[12/15 14:30:57.239] [WARN] [KernelInput] mouseReleased total latency=11.631ms coord=(-63,207)
+[12/15 14:30:59.778] [INFO] [ChromiumManager] Shutting down Chromium...
+[12/15 14:30:59.780] [INFO] [ChromiumManager] Chromium shutdown complete
+[12/15 15:30:17.538] [INFO] [LoggerService] Logger service initialized
+[12/15 15:30:17.631] [DEBUG] [GestureManager] Gesture system initialized
+[12/15 15:30:18.098] [INFO] [LoggerService] Log level set to DEBUG
+[12/15 15:30:18.100] [INFO] [Kernel] === MochiMobileOS カーネル初期化開始 ===
+[12/15 15:30:18.102] [INFO] [Kernel] 画面サイズ: 400x600
+[12/15 15:30:18.106] [INFO] [SensorManager] デフォルトセンサーを初期化: 9個
+[12/15 15:30:18.108] [INFO] [Kernel] サービスマネージャー初期化完了
+[12/15 15:30:18.110] [INFO] [Kernel] 日本語フォントを初期化中...
+[12/15 15:30:18.112] [INFO] [Kernel] 日本語フォント (Noto Sans JP) を正常に読み込みました
+[12/15 15:30:18.123] [INFO] [Kernel] InputManager初期化完了
+[12/15 15:30:18.125] [INFO] [Kernel] RenderPipeline初期化完了
+[12/15 15:30:18.389] [INFO] [NetworkAdapter] NetworkAdapter initialized
+[12/15 15:30:18.392] [INFO] [ChromiumManager] ChromiumProvider set: jcefmaven (JCEF)
+[12/15 15:30:18.393] [INFO] [ChromiumManager] Initializing Chromium with provider: jcefmaven (JCEF)
+[12/15 15:30:18.523] [INFO] [ChromiumManager] Chromium initialized successfully
+[12/15 15:30:18.525] [INFO] [ChromiumManager] Chromium version: JCEF Version = 135.0.20.333
+CEF Version = 135.0.20
+Chromium Version = 135.0.7049.85
+[12/15 15:30:18.540] [INFO] [Kernel] ChromiumService初期化完了
+[12/15 15:30:18.544] [INFO] [Kernel] パーミッション管理サービス初期化完了
+[12/15 15:30:18.546] [INFO] [Kernel] アクティビティ管理サービス初期化完了
+[12/15 15:30:18.550] [INFO] [ClipboardManager] 初期化: AWTClipboardProvider (利用可能: true)
+[12/15 15:30:18.554] [INFO] [Kernel] クリップボード管理サービス初期化完了
+[12/15 15:30:18.556] [INFO] [Kernel] クリップボードサービス（OS統一管理）初期化完了
+[12/15 15:30:18.558] [INFO] [Kernel] センサー管理サービス初期化完了
+[12/15 15:30:18.562] [DEBUG] [GestureManager] Added gesture listener ControlCenterManager (priority: 0)
+[12/15 15:30:18.565] [DEBUG] [GestureManager] Current listener order: ControlCenterManager(priority=0)
+[12/15 15:30:18.566] [DEBUG] [GestureManager] Added gesture listener NotificationManager (priority: 900)
+[12/15 15:30:18.568] [DEBUG] [GestureManager] Current listener order: NotificationManager(priority=900) -> ControlCenterManager(priority=0)
+[12/15 15:30:18.568] [DEBUG] [GestureManager] Added gesture listener Kernel (priority: -1000)
+[12/15 15:30:18.571] [DEBUG] [GestureManager] Current listener order: NotificationManager(priority=900) -> ControlCenterManager(priority=0) -> Kernel(priority=-1000)
+[12/15 15:30:18.577] [DEBUG] [ScreenManager] Kernel reference set for layer management integration
+[12/15 15:30:18.578] [DEBUG] [ScreenManager] PAppletを設定 - 成功
+[12/15 15:30:18.598] [DEBUG] [GestureManager] Added gesture listener HomeScreen (priority: 50)
+[12/15 15:30:18.601] [DEBUG] [GestureManager] Current listener order: NotificationManager(priority=900) -> HomeScreen(priority=50) -> ControlCenterManager(priority=0) -> Kernel(priority=-1000)
+[12/15 15:30:18.602] [INFO] [SensorManager] センサーリスナー登録: MochiOS Humidity Sensor, 200000us
+[12/15 15:30:18.604] [INFO] [SensorManager] センサーリスナー登録: MochiOS Light Sensor, 200000us
+[12/15 15:30:18.605] [DEBUG] [ScreenManager] New screen moved to foreground: Home Screen
+[12/15 15:30:18.608] [DEBUG] [ScreenManager] Screen analysis - Title: 'Home Screen', ClassName: 'HomeScreen', isLauncher: true
+[12/15 15:30:18.610] [DEBUG] [ScreenManager] Skipped APPLICATION layer addition - kernel=true, isLauncher=true
+[12/15 15:30:18.611] [DEBUG] [ScreenManager] Pushed screen - Home Screen
+[12/15 15:30:18.614] [DEBUG] [StandaloneVirtualSocket] StandaloneVirtualSocket initialized
+[12/15 15:30:18.617] [INFO] [VirtualAdapter] VirtualSocket set: StandaloneVirtualSocket (status: 接続中)
+[12/15 15:30:18.620] [INFO] [StandaloneWrapper] Instrumented AWT EventQueue installed
+[12/15 15:30:27.720] [DEBUG] [StandaloneWrapper] mousePressed event received at (291, 355)
+[12/15 15:30:27.787] [DEBUG] [StandaloneWrapper] mouseDragged event received at (287, 355)
+[12/15 15:30:27.817] [DEBUG] [StandaloneWrapper] mouseDragged event received at (267, 355)
+[12/15 15:30:27.826] [DEBUG] [GestureManager] Dispatch gesture DRAG_START handledIndex=-1 listeners=4
+[12/15 15:30:27.828] [WARN] [KernelInput] mouseDragged gesture latency=6.621ms coord=(267,355)
+[12/15 15:30:27.830] [DEBUG] [KernelInput] mouseDragged screen latency=2.343ms coord=(267,355)
+[12/15 15:30:27.832] [WARN] [KernelInput] mouseDragged total latency=11.058ms coord=(267,355)
+[12/15 15:30:27.834] [DEBUG] [StandaloneWrapper] mouseDragged event received at (207, 355)
+[12/15 15:30:27.835] [DEBUG] [StandaloneWrapper] mouseDragged event received at (122, 355)
+[12/15 15:30:27.863] [DEBUG] [StandaloneWrapper] mouseDragged event received at (50, 355)
+[12/15 15:30:27.884] [DEBUG] [StandaloneWrapper] mouseDragged event received at (11, 355)
+[12/15 15:30:27.904] [DEBUG] [StandaloneWrapper] mouseDragged event received at (-7, 355)
+[12/15 15:30:27.905] [DEBUG] [StandaloneWrapper] mouseReleased event received at (-7, 355)
+[12/15 15:30:27.906] [DEBUG] [Kernel] mouseReleased at (-7, 355)
+[12/15 15:30:27.911] [DEBUG] [GestureManager] Dispatch gesture DRAG_END handledIndex=1 listeners=4
+[12/15 15:30:27.912] [DEBUG] [GestureManager] Dispatch gesture SWIPE_LEFT handledIndex=1 listeners=4
+[12/15 15:30:27.914] [WARN] [KernelInput] mouseReleased gesture latency=6.802ms coord=(-7,355)
+[12/15 15:30:27.915] [DEBUG] [Kernel] Forwarding mouseReleased to ScreenManager
+[12/15 15:30:27.918] [DEBUG] [KernelInput] mouseReleased screen latency=3.449ms coord=(-7,355)
+[12/15 15:30:27.919] [WARN] [KernelInput] mouseReleased total latency=11.741ms coord=(-7,355)
+[12/15 15:30:29.369] [DEBUG] [StandaloneWrapper] mousePressed event received at (290, 191)
+[12/15 15:30:29.376] [DEBUG] [ScreenManager] pushScreenWithAnimation called
+[12/15 15:30:29.378] [DEBUG] [ScreenManager] screen=WebApp
+[12/15 15:30:29.379] [DEBUG] [ScreenManager] currentPApplet=available
+[12/15 15:30:29.380] [DEBUG] [ScreenManager] iconImage=64x64
+[12/15 15:30:29.382] [DEBUG] [ScreenManager] iconPosition=(294.0, 187.0), iconSize=48.0
+[12/15 15:30:29.383] [DEBUG] [ScreenManager] Previous screen moved to background (animation): Home Screen
+[12/15 15:30:29.385] [DEBUG] [ScreenManager] Calling setup() on screen: WebApp, PGraphics available: true
+[12/15 15:30:29.386] [INFO] [WebScreen:mochios] setup() called - PGraphics size: 400x600
+[12/15 15:30:29.388] [INFO] [WebScreen:mochios] modId=mochios, resourcePath=webapp/sample/index.html
+[12/15 15:30:29.389] [INFO] [WebScreen:mochios] Target URL: http://app.local/mochios/webapp/sample/index.html
+[12/15 15:30:29.391] [INFO] [DefaultChromiumService] createTab called: 400x600, URL: about:blank
+[12/15 15:30:29.393] [INFO] [DefaultChromiumService] Creating surface with ID: browser_tab_1765780229393
+[12/15 15:30:29.396] [INFO] [DefaultChromiumService] computeIfAbsent: creating browser for browser_tab_1765780229393
+[12/15 15:30:29.397] [INFO] [ChromiumManager] Creating ChromiumBrowser: about:blank (400x600)
+[12/15 15:30:29.521] [INFO] [ChromiumAppHandler] onRegisterCustomSchemes called (no custom schemes to register - using IPvM over HTTP)
+[12/15 15:30:30.066] [INFO] [ChromiumAppHandler] Context initialized
+[12/15 15:30:30.096] [DEBUG] [ChromiumBrowser] Resizing browser from 400x600 to 400x600
+[12/15 15:30:30.099] [DEBUG] [ChromiumRenderHandler] Viewport resized to: 400x600
+[12/15 15:30:30.101] [DEBUG] [ChromiumBrowser] Updated browser_rect_ to 400x600
+[12/15 15:30:30.106] [DEBUG] [ChromiumBrowser] Called wasResized(400, 600)
+[12/15 15:30:30.108] [DEBUG] [ChromiumBrowser] Called setWindowVisibility(true)
+[12/15 15:30:30.109] [DEBUG] [ChromiumBrowser] Called notifyMoveOrResizeStarted()
+[12/15 15:30:30.115] [ERROR] [ChromiumBrowser] Failed to set windowless frame rate: class jp.moyashi.phoneos.core.service.chromium.ChromiumBrowser cannot access a member of class org.cef.browser.CefBrowser_N with modifiers "public"
+[12/15 15:30:30.117] [DEBUG] [ChromiumBrowser] Successfully registered onPaint listener via reflection
+[12/15 15:30:30.119] [INFO] [DefaultChromiumService] computeIfAbsent: browser created
+[12/15 15:30:30.121] [INFO] [DefaultChromiumService] computeIfAbsent: returning new surface
+[12/15 15:30:30.123] [INFO] [DefaultChromiumService] Surface created, total surfaces: 1
+[12/15 15:30:30.125] [INFO] [WebScreen:mochios] Tab created: success
+[12/15 15:30:30.126] [INFO] [WebScreen:mochios] Standalone environment detected - using loadContent() with LoadListener
+[12/15 15:30:30.129] [INFO] [WebScreen:mochios] LoadListener registered, waiting for about:blank to load...
+[12/15 15:30:30.133] [DEBUG] [ScreenManager] setup() completed successfully for: about:blank
+[12/15 15:30:30.134] [INFO] [WebScreen:mochios] onForeground()
+[12/15 15:30:30.137] [DEBUG] [ScreenManager] New screen moved to foreground (animation): about:blank
+[12/15 15:30:30.139] [DEBUG] [ScreenManager] Animated screen analysis - Title: 'about:blank', ClassName: 'WebScreen', isLauncher: false
+[12/15 15:30:30.141] [DEBUG] [ScreenManager] Added APPLICATION layer to Kernel stack for animated screen: about:blank
+[12/15 15:30:30.142] [DEBUG] [ScreenManager] Setting target dimensions: 400x600
+[12/15 15:30:30.144] [DEBUG] [ScreenManager] Starting zoom-in animation...
+[12/15 15:30:30.146] [DEBUG] [ScreenManager] Animation setup complete for screen - about:blank
+[12/15 15:30:30.149] [DEBUG] [StandaloneWrapper] mouseReleased event received at (290, 191)
+[12/15 15:30:30.150] [DEBUG] [Kernel] mouseReleased at (290, 191)
+[12/15 15:30:30.151] [DEBUG] [GestureManager] Dispatch gesture TAP handledIndex=-1 listeners=4
+[12/15 15:30:30.153] [DEBUG] [KernelInput] mouseReleased gesture latency=2.961ms coord=(290,191)
+[12/15 15:30:30.154] [DEBUG] [Kernel] Forwarding mouseReleased to ScreenManager
+[12/15 15:30:30.156] [DEBUG] [KernelInput] mouseReleased screen latency=2.935ms coord=(290,191)
+[12/15 15:30:30.158] [WARN] [KernelInput] mouseReleased total latency=7.861ms coord=(290,191)
+[12/15 15:30:30.170] [INFO] [WebScreen:mochios] draw() #1: frame=400x600, whitePixels=100/100 (100%)
+[12/15 15:30:30.418] [DEBUG] [ChromiumBrowser] Hidden JFrame configured: focusable=false, IME disabled on GLCanvas
+[12/15 15:30:30.419] [DEBUG] [ChromiumBrowser] UIComponent class: org.cef.browser.CefBrowserOsr$1
+[12/15 15:30:30.423] [DEBUG] [ChromiumBrowser] Calling display() via reflection...
+[12/15 15:30:30.459] [DEBUG] [ScreenManager] Animation completed - ZOOM_IN
+[12/15 15:30:30.460] [DEBUG] [ScreenManager] Animation completed - allowing about:blank to be drawn
+[12/15 15:30:30.462] [DEBUG] [ScreenManager] Animation completed - NONE
+[12/15 15:30:30.464] [DEBUG] [ScreenManager] Unhandled animation completion - NONE
+[12/15 15:30:30.483] [DEBUG] [ChromiumBrowser] display() called successfully via reflection
+[12/15 15:30:30.687] [DEBUG] [ChromiumBrowser] GLContext initialization signaled (latch released)
+[12/15 15:30:30.695] [DEBUG] [ChromiumBrowser] LoadHandler onLoadStart: about:blank
+[12/15 15:30:30.698] [INFO] [WebScreen:mochios] LoadListener: onLoadStart - about:blank
+[12/15 15:30:30.701] [DEBUG] [ChromiumBrowser] LoadHandler onLoadEnd: about:blank (status: 0)
+[12/15 15:30:30.702] [DEBUG] [ChromiumBrowser] Text input focus and selection detection script injected
+[12/15 15:30:30.704] [INFO] [WebScreen:mochios] LoadListener: onLoadEnd - about:blank (status: 0)
+[12/15 15:30:30.705] [INFO] [WebScreen:mochios] about:blank loaded, now loading HTML content via loadString()
+[12/15 15:30:30.707] [DEBUG] [ChromiumBrowser] Loading HTML content (base: http://app.local/mochios/webapp/sample/index.html)
+[12/15 15:30:30.708] [DEBUG] [ChromiumBrowser] Injecting base tag: <base href="http://app.local/mochios/webapp/sample/">
+[12/15 15:30:30.710] [DEBUG] [ChromiumBrowser] Loading HTML via data URL (base64 length: 524 chars)
+[12/15 15:30:30.711] [DEBUG] [ChromiumBrowser] loadURL(data:) called successfully
+[12/15 15:30:30.713] [INFO] [WebScreen:mochios] loadContent() called after about:blank loaded
+[12/15 15:30:30.749] [DEBUG] [MochiResourceRequestHandler] getResourceHandler called for URL: data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw+PGh0bWw+PGhlYWQ+CjxiYXNlIGhyZWY9Imh0dHA6Ly9hcHAubG9jYWwvbW9jaGlvcy93ZWJhcHAvc2FtcGxlLyI+CjxtZXRhIGNoYXJzZXQ9J1VURi04Jz48c3R5bGU+Ym9keXtmb250LWZhbWlseTpzYW5zLXNlcmlmO3RleHQtYWxpZ246Y2VudGVyO3BhZGRpbmc6NTBweDtiYWNrZ3JvdW5kOiMyZDJkMmQ7Y29sb3I6I2ZmZjt9aDF7Y29sb3I6IzRDQUY1MDt9PC9zdHlsZT48L2hlYWQ+PGJvZHk+PGgxPldlYlNjcmVlbiBUZXN0PC9oMT48cD5JZiB5b3Ugc2VlIHRoaXMsIGxvYWRDb250ZW50KCkgaXMgd29ya2luZyE8L3A+PHA+TW9kSWQ6IG1vY2hpb3M8L3A+PHA+UmVzb3VyY2VQYXRoOiB3ZWJhcHAvc2FtcGxlL2luZGV4Lmh0bWw8L3A+PC9ib2R5PjwvaHRtbD4=
+[12/15 15:30:30.754] [DEBUG] [ChromiumRenderHandler] onPaint called #1: 400x600, popup=false, buffer=960000 bytes
+[12/15 15:30:30.757] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/15 15:30:30.757] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/15 15:30:30.773] [DEBUG] [ChromiumRenderHandler] PImage after conversion: white=100, nonWhite=0/100
+[12/15 15:30:30.781] [DEBUG] [ChromiumBrowser] Console message received: [MochiOS:Init] Focus detection script starting
+[12/15 15:30:30.788] [DEBUG] [ChromiumBrowser] Console message received: [MochiOS:FocusDebug] tag=BODY, type=undefined, role=null, contentEditable=false, isTextInput=false
+[12/15 15:30:30.850] [DEBUG] [ChromiumBrowser] LoadHandler onLoadStart: data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw+PGh0bWw+PGhlYWQ+CjxiYXNlIGhyZWY9Imh0dHA6Ly9hcHAubG9jYWwvbW9jaGlvcy93ZWJhcHAvc2FtcGxlLyI+CjxtZXRhIGNoYXJzZXQ9J1VURi04Jz48c3R5bGU+Ym9keXtmb250LWZhbWlseTpzYW5zLXNlcmlmO3RleHQtYWxpZ246Y2VudGVyO3BhZGRpbmc6NTBweDtiYWNrZ3JvdW5kOiMyZDJkMmQ7Y29sb3I6I2ZmZjt9aDF7Y29sb3I6IzRDQUY1MDt9PC9zdHlsZT48L2hlYWQ+PGJvZHk+PGgxPldlYlNjcmVlbiBUZXN0PC9oMT48cD5JZiB5b3Ugc2VlIHRoaXMsIGxvYWRDb250ZW50KCkgaXMgd29ya2luZyE8L3A+PHA+TW9kSWQ6IG1vY2hpb3M8L3A+PHA+UmVzb3VyY2VQYXRoOiB3ZWJhcHAvc2FtcGxlL2luZGV4Lmh0bWw8L3A+PC9ib2R5PjwvaHRtbD4=
+[12/15 15:30:30.852] [INFO] [WebScreen:mochios] LoadListener: onLoadStart - data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw+PGh0bWw+PGhlYWQ+CjxiYXNlIGhyZWY9Imh0dHA6Ly9hcHAubG9jYWwvbW9jaGlvcy93ZWJhcHAvc2FtcGxlLyI+CjxtZXRhIGNoYXJzZXQ9J1VURi04Jz48c3R5bGU+Ym9keXtmb250LWZhbWlseTpzYW5zLXNlcmlmO3RleHQtYWxpZ246Y2VudGVyO3BhZGRpbmc6NTBweDtiYWNrZ3JvdW5kOiMyZDJkMmQ7Y29sb3I6I2ZmZjt9aDF7Y29sb3I6IzRDQUY1MDt9PC9zdHlsZT48L2hlYWQ+PGJvZHk+PGgxPldlYlNjcmVlbiBUZXN0PC9oMT48cD5JZiB5b3Ugc2VlIHRoaXMsIGxvYWRDb250ZW50KCkgaXMgd29ya2luZyE8L3A+PHA+TW9kSWQ6IG1vY2hpb3M8L3A+PHA+UmVzb3VyY2VQYXRoOiB3ZWJhcHAvc2FtcGxlL2luZGV4Lmh0bWw8L3A+PC9ib2R5PjwvaHRtbD4=
+[12/15 15:30:30.854] [DEBUG] [ChromiumBrowser] LoadHandler onLoadEnd: data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw+PGh0bWw+PGhlYWQ+CjxiYXNlIGhyZWY9Imh0dHA6Ly9hcHAubG9jYWwvbW9jaGlvcy93ZWJhcHAvc2FtcGxlLyI+CjxtZXRhIGNoYXJzZXQ9J1VURi04Jz48c3R5bGU+Ym9keXtmb250LWZhbWlseTpzYW5zLXNlcmlmO3RleHQtYWxpZ246Y2VudGVyO3BhZGRpbmc6NTBweDtiYWNrZ3JvdW5kOiMyZDJkMmQ7Y29sb3I6I2ZmZjt9aDF7Y29sb3I6IzRDQUY1MDt9PC9zdHlsZT48L2hlYWQ+PGJvZHk+PGgxPldlYlNjcmVlbiBUZXN0PC9oMT48cD5JZiB5b3Ugc2VlIHRoaXMsIGxvYWRDb250ZW50KCkgaXMgd29ya2luZyE8L3A+PHA+TW9kSWQ6IG1vY2hpb3M8L3A+PHA+UmVzb3VyY2VQYXRoOiB3ZWJhcHAvc2FtcGxlL2luZGV4Lmh0bWw8L3A+PC9ib2R5PjwvaHRtbD4= (status: 200)
+[12/15 15:30:30.855] [DEBUG] [ChromiumBrowser] Text input focus and selection detection script injected
+[12/15 15:30:30.861] [INFO] [WebScreen:mochios] LoadListener: onLoadEnd - data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw+PGh0bWw+PGhlYWQ+CjxiYXNlIGhyZWY9Imh0dHA6Ly9hcHAubG9jYWwvbW9jaGlvcy93ZWJhcHAvc2FtcGxlLyI+CjxtZXRhIGNoYXJzZXQ9J1VURi04Jz48c3R5bGU+Ym9keXtmb250LWZhbWlseTpzYW5zLXNlcmlmO3RleHQtYWxpZ246Y2VudGVyO3BhZGRpbmc6NTBweDtiYWNrZ3JvdW5kOiMyZDJkMmQ7Y29sb3I6I2ZmZjt9aDF7Y29sb3I6IzRDQUY1MDt9PC9zdHlsZT48L2hlYWQ+PGJvZHk+PGgxPldlYlNjcmVlbiBUZXN0PC9oMT48cD5JZiB5b3Ugc2VlIHRoaXMsIGxvYWRDb250ZW50KCkgaXMgd29ya2luZyE8L3A+PHA+TW9kSWQ6IG1vY2hpb3M8L3A+PHA+UmVzb3VyY2VQYXRoOiB3ZWJhcHAvc2FtcGxlL2luZGV4Lmh0bWw8L3A+PC9ib2R5PjwvaHRtbD4= (status: 200)
+[12/15 15:30:30.867] [DEBUG] [ChromiumRenderHandler] onPaint called #2: 400x600, popup=false, buffer=960000 bytes
+[12/15 15:30:30.869] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:45 G:45 R:45 A:255] [B:45 G:45 R:45 A:255] [B:45 G:45 R:45 A:255] [B:45 G:45 R:45 A:255] 
+[12/15 15:30:30.871] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:45 G:45 R:45 A:255]
+[12/15 15:30:30.872] [DEBUG] [ChromiumRenderHandler] PImage after conversion: white=0, nonWhite=100/100
+[12/15 15:30:30.874] [DEBUG] [ChromiumRenderHandler] PImage samples: [0:0xFF2D2D2D] [1:0xFF2D2D2D] [2:0xFF2D2D2D] 
+[12/15 15:30:30.875] [DEBUG] [ChromiumBrowser] Console message received: [MochiOS:Init] Focus detection script starting
+[12/15 15:30:30.877] [DEBUG] [ChromiumBrowser] Console message received: [MochiOS:FocusDebug] tag=BODY, type=undefined, role=null, contentEditable=false, isTextInput=false
+[12/15 15:30:31.169] [INFO] [WebScreen:mochios] draw() #51: frame=400x600, whitePixels=0/100 (0%)
+[12/15 15:30:32.171] [INFO] [WebScreen:mochios] draw() #111: frame=400x600, whitePixels=0/100 (0%)
+[12/15 15:30:33.175] [INFO] [WebScreen:mochios] draw() #162: frame=400x600, whitePixels=0/100 (0%)
+[12/15 15:30:34.188] [INFO] [WebScreen:mochios] draw() #223: frame=400x600, whitePixels=0/100 (0%)
+[12/15 15:30:35.190] [INFO] [WebScreen:mochios] draw() #283: frame=400x600, whitePixels=0/100 (0%)
+[12/15 15:30:36.207] [INFO] [WebScreen:mochios] draw() #338: frame=400x600, whitePixels=0/100 (0%)
+[12/15 15:30:37.210] [INFO] [WebScreen:mochios] draw() #398: frame=400x600, whitePixels=0/100 (0%)
+[12/15 15:30:37.737] [INFO] [WebScreen:mochios] cleanup() called
+[12/15 15:30:37.739] [DEBUG] [ChromiumBrowser] Disposing ChromiumBrowser
+[12/15 15:30:37.772] [DEBUG] [ChromiumBrowser] Hidden JFrame disposed
+[12/15 15:30:37.775] [INFO] [ChromiumManager] Shutting down Chromium...
+[12/15 15:30:37.776] [INFO] [ChromiumManager] Chromium shutdown complete
