@@ -71,6 +71,9 @@ dependencies {
     // Mixin annotation processor
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 
+    // MMOS API module - public SDK for MOD app developers
+    api project(':api')
+
     // Core module dependency - embed in jar
     implementation project(':core')
 
@@ -186,6 +189,7 @@ minecraft {
             mods {
                 mochimobileos {
                     source sourceSets.main
+                    source project(':api').sourceSets.main
                     source project(':core').sourceSets.main
                 }
             }
@@ -199,6 +203,7 @@ minecraft {
             mods {
                 mochimobileos {
                     source sourceSets.main
+                    source project(':api').sourceSets.main
                     source project(':core').sourceSets.main
                 }
             }
@@ -208,6 +213,11 @@ minecraft {
 
 // Configure jar
 jar {
+    // Include api module classes in the jar (SDK for external app developers)
+    from(project(':api').sourceSets.main.output.classesDirs) {
+        include '**/*.class'
+    }
+
     // Include core module classes in the jar
     // JCEFChromiumProviderがjcefmavenを使用してChromiumを統合
     from(project(':core').sourceSets.main.output.classesDirs) {

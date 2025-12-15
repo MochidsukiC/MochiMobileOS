@@ -2089,6 +2089,45 @@ public class Kernel implements GestureListener {
     }
 
     /**
+     * 通知を送信する。
+     *
+     * @param title 通知タイトル
+     * @param message 通知メッセージ
+     */
+    public void sendNotification(String title, String message) {
+        if (notificationManager != null) {
+            notificationManager.addNotification("System", title, message, 1);
+        }
+    }
+
+    /**
+     * 画面幅を取得する。
+     *
+     * @return 画面幅
+     */
+    public int getWidth() {
+        return width;
+    }
+
+    /**
+     * 画面高さを取得する。
+     *
+     * @return 画面高さ
+     */
+    public int getHeight() {
+        return height;
+    }
+
+    /**
+     * ワールドIDを取得する。
+     *
+     * @return ワールドID
+     */
+    public String getWorldId() {
+        return worldId;
+    }
+
+    /**
      * 統一座標変換システムのインスタンスを取得する。
      *
      * @return 統一座標変換システム

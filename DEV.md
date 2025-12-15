@@ -25,7 +25,8 @@
   - 仮想ハードウェア（センサー、通信、バッテリー等）の抽象化APIに関する仕様です。
 
 - **[06_External_App_API.md](./docs/development/06_External_App_API.md)**
-  - 外部MOD開発者向けのアプリケーション開発API（パーミッション、インテント等）について説明します。
+  - 外部MOD開発者向けのアプリケーション開発API。
+  - **2025-12-15更新**: ネットワークAPI（HTTPリクエスト、仮想サーバー登録）、ハードウェアAPI（バッテリー、位置情報、Bluetooth、カメラ等）、センサー、パーミッション、インテント、クリップボードAPIの包括的なドキュメントを追加。
 
 - **[07_GUI_Component_Library.md](./docs/development/07_GUI_Component_Library.md)**
   - 再利用可能なUIコンポーネントライブラリの設計と使用方法について説明します。
@@ -291,6 +292,92 @@
   - `forge/.../mixins/MMOSInstallMixin.java` - PackSource注入
   - `forge/.../mixins/MMOSInitMixin.java` - setScreen注入
   - `forge/src/main/resources/mmos.mixins.json` - Mixin設定
+
+### MODアプリケーションSDK（2025-12-15）
+- **概要**: 外部MODからMMOSアプリケーションを開発できる公開SDK
+- **目的**:
+  - MOD開発者がForge APIを使用しながらMMOSアプリを作成可能に
+  - 実OSのAPI設計（iOS SDK、Android SDK）に準拠したアーキテクチャ
+  - Kernelを非公開にし、AppContextのみを公開（セキュリティ強化）
+- **アーキテクチャ**:
+  ```
+  ┌─────────────────────────────────────────────────────────────────┐
+  │                    外部MODアプリ                                 │
+  ├─────────────────────────────────────────────────────────────────┤
+  │                 MMOS SDK (api module)                           │
+  │  AppContext（公開API） → IPC経由でKernelと通信                   │
+  ├─────────────────────────────────────────────────────────────────┤
+  │                 Kernel (非公開)                                  │
+  └─────────────────────────────────────────────────────────────────┘
+  ```
+- **新規ファイル**:
+  - `api/` - 新規軽量SDKモジュール
+    - `AppContext.java` - 公開APIインターフェース
+    - `AppStorage.java` - サンドボックス化ストレージ
+    - `AppSettings.java` - アプリ固有設定
+    - `IModApplication.java` - MODアプリインターフェース
+    - `ModScreen.java` - MODアプリ画面インターフェース
+    - `proxy/IPCChannel.java` - IPC抽象化
+    - `proxy/AppContextProxy.java` - IPC経由AppContext実装
+  - `forge/.../app/` - Forge側MODアプリ管理
+    - `ModAppLoader.java` - MOD JARスキャン
+    - `ModAppRunner.java` - アプリ実行管理
+    - `ModAppManager.java` - 統合マネージャー
+    - `ForgeIPCChannel.java` - IPCチャンネル実装
+  - `server/.../api/APIRequestHandler.java` - サーバー側API処理
+- **開発者向けAPI**:
+  - `AppContext.getStorage()` - サンドボックス化ストレージ
+  - `AppContext.getSettings()` - アプリ固有設定
+  - `AppContext.sendNotification()` - 通知送信
+  - `AppContext.pushScreen()/popScreen()` - 画面遷移
+  - `AppContext.logInfo()/logError()` - ログ出力
+  - `AppContext.getBatteryInfo()` - バッテリー情報
+  - `AppContext.getLocationSocket()` - 位置情報
+  - `AppContext.getBluetoothSocket()` - Bluetooth通信
+  - `AppContext.getMobileDataSocket()` - モバイルデータ
+  - `AppContext.getSIMInfo()` - SIM情報
+  - `AppContext.getCameraSocket()` - カメラ
+  - `AppContext.getMicrophoneSocket()` - マイク
+  - `AppContext.getSpeakerSocket()` - スピーカー
+  - `AppContext.getICSocket()` - IC通信（NFC相当）
+  - `AppContext.getSensorManager()` - センサー管理
+  - `AppContext.getPermissionManager()` - パーミッション管理
+  - `AppContext.getActivityManager()` - インテント/アクティビティ
+  - `AppContext.getClipboardManager()` - クリップボード
+  - `AppContext.getNetworkManager()` - ネットワーク（HTTPリクエスト、仮想サーバー登録）
+- **ネットワークAPI**（2025-12-15追加）:
+  - HTTPリクエスト送信（非同期/同期）
+  - ネットワーク状態取得（電波強度、キャリア名）
+  - **仮想サーバー登録**: MODアプリがIPvMネットワークにサーバーを公開可能
+  - 新規ファイル（`api/network/`パッケージ）:
+    - `NetworkManager.java` - メインAPIインターフェース
+    - `NetworkStatus.java` - 接続状態enum
+    - `NetworkResponse.java` - HTTPレスポンス
+    - `NetworkCallback.java` - 非同期コールバック
+    - `NetworkException.java` - 例外
+    - `IPvMAddress.java` - 仮想IPアドレス
+    - `VirtualServer.java` - サーバー登録用インターフェース
+    - `ServerRequest.java` - サーバーリクエスト
+    - `ServerResponse.java` - サーバーレスポンス
+  - 使用例:
+    ```java
+    NetworkManager network = context.getNetworkManager();
+    // HTTPリクエスト
+    network.request("http://3-sys-google/search?q=test", "GET", callback);
+    // 仮想サーバー登録
+    network.registerServer("myapp-api", request -> ServerResponse.json("{}"));
+    ```
+- **MODアプリ作成方法**:
+  1. MOD JARに`mmos_app.json`マーカーファイルを配置
+  2. `IModApplication`を実装したクラスを作成
+  3. `ModScreen`を実装した画面クラスを作成
+  4. MODをmodsフォルダに配置
+- **mmos_app.json形式**:
+  ```json
+  {
+    "apps": ["com.example.MyApp"]
+  }
+  ```
 
 ### 初期マイルストーン実装タスク
 - **ダッシュボードカードの実装:**

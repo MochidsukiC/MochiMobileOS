@@ -7,6 +7,7 @@ import jp.moyashi.phoneos.core.ipc.ServerState;
 import jp.moyashi.phoneos.core.service.chromium.ChromiumService;
 import jp.moyashi.phoneos.core.service.chromium.DefaultChromiumService;
 import jp.moyashi.phoneos.core.service.chromium.JCEFChromiumProvider;
+import jp.moyashi.phoneos.server.api.APIRequestHandler;
 import jp.moyashi.phoneos.server.ipc.SharedMemory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -29,6 +30,9 @@ public class MMOSServer {
 
     /** カーネル */
     private final Kernel kernel;
+
+    /** APIリクエストハンドラ */
+    private final APIRequestHandler apiHandler;
 
     /** ワールドID */
     private final String worldId;
@@ -76,6 +80,11 @@ public class MMOSServer {
         kernel.initializeForMinecraft(IPCConstants.SCREEN_WIDTH, IPCConstants.SCREEN_HEIGHT, worldId);
         LOGGER.info("[MMOSServer] Kernel initialized for Minecraft: {}x{}", IPCConstants.SCREEN_WIDTH, IPCConstants.SCREEN_HEIGHT);
 
+        // APIリクエストハンドラを初期化
+        this.apiHandler = new APIRequestHandler(worldId, kernel);
+        apiHandler.initialize();
+        LOGGER.info("[MMOSServer] API request handler initialized");
+
         // サーバー準備完了フラグを設定
         shm.setServerReady(true);
         LOGGER.info("[MMOSServer] Server ready, waiting for client connection...");
@@ -98,22 +107,25 @@ public class MMOSServer {
                 // 2. 入力イベントを処理
                 processInputEvents();
 
-                // 3. カーネルを更新・描画（スリープ中でない場合）
+                // 3. APIリクエストを処理
+                apiHandler.processRequests();
+
+                // 4. カーネルを更新・描画（スリープ中でない場合）
                 if (!kernel.isSleeping()) {
                     kernel.update();
                     kernel.render();
                 }
 
-                // 4. ピクセルデータを共有メモリに書き込み
+                // 5. ピクセルデータを共有メモリに書き込み
                 int[] pixels = kernel.getPixels();
                 if (pixels != null && pixels.length > 0) {
                     shm.writePixels(pixels);
                 }
 
-                // 5. サーバー状態を更新
+                // 6. サーバー状態を更新
                 updateServerState();
 
-                // 6. フレームレート制御
+                // 7. フレームレート制御
                 long elapsed = System.currentTimeMillis() - startTime;
                 long sleepTime = frameTime - elapsed;
                 if (sleepTime > 0) {
@@ -271,6 +283,11 @@ public class MMOSServer {
         LOGGER.info("[MMOSServer] Shutting down...");
 
         try {
+            // APIハンドラをシャットダウン
+            if (apiHandler != null) {
+                apiHandler.shutdown();
+            }
+
             // カーネルをシャットダウン
             if (kernel != null) {
                 kernel.shutdown();

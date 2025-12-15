@@ -5,6 +5,9 @@ plugins {
 }
 
 dependencies {
+    // MMOS API module - public SDK
+    implementation(project(":api"))
+
     // Dependency on the core module
     implementation(project(":core"))
 
