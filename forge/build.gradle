@@ -50,21 +50,21 @@ repositories {
         name = 'Maxhenkel Maven'
         url = 'https://maven.maxhenkel.de/repository/public/'
     }
-    maven {
-        name = 'MCEF Releases'
-        url = 'https://mcef-download.cinemamod.com/repositories/releases'
-    }
     mavenCentral()
 }
 
 configurations {
     runtimeLib
     jarJar
+    joglLib  // JOGL classes to embed in JAR
 }
 
 dependencies {
     // Minecraft Forge for 1.20.1
     minecraft 'net.minecraftforge:forge:1.20.1-47.4.0'
+
+    // Mixin annotation processor
+    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 
     // Core module dependency - embed in jar
     implementation project(':core')
@@ -78,16 +78,24 @@ dependencies {
 
     implementation 'com.google.code.gson:gson:2.10.1'
 
-    // MCEF (Minecraft Chromium Embedded Framework) for Chromium browser integration in Forge
-    // Note: Core module uses jcefmaven (me.friwi:jcefmaven:135.0.20) for standalone environment
-    // Forge uses MCEF to solve apache-commons-compress conflicts and JVM module access issues
-    // MCEF provides org.cef.* APIs compatible with jcefmaven, but uses LWJGL instead of JOGL
-    // Version 2.1.4-1.20.1: Stable version compatible with Minecraft Forge 1.20.1-47.4.0
-    // MCEFは外部MODとしてmodsフォルダに配置する必要がある（implementation指定だけでは不十分）
-    compileOnly('com.cinemamod:mcef:2.1.4-1.20.1') {
-        // Exclude Fabric Loader - we're using Forge, not Fabric
-        exclude group: 'net.fabricmc', module: 'fabric-loader'
-    }
+    // JCEF (jcefmaven) - Chromium統合
+    // MMOSInstallerがネイティブライブラリをダウンロード
+    // ForgeChromiumProviderがCefAppを初期化
+    implementation 'me.friwi:jcefmaven:135.0.20'
+
+    // java-cef Java classes (org.cef package) - Platform-independent API
+    // ForgeのModuleClassLoaderはjcefmavenが動的にダウンロードするクラスを認識しないため、
+    // org.cefクラスを事前にJARに含める必要がある
+    implementation 'me.friwi:jcef-api:jcef-ca49ada+cef-135.0.20+ge7de5c3+chromium-135.0.7049.85'
+
+    // JOGL (Java OpenGL) - JCEFのCefBrowserOsrが依存
+    // CefBrowserOsrはcom.jogamp.opengl.awt.GLCanvasを使用するため必須
+    implementation 'org.jogamp.jogl:jogl-all-main:2.5.0'
+    implementation 'org.jogamp.gluegen:gluegen-rt-main:2.5.0'
+
+    // JOGL classes to embed in JAR (separate configuration for explicit inclusion)
+    joglLib 'org.jogamp.jogl:jogl-all:2.5.0'
+    joglLib 'org.jogamp.gluegen:gluegen-rt:2.5.0'
 
     // Simple Voice Chat API - for audio recording integration
     compileOnly 'de.maxhenkel.voicechat:voicechat-api:2.6.0'
@@ -108,13 +116,23 @@ task extractProcessingCore(type: Copy) {
     exclude '*.dylib'
 }
 
-// MCEF (Minecraft Chromium Embedded Framework) is now used instead of jcefmaven for Forge
-// MCEF is automatically loaded from Maven repository - no manual library copying needed
-// Previous JCEF tasks (copyJcefLibs, extractJcefCore) are no longer required
+// JCEF (jcefmaven) is used for Chromium integration
+// MMOSInstaller downloads native libraries at runtime automatically
+// MCEF is no longer used (doesn't support CefRequestHandler delegation)
 
-// Make compileJava depend on extractions
+// Make compileJava depend on extractions and configure mixin annotation processor
 tasks.named('compileJava').configure {
     finalizedBy extractProcessingCore
+    dependsOn 'createSrgToMcp'
+
+    // Mixin annotation processor settings for ForgeGradle with official mappings
+    options.compilerArgs += [
+        "-AreobfSrgFile=${project.file('build/createSrgToMcp/output.srg')}",
+        "-AmappingTypes=searge",
+        "-AdefaultObfuscationEnv=searge",
+        "-AoutSrgFile=${project.file('build/mixins.srg')}",
+        "-AoutRefMapFile=${project.file('build/resources/main/mmos.refmap.json')}"
+    ]
 }
 
 // Make sure classes task also triggers extraction
@@ -133,9 +151,9 @@ minecraft {
             property 'forge.logging.console.level', 'debug'
             property 'fml.earlyprogresswindow', 'false'
 
-            // MCEF (Minecraft Chromium Embedded Framework) is used for Chromium integration
-            // MCEF uses LWJGL instead of JOGL, so no JVM module access flags are required
-            // Previous JVM flags (--add-opens, --add-exports) are no longer needed
+            // Mixin設定: refmapのリマッピングを有効化
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
 
             mods {
                 mochimobileos {
@@ -162,18 +180,15 @@ minecraft {
 
 // Configure jar
 jar {
-    // Include core module classes AND resources in the jar
-    // Note: org.cef.* packages are NOT excluded anymore
-    // ChromiumProviderパターンにより、coreモジュールはcompileOnlyでjcefmavenを参照
-    // Forge環境ではMCEFがorg.cef.* APIを提供し、ForgeChromiumProviderがCefAppを注入する
-    from(project(':core').sourceSets.main.output) {
-        // Include both classes and resources (fonts, etc.)
+    // Include core module classes in the jar
+    // JCEFChromiumProviderがjcefmavenを使用してChromiumを統合
+    from(project(':core').sourceSets.main.output.classesDirs) {
         include '**/*.class'
-        include '**/*.ttf'
-        include '**/*.otf'
-        include '**/*.png'
-        include '**/*.jpg'
-        include '**/*.json'
+    }
+
+    // Include core module resources (fonts, webapp assets, etc.)
+    from(project(':core').sourceSets.main.output.resourcesDir) {
+        include '**/*'
     }
 
     // Include Processing library for runtime
@@ -186,6 +201,48 @@ jar {
         exclude '**/*.md'
     }
 
+    // Include jcefmaven classes for JCEF installation
+    // Note: Native libraries are downloaded at runtime by our MMOSInstaller
+    from {
+        configurations.runtimeClasspath.filter {
+            it.name.contains('jcefmaven')
+        }.collect { zipTree(it) }
+    } {
+        exclude 'META-INF/MANIFEST.MF'
+        exclude 'META-INF/*.SF'
+        exclude 'META-INF/*.DSA'
+        exclude 'META-INF/*.RSA'
+    }
+
+    // Include java-cef Java classes (org.cef package) for Forge ModuleClassLoader compatibility
+    // jcefmavenは動的にダウンロードするが、ForgeのModuleClassLoaderが認識しないため、
+    // org.cefクラスをJARに事前に含める。jcef-apiはJavaクラスのみ
+    // Also include build_meta.json which is required by jcefmaven for installation
+    from {
+        configurations.runtimeClasspath.filter {
+            it.name.contains('jcef-api')
+        }.collect { zipTree(it) }
+    } {
+        include 'org/cef/**/*.class'
+        include 'build_meta.json'
+        exclude 'META-INF/MANIFEST.MF'
+        exclude 'META-INF/*.SF'
+        exclude 'META-INF/*.DSA'
+        exclude 'META-INF/*.RSA'
+    }
+
+    // Include JOGL (Java OpenGL) classes for JCEF's CefBrowserOsr
+    // Use joglLib configuration for explicit inclusion
+    from {
+        configurations.joglLib.collect { zipTree(it) }
+    } {
+        include '**/*.class'
+        exclude 'META-INF/MANIFEST.MF'
+        exclude 'META-INF/*.SF'
+        exclude 'META-INF/*.DSA'
+        exclude 'META-INF/*.RSA'
+    }
+
     manifest {
         attributes([
             'Specification-Title': 'MochiMobileOS Forge Integration',
@@ -194,12 +251,62 @@ jar {
             'Implementation-Title': project.name,
             'Implementation-Version': "${version}",
             'Implementation-Vendor': 'jp.moyashi',
-            'Implementation-Timestamp': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+            'Implementation-Timestamp': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
+            // Mixin configuration - required for Forge to discover mixin config
+            'MixinConfigs': 'mmos.mixins.json'
         ])
     }
 
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     finalizedBy 'reobfJar'
+}
+
+// Task to add JOGL classes to the final JAR after reobfJar
+// ForgeGradle's jar task doesn't properly include from clauses
+task addJoglToJar {
+    dependsOn 'reobfJar'
+
+    doLast {
+        def jarFile = file("build/libs/mochimobileos-${version}.jar")
+        def tempDir = file("build/tmp/jogl-merge")
+
+        // Clean temp directory
+        delete tempDir
+        tempDir.mkdirs()
+
+        // Extract existing JAR
+        copy {
+            from zipTree(jarFile)
+            into tempDir
+        }
+
+        // Extract JOGL classes
+        configurations.joglLib.each { joglJar ->
+            println "Adding JOGL classes from: ${joglJar.name}"
+            copy {
+                from zipTree(joglJar)
+                into tempDir
+                include '**/*.class'
+                exclude 'META-INF/MANIFEST.MF'
+                exclude 'META-INF/*.SF'
+                exclude 'META-INF/*.DSA'
+                exclude 'META-INF/*.RSA'
+            }
+        }
+
+        // Repackage JAR
+        delete jarFile
+        ant.zip(destfile: jarFile) {
+            fileset(dir: tempDir)
+        }
+
+        println "JOGL classes added to ${jarFile.name}"
+    }
+}
+
+// Make build depend on addJoglToJar
+tasks.named('build').configure {
+    dependsOn 'addJoglToJar'
 }
 
 // Configure Java compilation

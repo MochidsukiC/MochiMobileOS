@@ -1,30 +1,1509 @@
-[12/13 11:57:09.420] [DEBUG] [AppAssetSchemeHandler:mochiapp] Resource loaded: 7037 bytes, MIME: text/html; charset=utf-8
-[12/13 11:57:09.421] [DEBUG] [StandaloneWrapper] mouseReleased event received at (304, 182)
-[12/13 11:57:09.423] [DEBUG] [Kernel] mouseReleased at (304, 182)
-[12/13 11:57:09.424] [DEBUG] [GestureManager] Dispatch gesture TAP handledIndex=-1 listeners=4
-[12/13 11:57:09.427] [ERROR] [ChromiumBrowser] Loading error: mochiapp://mochios/webapp/sample/index.html - ERR_ABORTED
-[12/13 11:57:09.427] [DEBUG] [Kernel] Forwarding mouseReleased to ScreenManager
-[12/13 11:57:09.428] [DEBUG] [KernelInput] mouseReleased screen latency=3.824ms coord=(304,182)
-[12/13 11:57:09.430] [WARN] [KernelInput] mouseReleased total latency=8.332ms coord=(304,182)
-[12/13 11:57:09.445] [DEBUG] [AppAssetSchemeHandler:mochiapp] Processing request: mochiapp://mochios/webapp/sample/index.html
-[12/13 11:57:09.446] [DEBUG] [AppAssetSchemeHandler:mochiapp] ModId: mochios, Path: webapp/sample/index.html
-[12/13 11:57:09.448] [DEBUG] [AppAssetSchemeHandler:mochiapp] Trying to load resource: assets/mochios/webapp/sample/index.html
-[12/13 11:57:09.450] [DEBUG] [AppAssetSchemeHandler:mochiapp] Found in class ClassLoader: /assets/mochios/webapp/sample/index.html
-[12/13 11:57:09.451] [DEBUG] [AppAssetSchemeHandler:mochiapp] Resource loaded: 7037 bytes, MIME: text/html; charset=utf-8
-[12/13 11:57:09.689] [DEBUG] [ChromiumBrowser] Hidden JFrame configured: focusable=false, IME disabled on GLCanvas
-[12/13 11:57:09.711] [DEBUG] [ChromiumBrowser] Text input focus and selection detection script injected
-[12/13 11:57:09.713] [DEBUG] [ChromiumBrowser] Console message received: [MochiOS:Init] Focus detection script starting
-[12/13 11:57:09.714] [DEBUG] [ChromiumBrowser] Console message received: [MochiOS:FocusDebug] tag=BODY, type=undefined, role=null, contentEditable=false, isTextInput=false
-[12/13 11:57:09.722] [DEBUG] [ScreenManager] Animation completed - ZOOM_IN
-[12/13 11:57:09.726] [DEBUG] [ScreenManager] Animation completed - allowing mochiapp://mochios/webapp/sample/index.html to be drawn
-[12/13 11:57:09.727] [DEBUG] [ScreenManager] Animation completed - NONE
-[12/13 11:57:09.729] [DEBUG] [ScreenManager] Unhandled animation completion - NONE
-[12/13 11:57:09.889] [INFO] [WebScreen:mochios] Reloading URL after GLCanvas initialization: mochiapp://mochios/webapp/sample/index.html
-[12/13 11:57:09.901] [DEBUG] [AppAssetSchemeHandler:mochiapp] Processing request: mochiapp://mochios/webapp/sample/index.html
-[12/13 11:57:09.902] [DEBUG] [AppAssetSchemeHandler:mochiapp] ModId: mochios, Path: webapp/sample/index.html
-[12/13 11:57:09.904] [DEBUG] [AppAssetSchemeHandler:mochiapp] Trying to load resource: assets/mochios/webapp/sample/index.html
-[12/13 11:57:09.904] [DEBUG] [AppAssetSchemeHandler:mochiapp] Found in class ClassLoader: /assets/mochios/webapp/sample/index.html
-[12/13 11:57:09.906] [DEBUG] [AppAssetSchemeHandler:mochiapp] Resource loaded: 7037 bytes, MIME: text/html; charset=utf-8
-[12/13 11:57:09.911] [DEBUG] [ChromiumBrowser] Text input focus and selection detection script injected
-[12/13 11:57:09.913] [DEBUG] [ChromiumBrowser] Console message received: [MochiOS:Init] Focus detection script starting
-[12/13 11:57:09.914] [DEBUG] [ChromiumBrowser] Console message received: [MochiOS:FocusDebug] tag=BODY, type=undefined, role=null, contentEditable=false, isTextInput=false
+[12/17 13:52:12.014] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:147 G:80 R:170 A:255]
+[12/17 13:52:12.015] [DEBUG] [StandaloneWrapper] mouseDragged event received at (391, 183)
+[12/17 13:52:12.061] [DEBUG] [StandaloneWrapper] mouseDragged event received at (391, 174)
+[12/17 13:52:12.062] [DEBUG] [StandaloneWrapper] mouseDragged event received at (392, 167)
+[12/17 13:52:12.064] [DEBUG] [StandaloneWrapper] mouseDragged event received at (392, 160)
+[12/17 13:52:12.064] [DEBUG] [StandaloneWrapper] mouseDragged event received at (392, 153)
+[12/17 13:52:12.065] [DEBUG] [StandaloneWrapper] mouseDragged event received at (392, 147)
+[12/17 13:52:12.065] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:147 G:80 R:170 A:255]
+[12/17 13:52:12.080] [DEBUG] [StandaloneWrapper] mouseDragged event received at (392, 142)
+[12/17 13:52:12.127] [DEBUG] [StandaloneWrapper] mouseDragged event received at (392, 138)
+[12/17 13:52:12.128] [DEBUG] [StandaloneWrapper] mouseDragged event received at (392, 133)
+[12/17 13:52:12.128] [DEBUG] [StandaloneWrapper] mouseDragged event received at (392, 129)
+[12/17 13:52:12.130] [DEBUG] [StandaloneWrapper] mouseDragged event received at (392, 126)
+[12/17 13:52:12.130] [DEBUG] [StandaloneWrapper] mouseDragged event received at (392, 122)
+[12/17 13:52:12.147] [DEBUG] [StandaloneWrapper] mouseDragged event received at (392, 119)
+[12/17 13:52:12.148] [DEBUG] [StandaloneWrapper] mouseDragged event received at (392, 116)
+[12/17 13:52:12.165] [DEBUG] [StandaloneWrapper] mouseDragged event received at (391, 114)
+[12/17 13:52:12.166] [DEBUG] [StandaloneWrapper] mouseDragged event received at (391, 112)
+[12/17 13:52:12.181] [DEBUG] [StandaloneWrapper] mouseDragged event received at (390, 109)
+[12/17 13:52:12.198] [DEBUG] [StandaloneWrapper] mouseDragged event received at (390, 106)
+[12/17 13:52:12.199] [DEBUG] [StandaloneWrapper] mouseDragged event received at (389, 103)
+[12/17 13:52:12.216] [DEBUG] [StandaloneWrapper] mouseDragged event received at (389, 101)
+[12/17 13:52:12.217] [DEBUG] [StandaloneWrapper] mouseDragged event received at (389, 100)
+[12/17 13:52:12.228] [DEBUG] [ChromiumRenderHandler] onPaint called #1782: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:12.230] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/17 13:52:12.231] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/17 13:52:12.233] [DEBUG] [StandaloneWrapper] mouseDragged event received at (389, 99)
+[12/17 13:52:12.277] [DEBUG] [StandaloneWrapper] mouseDragged event received at (388, 97)
+[12/17 13:52:12.277] [DEBUG] [StandaloneWrapper] mouseDragged event received at (388, 96)
+[12/17 13:52:12.278] [DEBUG] [StandaloneWrapper] mouseDragged event received at (387, 95)
+[12/17 13:52:12.278] [DEBUG] [StandaloneWrapper] mouseDragged event received at (387, 94)
+[12/17 13:52:12.280] [DEBUG] [StandaloneWrapper] mouseReleased event received at (387, 94)
+[12/17 13:52:12.280] [DEBUG] [Kernel] mouseReleased at (387, 94)
+[12/17 13:52:12.281] [DEBUG] [GestureManager] Dispatch gesture DRAG_END handledIndex=-1 listeners=4
+[12/17 13:52:12.281] [DEBUG] [KernelInput] mouseReleased gesture latency=1.393ms coord=(387,94)
+[12/17 13:52:12.281] [DEBUG] [Kernel] Forwarding mouseReleased to ScreenManager
+[12/17 13:52:12.283] [DEBUG] [KernelInput] mouseReleased screen latency=1.300ms coord=(387,94)
+[12/17 13:52:12.283] [DEBUG] [KernelInput] mouseReleased total latency=3.297ms coord=(387,94)
+[12/17 13:52:12.839] [DEBUG] [ScreenManager] Removed APPLICATION layer from Kernel stack for screen: Chromium Browser
+[12/17 13:52:12.840] [DEBUG] [ScreenManager] New top screen moved to foreground: Home Screen
+[12/17 13:52:12.840] [DEBUG] [ScreenManager] Popped screen - Chromium Browser
+[12/17 13:52:12.840] [DEBUG] [GestureManager] Removed gesture listener HomeScreen
+[12/17 13:52:12.842] [INFO] [SensorManager] センサーリスナー解除: MochiOS Humidity Sensor
+[12/17 13:52:12.843] [INFO] [SensorManager] センサーリスナー解除: MochiOS Light Sensor
+[12/17 13:52:12.843] [DEBUG] [ScreenManager] New top screen moved to foreground: Home Screen
+[12/17 13:52:12.843] [DEBUG] [ScreenManager] Popped screen - Home Screen
+[12/17 13:52:12.844] [DEBUG] [ScreenManager] Popped screen - Home Screen
+[12/17 13:52:12.845] [DEBUG] [ScreenManager] All screens cleared
+[12/17 13:52:12.846] [DEBUG] [GestureManager] Added gesture listener HomeScreen (priority: 50)
+[12/17 13:52:12.846] [DEBUG] [GestureManager] Current listener order: NotificationManager(priority=900) -> HomeScreen(priority=50) -> ControlCenterManager(priority=0) -> Kernel(priority=-1000)
+[12/17 13:52:12.848] [INFO] [SensorManager] センサーリスナー登録: MochiOS Humidity Sensor, 200000us
+[12/17 13:52:12.848] [INFO] [SensorManager] センサーリスナー登録: MochiOS Light Sensor, 200000us
+[12/17 13:52:12.849] [DEBUG] [ScreenManager] New screen moved to foreground: Home Screen
+[12/17 13:52:12.849] [DEBUG] [ScreenManager] Screen analysis - Title: 'Home Screen', ClassName: 'HomeScreen', isLauncher: true
+[12/17 13:52:12.851] [DEBUG] [ScreenManager] Skipped APPLICATION layer addition - kernel=true, isLauncher=true
+[12/17 13:52:12.851] [DEBUG] [ScreenManager] Pushed screen - Home Screen
+[12/17 13:52:14.638] [DEBUG] [StandaloneWrapper] mousePressed event received at (375, 435)
+[12/17 13:52:14.737] [DEBUG] [StandaloneWrapper] mouseReleased event received at (375, 435)
+[12/17 13:52:14.738] [DEBUG] [Kernel] mouseReleased at (375, 435)
+[12/17 13:52:14.738] [DEBUG] [GestureManager] Dispatch gesture TAP handledIndex=-1 listeners=4
+[12/17 13:52:14.739] [DEBUG] [KernelInput] mouseReleased gesture latency=1.339ms coord=(375,435)
+[12/17 13:52:14.740] [DEBUG] [Kernel] Forwarding mouseReleased to ScreenManager
+[12/17 13:52:14.741] [DEBUG] [KernelInput] mouseReleased screen latency=1.494ms coord=(375,435)
+[12/17 13:52:14.741] [DEBUG] [KernelInput] mouseReleased total latency=3.589ms coord=(375,435)
+[12/17 13:52:15.051] [DEBUG] [Kernel] keyPressed - key='' (charCode=27), keyCode=27
+[12/17 13:52:15.135] [DEBUG] [Kernel] Frame rate changed to: 5 FPS
+[12/17 13:52:15.136] [INFO] [Kernel] スリープモードに入りました (PowerManager経由)
+[12/17 13:52:20.447] [DEBUG] [Kernel] keyPressed - key=' ' (charCode=32), keyCode=0
+[12/17 13:52:21.572] [DEBUG] [Kernel] keyPressed - key='' (charCode=27), keyCode=27
+[12/17 13:52:21.639] [DEBUG] [Kernel] Frame rate changed to: 60 FPS
+[12/17 13:52:21.641] [INFO] [Kernel] スリープモードから復帰しました (PowerManager経由)
+[12/17 13:52:21.642] [DEBUG] [ScreenManager] Previous screen moved to background: Home Screen
+[12/17 13:52:21.644] [DEBUG] [GestureManager] Added gesture listener LockScreen (priority: 8000)
+[12/17 13:52:21.645] [DEBUG] [GestureManager] Current listener order: LockScreen(priority=8000) -> NotificationManager(priority=900) -> HomeScreen(priority=50) -> ControlCenterManager(priority=0) -> Kernel(priority=-1000)
+[12/17 13:52:21.645] [DEBUG] [ScreenManager] New screen moved to foreground: Lock Screen
+[12/17 13:52:21.646] [DEBUG] [ScreenManager] Screen analysis - Title: 'Lock Screen', ClassName: 'LockScreen', isLauncher: true
+[12/17 13:52:21.647] [DEBUG] [ScreenManager] Skipped APPLICATION layer addition - kernel=true, isLauncher=true
+[12/17 13:52:21.648] [DEBUG] [ScreenManager] Pushed screen - Lock Screen
+[12/17 13:52:21.648] [INFO] [Kernel] ロック画面を表示（スクリーンスタック保持）
+[12/17 13:52:22.242] [DEBUG] [Kernel] keyPressed - key=' ' (charCode=32), keyCode=0
+[12/17 13:52:22.808] [DEBUG] [StandaloneWrapper] mousePressed event received at (111, 319)
+[12/17 13:52:22.842] [DEBUG] [StandaloneWrapper] mouseDragged event received at (110, 319)
+[12/17 13:52:22.858] [DEBUG] [StandaloneWrapper] mouseDragged event received at (110, 320)
+[12/17 13:52:22.860] [DEBUG] [StandaloneWrapper] mouseDragged event received at (109, 323)
+[12/17 13:52:22.876] [DEBUG] [StandaloneWrapper] mouseDragged event received at (109, 328)
+[12/17 13:52:22.877] [DEBUG] [StandaloneWrapper] mouseDragged event received at (109, 329)
+[12/17 13:52:22.878] [DEBUG] [GestureManager] Dispatch gesture DRAG_START handledIndex=0 listeners=5
+[12/17 13:52:22.878] [DEBUG] [StandaloneWrapper] mouseDragged event received at (108, 338)
+[12/17 13:52:22.892] [DEBUG] [StandaloneWrapper] mouseDragged event received at (107, 351)
+[12/17 13:52:22.908] [DEBUG] [StandaloneWrapper] mouseDragged event received at (106, 366)
+[12/17 13:52:22.911] [DEBUG] [StandaloneWrapper] mouseDragged event received at (105, 381)
+[12/17 13:52:22.926] [DEBUG] [StandaloneWrapper] mouseDragged event received at (105, 396)
+[12/17 13:52:22.942] [DEBUG] [StandaloneWrapper] mouseDragged event received at (104, 409)
+[12/17 13:52:22.943] [DEBUG] [StandaloneWrapper] mouseDragged event received at (104, 425)
+[12/17 13:52:22.958] [DEBUG] [StandaloneWrapper] mouseDragged event received at (104, 436)
+[12/17 13:52:22.976] [DEBUG] [StandaloneWrapper] mouseDragged event received at (104, 446)
+[12/17 13:52:22.977] [DEBUG] [StandaloneWrapper] mouseDragged event received at (103, 458)
+[12/17 13:52:22.992] [DEBUG] [StandaloneWrapper] mouseDragged event received at (103, 467)
+[12/17 13:52:23.009] [DEBUG] [StandaloneWrapper] mouseDragged event received at (103, 476)
+[12/17 13:52:23.011] [DEBUG] [StandaloneWrapper] mouseDragged event received at (102, 481)
+[12/17 13:52:23.025] [DEBUG] [StandaloneWrapper] mouseDragged event received at (102, 484)
+[12/17 13:52:23.028] [DEBUG] [StandaloneWrapper] mouseDragged event received at (102, 485)
+[12/17 13:52:23.109] [DEBUG] [StandaloneWrapper] mouseDragged event received at (104, 485)
+[12/17 13:52:23.127] [DEBUG] [StandaloneWrapper] mouseDragged event received at (108, 485)
+[12/17 13:52:23.128] [DEBUG] [StandaloneWrapper] mouseDragged event received at (114, 485)
+[12/17 13:52:23.129] [DEBUG] [StandaloneWrapper] mouseDragged event received at (115, 485)
+[12/17 13:52:23.142] [DEBUG] [StandaloneWrapper] mouseDragged event received at (123, 484)
+[12/17 13:52:23.144] [DEBUG] [StandaloneWrapper] mouseDragged event received at (134, 483)
+[12/17 13:52:23.159] [DEBUG] [StandaloneWrapper] mouseDragged event received at (148, 481)
+[12/17 13:52:23.177] [DEBUG] [StandaloneWrapper] mouseDragged event received at (163, 480)
+[12/17 13:52:23.178] [DEBUG] [StandaloneWrapper] mouseDragged event received at (176, 480)
+[12/17 13:52:23.192] [DEBUG] [StandaloneWrapper] mouseDragged event received at (192, 479)
+[12/17 13:52:23.209] [DEBUG] [StandaloneWrapper] mouseDragged event received at (204, 478)
+[12/17 13:52:23.211] [DEBUG] [StandaloneWrapper] mouseDragged event received at (205, 478)
+[12/17 13:52:23.212] [DEBUG] [StandaloneWrapper] mouseDragged event received at (214, 478)
+[12/17 13:52:23.227] [DEBUG] [StandaloneWrapper] mouseDragged event received at (224, 479)
+[12/17 13:52:23.243] [DEBUG] [StandaloneWrapper] mouseDragged event received at (234, 481)
+[12/17 13:52:23.245] [DEBUG] [StandaloneWrapper] mouseDragged event received at (243, 483)
+[12/17 13:52:23.260] [DEBUG] [StandaloneWrapper] mouseDragged event received at (254, 487)
+[12/17 13:52:23.262] [DEBUG] [StandaloneWrapper] mouseDragged event received at (265, 489)
+[12/17 13:52:23.276] [DEBUG] [StandaloneWrapper] mouseDragged event received at (273, 492)
+[12/17 13:52:23.293] [DEBUG] [StandaloneWrapper] mouseDragged event received at (279, 493)
+[12/17 13:52:23.293] [DEBUG] [StandaloneWrapper] mouseDragged event received at (280, 493)
+[12/17 13:52:23.294] [DEBUG] [StandaloneWrapper] mouseDragged event received at (282, 494)
+[12/17 13:52:23.309] [DEBUG] [StandaloneWrapper] mouseDragged event received at (283, 494)
+[12/17 13:52:23.342] [DEBUG] [StandaloneWrapper] mouseReleased event received at (283, 494)
+[12/17 13:52:23.343] [DEBUG] [Kernel] mouseReleased at (283, 494)
+[12/17 13:52:23.345] [DEBUG] [GestureManager] Dispatch gesture DRAG_END handledIndex=0 listeners=5
+[12/17 13:52:23.346] [DEBUG] [KernelInput] mouseReleased gesture latency=2.446ms coord=(283,494)
+[12/17 13:52:23.347] [DEBUG] [Kernel] Forwarding mouseReleased to ScreenManager
+[12/17 13:52:23.347] [DEBUG] [KernelInput] mouseReleased screen latency=2.070ms coord=(283,494)
+[12/17 13:52:23.349] [WARN] [KernelInput] mouseReleased total latency=5.450ms coord=(283,494)
+[12/17 13:52:23.847] [DEBUG] [GestureManager] Removed gesture listener LockScreen
+[12/17 13:52:23.848] [DEBUG] [ScreenManager] New top screen moved to foreground: Home Screen
+[12/17 13:52:23.848] [DEBUG] [ScreenManager] Popped screen - Lock Screen
+[12/17 13:52:23.850] [DEBUG] [ScreenManager] Previous screen moved to background: Home Screen
+[12/17 13:52:23.850] [DEBUG] [GestureManager] Added gesture listener HomeScreen (priority: 50)
+[12/17 13:52:23.852] [DEBUG] [GestureManager] Current listener order: NotificationManager(priority=900) -> HomeScreen(priority=50) -> HomeScreen(priority=50) -> ControlCenterManager(priority=0) -> Kernel(priority=-1000)
+[12/17 13:52:23.852] [INFO] [SensorManager] センサーリスナー登録: MochiOS Humidity Sensor, 200000us
+[12/17 13:52:23.853] [INFO] [SensorManager] センサーリスナー登録: MochiOS Light Sensor, 200000us
+[12/17 13:52:23.853] [DEBUG] [ScreenManager] New screen moved to foreground: Home Screen
+[12/17 13:52:23.853] [DEBUG] [ScreenManager] Screen analysis - Title: 'Home Screen', ClassName: 'HomeScreen', isLauncher: true
+[12/17 13:52:23.855] [DEBUG] [ScreenManager] Skipped APPLICATION layer addition - kernel=true, isLauncher=true
+[12/17 13:52:23.856] [DEBUG] [ScreenManager] Pushed screen - Home Screen
+[12/17 13:52:24.261] [DEBUG] [StandaloneWrapper] mousePressed event received at (329, 309)
+[12/17 13:52:24.328] [DEBUG] [StandaloneWrapper] mouseReleased event received at (329, 309)
+[12/17 13:52:24.329] [DEBUG] [Kernel] mouseReleased at (329, 309)
+[12/17 13:52:24.330] [DEBUG] [GestureManager] Dispatch gesture TAP handledIndex=-1 listeners=5
+[12/17 13:52:24.331] [DEBUG] [KernelInput] mouseReleased gesture latency=1.449ms coord=(329,309)
+[12/17 13:52:24.332] [DEBUG] [Kernel] Forwarding mouseReleased to ScreenManager
+[12/17 13:52:24.332] [DEBUG] [KernelInput] mouseReleased screen latency=1.400ms coord=(329,309)
+[12/17 13:52:24.333] [DEBUG] [KernelInput] mouseReleased total latency=3.549ms coord=(329,309)
+[12/17 13:52:25.915] [DEBUG] [StandaloneWrapper] mousePressed event received at (186, 344)
+[12/17 13:52:25.948] [DEBUG] [StandaloneWrapper] mouseDragged event received at (187, 344)
+[12/17 13:52:25.963] [DEBUG] [StandaloneWrapper] mouseDragged event received at (189, 344)
+[12/17 13:52:25.981] [DEBUG] [StandaloneWrapper] mouseDragged event received at (195, 344)
+[12/17 13:52:25.981] [DEBUG] [StandaloneWrapper] mouseDragged event received at (202, 344)
+[12/17 13:52:25.982] [DEBUG] [GestureManager] Dispatch gesture DRAG_START handledIndex=-1 listeners=5
+[12/17 13:52:25.998] [DEBUG] [StandaloneWrapper] mouseDragged event received at (211, 344)
+[12/17 13:52:26.000] [DEBUG] [StandaloneWrapper] mouseDragged event received at (221, 344)
+[12/17 13:52:26.000] [DEBUG] [StandaloneWrapper] mouseDragged event received at (222, 345)
+[12/17 13:52:26.016] [DEBUG] [StandaloneWrapper] mouseDragged event received at (236, 345)
+[12/17 13:52:26.017] [DEBUG] [StandaloneWrapper] mouseDragged event received at (238, 345)
+[12/17 13:52:26.031] [DEBUG] [StandaloneWrapper] mouseDragged event received at (252, 345)
+[12/17 13:52:26.032] [DEBUG] [StandaloneWrapper] mouseDragged event received at (254, 345)
+[12/17 13:52:26.033] [DEBUG] [StandaloneWrapper] mouseReleased event received at (254, 345)
+[12/17 13:52:26.034] [DEBUG] [Kernel] mouseReleased at (254, 345)
+[12/17 13:52:26.034] [DEBUG] [GestureManager] Dispatch gesture DRAG_END handledIndex=2 listeners=5
+[12/17 13:52:26.035] [DEBUG] [GestureManager] Dispatch gesture SWIPE_RIGHT handledIndex=2 listeners=5
+[12/17 13:52:26.036] [DEBUG] [KernelInput] mouseReleased gesture latency=2.076ms coord=(254,345)
+[12/17 13:52:26.037] [DEBUG] [Kernel] Forwarding mouseReleased to ScreenManager
+[12/17 13:52:26.037] [DEBUG] [KernelInput] mouseReleased screen latency=1.472ms coord=(254,345)
+[12/17 13:52:26.038] [DEBUG] [KernelInput] mouseReleased total latency=4.222ms coord=(254,345)
+[12/17 13:52:26.814] [DEBUG] [Kernel] keyPressed - key='' (charCode=27), keyCode=27
+[12/17 13:52:26.883] [DEBUG] [Kernel] Frame rate changed to: 5 FPS
+[12/17 13:52:26.883] [INFO] [Kernel] スリープモードに入りました (PowerManager経由)
+[12/17 13:52:30.840] [DEBUG] [StandaloneWrapper] mousePressed event received at (364, 319)
+[12/17 13:52:30.889] [DEBUG] [StandaloneWrapper] mouseReleased event received at (364, 319)
+[12/17 13:52:30.890] [DEBUG] [Kernel] mouseReleased ignored - device is sleeping
+[12/17 13:52:31.088] [DEBUG] [Kernel] keyPressed - key=' ' (charCode=32), keyCode=0
+[12/17 13:52:31.716] [DEBUG] [Kernel] keyPressed - key='' (charCode=27), keyCode=27
+[12/17 13:52:31.767] [DEBUG] [Kernel] Frame rate changed to: 60 FPS
+[12/17 13:52:31.769] [INFO] [Kernel] スリープモードから復帰しました (PowerManager経由)
+[12/17 13:52:31.769] [DEBUG] [ScreenManager] Previous screen moved to background: Home Screen
+[12/17 13:52:31.770] [DEBUG] [GestureManager] Added gesture listener LockScreen (priority: 8000)
+[12/17 13:52:31.770] [DEBUG] [GestureManager] Current listener order: LockScreen(priority=8000) -> NotificationManager(priority=900) -> HomeScreen(priority=50) -> HomeScreen(priority=50) -> ControlCenterManager(priority=0) -> Kernel(priority=-1000)
+[12/17 13:52:31.772] [DEBUG] [ScreenManager] New screen moved to foreground: Lock Screen
+[12/17 13:52:31.773] [DEBUG] [ScreenManager] Screen analysis - Title: 'Lock Screen', ClassName: 'LockScreen', isLauncher: true
+[12/17 13:52:31.774] [DEBUG] [ScreenManager] Skipped APPLICATION layer addition - kernel=true, isLauncher=true
+[12/17 13:52:31.775] [DEBUG] [ScreenManager] Pushed screen - Lock Screen
+[12/17 13:52:31.777] [INFO] [Kernel] ロック画面を表示（スクリーンスタック保持）
+[12/17 13:52:32.186] [DEBUG] [Kernel] keyPressed - key=' ' (charCode=32), keyCode=0
+[12/17 13:52:32.769] [DEBUG] [StandaloneWrapper] mousePressed event received at (127, 308)
+[12/17 13:52:32.786] [DEBUG] [StandaloneWrapper] mouseDragged event received at (127, 309)
+[12/17 13:52:32.786] [DEBUG] [StandaloneWrapper] mouseDragged event received at (127, 312)
+[12/17 13:52:32.802] [DEBUG] [StandaloneWrapper] mouseDragged event received at (126, 316)
+[12/17 13:52:32.818] [DEBUG] [StandaloneWrapper] mouseDragged event received at (124, 320)
+[12/17 13:52:32.819] [DEBUG] [GestureManager] Dispatch gesture DRAG_START handledIndex=0 listeners=6
+[12/17 13:52:32.820] [DEBUG] [StandaloneWrapper] mouseDragged event received at (124, 321)
+[12/17 13:52:32.820] [DEBUG] [StandaloneWrapper] mouseDragged event received at (121, 328)
+[12/17 13:52:32.836] [DEBUG] [StandaloneWrapper] mouseDragged event received at (118, 340)
+[12/17 13:52:32.852] [DEBUG] [StandaloneWrapper] mouseDragged event received at (116, 355)
+[12/17 13:52:32.853] [DEBUG] [StandaloneWrapper] mouseDragged event received at (113, 375)
+[12/17 13:52:32.868] [DEBUG] [StandaloneWrapper] mouseDragged event received at (111, 391)
+[12/17 13:52:32.885] [DEBUG] [StandaloneWrapper] mouseDragged event received at (109, 407)
+[12/17 13:52:32.887] [DEBUG] [StandaloneWrapper] mouseDragged event received at (107, 418)
+[12/17 13:52:32.902] [DEBUG] [StandaloneWrapper] mouseDragged event received at (105, 427)
+[12/17 13:52:32.904] [DEBUG] [StandaloneWrapper] mouseDragged event received at (103, 433)
+[12/17 13:52:32.919] [DEBUG] [StandaloneWrapper] mouseDragged event received at (102, 438)
+[12/17 13:52:32.935] [DEBUG] [StandaloneWrapper] mouseDragged event received at (101, 442)
+[12/17 13:52:32.952] [DEBUG] [StandaloneWrapper] mouseDragged event received at (101, 446)
+[12/17 13:52:32.952] [DEBUG] [StandaloneWrapper] mouseDragged event received at (101, 448)
+[12/17 13:52:32.969] [DEBUG] [StandaloneWrapper] mouseDragged event received at (101, 451)
+[12/17 13:52:32.970] [DEBUG] [StandaloneWrapper] mouseDragged event received at (102, 454)
+[12/17 13:52:32.985] [DEBUG] [StandaloneWrapper] mouseDragged event received at (102, 455)
+[12/17 13:52:33.002] [DEBUG] [StandaloneWrapper] mouseDragged event received at (103, 455)
+[12/17 13:52:33.003] [DEBUG] [StandaloneWrapper] mouseDragged event received at (103, 456)
+[12/17 13:52:33.018] [DEBUG] [StandaloneWrapper] mouseDragged event received at (104, 456)
+[12/17 13:52:33.019] [DEBUG] [StandaloneWrapper] mouseDragged event received at (104, 457)
+[12/17 13:52:33.036] [DEBUG] [StandaloneWrapper] mouseDragged event received at (105, 458)
+[12/17 13:52:33.053] [DEBUG] [StandaloneWrapper] mouseDragged event received at (107, 460)
+[12/17 13:52:33.053] [DEBUG] [StandaloneWrapper] mouseDragged event received at (110, 463)
+[12/17 13:52:33.069] [DEBUG] [StandaloneWrapper] mouseDragged event received at (115, 466)
+[12/17 13:52:33.086] [DEBUG] [StandaloneWrapper] mouseDragged event received at (123, 471)
+[12/17 13:52:33.087] [DEBUG] [StandaloneWrapper] mouseDragged event received at (130, 473)
+[12/17 13:52:33.102] [DEBUG] [StandaloneWrapper] mouseDragged event received at (140, 475)
+[12/17 13:52:33.103] [DEBUG] [StandaloneWrapper] mouseDragged event received at (151, 476)
+[12/17 13:52:33.119] [DEBUG] [StandaloneWrapper] mouseDragged event received at (163, 477)
+[12/17 13:52:33.136] [DEBUG] [StandaloneWrapper] mouseDragged event received at (174, 477)
+[12/17 13:52:33.136] [DEBUG] [StandaloneWrapper] mouseDragged event received at (187, 478)
+[12/17 13:52:33.153] [DEBUG] [StandaloneWrapper] mouseDragged event received at (197, 480)
+[12/17 13:52:33.154] [DEBUG] [StandaloneWrapper] mouseDragged event received at (199, 480)
+[12/17 13:52:33.169] [DEBUG] [StandaloneWrapper] mouseDragged event received at (209, 482)
+[12/17 13:52:33.170] [DEBUG] [StandaloneWrapper] mouseDragged event received at (210, 482)
+[12/17 13:52:33.170] [DEBUG] [StandaloneWrapper] mouseDragged event received at (218, 483)
+[12/17 13:52:33.186] [DEBUG] [StandaloneWrapper] mouseDragged event received at (223, 485)
+[12/17 13:52:33.203] [DEBUG] [StandaloneWrapper] mouseDragged event received at (227, 485)
+[12/17 13:52:33.203] [DEBUG] [StandaloneWrapper] mouseDragged event received at (231, 486)
+[12/17 13:52:33.219] [DEBUG] [StandaloneWrapper] mouseDragged event received at (234, 486)
+[12/17 13:52:33.236] [DEBUG] [StandaloneWrapper] mouseDragged event received at (239, 486)
+[12/17 13:52:33.238] [DEBUG] [StandaloneWrapper] mouseDragged event received at (245, 484)
+[12/17 13:52:33.252] [DEBUG] [StandaloneWrapper] mouseDragged event received at (250, 482)
+[12/17 13:52:33.253] [DEBUG] [StandaloneWrapper] mouseDragged event received at (250, 481)
+[12/17 13:52:33.270] [DEBUG] [StandaloneWrapper] mouseDragged event received at (255, 479)
+[12/17 13:52:33.270] [DEBUG] [StandaloneWrapper] mouseDragged event received at (259, 478)
+[12/17 13:52:33.286] [DEBUG] [StandaloneWrapper] mouseDragged event received at (262, 477)
+[12/17 13:52:33.302] [DEBUG] [StandaloneWrapper] mouseDragged event received at (265, 476)
+[12/17 13:52:33.302] [DEBUG] [StandaloneWrapper] mouseDragged event received at (267, 476)
+[12/17 13:52:33.319] [DEBUG] [StandaloneWrapper] mouseDragged event received at (269, 476)
+[12/17 13:52:33.320] [DEBUG] [StandaloneWrapper] mouseDragged event received at (271, 476)
+[12/17 13:52:33.336] [DEBUG] [StandaloneWrapper] mouseDragged event received at (275, 476)
+[12/17 13:52:33.352] [DEBUG] [StandaloneWrapper] mouseDragged event received at (278, 476)
+[12/17 13:52:33.354] [DEBUG] [StandaloneWrapper] mouseDragged event received at (281, 476)
+[12/17 13:52:33.369] [DEBUG] [StandaloneWrapper] mouseDragged event received at (282, 476)
+[12/17 13:52:33.386] [DEBUG] [StandaloneWrapper] mouseReleased event received at (282, 476)
+[12/17 13:52:33.386] [DEBUG] [Kernel] mouseReleased at (282, 476)
+[12/17 13:52:33.388] [DEBUG] [GestureManager] Dispatch gesture DRAG_END handledIndex=0 listeners=6
+[12/17 13:52:33.389] [DEBUG] [KernelInput] mouseReleased gesture latency=1.630ms coord=(282,476)
+[12/17 13:52:33.390] [DEBUG] [Kernel] Forwarding mouseReleased to ScreenManager
+[12/17 13:52:33.390] [DEBUG] [KernelInput] mouseReleased screen latency=1.335ms coord=(282,476)
+[12/17 13:52:33.391] [DEBUG] [KernelInput] mouseReleased total latency=3.631ms coord=(282,476)
+[12/17 13:52:33.890] [DEBUG] [GestureManager] Removed gesture listener LockScreen
+[12/17 13:52:33.891] [DEBUG] [ScreenManager] New top screen moved to foreground: Home Screen
+[12/17 13:52:33.892] [DEBUG] [ScreenManager] Popped screen - Lock Screen
+[12/17 13:52:33.894] [DEBUG] [ScreenManager] Previous screen moved to background: Home Screen
+[12/17 13:52:33.895] [DEBUG] [ScreenManager] New screen moved to foreground: Home Screen
+[12/17 13:52:33.896] [DEBUG] [ScreenManager] Screen analysis - Title: 'Home Screen', ClassName: 'HomeScreen', isLauncher: true
+[12/17 13:52:33.897] [DEBUG] [ScreenManager] Skipped APPLICATION layer addition - kernel=true, isLauncher=true
+[12/17 13:52:33.898] [DEBUG] [ScreenManager] Pushed screen - Home Screen
+[12/17 13:52:34.237] [DEBUG] [StandaloneWrapper] mousePressed event received at (315, 267)
+[12/17 13:52:34.238] [DEBUG] [StandaloneWrapper] mouseDragged event received at (313, 267)
+[12/17 13:52:34.254] [DEBUG] [StandaloneWrapper] mouseDragged event received at (308, 267)
+[12/17 13:52:34.271] [DEBUG] [StandaloneWrapper] mouseDragged event received at (302, 267)
+[12/17 13:52:34.272] [DEBUG] [GestureManager] Dispatch gesture DRAG_START handledIndex=-1 listeners=5
+[12/17 13:52:34.272] [DEBUG] [StandaloneWrapper] mouseDragged event received at (292, 267)
+[12/17 13:52:34.287] [DEBUG] [StandaloneWrapper] mouseDragged event received at (279, 267)
+[12/17 13:52:34.289] [DEBUG] [StandaloneWrapper] mouseDragged event received at (278, 267)
+[12/17 13:52:34.304] [DEBUG] [StandaloneWrapper] mouseDragged event received at (260, 265)
+[12/17 13:52:34.305] [DEBUG] [StandaloneWrapper] mouseDragged event received at (237, 262)
+[12/17 13:52:34.321] [DEBUG] [StandaloneWrapper] mouseDragged event received at (212, 260)
+[12/17 13:52:34.322] [DEBUG] [StandaloneWrapper] mouseDragged event received at (187, 260)
+[12/17 13:52:34.339] [DEBUG] [StandaloneWrapper] mouseDragged event received at (168, 260)
+[12/17 13:52:34.355] [DEBUG] [StandaloneWrapper] mouseDragged event received at (166, 260)
+[12/17 13:52:34.356] [DEBUG] [StandaloneWrapper] mouseReleased event received at (166, 260)
+[12/17 13:52:34.356] [DEBUG] [Kernel] mouseReleased at (166, 260)
+[12/17 13:52:34.358] [DEBUG] [GestureManager] Dispatch gesture DRAG_END handledIndex=2 listeners=5
+[12/17 13:52:34.358] [DEBUG] [GestureManager] Dispatch gesture SWIPE_LEFT handledIndex=2 listeners=5
+[12/17 13:52:34.359] [DEBUG] [KernelInput] mouseReleased gesture latency=2.858ms coord=(166,260)
+[12/17 13:52:34.360] [DEBUG] [Kernel] Forwarding mouseReleased to ScreenManager
+[12/17 13:52:34.362] [DEBUG] [KernelInput] mouseReleased screen latency=1.778ms coord=(166,260)
+[12/17 13:52:34.362] [WARN] [KernelInput] mouseReleased total latency=5.354ms coord=(166,260)
+[12/17 13:52:34.971] [DEBUG] [StandaloneWrapper] mousePressed event received at (226, 169)
+[12/17 13:52:34.973] [DEBUG] [ScreenManager] pushScreenWithAnimation called
+[12/17 13:52:34.973] [DEBUG] [ScreenManager] screen=Chromium Browser
+[12/17 13:52:34.974] [DEBUG] [ScreenManager] currentPApplet=available
+[12/17 13:52:34.976] [DEBUG] [ScreenManager] iconImage=64x64
+[12/17 13:52:34.977] [DEBUG] [ScreenManager] iconPosition=(231.0, 187.0), iconSize=48.0
+[12/17 13:52:34.978] [DEBUG] [ScreenManager] Previous screen moved to background (animation): Home Screen
+[12/17 13:52:34.979] [DEBUG] [ScreenManager] Calling setup() on screen: Chromium Browser, PGraphics available: true
+[12/17 13:52:34.979] [INFO] [ChromiumBrowserScreen] setup() called - PGraphics size: 400x600
+[12/17 13:52:34.981] [INFO] [ChromiumBrowserScreen] ChromiumService available, checking surfaces...
+[12/17 13:52:34.981] [INFO] [ChromiumBrowserScreen] Current surfaces count: 1
+[12/17 13:52:34.982] [DEBUG] [ScreenManager] setup() completed successfully for: Chromium Browser
+[12/17 13:52:34.982] [DEBUG] [ScreenManager] New screen moved to foreground (animation): Chromium Browser
+[12/17 13:52:34.984] [DEBUG] [ScreenManager] Animated screen analysis - Title: 'Chromium Browser', ClassName: 'ChromiumBrowserScreen', isLauncher: false
+[12/17 13:52:34.984] [DEBUG] [ScreenManager] Added APPLICATION layer to Kernel stack for animated screen: Chromium Browser
+[12/17 13:52:34.985] [DEBUG] [ScreenManager] Setting target dimensions: 400x600
+[12/17 13:52:34.986] [DEBUG] [ScreenManager] Starting zoom-in animation...
+[12/17 13:52:34.987] [DEBUG] [ScreenManager] Animation setup complete for screen - Chromium Browser
+[12/17 13:52:35.055] [DEBUG] [StandaloneWrapper] mouseReleased event received at (226, 169)
+[12/17 13:52:35.056] [DEBUG] [Kernel] mouseReleased at (226, 169)
+[12/17 13:52:35.056] [DEBUG] [GestureManager] Dispatch gesture TAP handledIndex=-1 listeners=5
+[12/17 13:52:35.057] [DEBUG] [KernelInput] mouseReleased gesture latency=1.535ms coord=(226,169)
+[12/17 13:52:35.058] [DEBUG] [Kernel] Forwarding mouseReleased to ScreenManager
+[12/17 13:52:35.058] [DEBUG] [KernelInput] mouseReleased screen latency=1.864ms coord=(226,169)
+[12/17 13:52:35.060] [DEBUG] [KernelInput] mouseReleased total latency=4.380ms coord=(226,169)
+[12/17 13:52:35.303] [DEBUG] [ScreenManager] Animation completed - ZOOM_IN
+[12/17 13:52:35.304] [DEBUG] [ScreenManager] Animation completed - allowing Chromium Browser to be drawn
+[12/17 13:52:35.304] [DEBUG] [ScreenManager] Animation completed - NONE
+[12/17 13:52:35.307] [DEBUG] [ScreenManager] Unhandled animation completion - NONE
+[12/17 13:52:35.419] [DEBUG] [ChromiumRenderHandler] onPaint called #1783: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:35.421] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/17 13:52:35.421] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/17 13:52:35.571] [DEBUG] [ChromiumRenderHandler] onPaint called #1784: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:35.573] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/17 13:52:35.573] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/17 13:52:35.736] [DEBUG] [ChromiumRenderHandler] onPaint called #1785: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:35.738] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/17 13:52:35.739] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/17 13:52:36.389] [DEBUG] [StandaloneWrapper] mousePressed event received at (315, 97)
+[12/17 13:52:36.472] [DEBUG] [StandaloneWrapper] mouseReleased event received at (315, 97)
+[12/17 13:52:36.474] [DEBUG] [Kernel] mouseReleased at (315, 97)
+[12/17 13:52:36.475] [DEBUG] [GestureManager] Dispatch gesture TAP handledIndex=-1 listeners=5
+[12/17 13:52:36.476] [DEBUG] [KernelInput] mouseReleased gesture latency=2.046ms coord=(315,97)
+[12/17 13:52:36.477] [DEBUG] [Kernel] Forwarding mouseReleased to ScreenManager
+[12/17 13:52:36.478] [DEBUG] [KernelInput] mouseReleased screen latency=2.080ms coord=(315,97)
+[12/17 13:52:36.478] [DEBUG] [KernelInput] mouseReleased total latency=4.960ms coord=(315,97)
+[12/17 13:52:36.489] [DEBUG] [ChromiumBrowser] Console message received: [MochiOS:Selection]
+[12/17 13:52:36.505] [DEBUG] [ChromiumRenderHandler] onPaint called #1786: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:36.507] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] 
+[12/17 13:52:36.508] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/17 13:52:36.956] [DEBUG] [StandaloneWrapper] mousePressed event received at (172, 78)
+[12/17 13:52:37.023] [DEBUG] [StandaloneWrapper] mouseDragged event received at (171, 78)
+[12/17 13:52:37.039] [DEBUG] [StandaloneWrapper] mouseReleased event received at (171, 78)
+[12/17 13:52:37.041] [DEBUG] [Kernel] mouseReleased at (171, 78)
+[12/17 13:52:37.042] [DEBUG] [GestureManager] Dispatch gesture TAP handledIndex=-1 listeners=5
+[12/17 13:52:37.042] [DEBUG] [KernelInput] mouseReleased gesture latency=2.212ms coord=(171,78)
+[12/17 13:52:37.044] [DEBUG] [Kernel] Forwarding mouseReleased to ScreenManager
+[12/17 13:52:37.044] [DEBUG] [KernelInput] mouseReleased screen latency=1.549ms coord=(171,78)
+[12/17 13:52:37.045] [DEBUG] [KernelInput] mouseReleased total latency=4.474ms coord=(171,78)
+[12/17 13:52:37.323] [DEBUG] [ChromiumBrowserScreen] getFocusedTextInput: returning ChromiumTextInput (always-on mode)
+[12/17 13:52:37.406] [DEBUG] [ChromiumBrowserScreen] getFocusedTextInput: returning ChromiumTextInput (always-on mode)
+[12/17 13:52:39.143] [DEBUG] [ChromiumBrowserScreen] getFocusedTextInput: returning ChromiumTextInput (always-on mode)
+[12/17 13:52:39.224] [DEBUG] [ChromiumBrowserScreen] getFocusedTextInput: returning ChromiumTextInput (always-on mode)
+[12/17 13:52:40.851] [DEBUG] [ChromiumBrowser] Console message received: [MochiOS:Selection]
+[12/17 13:52:40.875] [DEBUG] [ChromiumRenderHandler] onPaint called #1787: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:40.876] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] 
+[12/17 13:52:40.878] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/17 13:52:41.142] [DEBUG] [ChromiumRenderHandler] onPaint called #1788: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:41.144] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] 
+[12/17 13:52:41.146] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/17 13:52:41.333] [DEBUG] [ChromiumBrowser] Console message received: [MochiOS:Selection]
+[12/17 13:52:41.359] [DEBUG] [ChromiumRenderHandler] onPaint called #1789: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:41.361] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] 
+[12/17 13:52:41.362] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/17 13:52:41.445] [DEBUG] [ChromiumRenderHandler] onPaint called #1790: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:41.447] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] 
+[12/17 13:52:41.448] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/17 13:52:41.450] [DEBUG] [ChromiumBrowser] Console message received: [MochiOS:Selection]
+[12/17 13:52:41.463] [DEBUG] [ChromiumRenderHandler] onPaint called #1791: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:41.465] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] 
+[12/17 13:52:41.467] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/17 13:52:41.542] [DEBUG] [ChromiumRenderHandler] onPaint called #1792: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:41.543] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] 
+[12/17 13:52:41.544] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/17 13:52:41.607] [DEBUG] [ChromiumBrowser] Console message received: [MochiOS:Selection]
+[12/17 13:52:41.625] [DEBUG] [ChromiumRenderHandler] onPaint called #1793: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:41.627] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] 
+[12/17 13:52:41.629] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/17 13:52:41.692] [DEBUG] [ChromiumRenderHandler] onPaint called #1794: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:41.694] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] 
+[12/17 13:52:41.695] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/17 13:52:41.757] [DEBUG] [ChromiumBrowser] Console message received: [MochiOS:Selection]
+[12/17 13:52:41.776] [DEBUG] [ChromiumRenderHandler] onPaint called #1795: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:41.777] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] 
+[12/17 13:52:41.779] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/17 13:52:41.841] [DEBUG] [ChromiumRenderHandler] onPaint called #1796: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:41.843] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] 
+[12/17 13:52:41.844] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/17 13:52:41.957] [DEBUG] [Kernel] keyPressed - key=' ' (charCode=32), keyCode=0
+[12/17 13:52:41.965] [DEBUG] [ChromiumBrowser] Console message received: [MochiOS:Selection]
+[12/17 13:52:41.976] [DEBUG] [ChromiumRenderHandler] onPaint called #1797: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:41.978] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] 
+[12/17 13:52:41.979] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/17 13:52:42.078] [DEBUG] [ChromiumRenderHandler] onPaint called #1798: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:42.080] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] 
+[12/17 13:52:42.081] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/17 13:52:43.152] [DEBUG] [ChromiumBrowser] Console message received: [MochiOS:Selection]
+[12/17 13:52:43.160] [DEBUG] [ChromiumRenderHandler] onPaint called #1799: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:43.162] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] 
+[12/17 13:52:43.164] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/17 13:52:43.262] [DEBUG] [ChromiumRenderHandler] onPaint called #1800: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:43.264] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] 
+[12/17 13:52:43.265] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/17 13:52:43.333] [DEBUG] [ChromiumBrowser] Console message received: [MochiOS:Selection]
+[12/17 13:52:43.345] [DEBUG] [ChromiumRenderHandler] onPaint called #1801: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:43.347] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] 
+[12/17 13:52:43.348] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/17 13:52:43.415] [DEBUG] [ChromiumBrowser] Console message received: [MochiOS:Selection]
+[12/17 13:52:43.428] [DEBUG] [ChromiumRenderHandler] onPaint called #1802: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:43.430] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] 
+[12/17 13:52:43.431] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/17 13:52:43.528] [DEBUG] [ChromiumRenderHandler] onPaint called #1803: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:43.530] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] 
+[12/17 13:52:43.531] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/17 13:52:43.987] [DEBUG] [ChromiumBrowser] Console message received: [MochiOS:Selection]
+[12/17 13:52:43.995] [DEBUG] [ChromiumRenderHandler] onPaint called #1804: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:43.997] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] 
+[12/17 13:52:43.998] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/17 13:52:44.066] [DEBUG] [ChromiumBrowser] Console message received: [MochiOS:Selection]
+[12/17 13:52:44.078] [DEBUG] [ChromiumRenderHandler] onPaint called #1805: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:44.080] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] 
+[12/17 13:52:44.081] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/17 13:52:44.150] [DEBUG] [ChromiumBrowser] Console message received: [MochiOS:Selection]
+[12/17 13:52:44.162] [DEBUG] [ChromiumRenderHandler] onPaint called #1806: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:44.164] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] 
+[12/17 13:52:44.164] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/17 13:52:44.232] [DEBUG] [ChromiumBrowser] Console message received: [MochiOS:Selection]
+[12/17 13:52:44.262] [DEBUG] [ChromiumRenderHandler] onPaint called #1807: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:44.264] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] 
+[12/17 13:52:44.265] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/17 13:52:44.346] [DEBUG] [ChromiumRenderHandler] onPaint called #1808: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:44.347] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] 
+[12/17 13:52:44.348] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/17 13:52:46.016] [DEBUG] [StandaloneWrapper] mousePressed event received at (354, 79)
+[12/17 13:52:46.033] [DEBUG] [ChromiumRenderHandler] onPaint called #1809: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:46.035] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] 
+[12/17 13:52:46.035] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/17 13:52:46.096] [DEBUG] [StandaloneWrapper] mouseReleased event received at (354, 79)
+[12/17 13:52:46.097] [DEBUG] [Kernel] mouseReleased at (354, 79)
+[12/17 13:52:46.099] [DEBUG] [GestureManager] Dispatch gesture TAP handledIndex=-1 listeners=5
+[12/17 13:52:46.099] [DEBUG] [KernelInput] mouseReleased gesture latency=1.977ms coord=(354,79)
+[12/17 13:52:46.100] [DEBUG] [Kernel] Forwarding mouseReleased to ScreenManager
+[12/17 13:52:46.101] [DEBUG] [KernelInput] mouseReleased screen latency=1.719ms coord=(354,79)
+[12/17 13:52:46.102] [DEBUG] [KernelInput] mouseReleased total latency=4.449ms coord=(354,79)
+[12/17 13:52:46.115] [DEBUG] [ChromiumRenderHandler] onPaint called #1810: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:46.116] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] [B:241 G:241 R:241 A:255] 
+[12/17 13:52:46.116] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/17 13:52:46.178] [DEBUG] [ChromiumBrowser] Console message received: [MochiOS:Selection]
+[12/17 13:52:46.196] [DEBUG] [ChromiumRenderHandler] onPaint called #1811: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:46.199] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/17 13:52:46.199] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:229 G:229 R:229 A:255]
+[12/17 13:52:46.261] [DEBUG] [ChromiumRenderHandler] onPaint called #1812: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:46.263] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/17 13:52:46.263] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:229 G:229 R:229 A:255]
+[12/17 13:52:46.413] [DEBUG] [ChromiumRenderHandler] onPaint called #1813: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:46.416] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/17 13:52:46.416] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:229 G:229 R:229 A:255]
+[12/17 13:52:46.598] [DEBUG] [ChromiumRenderHandler] onPaint called #1814: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:46.599] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/17 13:52:46.601] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:229 G:229 R:229 A:255]
+[12/17 13:52:46.681] [DEBUG] [ChromiumRenderHandler] onPaint called #1815: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:46.682] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/17 13:52:46.683] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:229 G:229 R:229 A:255]
+[12/17 13:52:46.699] [DEBUG] [ChromiumRenderHandler] onPaint called #1816: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:46.700] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/17 13:52:46.700] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:229 G:229 R:229 A:255]
+[12/17 13:52:46.764] [DEBUG] [ChromiumRenderHandler] onPaint called #1817: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:46.766] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/17 13:52:46.766] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:229 G:229 R:229 A:255]
+[12/17 13:52:47.033] [DEBUG] [ChromiumRenderHandler] onPaint called #1818: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:47.035] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/17 13:52:47.035] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:229 G:229 R:229 A:255]
+[12/17 13:52:47.116] [DEBUG] [ChromiumRenderHandler] onPaint called #1819: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:47.119] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] [B:255 G:255 R:255 A:255] 
+[12/17 13:52:47.120] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:183 G:211 R:234 A:255]
+[12/17 13:52:47.335] [DEBUG] [StandaloneWrapper] mousePressed event received at (221, 193)
+[12/17 13:52:47.351] [DEBUG] [StandaloneWrapper] mouseDragged event received at (221, 192)
+[12/17 13:52:47.437] [DEBUG] [StandaloneWrapper] mouseReleased event received at (221, 192)
+[12/17 13:52:47.438] [DEBUG] [Kernel] mouseReleased at (221, 192)
+[12/17 13:52:47.440] [DEBUG] [GestureManager] Dispatch gesture TAP handledIndex=-1 listeners=5
+[12/17 13:52:47.441] [DEBUG] [KernelInput] mouseReleased gesture latency=2.880ms coord=(221,192)
+[12/17 13:52:47.443] [DEBUG] [Kernel] Forwarding mouseReleased to ScreenManager
+[12/17 13:52:47.446] [DEBUG] [KernelInput] mouseReleased screen latency=3.924ms coord=(221,192)
+[12/17 13:52:47.448] [WARN] [KernelInput] mouseReleased total latency=8.651ms coord=(221,192)
+[12/17 13:52:47.533] [DEBUG] [ChromiumRenderHandler] onPaint called #1820: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:47.535] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:47.536] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/17 13:52:47.668] [DEBUG] [ChromiumRenderHandler] onPaint called #1821: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:47.669] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:47.672] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:0 G:0 R:0 A:255]
+[12/17 13:52:47.731] [DEBUG] [ChromiumRenderHandler] onPaint called #1822: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:47.734] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:47.735] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:77 G:77 R:77 A:255]
+[12/17 13:52:47.751] [DEBUG] [ChromiumRenderHandler] onPaint called #1823: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:47.752] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:47.754] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:77 G:77 R:77 A:255]
+[12/17 13:52:47.767] [DEBUG] [ChromiumRenderHandler] onPaint called #1824: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:47.769] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:47.770] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:77 G:77 R:77 A:255]
+[12/17 13:52:47.771] [DEBUG] [ChromiumRenderHandler] Frame skipped (too soon)
+[12/17 13:52:47.783] [DEBUG] [ChromiumRenderHandler] onPaint called #1825: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:47.785] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:47.786] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:77 G:77 R:77 A:255]
+[12/17 13:52:47.850] [DEBUG] [ChromiumRenderHandler] onPaint called #1826: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:47.852] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:47.853] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:77 G:77 R:77 A:255]
+[12/17 13:52:47.887] [DEBUG] [ChromiumRenderHandler] onPaint called #1827: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:47.890] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:47.892] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:77 G:77 R:77 A:255]
+[12/17 13:52:47.933] [DEBUG] [ChromiumRenderHandler] onPaint called #1828: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:47.935] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:47.936] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:77 G:77 R:77 A:255]
+[12/17 13:52:47.937] [DEBUG] [ChromiumRenderHandler] onPaint called #1829: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:47.939] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:47.941] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:77 G:77 R:77 A:255]
+[12/17 13:52:47.942] [DEBUG] [ChromiumRenderHandler] Frame skipped (too soon)
+[12/17 13:52:47.951] [DEBUG] [ChromiumRenderHandler] onPaint called #1830: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:47.954] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:47.956] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:77 G:77 R:77 A:255]
+[12/17 13:52:48.015] [DEBUG] [ChromiumRenderHandler] onPaint called #1831: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:48.018] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:48.020] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:82 G:80 R:79 A:255]
+[12/17 13:52:48.033] [DEBUG] [ChromiumRenderHandler] onPaint called #1832: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:48.034] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:48.036] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:10 G:8 R:6 A:255]
+[12/17 13:52:48.050] [DEBUG] [ChromiumRenderHandler] onPaint called #1833: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:48.053] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:48.054] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:17 G:13 R:9 A:255]
+[12/17 13:52:48.116] [DEBUG] [ChromiumRenderHandler] onPaint called #1834: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:48.118] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:48.120] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:17 G:13 R:9 A:255]
+[12/17 13:52:48.180] [DEBUG] [ChromiumRenderHandler] onPaint called #1835: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:48.182] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:48.183] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:27 G:22 R:14 A:255]
+[12/17 13:52:48.198] [DEBUG] [ChromiumRenderHandler] onPaint called #1836: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:48.201] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:48.203] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:27 G:22 R:14 A:255]
+[12/17 13:52:48.263] [DEBUG] [ChromiumRenderHandler] onPaint called #1837: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:48.266] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:10 G:10 R:10 A:255] [B:10 G:10 R:10 A:255] [B:10 G:10 R:10 A:255] [B:10 G:10 R:10 A:255] 
+[12/17 13:52:48.266] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/17 13:52:48.330] [DEBUG] [ChromiumRenderHandler] onPaint called #1838: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:48.332] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:10 G:10 R:10 A:255] [B:10 G:10 R:10 A:255] [B:10 G:10 R:10 A:255] [B:10 G:10 R:10 A:255] 
+[12/17 13:52:48.332] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/17 13:52:48.445] [DEBUG] [ChromiumRenderHandler] onPaint called #1839: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:48.446] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:10 G:10 R:10 A:255] [B:10 G:10 R:10 A:255] [B:10 G:10 R:10 A:255] [B:10 G:10 R:10 A:255] 
+[12/17 13:52:48.448] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/17 13:52:48.468] [DEBUG] [ChromiumRenderHandler] onPaint called #1840: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:48.469] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:10 G:10 R:10 A:255] [B:10 G:10 R:10 A:255] [B:10 G:10 R:10 A:255] [B:10 G:10 R:10 A:255] 
+[12/17 13:52:48.471] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/17 13:52:48.531] [DEBUG] [ChromiumRenderHandler] onPaint called #1841: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:48.533] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:10 G:10 R:10 A:255] [B:10 G:10 R:10 A:255] [B:10 G:10 R:10 A:255] [B:10 G:10 R:10 A:255] 
+[12/17 13:52:48.535] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/17 13:52:48.549] [DEBUG] [ChromiumRenderHandler] onPaint called #1842: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:48.550] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:10 G:10 R:10 A:255] [B:10 G:10 R:10 A:255] [B:10 G:10 R:10 A:255] [B:10 G:10 R:10 A:255] 
+[12/17 13:52:48.552] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/17 13:52:48.568] [DEBUG] [ChromiumRenderHandler] onPaint called #1843: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:48.569] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:10 G:10 R:10 A:255] [B:10 G:10 R:10 A:255] [B:10 G:10 R:10 A:255] [B:10 G:10 R:10 A:255] 
+[12/17 13:52:48.571] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/17 13:52:49.200] [DEBUG] [ChromiumRenderHandler] onPaint called #1844: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:49.203] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:10 G:10 R:10 A:255] [B:10 G:10 R:10 A:255] [B:10 G:10 R:10 A:255] [B:10 G:10 R:10 A:255] 
+[12/17 13:52:49.203] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/17 13:52:49.336] [DEBUG] [StandaloneWrapper] mousePressed event received at (341, 190)
+[12/17 13:52:49.353] [DEBUG] [ChromiumRenderHandler] onPaint called #1845: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:49.354] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:10 G:10 R:10 A:255] [B:10 G:10 R:10 A:255] [B:10 G:10 R:10 A:255] [B:10 G:10 R:10 A:255] 
+[12/17 13:52:49.354] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/17 13:52:49.416] [DEBUG] [StandaloneWrapper] mouseReleased event received at (341, 190)
+[12/17 13:52:49.418] [DEBUG] [Kernel] mouseReleased at (341, 190)
+[12/17 13:52:49.419] [DEBUG] [GestureManager] Dispatch gesture TAP handledIndex=-1 listeners=5
+[12/17 13:52:49.421] [DEBUG] [KernelInput] mouseReleased gesture latency=2.094ms coord=(341,190)
+[12/17 13:52:49.421] [DEBUG] [Kernel] Forwarding mouseReleased to ScreenManager
+[12/17 13:52:49.423] [DEBUG] [KernelInput] mouseReleased screen latency=1.949ms coord=(341,190)
+[12/17 13:52:49.424] [WARN] [KernelInput] mouseReleased total latency=5.131ms coord=(341,190)
+[12/17 13:52:49.434] [DEBUG] [ChromiumRenderHandler] onPaint called #1846: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:49.437] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:10 G:10 R:10 A:255] [B:10 G:10 R:10 A:255] [B:10 G:10 R:10 A:255] [B:10 G:10 R:10 A:255] 
+[12/17 13:52:49.438] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/17 13:52:49.500] [DEBUG] [ChromiumRenderHandler] onPaint called #1847: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:49.503] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:10 G:10 R:10 A:255] [B:10 G:10 R:10 A:255] [B:10 G:10 R:10 A:255] [B:10 G:10 R:10 A:255] 
+[12/17 13:52:49.504] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/17 13:52:49.519] [DEBUG] [ChromiumRenderHandler] onPaint called #1848: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:49.522] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:10 G:10 R:10 A:255] [B:10 G:10 R:10 A:255] [B:10 G:10 R:10 A:255] [B:10 G:10 R:10 A:255] 
+[12/17 13:52:49.523] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/17 13:52:49.536] [DEBUG] [ChromiumRenderHandler] onPaint called #1849: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:49.538] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:10 G:10 R:10 A:255] [B:10 G:10 R:10 A:255] [B:10 G:10 R:10 A:255] [B:10 G:10 R:10 A:255] 
+[12/17 13:52:49.539] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:255 G:255 R:255 A:255]
+[12/17 13:52:49.540] [DEBUG] [ChromiumRenderHandler] Frame skipped (too soon)
+[12/17 13:52:49.616] [DEBUG] [ChromiumRenderHandler] onPaint called #1850: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:49.618] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:49.618] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:34 G:27 R:17 A:255]
+[12/17 13:52:49.634] [DEBUG] [ChromiumRenderHandler] onPaint called #1851: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:49.637] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:49.638] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:34 G:27 R:17 A:255]
+[12/17 13:52:49.650] [DEBUG] [ChromiumRenderHandler] onPaint called #1852: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:49.653] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:49.655] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:39 G:33 R:20 A:255]
+[12/17 13:52:49.668] [DEBUG] [ChromiumRenderHandler] onPaint called #1853: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:49.669] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:49.671] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:45 G:37 R:24 A:255]
+[12/17 13:52:49.731] [DEBUG] [ChromiumRenderHandler] onPaint called #1854: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:49.734] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:49.734] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:52 G:43 R:25 A:255]
+[12/17 13:52:49.751] [DEBUG] [ChromiumRenderHandler] onPaint called #1855: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:49.753] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:49.754] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:56 G:46 R:29 A:255]
+[12/17 13:52:49.768] [DEBUG] [ChromiumRenderHandler] onPaint called #1856: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:49.770] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:49.771] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:56 G:46 R:29 A:255]
+[12/17 13:52:49.834] [DEBUG] [ChromiumRenderHandler] onPaint called #1857: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:49.836] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:49.837] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:63 G:50 R:33 A:255]
+[12/17 13:52:49.851] [DEBUG] [ChromiumRenderHandler] onPaint called #1858: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:49.852] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:49.854] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:67 G:56 R:34 A:255]
+[12/17 13:52:49.915] [DEBUG] [ChromiumRenderHandler] onPaint called #1859: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:49.916] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:49.918] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:73 G:60 R:36 A:255]
+[12/17 13:52:49.982] [DEBUG] [ChromiumRenderHandler] onPaint called #1860: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:49.984] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:49.987] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:84 G:70 R:42 A:255]
+[12/17 13:52:50.001] [DEBUG] [ChromiumRenderHandler] onPaint called #1861: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:50.003] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:50.005] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:90 G:73 R:45 A:255]
+[12/17 13:52:50.018] [DEBUG] [ChromiumRenderHandler] onPaint called #1862: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:50.020] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:50.022] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:94 G:79 R:48 A:255]
+[12/17 13:52:50.082] [DEBUG] [ChromiumRenderHandler] onPaint called #1863: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:50.084] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:50.085] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:101 G:84 R:51 A:255]
+[12/17 13:52:50.101] [DEBUG] [ChromiumRenderHandler] onPaint called #1864: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:50.103] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:50.104] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:101 G:84 R:51 A:255]
+[12/17 13:52:50.106] [DEBUG] [ChromiumRenderHandler] Frame skipped (too soon)
+[12/17 13:52:50.164] [DEBUG] [ChromiumRenderHandler] onPaint called #1865: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:50.166] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:50.168] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:112 G:93 R:56 A:255]
+[12/17 13:52:50.232] [DEBUG] [ChromiumRenderHandler] onPaint called #1866: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:50.233] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:50.236] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:118 G:97 R:60 A:255]
+[12/17 13:52:50.251] [DEBUG] [ChromiumRenderHandler] onPaint called #1867: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:50.254] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:50.255] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:125 G:102 R:63 A:255]
+[12/17 13:52:50.267] [DEBUG] [ChromiumRenderHandler] onPaint called #1868: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:50.271] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:50.271] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:132 G:107 R:66 A:255]
+[12/17 13:52:50.332] [DEBUG] [ChromiumRenderHandler] onPaint called #1869: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:50.335] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:50.338] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:135 G:112 R:66 A:255]
+[12/17 13:52:50.352] [DEBUG] [ChromiumRenderHandler] onPaint called #1870: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:50.354] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:50.355] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:140 G:116 R:71 A:255]
+[12/17 13:52:50.417] [DEBUG] [ChromiumRenderHandler] onPaint called #1871: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:50.419] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:50.420] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:145 G:121 R:73 A:255]
+[12/17 13:52:50.484] [DEBUG] [ChromiumRenderHandler] onPaint called #1872: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:50.485] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:50.488] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:151 G:126 R:76 A:255]
+[12/17 13:52:50.502] [DEBUG] [ChromiumRenderHandler] onPaint called #1873: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:50.503] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:50.505] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:160 G:131 R:79 A:255]
+[12/17 13:52:50.519] [DEBUG] [ChromiumRenderHandler] onPaint called #1874: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:50.522] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:50.523] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:168 G:137 R:80 A:255]
+[12/17 13:52:50.584] [DEBUG] [ChromiumRenderHandler] onPaint called #1875: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:50.585] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:50.586] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:173 G:141 R:84 A:255]
+[12/17 13:52:50.651] [DEBUG] [ChromiumRenderHandler] onPaint called #1876: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:50.653] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:50.653] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:178 G:146 R:88 A:255]
+[12/17 13:52:50.669] [DEBUG] [ChromiumRenderHandler] onPaint called #1877: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:50.670] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:50.672] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:178 G:146 R:88 A:255]
+[12/17 13:52:50.686] [DEBUG] [ChromiumRenderHandler] onPaint called #1878: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:50.688] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:50.689] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:176 G:152 R:100 A:255]
+[12/17 13:52:50.750] [DEBUG] [ChromiumRenderHandler] onPaint called #1879: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:50.751] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:50.753] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:227 G:216 R:188 A:255]
+[12/17 13:52:50.768] [DEBUG] [ChromiumRenderHandler] onPaint called #1880: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:50.772] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:50.773] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:214 G:203 R:182 A:255]
+[12/17 13:52:50.834] [DEBUG] [ChromiumRenderHandler] onPaint called #1881: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:50.835] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:50.837] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:213 G:199 R:173 A:255]
+[12/17 13:52:50.852] [DEBUG] [ChromiumRenderHandler] onPaint called #1882: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:50.854] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:50.855] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:215 G:199 R:172 A:255]
+[12/17 13:52:50.917] [DEBUG] [ChromiumRenderHandler] onPaint called #1883: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:50.919] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:50.921] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:215 G:199 R:172 A:255]
+[12/17 13:52:50.983] [DEBUG] [ChromiumRenderHandler] onPaint called #1884: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:50.984] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:50.987] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:212 G:191 R:159 A:255]
+[12/17 13:52:51.002] [DEBUG] [ChromiumRenderHandler] onPaint called #1885: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:51.004] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:51.006] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:212 G:188 R:148 A:255]
+[12/17 13:52:51.019] [DEBUG] [ChromiumRenderHandler] onPaint called #1886: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:51.021] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:51.022] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:176 G:150 R:95 A:255]
+[12/17 13:52:51.084] [DEBUG] [ChromiumRenderHandler] onPaint called #1887: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:51.086] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:51.087] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:145 G:127 R:83 A:255]
+[12/17 13:52:51.149] [DEBUG] [ChromiumRenderHandler] onPaint called #1888: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:51.153] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:51.154] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:136 G:122 R:84 A:255]
+[12/17 13:52:51.169] [DEBUG] [ChromiumRenderHandler] onPaint called #1889: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:51.171] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:51.174] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:131 G:120 R:82 A:255]
+[12/17 13:52:51.187] [DEBUG] [ChromiumRenderHandler] onPaint called #1890: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:51.188] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:51.190] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:120 G:115 R:77 A:255]
+[12/17 13:52:51.248] [DEBUG] [ChromiumRenderHandler] onPaint called #1891: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:51.250] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:51.251] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:112 G:110 R:71 A:255]
+[12/17 13:52:51.268] [DEBUG] [ChromiumRenderHandler] onPaint called #1892: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:51.271] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:51.273] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:105 G:110 R:76 A:255]
+[12/17 13:52:51.333] [DEBUG] [ChromiumRenderHandler] onPaint called #1893: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:51.337] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:51.338] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:126 G:189 R:173 A:255]
+[12/17 13:52:51.353] [DEBUG] [ChromiumRenderHandler] onPaint called #1894: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:51.355] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:51.356] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:104 G:179 R:170 A:255]
+[12/17 13:52:51.416] [DEBUG] [ChromiumRenderHandler] onPaint called #1895: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:51.418] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:51.419] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:106 G:156 R:153 A:255]
+[12/17 13:52:51.436] [DEBUG] [ChromiumRenderHandler] onPaint called #1896: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:51.438] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:51.440] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:106 G:156 R:153 A:255]
+[12/17 13:52:51.500] [DEBUG] [ChromiumRenderHandler] onPaint called #1897: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:51.502] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:51.505] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:153 G:190 R:194 A:255]
+[12/17 13:52:51.519] [DEBUG] [ChromiumRenderHandler] onPaint called #1898: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:51.522] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:51.523] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:85 G:126 R:133 A:255]
+[12/17 13:52:51.584] [DEBUG] [ChromiumRenderHandler] onPaint called #1899: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:51.586] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:51.588] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:83 G:167 R:173 A:255]
+[12/17 13:52:51.649] [DEBUG] [ChromiumRenderHandler] onPaint called #1900: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:51.653] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:51.654] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:82 G:171 R:176 A:255]
+[12/17 13:52:51.669] [DEBUG] [ChromiumRenderHandler] onPaint called #1901: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:51.672] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:51.673] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:82 G:171 R:179 A:255]
+[12/17 13:52:51.686] [DEBUG] [ChromiumRenderHandler] onPaint called #1902: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:51.688] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:51.690] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:82 G:171 R:179 A:255]
+[12/17 13:52:51.751] [DEBUG] [ChromiumRenderHandler] onPaint called #1903: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:51.754] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:51.755] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:86 G:174 R:182 A:255]
+[12/17 13:52:51.770] [DEBUG] [ChromiumRenderHandler] onPaint called #1904: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:51.772] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:51.773] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:78 G:166 R:173 A:255]
+[12/17 13:52:51.834] [DEBUG] [ChromiumRenderHandler] onPaint called #1905: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:51.837] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:51.839] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:74 G:161 R:169 A:255]
+[12/17 13:52:51.901] [DEBUG] [ChromiumRenderHandler] onPaint called #1906: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:51.902] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:51.905] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:79 G:163 R:169 A:255]
+[12/17 13:52:51.919] [DEBUG] [ChromiumRenderHandler] onPaint called #1907: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:51.922] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:51.922] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:84 G:161 R:164 A:255]
+[12/17 13:52:51.937] [DEBUG] [ChromiumRenderHandler] onPaint called #1908: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:51.939] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:51.941] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:53 G:100 R:178 A:255]
+[12/17 13:52:52.002] [DEBUG] [ChromiumRenderHandler] onPaint called #1909: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:52.004] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:52.006] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:40 G:71 R:186 A:255]
+[12/17 13:52:52.069] [DEBUG] [ChromiumRenderHandler] onPaint called #1910: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:52.072] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:52.074] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:58 G:86 R:214 A:255]
+[12/17 13:52:52.088] [DEBUG] [ChromiumRenderHandler] onPaint called #1911: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:52.090] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:52.092] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:44 G:72 R:197 A:255]
+[12/17 13:52:52.105] [DEBUG] [ChromiumRenderHandler] onPaint called #1912: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:52.107] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:52.110] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:36 G:65 R:190 A:255]
+[12/17 13:52:52.167] [DEBUG] [ChromiumRenderHandler] onPaint called #1913: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:52.169] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:52.172] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:64 G:93 R:216 A:255]
+[12/17 13:52:52.187] [DEBUG] [ChromiumRenderHandler] onPaint called #1914: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:52.197] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:52.199] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:46 G:75 R:197 A:255]
+[12/17 13:52:52.251] [DEBUG] [ChromiumRenderHandler] onPaint called #1915: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:52.254] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:52.257] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:43 G:72 R:194 A:255]
+[12/17 13:52:52.319] [DEBUG] [ChromiumRenderHandler] onPaint called #1916: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:52.321] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:52.322] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:64 G:94 R:214 A:255]
+[12/17 13:52:52.338] [DEBUG] [ChromiumRenderHandler] onPaint called #1917: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:52.339] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:52.341] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:35 G:62 R:183 A:255]
+[12/17 13:52:52.354] [DEBUG] [ChromiumRenderHandler] onPaint called #1918: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:52.357] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:52.360] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:45 G:72 R:193 A:255]
+[12/17 13:52:52.417] [DEBUG] [ChromiumRenderHandler] onPaint called #1919: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:52.419] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:52.422] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:36 G:63 R:180 A:255]
+[12/17 13:52:52.438] [DEBUG] [ChromiumRenderHandler] onPaint called #1920: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:52.440] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:52.442] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:41 G:67 R:182 A:255]
+[12/17 13:52:52.504] [DEBUG] [ChromiumRenderHandler] onPaint called #1921: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:52.507] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:52.509] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:38 G:65 R:175 A:255]
+[12/17 13:52:52.522] [DEBUG] [ChromiumRenderHandler] onPaint called #1922: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:52.523] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:52.525] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:31 G:57 R:161 A:255]
+[12/17 13:52:52.527] [DEBUG] [ChromiumRenderHandler] Frame skipped (too soon)
+[12/17 13:52:52.585] [DEBUG] [ChromiumRenderHandler] onPaint called #1923: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:52.587] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:52.589] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:35 G:58 R:162 A:255]
+[12/17 13:52:52.650] [DEBUG] [ChromiumRenderHandler] onPaint called #1924: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:52.652] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:52.653] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:41 G:63 R:165 A:255]
+[12/17 13:52:52.670] [DEBUG] [ChromiumRenderHandler] onPaint called #1925: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:52.673] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:52.674] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:35 G:55 R:156 A:255]
+[12/17 13:52:52.688] [DEBUG] [ChromiumRenderHandler] onPaint called #1926: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:52.691] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:52.693] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:34 G:55 R:153 A:255]
+[12/17 13:52:52.752] [DEBUG] [ChromiumRenderHandler] onPaint called #1927: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:52.752] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:52.753] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:26 G:49 R:136 A:255]
+[12/17 13:52:52.818] [DEBUG] [ChromiumRenderHandler] onPaint called #1928: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:52.820] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:52.821] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:131 G:163 R:215 A:255]
+[12/17 13:52:52.838] [DEBUG] [ChromiumRenderHandler] onPaint called #1929: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:52.841] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:52.842] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:84 G:118 R:156 A:255]
+[12/17 13:52:52.855] [DEBUG] [ChromiumRenderHandler] onPaint called #1930: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:52.859] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:52.861] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:70 G:102 R:137 A:255]
+[12/17 13:52:52.872] [DEBUG] [ChromiumRenderHandler] onPaint called #1931: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:52.873] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:52.876] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:70 G:102 R:137 A:255]
+[12/17 13:52:52.877] [DEBUG] [ChromiumRenderHandler] Frame skipped (too soon)
+[12/17 13:52:52.937] [DEBUG] [ChromiumRenderHandler] onPaint called #1932: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:52.938] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:52.940] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:42 G:70 R:99 A:255]
+[12/17 13:52:52.955] [DEBUG] [ChromiumRenderHandler] onPaint called #1933: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:52.958] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:52.960] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:50 G:70 R:96 A:255]
+[12/17 13:52:52.974] [DEBUG] [ChromiumRenderHandler] onPaint called #1934: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:52.978] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:52.979] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:50 G:70 R:96 A:255]
+[12/17 13:52:53.036] [DEBUG] [ChromiumRenderHandler] onPaint called #1935: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:53.039] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:53.041] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:91 G:111 R:138 A:255]
+[12/17 13:52:53.053] [DEBUG] [ChromiumRenderHandler] onPaint called #1936: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:53.057] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:53.058] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:50 G:69 R:97 A:255]
+[12/17 13:52:53.118] [DEBUG] [ChromiumRenderHandler] onPaint called #1937: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:53.121] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:53.124] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:125 G:153 R:194 A:255]
+[12/17 13:52:53.184] [DEBUG] [ChromiumRenderHandler] onPaint called #1938: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:53.187] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:53.188] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:56 G:92 R:141 A:255]
+[12/17 13:52:53.205] [DEBUG] [ChromiumRenderHandler] onPaint called #1939: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:53.207] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:53.208] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:50 G:89 R:140 A:255]
+[12/17 13:52:53.268] [DEBUG] [ChromiumRenderHandler] onPaint called #1940: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:53.269] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:53.272] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:50 G:90 R:142 A:255]
+[12/17 13:52:53.288] [DEBUG] [ChromiumRenderHandler] onPaint called #1941: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:53.290] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:53.291] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:47 G:90 R:145 A:255]
+[12/17 13:52:53.354] [DEBUG] [ChromiumRenderHandler] onPaint called #1942: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:53.355] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:53.356] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:46 G:91 R:145 A:255]
+[12/17 13:52:53.372] [DEBUG] [ChromiumRenderHandler] onPaint called #1943: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:53.373] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:53.374] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:38 G:74 R:140 A:255]
+[12/17 13:52:53.435] [DEBUG] [ChromiumRenderHandler] onPaint called #1944: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:53.438] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:53.440] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:30 G:52 R:140 A:255]
+[12/17 13:52:53.455] [DEBUG] [ChromiumRenderHandler] onPaint called #1945: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:53.457] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:53.459] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:32 G:54 R:140 A:255]
+[12/17 13:52:53.520] [DEBUG] [ChromiumRenderHandler] onPaint called #1946: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:53.522] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:53.524] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:29 G:50 R:135 A:255]
+[12/17 13:52:53.538] [DEBUG] [ChromiumRenderHandler] onPaint called #1947: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:53.540] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:53.542] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:31 G:53 R:138 A:255]
+[12/17 13:52:53.602] [DEBUG] [ChromiumRenderHandler] onPaint called #1948: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:53.604] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:53.606] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:34 G:56 R:138 A:255]
+[12/17 13:52:53.622] [DEBUG] [ChromiumRenderHandler] onPaint called #1949: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:53.623] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:53.625] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:35 G:62 R:131 A:255]
+[12/17 13:52:53.686] [DEBUG] [ChromiumRenderHandler] onPaint called #1950: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:53.688] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:53.689] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:56 G:89 R:140 A:255]
+[12/17 13:52:53.705] [DEBUG] [ChromiumRenderHandler] onPaint called #1951: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:53.708] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:53.709] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:96 G:125 R:162 A:255]
+[12/17 13:52:53.768] [DEBUG] [ChromiumRenderHandler] onPaint called #1952: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:53.769] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:53.771] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:52 G:76 R:107 A:255]
+[12/17 13:52:53.788] [DEBUG] [ChromiumRenderHandler] onPaint called #1953: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:53.791] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:53.792] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:55 G:79 R:116 A:255]
+[12/17 13:52:53.851] [DEBUG] [ChromiumRenderHandler] onPaint called #1954: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:53.852] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:53.854] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:109 G:136 R:174 A:255]
+[12/17 13:52:53.872] [DEBUG] [ChromiumRenderHandler] onPaint called #1955: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:53.873] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:53.876] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:94 G:127 R:166 A:255]
+[12/17 13:52:53.935] [DEBUG] [ChromiumRenderHandler] onPaint called #1956: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:53.937] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:53.939] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:106 G:144 R:186 A:255]
+[12/17 13:52:53.955] [DEBUG] [ChromiumRenderHandler] onPaint called #1957: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:53.956] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:53.962] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:103 G:138 R:178 A:255]
+[12/17 13:52:53.971] [DEBUG] [ChromiumRenderHandler] onPaint called #1958: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:53.976] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:53.977] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:55 G:91 R:141 A:255]
+[12/17 13:52:53.979] [DEBUG] [ChromiumRenderHandler] Frame skipped (too soon)
+[12/17 13:52:54.036] [DEBUG] [ChromiumRenderHandler] onPaint called #1959: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:54.038] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:54.040] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:50 G:93 R:143 A:255]
+[12/17 13:52:54.101] [DEBUG] [ChromiumRenderHandler] onPaint called #1960: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:54.104] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:54.104] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:51 G:93 R:146 A:255]
+[12/17 13:52:54.121] [DEBUG] [ChromiumRenderHandler] onPaint called #1961: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:54.123] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:54.125] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:50 G:92 R:139 A:255]
+[12/17 13:52:54.186] [DEBUG] [ChromiumRenderHandler] onPaint called #1962: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:54.188] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:54.189] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:81 G:120 R:164 A:255]
+[12/17 13:52:54.204] [DEBUG] [ChromiumRenderHandler] onPaint called #1963: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:54.207] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:54.208] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:88 G:120 R:161 A:255]
+[12/17 13:52:54.270] [DEBUG] [ChromiumRenderHandler] onPaint called #1964: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:54.271] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:54.273] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:74 G:107 R:145 A:255]
+[12/17 13:52:54.288] [DEBUG] [ChromiumRenderHandler] onPaint called #1965: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:54.290] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:54.292] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:48 G:84 R:122 A:255]
+[12/17 13:52:54.352] [DEBUG] [ChromiumRenderHandler] onPaint called #1966: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:54.354] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:54.356] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:69 G:106 R:146 A:255]
+[12/17 13:52:54.372] [DEBUG] [ChromiumRenderHandler] onPaint called #1967: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:54.373] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:54.376] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:68 G:105 R:145 A:255]
+[12/17 13:52:54.389] [DEBUG] [ChromiumRenderHandler] onPaint called #1968: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:54.391] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:54.395] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:60 G:100 R:141 A:255]
+[12/17 13:52:54.453] [DEBUG] [ChromiumRenderHandler] onPaint called #1969: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:54.456] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:54.457] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:111 G:163 R:204 A:255]
+[12/17 13:52:54.519] [DEBUG] [ChromiumRenderHandler] onPaint called #1970: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:54.522] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:54.524] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:121 G:185 R:225 A:255]
+[12/17 13:52:54.539] [DEBUG] [ChromiumRenderHandler] onPaint called #1971: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:54.541] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:54.544] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:120 G:187 R:226 A:255]
+[12/17 13:52:54.603] [DEBUG] [ChromiumRenderHandler] onPaint called #1972: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:54.606] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:54.608] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:124 G:190 R:230 A:255]
+[12/17 13:52:54.622] [DEBUG] [ChromiumRenderHandler] onPaint called #1973: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:54.627] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:54.628] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:126 G:192 R:230 A:255]
+[12/17 13:52:54.686] [DEBUG] [ChromiumRenderHandler] onPaint called #1974: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:54.689] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:54.690] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:126 G:192 R:230 A:255]
+[12/17 13:52:54.706] [DEBUG] [ChromiumRenderHandler] onPaint called #1975: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:54.708] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:54.711] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:126 G:192 R:230 A:255]
+[12/17 13:52:54.769] [DEBUG] [ChromiumRenderHandler] onPaint called #1976: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:54.771] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:54.773] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:126 G:192 R:230 A:255]
+[12/17 13:52:54.789] [DEBUG] [ChromiumRenderHandler] onPaint called #1977: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:54.792] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:54.793] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:126 G:192 R:230 A:255]
+[12/17 13:52:54.853] [DEBUG] [ChromiumRenderHandler] onPaint called #1978: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:54.854] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:54.857] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:126 G:192 R:230 A:255]
+[12/17 13:52:54.873] [DEBUG] [ChromiumRenderHandler] onPaint called #1979: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:54.875] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:54.878] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:127 G:192 R:230 A:255]
+[12/17 13:52:54.938] [DEBUG] [ChromiumRenderHandler] onPaint called #1980: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:54.940] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:54.943] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:128 G:192 R:230 A:255]
+[12/17 13:52:54.957] [DEBUG] [ChromiumRenderHandler] onPaint called #1981: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:54.959] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:54.961] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:128 G:192 R:230 A:255]
+[12/17 13:52:55.022] [DEBUG] [ChromiumRenderHandler] onPaint called #1982: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:55.023] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:55.025] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:129 G:193 R:230 A:255]
+[12/17 13:52:55.045] [DEBUG] [ChromiumRenderHandler] onPaint called #1983: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:55.046] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:55.047] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:129 G:193 R:230 A:255]
+[12/17 13:52:55.106] [DEBUG] [ChromiumRenderHandler] onPaint called #1984: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:55.108] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:55.110] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:130 G:193 R:230 A:255]
+[12/17 13:52:55.131] [DEBUG] [ChromiumRenderHandler] onPaint called #1985: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:55.134] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:55.136] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:132 G:195 R:232 A:255]
+[12/17 13:52:55.192] [DEBUG] [ChromiumRenderHandler] onPaint called #1986: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:55.194] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:55.196] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:132 G:195 R:232 A:255]
+[12/17 13:52:55.208] [DEBUG] [ChromiumRenderHandler] onPaint called #1987: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:55.210] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:55.213] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:132 G:196 R:233 A:255]
+[12/17 13:52:55.297] [DEBUG] [ChromiumRenderHandler] onPaint called #1988: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:55.301] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:55.304] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:132 G:196 R:233 A:255]
+[12/17 13:52:55.314] [DEBUG] [ChromiumRenderHandler] onPaint called #1989: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:55.317] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:55.319] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:131 G:194 R:232 A:255]
+[12/17 13:52:55.321] [DEBUG] [ChromiumRenderHandler] Frame skipped (too soon)
+[12/17 13:52:55.331] [DEBUG] [ChromiumRenderHandler] onPaint called #1990: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:55.333] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:55.336] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:130 G:194 R:231 A:255]
+[12/17 13:52:55.346] [DEBUG] [ChromiumRenderHandler] onPaint called #1991: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:55.350] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:55.351] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:130 G:193 R:230 A:255]
+[12/17 13:52:55.411] [DEBUG] [ChromiumRenderHandler] onPaint called #1992: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:55.414] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:55.417] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:129 G:192 R:230 A:255]
+[12/17 13:52:55.476] [DEBUG] [ChromiumRenderHandler] onPaint called #1993: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:55.479] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:55.482] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:127 G:192 R:230 A:255]
+[12/17 13:52:55.494] [DEBUG] [ChromiumRenderHandler] onPaint called #1994: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:55.499] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:55.501] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:126 G:192 R:230 A:255]
+[12/17 13:52:55.557] [DEBUG] [ChromiumRenderHandler] onPaint called #1995: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:55.560] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:55.563] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:126 G:192 R:230 A:255]
+[12/17 13:52:55.578] [DEBUG] [ChromiumRenderHandler] onPaint called #1996: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:55.581] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:55.583] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:126 G:192 R:230 A:255]
+[12/17 13:52:55.642] [DEBUG] [ChromiumRenderHandler] onPaint called #1997: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:55.645] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:55.647] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:126 G:192 R:230 A:255]
+[12/17 13:52:55.659] [DEBUG] [ChromiumRenderHandler] onPaint called #1998: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:55.662] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:55.664] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:126 G:192 R:230 A:255]
+[12/17 13:52:55.723] [DEBUG] [ChromiumRenderHandler] onPaint called #1999: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:55.724] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:55.727] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:126 G:192 R:230 A:255]
+[12/17 13:52:55.808] [DEBUG] [ChromiumRenderHandler] onPaint called #2000: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:55.811] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:55.813] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:126 G:192 R:230 A:255]
+[12/17 13:52:55.824] [DEBUG] [ChromiumRenderHandler] onPaint called #2001: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:55.827] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:55.829] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:126 G:192 R:230 A:255]
+[12/17 13:52:55.830] [DEBUG] [ChromiumRenderHandler] Frame skipped (too soon)
+[12/17 13:52:55.842] [DEBUG] [ChromiumRenderHandler] onPaint called #2002: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:55.845] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:55.847] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:126 G:192 R:230 A:255]
+[12/17 13:52:55.858] [DEBUG] [ChromiumRenderHandler] onPaint called #2003: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:55.862] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:55.863] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:126 G:192 R:230 A:255]
+[12/17 13:52:55.923] [DEBUG] [ChromiumRenderHandler] onPaint called #2004: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:55.926] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:55.928] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:126 G:192 R:230 A:255]
+[12/17 13:52:55.940] [DEBUG] [ChromiumRenderHandler] onPaint called #2005: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:55.943] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:55.946] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:126 G:192 R:230 A:255]
+[12/17 13:52:56.004] [DEBUG] [ChromiumRenderHandler] onPaint called #2006: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:56.007] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:56.010] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:126 G:192 R:230 A:255]
+[12/17 13:52:56.024] [DEBUG] [ChromiumRenderHandler] onPaint called #2007: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:56.027] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:56.029] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:126 G:192 R:230 A:255]
+[12/17 13:52:56.089] [DEBUG] [ChromiumRenderHandler] onPaint called #2008: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:56.091] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:56.094] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:126 G:192 R:230 A:255]
+[12/17 13:52:56.110] [DEBUG] [ChromiumRenderHandler] onPaint called #2009: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:56.113] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:56.114] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:126 G:192 R:230 A:255]
+[12/17 13:52:56.176] [DEBUG] [ChromiumRenderHandler] onPaint called #2010: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:56.179] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:56.182] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:126 G:192 R:230 A:255]
+[12/17 13:52:56.195] [DEBUG] [ChromiumRenderHandler] onPaint called #2011: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:56.198] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:56.199] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:129 G:194 R:231 A:255]
+[12/17 13:52:56.261] [DEBUG] [ChromiumRenderHandler] onPaint called #2012: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:56.263] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:56.266] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:129 G:193 R:231 A:255]
+[12/17 13:52:56.274] [DEBUG] [ChromiumRenderHandler] onPaint called #2013: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:56.278] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:56.280] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:129 G:193 R:231 A:255]
+[12/17 13:52:56.282] [DEBUG] [ChromiumRenderHandler] Frame skipped (too soon)
+[12/17 13:52:56.339] [DEBUG] [ChromiumRenderHandler] onPaint called #2014: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:56.342] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:56.345] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:134 G:193 R:231 A:255]
+[12/17 13:52:56.358] [DEBUG] [ChromiumRenderHandler] onPaint called #2015: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:56.361] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:56.364] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:132 G:191 R:228 A:255]
+[12/17 13:52:56.421] [DEBUG] [ChromiumRenderHandler] onPaint called #2016: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:56.424] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:56.427] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:129 G:187 R:225 A:255]
+[12/17 13:52:56.441] [DEBUG] [ChromiumRenderHandler] onPaint called #2017: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:56.445] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:56.446] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:86 G:140 R:178 A:255]
+[12/17 13:52:56.506] [DEBUG] [ChromiumRenderHandler] onPaint called #2018: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:56.509] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:56.511] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:77 G:130 R:169 A:255]
+[12/17 13:52:56.529] [DEBUG] [ChromiumRenderHandler] onPaint called #2019: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:56.531] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:56.533] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:68 G:121 R:159 A:255]
+[12/17 13:52:56.589] [DEBUG] [ChromiumRenderHandler] onPaint called #2020: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:56.591] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:56.594] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:72 G:121 R:160 A:255]
+[12/17 13:52:56.656] [DEBUG] [ChromiumRenderHandler] onPaint called #2021: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:56.659] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:56.662] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:72 G:121 R:160 A:255]
+[12/17 13:52:56.678] [DEBUG] [ChromiumRenderHandler] onPaint called #2022: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:56.681] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:56.682] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:72 G:121 R:160 A:255]
+[12/17 13:52:56.697] [DEBUG] [ChromiumRenderHandler] onPaint called #2023: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:56.699] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:56.702] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:85 G:130 R:169 A:255]
+[12/17 13:52:56.759] [DEBUG] [ChromiumRenderHandler] onPaint called #2024: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:56.763] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:56.765] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:85 G:130 R:169 A:255]
+[12/17 13:52:56.778] [DEBUG] [ChromiumRenderHandler] onPaint called #2025: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:56.780] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:56.782] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:85 G:130 R:169 A:255]
+[12/17 13:52:56.844] [DEBUG] [ChromiumRenderHandler] onPaint called #2026: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:56.847] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:56.849] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:94 G:119 R:150 A:255]
+[12/17 13:52:56.861] [DEBUG] [ChromiumRenderHandler] onPaint called #2027: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:56.864] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:56.868] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:94 G:119 R:150 A:255]
+[12/17 13:52:56.930] [DEBUG] [ChromiumRenderHandler] onPaint called #2028: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:56.933] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:56.935] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:94 G:119 R:150 A:255]
+[12/17 13:52:56.947] [DEBUG] [ChromiumRenderHandler] onPaint called #2029: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:56.950] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:56.952] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:35 G:31 R:38 A:255]
+[12/17 13:52:57.015] [DEBUG] [ChromiumRenderHandler] onPaint called #2030: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:57.017] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:57.019] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:35 G:31 R:38 A:255]
+[12/17 13:52:57.031] [DEBUG] [ChromiumRenderHandler] onPaint called #2031: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:57.033] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:57.037] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:35 G:31 R:38 A:255]
+[12/17 13:52:57.095] [DEBUG] [ChromiumRenderHandler] onPaint called #2032: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:57.096] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:57.100] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:29 G:32 R:31 A:255]
+[12/17 13:52:57.114] [DEBUG] [ChromiumRenderHandler] onPaint called #2033: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:57.118] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:57.120] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:29 G:32 R:31 A:255]
+[12/17 13:52:57.176] [DEBUG] [ChromiumRenderHandler] onPaint called #2034: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:57.181] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:57.183] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:29 G:32 R:31 A:255]
+[12/17 13:52:57.195] [DEBUG] [ChromiumRenderHandler] onPaint called #2035: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:57.198] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:57.200] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:140 G:171 R:253 A:255]
+[12/17 13:52:57.263] [DEBUG] [ChromiumRenderHandler] onPaint called #2036: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:57.265] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:57.267] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:140 G:171 R:253 A:255]
+[12/17 13:52:57.279] [DEBUG] [ChromiumRenderHandler] onPaint called #2037: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:57.281] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:57.283] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:141 G:171 R:253 A:255]
+[12/17 13:52:57.285] [DEBUG] [ChromiumRenderHandler] Frame skipped (too soon)
+[12/17 13:52:57.345] [DEBUG] [ChromiumRenderHandler] onPaint called #2038: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:57.348] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:57.351] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:151 G:172 R:242 A:255]
+[12/17 13:52:57.364] [DEBUG] [ChromiumRenderHandler] onPaint called #2039: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:57.366] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:57.369] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:150 G:172 R:241 A:255]
+[12/17 13:52:57.429] [DEBUG] [ChromiumRenderHandler] onPaint called #2040: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:57.432] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:57.434] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:146 G:166 R:234 A:255]
+[12/17 13:52:57.447] [DEBUG] [ChromiumRenderHandler] onPaint called #2041: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:57.449] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:57.451] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:146 G:166 R:234 A:255]
+[12/17 13:52:57.513] [DEBUG] [ChromiumRenderHandler] onPaint called #2042: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:57.515] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:57.518] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:146 G:166 R:234 A:255]
+[12/17 13:52:57.528] [DEBUG] [ChromiumRenderHandler] onPaint called #2043: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:57.530] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:57.533] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:146 G:166 R:234 A:255]
+[12/17 13:52:57.535] [DEBUG] [ChromiumRenderHandler] Frame skipped (too soon)
+[12/17 13:52:57.597] [DEBUG] [ChromiumRenderHandler] onPaint called #2044: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:57.599] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:57.601] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:109 G:126 R:182 A:255]
+[12/17 13:52:57.611] [DEBUG] [ChromiumRenderHandler] onPaint called #2045: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:57.615] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:57.617] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:109 G:126 R:182 A:255]
+[12/17 13:52:57.618] [DEBUG] [ChromiumRenderHandler] Frame skipped (too soon)
+[12/17 13:52:57.679] [DEBUG] [ChromiumRenderHandler] onPaint called #2046: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:57.681] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:57.683] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:109 G:126 R:182 A:255]
+[12/17 13:52:57.697] [DEBUG] [ChromiumRenderHandler] onPaint called #2047: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:57.699] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:57.702] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:109 G:119 R:179 A:255]
+[12/17 13:52:57.760] [DEBUG] [ChromiumRenderHandler] onPaint called #2048: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:57.763] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:57.766] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:109 G:119 R:179 A:255]
+[12/17 13:52:57.781] [DEBUG] [ChromiumRenderHandler] onPaint called #2049: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:57.783] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:57.786] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:109 G:119 R:179 A:255]
+[12/17 13:52:57.844] [DEBUG] [ChromiumRenderHandler] onPaint called #2050: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:57.847] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:57.850] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:100 G:116 R:172 A:255]
+[12/17 13:52:57.863] [DEBUG] [ChromiumRenderHandler] onPaint called #2051: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:57.866] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:57.868] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:100 G:116 R:172 A:255]
+[12/17 13:52:57.930] [DEBUG] [ChromiumRenderHandler] onPaint called #2052: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:57.933] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:57.934] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:100 G:116 R:172 A:255]
+[12/17 13:52:57.949] [DEBUG] [ChromiumRenderHandler] onPaint called #2053: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:57.952] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:57.955] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:108 G:120 R:179 A:255]
+[12/17 13:52:58.013] [DEBUG] [ChromiumRenderHandler] onPaint called #2054: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:58.017] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:58.020] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:108 G:120 R:179 A:255]
+[12/17 13:52:58.036] [DEBUG] [ChromiumRenderHandler] onPaint called #2055: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:58.040] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:58.044] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:108 G:120 R:179 A:255]
+[12/17 13:52:58.067] [DEBUG] [ChromiumRenderHandler] onPaint called #2056: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:58.069] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:58.072] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:108 G:120 R:179 A:255]
+[12/17 13:52:58.148] [DEBUG] [ChromiumRenderHandler] onPaint called #2057: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:58.152] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:58.158] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:109 G:122 R:179 A:255]
+[12/17 13:52:58.169] [DEBUG] [ChromiumRenderHandler] onPaint called #2058: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:58.173] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:58.176] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:109 G:122 R:179 A:255]
+[12/17 13:52:58.200] [DEBUG] [ChromiumRenderHandler] onPaint called #2059: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:58.203] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:58.207] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:109 G:122 R:179 A:255]
+[12/17 13:52:58.261] [DEBUG] [ChromiumRenderHandler] onPaint called #2060: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:58.264] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:58.267] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:109 G:122 R:179 A:255]
+[12/17 13:52:58.296] [DEBUG] [ChromiumRenderHandler] onPaint called #2061: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:58.299] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:58.301] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:109 G:122 R:179 A:255]
+[12/17 13:52:58.313] [DEBUG] [ChromiumRenderHandler] onPaint called #2062: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:58.316] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:58.320] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:105 G:120 R:176 A:255]
+[12/17 13:52:58.378] [DEBUG] [ChromiumRenderHandler] onPaint called #2063: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:58.382] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:58.386] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:105 G:120 R:176 A:255]
+[12/17 13:52:58.401] [DEBUG] [ChromiumRenderHandler] onPaint called #2064: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:58.405] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:58.407] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:105 G:120 R:176 A:255]
+[12/17 13:52:58.461] [DEBUG] [ChromiumRenderHandler] onPaint called #2065: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:58.464] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:58.467] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:94 G:110 R:171 A:255]
+[12/17 13:52:58.485] [DEBUG] [ChromiumRenderHandler] onPaint called #2066: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:58.489] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:58.491] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:94 G:110 R:171 A:255]
+[12/17 13:52:58.544] [DEBUG] [ChromiumRenderHandler] onPaint called #2067: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:58.547] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:58.550] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:94 G:110 R:171 A:255]
+[12/17 13:52:58.564] [DEBUG] [ChromiumRenderHandler] onPaint called #2068: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:58.567] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:58.570] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:94 G:110 R:171 A:255]
+[12/17 13:52:58.626] [DEBUG] [ChromiumRenderHandler] onPaint called #2069: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:58.630] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:58.633] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:94 G:110 R:171 A:255]
+[12/17 13:52:58.646] [DEBUG] [ChromiumRenderHandler] onPaint called #2070: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:58.649] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:58.650] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:94 G:110 R:171 A:255]
+[12/17 13:52:58.710] [DEBUG] [ChromiumRenderHandler] onPaint called #2071: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:58.713] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:58.715] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:94 G:110 R:171 A:255]
+[12/17 13:52:58.776] [DEBUG] [ChromiumRenderHandler] onPaint called #2072: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:58.779] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:58.780] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:94 G:110 R:171 A:255]
+[12/17 13:52:58.798] [DEBUG] [ChromiumRenderHandler] onPaint called #2073: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:58.800] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:58.803] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:94 G:110 R:171 A:255]
+[12/17 13:52:58.812] [DEBUG] [ChromiumRenderHandler] onPaint called #2074: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:58.814] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:58.817] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:94 G:110 R:171 A:255]
+[12/17 13:52:58.820] [DEBUG] [ChromiumRenderHandler] Frame skipped (too soon)
+[12/17 13:52:58.880] [DEBUG] [ChromiumRenderHandler] onPaint called #2075: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:58.883] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:58.885] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:94 G:110 R:171 A:255]
+[12/17 13:52:58.943] [DEBUG] [ChromiumRenderHandler] onPaint called #2076: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:58.946] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:58.948] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:94 G:110 R:171 A:255]
+[12/17 13:52:58.964] [DEBUG] [ChromiumRenderHandler] onPaint called #2077: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:58.967] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:58.969] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:94 G:110 R:171 A:255]
+[12/17 13:52:58.979] [DEBUG] [ChromiumRenderHandler] onPaint called #2078: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:58.981] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:58.982] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:94 G:110 R:171 A:255]
+[12/17 13:52:58.984] [DEBUG] [ChromiumRenderHandler] Frame skipped (too soon)
+[12/17 13:52:59.042] [DEBUG] [ChromiumRenderHandler] onPaint called #2079: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:59.046] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:59.047] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:94 G:110 R:171 A:255]
+[12/17 13:52:59.063] [DEBUG] [ChromiumRenderHandler] onPaint called #2080: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:59.067] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:59.069] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:94 G:110 R:171 A:255]
+[12/17 13:52:59.126] [DEBUG] [ChromiumRenderHandler] onPaint called #2081: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:59.129] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:59.131] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:94 G:110 R:171 A:255]
+[12/17 13:52:59.146] [DEBUG] [ChromiumRenderHandler] onPaint called #2082: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:59.148] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:59.151] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:95 G:111 R:166 A:255]
+[12/17 13:52:59.210] [DEBUG] [ChromiumRenderHandler] onPaint called #2083: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:59.220] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:59.222] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:95 G:111 R:166 A:255]
+[12/17 13:52:59.229] [DEBUG] [ChromiumRenderHandler] onPaint called #2084: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:59.233] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:59.234] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:95 G:111 R:166 A:255]
+[12/17 13:52:59.237] [DEBUG] [ChromiumRenderHandler] Frame skipped (too soon)
+[12/17 13:52:59.295] [DEBUG] [ChromiumRenderHandler] onPaint called #2085: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:59.299] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:59.302] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:93 G:109 R:167 A:255]
+[12/17 13:52:59.313] [DEBUG] [ChromiumRenderHandler] onPaint called #2086: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:59.316] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:59.318] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:93 G:109 R:167 A:255]
+[12/17 13:52:59.319] [DEBUG] [ChromiumRenderHandler] Frame skipped (too soon)
+[12/17 13:52:59.378] [DEBUG] [ChromiumRenderHandler] onPaint called #2087: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:59.379] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:59.383] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:93 G:109 R:167 A:255]
+[12/17 13:52:59.397] [DEBUG] [ChromiumRenderHandler] onPaint called #2088: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:59.400] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:59.401] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:110 G:121 R:176 A:255]
+[12/17 13:52:59.461] [DEBUG] [ChromiumRenderHandler] onPaint called #2089: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:59.464] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:59.467] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:110 G:121 R:176 A:255]
+[12/17 13:52:59.478] [DEBUG] [ChromiumRenderHandler] onPaint called #2090: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:59.482] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:59.483] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:110 G:121 R:176 A:255]
+[12/17 13:52:59.543] [DEBUG] [ChromiumRenderHandler] onPaint called #2091: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:59.545] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:59.549] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:104 G:116 R:173 A:255]
+[12/17 13:52:59.563] [DEBUG] [ChromiumRenderHandler] onPaint called #2092: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:59.567] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:59.568] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:104 G:116 R:173 A:255]
+[12/17 13:52:59.628] [DEBUG] [ChromiumRenderHandler] onPaint called #2093: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:59.631] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:59.634] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:104 G:116 R:173 A:255]
+[12/17 13:52:59.648] [DEBUG] [ChromiumRenderHandler] onPaint called #2094: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:59.650] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:59.653] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:112 G:121 R:180 A:255]
+[12/17 13:52:59.710] [DEBUG] [ChromiumRenderHandler] onPaint called #2095: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:59.715] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:59.717] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:112 G:121 R:180 A:255]
+[12/17 13:52:59.731] [DEBUG] [ChromiumRenderHandler] onPaint called #2096: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:59.733] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:59.735] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:112 G:121 R:180 A:255]
+[12/17 13:52:59.794] [DEBUG] [ChromiumRenderHandler] onPaint called #2097: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:59.797] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:59.800] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:111 G:114 R:175 A:255]
+[12/17 13:52:59.813] [DEBUG] [ChromiumRenderHandler] onPaint called #2098: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:59.816] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:59.818] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:111 G:114 R:175 A:255]
+[12/17 13:52:59.876] [DEBUG] [ChromiumRenderHandler] onPaint called #2099: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:59.879] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:59.882] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:111 G:114 R:175 A:255]
+[12/17 13:52:59.943] [DEBUG] [ChromiumRenderHandler] onPaint called #2100: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:59.945] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:59.947] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:112 G:121 R:180 A:255]
+[12/17 13:52:59.964] [DEBUG] [ChromiumRenderHandler] onPaint called #2101: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:59.967] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:59.968] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:112 G:121 R:180 A:255]
+[12/17 13:52:59.980] [DEBUG] [ChromiumRenderHandler] onPaint called #2102: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:52:59.983] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:52:59.985] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:112 G:121 R:180 A:255]
+[12/17 13:53:00.045] [DEBUG] [ChromiumRenderHandler] onPaint called #2103: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:00.048] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:00.051] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:112 G:121 R:180 A:255]
+[12/17 13:53:00.063] [DEBUG] [ChromiumRenderHandler] onPaint called #2104: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:00.067] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:00.068] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:112 G:121 R:180 A:255]
+[12/17 13:53:00.128] [DEBUG] [ChromiumRenderHandler] onPaint called #2105: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:00.131] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:00.133] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:112 G:121 R:180 A:255]
+[12/17 13:53:00.195] [DEBUG] [ChromiumRenderHandler] onPaint called #2106: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:00.197] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:00.199] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:146 G:174 R:199 A:255]
+[12/17 13:53:00.212] [DEBUG] [ChromiumRenderHandler] onPaint called #2107: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:00.214] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:00.216] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:146 G:174 R:199 A:255]
+[12/17 13:53:00.229] [DEBUG] [ChromiumRenderHandler] onPaint called #2108: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:00.231] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:00.234] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:146 G:175 R:199 A:255]
+[12/17 13:53:00.292] [DEBUG] [ChromiumRenderHandler] onPaint called #2109: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:00.294] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:00.297] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:146 G:175 R:199 A:255]
+[12/17 13:53:00.359] [DEBUG] [ChromiumRenderHandler] onPaint called #2110: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:00.362] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:00.364] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:147 G:175 R:200 A:255]
+[12/17 13:53:00.379] [DEBUG] [ChromiumRenderHandler] onPaint called #2111: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:00.385] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:00.387] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:147 G:175 R:200 A:255]
+[12/17 13:53:00.395] [DEBUG] [ChromiumRenderHandler] onPaint called #2112: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:00.398] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:00.401] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:147 G:176 R:200 A:255]
+[12/17 13:53:00.402] [DEBUG] [ChromiumRenderHandler] Frame skipped (too soon)
+[12/17 13:53:00.458] [DEBUG] [ChromiumRenderHandler] onPaint called #2113: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:00.461] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:00.464] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:147 G:176 R:200 A:255]
+[12/17 13:53:00.480] [DEBUG] [ChromiumRenderHandler] onPaint called #2114: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:00.483] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:00.485] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:147 G:176 R:200 A:255]
+[12/17 13:53:00.543] [DEBUG] [ChromiumRenderHandler] onPaint called #2115: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:00.545] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:00.548] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:148 G:177 R:202 A:255]
+[12/17 13:53:00.564] [DEBUG] [ChromiumRenderHandler] onPaint called #2116: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:00.566] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:00.568] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:148 G:177 R:202 A:255]
+[12/17 13:53:00.628] [DEBUG] [ChromiumRenderHandler] onPaint called #2117: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:00.630] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:00.633] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:149 G:178 R:202 A:255]
+[12/17 13:53:00.645] [DEBUG] [ChromiumRenderHandler] onPaint called #2118: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:00.647] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:00.649] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:149 G:178 R:202 A:255]
+[12/17 13:53:00.709] [DEBUG] [ChromiumRenderHandler] onPaint called #2119: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:00.711] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:00.715] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:149 G:178 R:202 A:255]
+[12/17 13:53:00.729] [DEBUG] [ChromiumRenderHandler] onPaint called #2120: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:00.733] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:00.735] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:148 G:178 R:202 A:255]
+[12/17 13:53:00.793] [DEBUG] [ChromiumRenderHandler] onPaint called #2121: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:00.796] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:00.799] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:149 G:179 R:203 A:255]
+[12/17 13:53:00.813] [DEBUG] [ChromiumRenderHandler] onPaint called #2122: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:00.816] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:00.817] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:149 G:179 R:203 A:255]
+[12/17 13:53:00.877] [DEBUG] [ChromiumRenderHandler] onPaint called #2123: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:00.879] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:00.881] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:149 G:179 R:203 A:255]
+[12/17 13:53:00.896] [DEBUG] [ChromiumRenderHandler] onPaint called #2124: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:00.899] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:00.901] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:150 G:179 R:204 A:255]
+[12/17 13:53:00.961] [DEBUG] [ChromiumRenderHandler] onPaint called #2125: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:00.964] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:00.967] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:150 G:179 R:204 A:255]
+[12/17 13:53:00.981] [DEBUG] [ChromiumRenderHandler] onPaint called #2126: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:00.983] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:00.985] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:151 G:180 R:206 A:255]
+[12/17 13:53:01.045] [DEBUG] [ChromiumRenderHandler] onPaint called #2127: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:01.047] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:01.049] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:151 G:180 R:206 A:255]
+[12/17 13:53:01.064] [DEBUG] [ChromiumRenderHandler] onPaint called #2128: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:01.067] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:01.069] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:151 G:180 R:206 A:255]
+[12/17 13:53:01.077] [WARN] [AWTEventQueue] AWTQueue latency before dispatch type=MouseEvent id=504 latency=6110ms source=HardwareWindow
+[12/17 13:53:01.080] [WARN] [AWTEventQueue] AWTQueue latency before dispatch type=MouseEvent id=503 latency=6090ms source=HardwareWindow
+[12/17 13:53:01.144] [DEBUG] [ChromiumRenderHandler] onPaint called #2129: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:01.147] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:01.148] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:151 G:181 R:205 A:255]
+[12/17 13:53:01.164] [DEBUG] [ChromiumRenderHandler] onPaint called #2130: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:01.166] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:01.169] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:151 G:181 R:205 A:255]
+[12/17 13:53:01.227] [DEBUG] [ChromiumRenderHandler] onPaint called #2131: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:01.230] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:01.233] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:152 G:182 R:206 A:255]
+[12/17 13:53:01.247] [DEBUG] [ChromiumRenderHandler] onPaint called #2132: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:01.249] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:01.252] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:152 G:182 R:207 A:255]
+[12/17 13:53:01.309] [DEBUG] [ChromiumRenderHandler] onPaint called #2133: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:01.312] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:01.313] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:153 G:183 R:209 A:255]
+[12/17 13:53:01.330] [DEBUG] [ChromiumRenderHandler] onPaint called #2134: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:01.334] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:01.336] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:153 G:183 R:209 A:255]
+[12/17 13:53:01.347] [DEBUG] [ChromiumRenderHandler] onPaint called #2135: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:01.350] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:01.354] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:153 G:183 R:209 A:255]
+[12/17 13:53:01.411] [DEBUG] [ChromiumRenderHandler] onPaint called #2136: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:01.414] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:01.418] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:155 G:185 R:211 A:255]
+[12/17 13:53:01.421] [WARN] [AWTEventQueue] AWTQueue latency before dispatch type=MouseEvent id=505 latency=6258ms source=HardwareWindow
+[12/17 13:53:01.480] [DEBUG] [ChromiumRenderHandler] onPaint called #2137: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:01.483] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:01.485] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:102 G:157 R:195 A:255]
+[12/17 13:53:01.497] [DEBUG] [ChromiumRenderHandler] onPaint called #2138: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:01.499] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:01.502] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:102 G:157 R:195 A:255]
+[12/17 13:53:01.562] [DEBUG] [ChromiumRenderHandler] onPaint called #2139: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:01.563] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:01.566] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:102 G:157 R:195 A:255]
+[12/17 13:53:01.581] [DEBUG] [ChromiumRenderHandler] onPaint called #2140: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:01.584] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:01.586] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:100 G:158 R:194 A:255]
+[12/17 13:53:01.598] [DEBUG] [ChromiumRenderHandler] onPaint called #2141: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:01.601] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:01.602] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:100 G:158 R:194 A:255]
+[12/17 13:53:01.661] [DEBUG] [ChromiumRenderHandler] onPaint called #2142: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:01.663] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:01.666] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:100 G:158 R:194 A:255]
+[12/17 13:53:01.730] [DEBUG] [ChromiumRenderHandler] onPaint called #2143: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:01.732] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:01.734] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:100 G:158 R:194 A:255]
+[12/17 13:53:01.748] [DEBUG] [ChromiumRenderHandler] onPaint called #2144: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:01.752] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:01.754] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:100 G:158 R:194 A:255]
+[12/17 13:53:01.774] [DEBUG] [ChromiumRenderHandler] onPaint called #2145: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:01.776] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:01.779] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:100 G:158 R:194 A:255]
+[12/17 13:53:01.825] [DEBUG] [ChromiumBrowser] Disposing ChromiumBrowser
+[12/17 13:53:01.844] [DEBUG] [ChromiumRenderHandler] onPaint called #2146: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:01.847] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:01.849] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:100 G:158 R:194 A:255]
+[12/17 13:53:01.868] [DEBUG] [ChromiumRenderHandler] onPaint called #2147: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:01.871] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:01.872] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:100 G:158 R:194 A:255]
+[12/17 13:53:01.882] [DEBUG] [ChromiumRenderHandler] onPaint called #2148: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:01.884] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:01.886] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:100 G:158 R:194 A:255]
+[12/17 13:53:01.887] [DEBUG] [ChromiumRenderHandler] Frame skipped (too soon)
+[12/17 13:53:01.937] [DEBUG] [ChromiumRenderHandler] onPaint called #2149: 380x480, popup=false, buffer=729600 bytes
+[12/17 13:53:01.939] [DEBUG] [ChromiumRenderHandler] First 4 pixels (BGRA): [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] [B:15 G:15 R:15 A:255] 
+[12/17 13:53:01.942] [DEBUG] [ChromiumRenderHandler] Center pixel (BGRA): [B:100 G:158 R:194 A:255]
+[12/17 13:53:02.021] [DEBUG] [ChromiumBrowser] Hidden JFrame disposed
+[12/17 13:53:02.041] [INFO] [ChromiumManager] Shutting down Chromium...
+[12/17 13:53:02.044] [INFO] [ChromiumManager] Chromium shutdown complete
