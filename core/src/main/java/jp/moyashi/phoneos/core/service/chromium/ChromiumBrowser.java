@@ -372,6 +372,8 @@ public class ChromiumBrowser {
         //
         // 注: MCEFはgetUIComponent()をサポートしていない（LWJGLベース）
         // jcefmavenのみがこのメソッドをサポートする（JOGLベース）
+        log("Provider check: provider=" + (provider != null ? provider.getClass().getSimpleName() : "null") +
+            ", supportsUIComponent=" + (provider != null ? provider.supportsUIComponent() : "N/A"));
         if (provider != null && provider.supportsUIComponent()) {
             try {
                 java.awt.Component uiComponent = browser.getUIComponent();
@@ -464,6 +466,18 @@ public class ChromiumBrowser {
                 logError("Failed to setup hidden JFrame: " + e.getMessage());
                 e.printStackTrace();
             }
+        } else {
+            // supportsUIComponent() が false の場合（CefBrowserOsrNoCanvas 等）
+            // hidden JFrame なしでレンダリングをトリガー
+            log("Provider does not support UI component, triggering rendering directly...");
+
+            // ブラウザにサイズを通知（onPaint を発火させるために必要）
+            tryTriggerRendering();
+
+            // GLContext は不要なので即座に準備完了とマーク
+            glContextReady = true;
+            glInitLatch.countDown();
+            log("NoCanvas mode: GLContext ready (no initialization needed)");
         }
     }
 
@@ -1301,9 +1315,23 @@ public class ChromiumBrowser {
         }
 
         try {
-            log("Attempting to trigger rendering via wasResized()...");
+            log("Attempting to trigger rendering via setSize/wasResized()...");
+            log("Browser class: " + browser.getClass().getName());
+            log("Target size: " + width + "x" + height);
 
-            // Reflectionでwas Resized()メソッドを呼び出し
+            // CefBrowserOsrNoCanvasの場合はsetSize()を直接呼び出す
+            // これはForge環境でAWTを使わないブラウザの場合
+            try {
+                java.lang.reflect.Method setSizeMethod = browser.getClass().getMethod("setSize", int.class, int.class);
+                setSizeMethod.setAccessible(true);
+                setSizeMethod.invoke(browser, width, height);
+                log("✅ setSize() called successfully - rendering should start");
+                return;
+            } catch (NoSuchMethodException e) {
+                log("setSize(int, int) method not found, trying resize()...");
+            }
+
+            // resize()メソッドを試す
             try {
                 java.lang.reflect.Method resizeMethod = browser.getClass().getMethod("resize", int.class, int.class);
                 resizeMethod.setAccessible(true);
@@ -1314,6 +1342,7 @@ public class ChromiumBrowser {
                 log("resize(int, int) method not found, falling back to wasResized()");
             }
 
+            // wasResized()を試す
             java.lang.reflect.Method wasResizedMethod = browser.getClass().getMethod("wasResized", int.class, int.class);
             wasResizedMethod.setAccessible(true);
             wasResizedMethod.invoke(browser, width, height);
@@ -1322,7 +1351,8 @@ public class ChromiumBrowser {
         } catch (NoSuchMethodException e) {
             logError("wasResized(int, int) method not found on browser");
         } catch (Exception e) {
-            logError("Failed to call wasResized(): " + e.getMessage());
+            logError("Failed to trigger rendering: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 

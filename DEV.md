@@ -877,3 +877,43 @@ MochiMobileOS上でProcessingスケッチ（.pde）をアプリケーション�
     通常のキー入力として処理（テキスト入力フィールドに ' ' 入力）
     ```
   - 結果: **BUILD SUCCESSFUL** - スペースキーがテキスト入力として正常動作、ホームへの移動はCtrl+Spaceまたは専用ボタンで実現
+
+## 変更(2025-12-17)
+- **Forge環境でのAWT/LWJGL競合問題の解決（CefBrowserOsrNoCanvas）**
+  - 問題: Forge環境でJCEFのCefBrowserOsr（AWTのGLCanvas使用）を使用すると、MinecraftのLWJGLと競合してAWT HeadlessExceptionが発生
+  - 原因: CefBrowserOsrはAWTのGLCanvasを使用してOpenGLレンダリングを行うが、MinecraftはLWJGLを使用しており、両者が競合する
+  - 解決策: Processing P2D vs LWJGL競合の解決と同様に、AWTを使用しないオフスクリーンブラウザを作成
+  - 作成されたクラス:
+    - **`forge/src/main/java/org/cef/browser/CefBrowserOsrNoCanvas.java`**:
+      - CefBrowser_Nを継承し、CefRenderHandlerを実装
+      - AWTのGLCanvasを使用せず、onPaint()でByteBuffer→int[]配列にピクセルデータを保存
+      - onPaintListenerに通知してChromiumRenderHandlerに転送
+      - setSize()でwasResized()とsetWindowVisibility(true)を呼び出してレンダリングをトリガー
+    - **`forge/src/main/java/org/cef/browser/CefBrowserFactory.java`**:
+      - NoCanvasモードのブラウザを作成するファクトリ
+      - `setNoCanvasMode(true)`でCefBrowserOsrNoCanvasを使用
+      - `createNoCanvas()`で直接NoCanvasブラウザを作成
+  - 修正されたクラス:
+    - **`ForgeChromiumProvider.java`**:
+      - `supportsUIComponent()`をオーバーライドしてfalseを返す
+      - `createBrowser()`でCefBrowserOsrNoCanvasを作成
+      - NoCanvasモードを有効化
+    - **`ChromiumBrowser.java`**:
+      - `provider.supportsUIComponent()`がfalseの場合のelse分岐を追加
+      - NoCanvasモードではhidden JFrameを作成せず、`tryTriggerRendering()`を呼び出し
+      - `tryTriggerRendering()`でsetSize()メソッドを優先的に呼び出し
+  - 動作フロー:
+    ```
+    [Forge環境]
+    ForgeChromiumProvider.createBrowser()
+    → CefBrowserFactory.createNoCanvas()
+    → CefBrowserOsrNoCanvas作成
+    → createImmediately()
+    → ChromiumBrowser: supportsUIComponent()=false
+    → tryTriggerRendering() → setSize() → wasResized() + setWindowVisibility(true)
+    → CEFがonPaint()を呼び出し
+    → CefBrowserOsrNoCanvasがonPaintListenerに通知
+    → ChromiumRenderHandlerがPImageに変換
+    → ProcessingScreen経由でMinecraftテクスチャに描画
+    ```
+  - 結果: **AWT HeadlessException問題が解決し、Forge環境でChromiumブラウザが正常にレンダリングされるようになった**

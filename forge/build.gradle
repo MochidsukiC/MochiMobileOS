@@ -180,6 +180,10 @@ minecraft {
 
 // Configure jar
 jar {
+    // Declare explicit dependency on core module tasks
+    dependsOn ':core:classes'
+    dependsOn ':core:processResources'
+
     // Include core module classes in the jar
     // JCEFChromiumProviderがjcefmavenを使用してChromiumを統合
     from(project(':core').sourceSets.main.output.classesDirs) {

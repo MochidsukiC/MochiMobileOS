@@ -9,6 +9,8 @@ import jp.moyashi.phoneos.forge.installer.MMOSPlatform;
 import org.cef.CefApp;
 import org.cef.CefSettings;
 import org.cef.SystemBootstrap;
+import org.cef.browser.CefBrowserFactory;
+import org.cef.browser.CefBrowserOsrNoCanvas;
 import org.cef.callback.CefSchemeRegistrar;
 import org.cef.handler.CefAppHandler;
 import org.cef.handler.CefAppHandlerAdapter;
@@ -244,6 +246,10 @@ public class ForgeChromiumProvider extends JCEFChromiumProvider {
 
             // コマンドライン引数を構築
             String[] args = buildCefArgs(platform);
+
+            // NoCanvasモードを有効化（AWTを使わない）
+            log("Enabling NoCanvas mode (AWT-free rendering)...");
+            CefBrowserFactory.setNoCanvasMode(true);
 
             // CefApp.startup()を最初に呼び出す（JCEFの初期化に必要）
             log("Calling CefApp.startup()...");
@@ -488,6 +494,16 @@ public class ForgeChromiumProvider extends JCEFChromiumProvider {
         return "ForgeChromiumProvider (JCEF direct)";
     }
 
+    /**
+     * UIコンポーネントをサポートしないことを示す。
+     * CefBrowserOsrNoCanvasはAWTを使用しないため、getUIComponent()はnullを返す。
+     * これによりChromiumBrowserがhidden JFrameを作成しない。
+     */
+    @Override
+    public boolean supportsUIComponent() {
+        return false;
+    }
+
     @Override
     public void addConsoleMessageListener(org.cef.browser.CefBrowser browser, ConsoleMessageListener listener) {
         this.consoleListener = listener;
@@ -496,15 +512,15 @@ public class ForgeChromiumProvider extends JCEFChromiumProvider {
 
     /**
      * ブラウザを作成する。
-     * ForgeChromiumProviderでは直接JCEFのAPIを使用してブラウザを作成する。
+     * ForgeChromiumProviderでは CefBrowserOsrNoCanvas を使用し、AWTを完全にバイパスする。
      *
-     * 注意: JCEFのCefBrowserOsrはAWTのGLCanvasを内部で使用するため、
-     * java.awt.headlessがtrueの場合（Minecraftのデフォルト）HeadlessExceptionが発生する。
-     * ブラウザ作成時のみ一時的にheadlessを無効化して回避する。
+     * CefBrowserOsrNoCanvas は GLCanvas を使用せず、onPaint() で受け取った
+     * ピクセルデータを int[] 配列に保存する。このピクセルデータは
+     * ProcessingScreen と同様に Minecraft の NativeImage/DynamicTexture に変換される。
      */
     @Override
     public org.cef.browser.CefBrowser createBrowser(org.cef.CefClient client, String url, boolean osrEnabled, boolean transparent) {
-        log("Creating browser with ForgeChromiumProvider...");
+        log("Creating browser with ForgeChromiumProvider (NoCanvas mode)...");
         log("- URL: " + url);
         log("- OSR: " + osrEnabled + ", Transparent: " + transparent);
         log("- CefClient: " + (client != null ? "available" : "NULL"));
@@ -514,31 +530,21 @@ public class ForgeChromiumProvider extends JCEFChromiumProvider {
             throw new RuntimeException("CefClient is null");
         }
 
-        // AWTのheadlessモードを一時的に無効化
-        // JCEFのCefBrowserOsrがGLCanvas（AWT）を内部で作成するため必要
-        String originalHeadless = System.getProperty("java.awt.headless");
-        log("Original java.awt.headless: " + originalHeadless);
-
         try {
-            // headlessモードを一時的に無効化
-            System.setProperty("java.awt.headless", "false");
-            log("Temporarily disabled headless mode for browser creation");
+            // CefBrowserOsrNoCanvas を直接作成（AWTを完全にバイパス）
+            log("Creating CefBrowserOsrNoCanvas (AWT-free)...");
+            CefBrowserOsrNoCanvas browser = CefBrowserFactory.createNoCanvas(
+                    client, url, transparent, null, null);
 
-            // JCEF APIで直接ブラウザを作成
-            org.cef.browser.CefBrowser browser = client.createBrowser(url, osrEnabled, transparent);
+            // ブラウザを即時作成
+            browser.createImmediately();
+
             log("Browser created successfully: " + browser);
+            log("Browser type: CefBrowserOsrNoCanvas (AWT-free)");
             return browser;
         } catch (Exception e) {
             logError("Failed to create browser: " + e.getMessage(), e);
             throw new RuntimeException("Failed to create browser with ForgeChromiumProvider", e);
-        } finally {
-            // headlessモードを元に戻す
-            if (originalHeadless != null) {
-                System.setProperty("java.awt.headless", originalHeadless);
-            } else {
-                System.clearProperty("java.awt.headless");
-            }
-            log("Restored java.awt.headless to: " + originalHeadless);
         }
     }
 
