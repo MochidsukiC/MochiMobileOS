@@ -214,6 +214,7 @@
 
 - BaseComponent/主要コンポーネント（Button/Label/Switch/Slider/Text系）をThemeEngine準拠へ順次移行（進行中）
   - (更新) HomeScreen.javaの描画要素は、テーマ対応の色、寸法、フォントサイズ、角丸の定数化により大幅にThemeEngine準拠に近づいた。
+  - (更新) LockScreen.javaをThemeEngine準拠に更新（2025-12-20）。背景、文字色、通知カード、パターン入力UIをテーマカラー/角丸トークンに対応。
 - 追加適用: Panel/ListView/Dialog/Dropdown をトークン化（背景/枠線/選択色/文字色）
 - 追加適用: Checkbox/RadioButton をトークン化（境界/選択色/文字色）
 - ~~設定アプリに「外観」セクションを追加（モード/アクセント/角丸/文字サイズ/Reduce Motion）最小実装（完了）~~

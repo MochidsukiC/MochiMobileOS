@@ -11,6 +11,8 @@ import jp.moyashi.phoneos.core.service.NotificationManager;
 import jp.moyashi.phoneos.core.notification.INotification;
 import jp.moyashi.phoneos.core.ui.LayerManager;
 import jp.moyashi.phoneos.core.ui.UILayer;
+import jp.moyashi.phoneos.core.ui.theme.ThemeContext;
+import jp.moyashi.phoneos.core.ui.theme.ThemeEngine;
 import processing.core.PApplet;
 import processing.core.PGraphics;
 
@@ -233,7 +235,7 @@ public class LockScreen implements Screen, GestureListener {
         updateNotificationScrollInertia();
         
         // 背景を暗いグラデーション色に設定
-        p.background(20, 25, 35);
+        p.background(ThemeContext.getTheme().colorBackground());
         
         // 現在時刻を大きく表示
         drawCurrentTime(p);
@@ -274,7 +276,7 @@ public class LockScreen implements Screen, GestureListener {
         updateNotificationScrollInertia();
 
         // 背景を暗いグラデーション色に設定
-        g.background(20, 25, 35);
+        g.background(ThemeContext.getTheme().colorBackground());
 
         // 現在時刻を大きく表示
         drawCurrentTime(g);
@@ -315,15 +317,17 @@ public class LockScreen implements Screen, GestureListener {
         String timeStr = now.format(timeFormatter);
         String dateStr = now.format(dateFormatter);
         
+        ThemeEngine theme = ThemeContext.getTheme();
+        
         // 時刻を大きく表示
-        p.fill(255, 255, 255);
+        p.fill(theme.colorOnSurface());
         p.textAlign(p.CENTER, p.CENTER);
         p.textSize(72);
         p.text(timeStr, p.width / 2, 120);
         
         // 日付を中程度のサイズで表示
         p.textSize(24);
-        p.fill(200, 200, 200);
+        p.fill(theme.colorOnSurfaceSecondary());
         p.text(dateStr, p.width / 2, 170);
     }
 
@@ -342,20 +346,22 @@ public class LockScreen implements Screen, GestureListener {
         String timeStr = now.format(timeFormatter);
         String dateStr = now.format(dateFormatter);
 
+        ThemeEngine theme = ThemeContext.getTheme();
+
         // 日本語フォントを設定
         if (kernel != null && kernel.getJapaneseFont() != null) {
             g.textFont(kernel.getJapaneseFont());
         }
 
         // 時刻を大きく表示
-        g.fill(255, 255, 255);
+        g.fill(theme.colorOnSurface());
         g.textAlign(PApplet.CENTER, PApplet.CENTER);
         g.textSize(72);
         g.text(timeStr, g.width / 2, 120);
 
         // 日付を中程度のサイズで表示
         g.textSize(24);
-        g.fill(200, 200, 200);
+        g.fill(theme.colorOnSurfaceSecondary());
         g.text(dateStr, g.width / 2, 170);
     }
 
@@ -499,7 +505,7 @@ public class LockScreen implements Screen, GestureListener {
      * 通知がない場合のメッセージを表示する。
      */
     private void drawNoNotificationsMessage(PApplet p) {
-        p.fill(120, 120, 120);
+        p.fill(ThemeContext.getTheme().colorOnSurfaceSecondary());
         p.textAlign(p.CENTER, p.CENTER);
         p.textSize(16);
         p.text("通知はありません", p.width / 2, 280);
@@ -514,7 +520,7 @@ public class LockScreen implements Screen, GestureListener {
             g.textFont(kernel.getJapaneseFont());
         }
 
-        g.fill(120, 120, 120);
+        g.fill(ThemeContext.getTheme().colorOnSurfaceSecondary());
         g.textAlign(PApplet.CENTER, PApplet.CENTER);
         g.textSize(16);
         g.text("通知はありません", g.width / 2, 280);
@@ -524,29 +530,31 @@ public class LockScreen implements Screen, GestureListener {
      * 個別の通知カードを描画する（iOSライク）。
      */
     private void drawNotificationCard(PApplet p, INotification notification, int x, int y, int width, int height) {
+        ThemeEngine theme = ThemeContext.getTheme();
+        
         // 通知カードの背景（iOSライクな丸角とぼかし効果）
-        p.fill(45, 50, 60, 200);
-        p.stroke(70, 75, 85, 150);
+        p.fill(theme.colorSurface(), 200);
+        p.stroke(theme.colorBorder(), 150);
         p.strokeWeight(1);
-        p.rect(x, y, width, height, 12); // 丸角
+        p.rect(x, y, width, height, theme.radiusLg()); // 丸角
         
         // アプリアイコンエリア（模擬）
-        p.fill(80, 140, 200);
-        p.rect(x + 10, y + 10, 30, 30, 6);
+        p.fill(theme.colorPrimary());
+        p.rect(x + 10, y + 10, 30, 30, theme.radiusSm());
         
         // 通知タイトル
-        p.fill(255, 255, 255);
+        p.fill(theme.colorOnSurface());
         p.textAlign(p.LEFT, p.TOP);
         p.textSize(14);
         p.text(notification.getTitle(), x + 50, y + 10);
         
         // 通知内容
-        p.fill(200, 200, 200);
+        p.fill(theme.colorOnSurfaceSecondary());
         p.textSize(12);
         p.text(notification.getContent(), x + 50, y + 30);
         
         // 時刻表示（右上）
-        p.fill(150, 150, 150);
+        p.fill(theme.colorOnSurfaceSecondary());
         p.textAlign(p.RIGHT, p.TOP);
         p.textSize(10);
         p.text("今", x + width - 10, y + 10);
@@ -556,15 +564,17 @@ public class LockScreen implements Screen, GestureListener {
      * 個別の通知カードを描画する（iOSライク）（PGraphics版）。
      */
     private void drawNotificationCard(processing.core.PGraphics g, INotification notification, int x, int y, int width, int height) {
+        ThemeEngine theme = ThemeContext.getTheme();
+
         // 通知カードの背景（iOSライクな丸角とぼかし効果）
-        g.fill(45, 50, 60, 200);
-        g.stroke(70, 75, 85, 150);
+        g.fill(theme.colorSurface(), 200);
+        g.stroke(theme.colorBorder(), 150);
         g.strokeWeight(1);
-        g.rect(x, y, width, height, 12); // 丸角
+        g.rect(x, y, width, height, theme.radiusLg()); // 丸角
 
         // アプリアイコンエリア（模擬）
-        g.fill(80, 140, 200);
-        g.rect(x + 10, y + 10, 30, 30, 6);
+        g.fill(theme.colorPrimary());
+        g.rect(x + 10, y + 10, 30, 30, theme.radiusSm());
 
         // 日本語フォントを設定
         if (kernel != null && kernel.getJapaneseFont() != null) {
@@ -572,18 +582,18 @@ public class LockScreen implements Screen, GestureListener {
         }
 
         // 通知タイトル
-        g.fill(255, 255, 255);
+        g.fill(theme.colorOnSurface());
         g.textAlign(PApplet.LEFT, PApplet.TOP);
         g.textSize(14);
         g.text(notification.getTitle(), x + 50, y + 10);
 
         // 通知内容
-        g.fill(200, 200, 200);
+        g.fill(theme.colorOnSurfaceSecondary());
         g.textSize(12);
         g.text(notification.getContent(), x + 50, y + 30);
 
         // 時刻表示（右上）
-        g.fill(150, 150, 150);
+        g.fill(theme.colorOnSurfaceSecondary());
         g.textAlign(PApplet.RIGHT, PApplet.TOP);
         g.textSize(10);
         g.text("今", x + width - 10, y + 10);
@@ -607,12 +617,14 @@ public class LockScreen implements Screen, GestureListener {
         float indicatorHeight = Math.max(10, barHeight * 0.3f);
         float indicatorY = barTop + (barHeight - indicatorHeight) * scrollRatio;
         
+        ThemeEngine theme = ThemeContext.getTheme();
+        
         // スクロールバー背景
-        p.fill(50, 50, 50, 100);
+        p.fill(theme.colorOnSurface(), 50);
         p.rect(barX, barTop, barWidth, barHeight, barWidth/2);
         
         // スクロールインジケーター
-        p.fill(150, 150, 150, 150);
+        p.fill(theme.colorOnSurface(), 150);
         p.rect(barX, indicatorY, barWidth, indicatorHeight, barWidth/2);
     }
 
@@ -634,12 +646,14 @@ public class LockScreen implements Screen, GestureListener {
         float indicatorHeight = Math.max(10, barHeight * 0.3f);
         float indicatorY = barTop + (barHeight - indicatorHeight) * scrollRatio;
 
+        ThemeEngine theme = ThemeContext.getTheme();
+
         // スクロールバー背景
-        g.fill(50, 50, 50, 100);
+        g.fill(theme.colorOnSurface(), 50);
         g.rect(barX, barTop, barWidth, barHeight, barWidth/2);
 
         // スクロールインジケーター
-        g.fill(150, 150, 150, 150);
+        g.fill(theme.colorOnSurface(), 150);
         g.rect(barX, indicatorY, barWidth, indicatorHeight, barWidth/2);
     }
     
@@ -649,17 +663,19 @@ public class LockScreen implements Screen, GestureListener {
     private void drawNotificationAreaFade(PApplet p, int areaTop, int areaBottom) {
         int fadeHeight = 15;
         
+        ThemeEngine theme = ThemeContext.getTheme();
+        
         // 上端のフェード
         for (int i = 0; i < fadeHeight; i++) {
             float alpha = (float)i / fadeHeight;
-            p.stroke(20, 25, 35, (int)(255 * (1 - alpha)));
+            p.stroke(theme.colorBackground(), (int)(255 * (1 - alpha)));
             p.line(0, areaTop + i, p.width, areaTop + i);
         }
         
         // 下端のフェード
         for (int i = 0; i < fadeHeight; i++) {
             float alpha = (float)i / fadeHeight;
-            p.stroke(20, 25, 35, (int)(255 * (1 - alpha)));
+            p.stroke(theme.colorBackground(), (int)(255 * (1 - alpha)));
             p.line(0, areaBottom - i, p.width, areaBottom - i);
         }
     }
@@ -670,17 +686,19 @@ public class LockScreen implements Screen, GestureListener {
     private void drawNotificationAreaFade(processing.core.PGraphics g, int areaTop, int areaBottom) {
         int fadeHeight = 15;
 
+        ThemeEngine theme = ThemeContext.getTheme();
+
         // 上端のフェード
         for (int i = 0; i < fadeHeight; i++) {
             float alpha = (float)i / fadeHeight;
-            g.stroke(20, 25, 35, (int)(255 * (1 - alpha)));
+            g.stroke(theme.colorBackground(), (int)(255 * (1 - alpha)));
             g.line(0, areaTop + i, g.width, areaTop + i);
         }
 
         // 下端のフェード
         for (int i = 0; i < fadeHeight; i++) {
             float alpha = (float)i / fadeHeight;
-            g.stroke(20, 25, 35, (int)(255 * (1 - alpha)));
+            g.stroke(theme.colorBackground(), (int)(255 * (1 - alpha)));
             g.line(0, areaBottom - i, g.width, areaBottom - i);
         }
     }
@@ -750,7 +768,9 @@ public class LockScreen implements Screen, GestureListener {
     private void drawDragPath(PApplet p) {
         if (dragPath.size() < 2) return;
         
-        p.stroke(100, 180, 255, 100);
+        ThemeEngine theme = ThemeContext.getTheme();
+        
+        p.stroke(theme.colorPrimary(), 100);
         p.strokeWeight(3);
         p.noFill();
         
@@ -769,7 +789,9 @@ public class LockScreen implements Screen, GestureListener {
     private void drawDragPath(processing.core.PGraphics g) {
         if (dragPath.size() < 2) return;
 
-        g.stroke(100, 180, 255, 100);
+        ThemeEngine theme = ThemeContext.getTheme();
+
+        g.stroke(theme.colorPrimary(), 100);
         g.strokeWeight(3);
         g.noFill();
 
@@ -797,23 +819,25 @@ public class LockScreen implements Screen, GestureListener {
         // フェードアウト効果
         float alpha = 1.0f - (float) elapsed / FEEDBACK_DURATION;
         
+        ThemeEngine theme = ThemeContext.getTheme();
+        
         String message;
-        int color;
+        int colorVal;
         
         if (authFeedback == AuthFeedback.SUCCESS) {
             message = "認証成功！";
-            color = p.color(50, 255, 50, (int)(alpha * 255));
+            colorVal = theme.colorSuccess();
         } else {
             message = "パターンが正しくありません";
-            color = p.color(255, 50, 50, (int)(alpha * 255));
+            colorVal = theme.colorError();
         }
         
         // 背景ボックス
-        p.fill(color);
-        p.rect(50, 500, p.width - 100, 50, 10);
+        p.fill(colorVal, (int)(alpha * 255));
+        p.rect(50, 500, p.width - 100, 50, theme.radiusLg());
         
         // テキスト
-        p.fill(255, 255, 255, (int)(alpha * 255));
+        p.fill(0xFFFFFFFF, (int)(alpha * 255));
         p.textAlign(p.CENTER, p.CENTER);
         p.textSize(18);
         p.text(message, p.width / 2, 525);
@@ -835,21 +859,23 @@ public class LockScreen implements Screen, GestureListener {
 
         // フェードアウト効果
         float alpha = 1.0f - (float) elapsed / FEEDBACK_DURATION;
+        
+        ThemeEngine theme = ThemeContext.getTheme();
 
         String message;
-        int color;
+        int colorVal;
 
         if (authFeedback == AuthFeedback.SUCCESS) {
             message = "認証成功！";
-            color = (50 << 16) | (255 << 8) | 50 | ((int)(alpha * 255) << 24); // RGB(50,255,50) with alpha
+            colorVal = theme.colorSuccess();
         } else {
             message = "パターンが正しくありません";
-            color = (255 << 16) | (50 << 8) | 50 | ((int)(alpha * 255) << 24); // RGB(255,50,50) with alpha
+            colorVal = theme.colorError();
         }
 
         // 背景ボックス
-        g.fill(color);
-        g.rect(50, 500, g.width - 100, 50, 10);
+        g.fill(colorVal, (int)(alpha * 255));
+        g.rect(50, 500, g.width - 100, 50, theme.radiusLg());
 
         // 日本語フォントを設定
         if (kernel != null && kernel.getJapaneseFont() != null) {
@@ -857,7 +883,7 @@ public class LockScreen implements Screen, GestureListener {
         }
 
         // テキスト
-        g.fill(255, 255, 255, (int)(alpha * 255));
+        g.fill(0xFFFFFFFF, (int)(alpha * 255));
         g.textAlign(PApplet.CENTER, PApplet.CENTER);
         g.textSize(18);
         g.text(message, g.width / 2, 525);
@@ -1503,14 +1529,16 @@ public class LockScreen implements Screen, GestureListener {
         int gridTop = gridCenterY - DOT_SPACING - 30;
         int gridBottom = gridCenterY + DOT_SPACING + 30;
         
+        ThemeEngine theme = ThemeContext.getTheme();
+        
         // 背景色（薄い黄色のハイライト）
-        p.fill(255, 255, 100, (int)(alpha * pulse * 50));
-        p.stroke(255, 255, 150, (int)(alpha * pulse * 150));
+        p.fill(theme.colorWarning(), (int)(alpha * pulse * 50));
+        p.stroke(theme.colorWarning(), (int)(alpha * pulse * 150));
         p.strokeWeight(2);
-        p.rect(gridLeft, gridTop, gridRight - gridLeft, gridBottom - gridTop, 15);
+        p.rect(gridLeft, gridTop, gridRight - gridLeft, gridBottom - gridTop, theme.radiusLg());
         
         // ハイライトメッセージ
-        p.fill(255, 255, 255, (int)(alpha * 255));
+        p.fill(theme.colorOnSurface(), (int)(alpha * 255));
         p.textAlign(p.CENTER, p.CENTER);
         p.textSize(16);
         p.text("パターンを入力してください", p.width / 2, gridTop - 20);
@@ -1563,17 +1591,19 @@ public class LockScreen implements Screen, GestureListener {
         float inputScreenHeight = screenHeight * 0.6f; // 画面の60%を占める
         float slideOffset = inputScreenHeight * (1.0f - patternSlideProgress);
         
+        ThemeEngine theme = ThemeContext.getTheme();
+        
         // パターン入力画面の背景
-        p.fill(30, 35, 45, (int)(255 * patternSlideProgress * 0.9f));
+        p.fill(theme.colorSurface(), (int)(255 * patternSlideProgress * 0.9f));
         p.rect(0, screenHeight - inputScreenHeight + slideOffset, p.width, inputScreenHeight);
         
         // 上部のハンドル（ドラッグ用）
         float handleY = screenHeight - inputScreenHeight + slideOffset + 10;
-        p.fill(150, 150, 150, (int)(255 * patternSlideProgress));
+        p.fill(theme.colorOnSurfaceSecondary(), (int)(255 * patternSlideProgress));
         p.rect(p.width/2 - 30, handleY, 60, 4, 2);
         
         // パターン入力のタイトル
-        p.fill(255, 255, 255, (int)(255 * patternSlideProgress));
+        p.fill(theme.colorOnSurface(), (int)(255 * patternSlideProgress));
         p.textAlign(p.CENTER, p.CENTER);
         p.textSize(18);
         p.text("パターンでロックを解除", p.width / 2, handleY + 30);
@@ -1602,13 +1632,15 @@ public class LockScreen implements Screen, GestureListener {
         float inputScreenHeight = screenHeight * 0.6f; // 画面の60%を占める
         float slideOffset = inputScreenHeight * (1.0f - patternSlideProgress);
 
+        ThemeEngine theme = ThemeContext.getTheme();
+
         // パターン入力画面の背景
-        g.fill(30, 35, 45, (int)(255 * patternSlideProgress * 0.9f));
+        g.fill(theme.colorSurface(), (int)(255 * patternSlideProgress * 0.9f));
         g.rect(0, screenHeight - inputScreenHeight + slideOffset, g.width, inputScreenHeight);
 
         // 上部のハンドル（ドラッグ用）
         float handleY = screenHeight - inputScreenHeight + slideOffset + 10;
-        g.fill(150, 150, 150, (int)(255 * patternSlideProgress));
+        g.fill(theme.colorOnSurfaceSecondary(), (int)(255 * patternSlideProgress));
         g.rect(g.width/2 - 30, handleY, 60, 4, 2);
 
         // 日本語フォントを設定
@@ -1617,7 +1649,7 @@ public class LockScreen implements Screen, GestureListener {
         }
 
         // パターン入力のタイトル
-        g.fill(255, 255, 255, (int)(255 * patternSlideProgress));
+        g.fill(theme.colorOnSurface(), (int)(255 * patternSlideProgress));
         g.textAlign(PApplet.CENTER, PApplet.CENTER);
         g.textSize(18);
         g.text("パターンでロックを解除", g.width / 2, handleY + 30);
@@ -1641,6 +1673,8 @@ public class LockScreen implements Screen, GestureListener {
      * 透明度を指定してパターングリッドを描画する。
      */
     private void drawPatternGridWithAlpha(PApplet p, float alpha) {
+        ThemeEngine theme = ThemeContext.getTheme();
+        
         // グリッドの各ドットを描画
         for (int row = 0; row < GRID_SIZE; row++) {
             for (int col = 0; col < GRID_SIZE; col++) {
@@ -1652,12 +1686,12 @@ public class LockScreen implements Screen, GestureListener {
                 
                 // 選択状態に応じて色を変更（透明度適用）
                 if (isSelected) {
-                    p.fill(100, 180, 255, (int)(255 * alpha)); // 青色（選択済み）
-                    p.stroke(150, 200, 255, (int)(255 * alpha));
+                    p.fill(theme.colorPrimary(), (int)(255 * alpha)); // 青色（選択済み）
+                    p.stroke(theme.colorPrimary(), (int)(200 * alpha));
                     p.strokeWeight(4);
                 } else {
-                    p.fill(60, 65, 75, (int)(255 * alpha)); // 濃いグレー（未選択）
-                    p.stroke(100, 110, 120, (int)(255 * alpha));
+                    p.fill(theme.colorSurface(), (int)(255 * alpha)); // 濃いグレー（未選択）
+                    p.stroke(theme.colorBorder(), (int)(255 * alpha));
                     p.strokeWeight(2);
                 }
                 
@@ -1665,7 +1699,7 @@ public class LockScreen implements Screen, GestureListener {
                 p.ellipse(dotPos[0], dotPos[1], DOT_RADIUS * 2, DOT_RADIUS * 2);
                 
                 // 中央の小さなドット
-                p.fill(200, 200, 200, (int)(255 * alpha));
+                p.fill(theme.colorOnSurfaceSecondary(), (int)(255 * alpha));
                 p.noStroke();
                 p.ellipse(dotPos[0], dotPos[1], 6, 6);
             }
@@ -1673,7 +1707,7 @@ public class LockScreen implements Screen, GestureListener {
         
         // 選択されたドット間に線を描画
         if (currentPattern.size() > 1) {
-            p.stroke(100, 180, 255, (int)(255 * alpha));
+            p.stroke(theme.colorPrimary(), (int)(255 * alpha));
             p.strokeWeight(4);
             
             for (int i = 0; i < currentPattern.size() - 1; i++) {
@@ -1688,6 +1722,8 @@ public class LockScreen implements Screen, GestureListener {
      * 透明度を指定してパターングリッドを描画する（PGraphics版）。
      */
     private void drawPatternGridWithAlpha(processing.core.PGraphics g, float alpha) {
+        ThemeEngine theme = ThemeContext.getTheme();
+
         // グリッドの各ドットを描画
         for (int row = 0; row < GRID_SIZE; row++) {
             for (int col = 0; col < GRID_SIZE; col++) {
@@ -1699,12 +1735,12 @@ public class LockScreen implements Screen, GestureListener {
 
                 // 選択状態に応じて色を変更（透明度適用）
                 if (isSelected) {
-                    g.fill(100, 180, 255, (int)(255 * alpha)); // 青色（選択済み）
-                    g.stroke(150, 200, 255, (int)(255 * alpha));
+                    g.fill(theme.colorPrimary(), (int)(255 * alpha)); // 青色（選択済み）
+                    g.stroke(theme.colorPrimary(), (int)(200 * alpha));
                     g.strokeWeight(4);
                 } else {
-                    g.fill(60, 65, 75, (int)(255 * alpha)); // 濃いグレー（未選択）
-                    g.stroke(100, 110, 120, (int)(255 * alpha));
+                    g.fill(theme.colorSurface(), (int)(255 * alpha)); // 濃いグレー（未選択）
+                    g.stroke(theme.colorBorder(), (int)(255 * alpha));
                     g.strokeWeight(2);
                 }
 
@@ -1712,7 +1748,7 @@ public class LockScreen implements Screen, GestureListener {
                 g.ellipse(dotPos[0], dotPos[1], DOT_RADIUS * 2, DOT_RADIUS * 2);
 
                 // 中央の小さなドット
-                g.fill(200, 200, 200, (int)(255 * alpha));
+                g.fill(theme.colorOnSurfaceSecondary(), (int)(255 * alpha));
                 g.noStroke();
                 g.ellipse(dotPos[0], dotPos[1], 6, 6);
             }
@@ -1720,7 +1756,7 @@ public class LockScreen implements Screen, GestureListener {
 
         // 選択されたドット間に線を描画
         if (currentPattern.size() > 1) {
-            g.stroke(100, 180, 255, (int)(255 * alpha));
+            g.stroke(theme.colorPrimary(), (int)(255 * alpha));
             g.strokeWeight(4);
 
             for (int i = 0; i < currentPattern.size() - 1; i++) {
@@ -1735,12 +1771,14 @@ public class LockScreen implements Screen, GestureListener {
      * ホームボタンのヒントを表示する。
      */
     private void drawHomeButtonHint(PApplet p) {
+        ThemeEngine theme = ThemeContext.getTheme();
+        
         // ヒント背景
-        p.fill(0, 0, 0, 100);
-        p.rect(50, p.height - 100, p.width - 100, 60, 8);
+        p.fill(theme.colorSurface(), 200);
+        p.rect(50, p.height - 100, p.width - 100, 60, theme.radiusSm());
         
         // ヒントテキスト
-        p.fill(200, 200, 200);
+        p.fill(theme.colorOnSurface());
         p.textAlign(p.CENTER, p.CENTER);
         p.textSize(16);
         p.text("ホームボタン（スペース）を押してロックを解除", p.width / 2, p.height - 80);
@@ -1751,9 +1789,11 @@ public class LockScreen implements Screen, GestureListener {
      * ホームボタンのヒントを表示する（PGraphics版）。
      */
     private void drawHomeButtonHint(processing.core.PGraphics g) {
+        ThemeEngine theme = ThemeContext.getTheme();
+
         // ヒント背景
-        g.fill(0, 0, 0, 100);
-        g.rect(50, g.height - 100, g.width - 100, 60, 8);
+        g.fill(theme.colorSurface(), 200);
+        g.rect(50, g.height - 100, g.width - 100, 60, theme.radiusSm());
 
         // 日本語フォントを設定
         if (kernel != null && kernel.getJapaneseFont() != null) {
@@ -1761,7 +1801,7 @@ public class LockScreen implements Screen, GestureListener {
         }
 
         // ヒントテキスト
-        g.fill(200, 200, 200);
+        g.fill(theme.colorOnSurface());
         g.textAlign(PApplet.CENTER, PApplet.CENTER);
         g.textSize(16);
         g.text("ホームボタン（スペース）を押してロックを解除", g.width / 2, g.height - 80);
