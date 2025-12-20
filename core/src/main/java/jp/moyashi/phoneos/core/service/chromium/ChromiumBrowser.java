@@ -10,8 +10,13 @@ import org.cef.handler.CefFocusHandlerAdapter;
 import org.cef.handler.CefLoadHandlerAdapter;
 import org.cef.handler.CefRequestContextHandlerAdapter;
 import org.cef.handler.CefRequestHandlerAdapter;
+import org.cef.handler.CefResourceHandler;
+import org.cef.handler.CefResourceRequestHandler;
+import org.cef.handler.CefResourceRequestHandlerAdapter;
 import org.cef.handler.CefWindowHandlerAdapter;
+import org.cef.misc.BoolRef;
 import org.cef.network.CefRequest;
+import jp.moyashi.phoneos.core.service.chromium.interceptor.VirtualNetworkResourceHandler;
 import processing.core.PGraphics;
 import processing.core.PImage;
 
@@ -50,6 +55,7 @@ public class ChromiumBrowser {
     private volatile int height;
 
     private String currentUrl = "";
+    private String displayUrl = null; // IPvM URL用の表示URL（data:URLの代わりに表示）
     private boolean isLoading = false;
     private String currentTitle = "";
     private volatile boolean webPageClicked = false; // Webページがクリックされたか（テキスト入力可能性）
@@ -120,24 +126,54 @@ public class ChromiumBrowser {
             }
         });
 
-        // Intent URLを処理するリクエストハンドラーを追加
+        // Intent URL と IPvM URL を処理するリクエストハンドラーを追加
         client.addRequestHandler(new CefRequestHandlerAdapter() {
             @Override
             public boolean onBeforeBrowse(CefBrowser browser, CefFrame frame, CefRequest request,
                                           boolean user_gesture, boolean is_redirect) {
                 String url = request.getURL();
+                log("onBeforeBrowse() called for: " + url);
+
+                // Intent URL処理
                 if (url != null && url.startsWith("intent://")) {
-                    // Intent URLを通常のURLに変換
                     String convertedUrl = convertIntentUrl(url);
                     if (!url.equals(convertedUrl)) {
                         log("Intent URL detected, redirecting to: " + convertedUrl);
-                        // 変換後のURLをロード
                         browser.loadURL(convertedUrl);
-                        // 元のリクエストをキャンセル
                         return true;
                     }
                 }
+
+                // IPvM URL処理 - data: URLを使用してHTML表示
+                if (url != null && isIPvMUrl(url)) {
+                    log("IPvM URL detected in onBeforeBrowse: " + url);
+                    // http://3-sys-test/ → httpm://3-sys-test/ に変換（表示用URL）
+                    String displayUrl = url.replaceFirst("^https?://", "httpm://");
+                    // HTMLを非同期で取得してdata: URLで表示
+                    loadIPvMContent(browser, url, displayUrl);
+                    return true; // 元のリクエストをキャンセル
+                }
+
+                // httpm:// URL処理 - CefResourceHandlerはOSRでレンダリングされないため、ここで処理
+                if (url != null && url.startsWith("httpm://")) {
+                    log("httpm URL detected in onBeforeBrowse: " + url);
+                    // httpm://3-sys-test/ → http://3-sys-test/ に変換（VirtualAdapter用）
+                    String httpUrl = url.replaceFirst("^httpm://", "http://");
+                    // HTMLを非同期で取得してdata: URLで表示（displayUrlはhttpm://のまま）
+                    loadIPvMContent(browser, httpUrl, url);
+                    return true; // 元のリクエストをキャンセル
+                }
+
                 return false; // 通常のナビゲーションを続行
+            }
+
+            @Override
+            public CefResourceRequestHandler getResourceRequestHandler(
+                    CefBrowser browser, CefFrame frame, CefRequest request,
+                    boolean isNavigation, boolean isDownload, String requestInitiator,
+                    BoolRef disableDefaultHandling) {
+                // IPvMはonBeforeBrowseで処理するため、ここでは何もしない
+                return null;
             }
         });
 
@@ -497,6 +533,10 @@ public class ChromiumBrowser {
             waitForGLContext(3000);
             log("Loading URL: " + url);
             currentUrl = url;
+            // 通常URLの場合はdisplayUrlをクリア（data: URLは例外）
+            if (url != null && !url.startsWith("data:")) {
+                displayUrl = null;
+            }
             browser.loadURL(url);
         }
     }
@@ -716,10 +756,15 @@ public class ChromiumBrowser {
 
     /**
      * 現在のURLを取得する。
+     * displayUrlが設定されている場合はそれを返す（IPvM URL用）。
      *
-     * @return 現在のURL
+     * @return 現在のURL（表示用）
      */
     public String getCurrentURL() {
+        // displayUrlが設定されていて、現在のURLがdata:で始まる場合はdisplayUrlを返す
+        if (displayUrl != null && currentUrl != null && currentUrl.startsWith("data:")) {
+            return displayUrl;
+        }
         return currentUrl;
     }
 
@@ -1594,5 +1639,262 @@ public class ChromiumBrowser {
      */
     public boolean isMCEF() {
         return provider != null && "MCEF".equals(provider.getName());
+    }
+
+    // ===== IPvM仮想ネットワーク対応 =====
+
+    /**
+     * IPvMアドレスパターン: [type]-[identifier]
+     * type: 0=Player, 1=Device, 2=Server, 3=System
+     */
+    private static final java.util.regex.Pattern IPVM_HOST_PATTERN = java.util.regex.Pattern.compile(
+        "^[0-3]-(" +
+        "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}" +
+        "|" +
+        "[a-zA-Z0-9][a-zA-Z0-9_-]*" +
+        ")$"
+    );
+
+    /**
+     * URLがIPvMアドレスかどうかを判定する。
+     *
+     * @param url 判定対象のURL
+     * @return IPvMアドレスの場合true
+     */
+    private boolean isIPvMUrl(String url) {
+        try {
+            java.net.URI uri = new java.net.URI(url);
+            String host = uri.getHost();
+            String scheme = uri.getScheme();
+
+            // HTTPまたはHTTPSスキームのみ処理
+            if (!"http".equalsIgnoreCase(scheme) && !"https".equalsIgnoreCase(scheme)) {
+                return false;
+            }
+
+            if (host == null || host.isEmpty()) {
+                return false;
+            }
+
+            // IPvMアドレスパターンにマッチするか確認
+            return IPVM_HOST_PATTERN.matcher(host).matches();
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * IPvMリクエスト用のCefResourceRequestHandlerを作成する。
+     *
+     * @param url リクエストURL
+     * @return CefResourceRequestHandler
+     */
+    private CefResourceRequestHandler createIPvMResourceRequestHandler(String url) {
+        // 現在は使用しない（onBeforeBrowseでhandleIPvMNavigationを使用）
+        return null;
+    }
+
+    /**
+     * IPvM URLナビゲーションを処理する。
+     * HTMLを取得してdata: URLでロードする。
+     *
+     * @param browser CefBrowser
+     * @param url IPvM URL
+     */
+    private void handleIPvMNavigation(CefBrowser browser, String url) {
+        try {
+            java.net.URI uri = new java.net.URI(url);
+            String host = uri.getHost();
+            String path = uri.getPath();
+            if (path == null || path.isEmpty()) {
+                path = "/";
+            }
+
+            log("handleIPvMNavigation: host=" + host + ", path=" + path);
+
+            // NetworkAdapterからHTMLを取得
+            jp.moyashi.phoneos.core.service.network.NetworkAdapter networkAdapter = kernel.getNetworkAdapter();
+            if (networkAdapter == null) {
+                log("NetworkAdapter is null, loading error page");
+                loadErrorPage(browser, "Network adapter not available");
+                return;
+            }
+
+            jp.moyashi.phoneos.core.service.network.VirtualAdapter virtualAdapter = networkAdapter.getVirtualAdapter();
+            if (virtualAdapter == null) {
+                log("VirtualAdapter is null, loading error page");
+                loadErrorPage(browser, "Virtual adapter not available");
+                return;
+            }
+
+            // IPvMアドレスをパース
+            jp.moyashi.phoneos.core.service.network.IPvMAddress destination =
+                    jp.moyashi.phoneos.core.service.network.IPvMAddress.fromString(host);
+
+            final String finalPath = path;
+            final String finalUrl = url;
+
+            // 非同期でHTTPリクエストを送信
+            virtualAdapter.httpRequest(destination, path, "GET")
+                    .orTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
+                    .thenAccept(response -> {
+                        if (response.isSuccess()) {
+                            String html = response.getBody();
+                            log("IPvM response received: " + (html != null ? html.length() : 0) + " chars");
+                            loadHtmlAsDataUrl(browser, html, finalUrl);
+                        } else {
+                            log("IPvM request failed: " + response.getStatusCode());
+                            loadErrorPage(browser, response.getStatusText());
+                        }
+                    })
+                    .exceptionally(e -> {
+                        logError("IPvM request error: " + e.getMessage());
+                        loadErrorPage(browser, e.getMessage());
+                        return null;
+                    });
+
+        } catch (Exception e) {
+            logError("handleIPvMNavigation error: " + e.getMessage());
+            loadErrorPage(browser, e.getMessage());
+        }
+    }
+
+    /**
+     * HTMLをdata: URLとしてロードする。
+     */
+    private void loadHtmlAsDataUrl(CefBrowser browser, String html, String originalUrl) {
+        if (html == null || html.isEmpty()) {
+            html = "<html><body><h1>Empty Response</h1></body></html>";
+        }
+
+        try {
+            String base64Html = java.util.Base64.getEncoder().encodeToString(
+                    html.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            String dataUrl = "data:text/html;charset=utf-8;base64," + base64Html;
+            log("Loading HTML as data URL (length: " + dataUrl.length() + ")");
+            browser.loadURL(dataUrl);
+        } catch (Exception e) {
+            logError("Failed to create data URL: " + e.getMessage());
+            loadErrorPage(browser, "Failed to load page");
+        }
+    }
+
+    /**
+     * エラーページをロードする。
+     */
+    private void loadErrorPage(CefBrowser browser, String message) {
+        String html = "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>Error</title></head>" +
+                "<body style=\"background:#1a1a2e;color:#fff;font-family:sans-serif;text-align:center;padding:50px;\">" +
+                "<h1 style=\"color:#e74c3c;\">Error</h1><p>" + message + "</p></body></html>";
+        loadHtmlAsDataUrl(browser, html, "about:error");
+    }
+
+    /**
+     * IPvMコンテンツをロードする。
+     * VirtualAdapterからHTMLを取得し、CefFrame.loadString()を使用して表示する。
+     * これによりURLバーにはhttpm://が表示され、HTMLも正しくレンダリングされる。
+     *
+     * @param browser CefBrowser
+     * @param originalUrl 元のURL（http://3-sys-test/）
+     * @param displayUrl 表示用URL（httpm://3-sys-test/）
+     */
+    private void loadIPvMContent(CefBrowser browser, String originalUrl, String displayUrl) {
+        try {
+            java.net.URI uri = new java.net.URI(originalUrl);
+            String host = uri.getHost();
+            String path = uri.getPath();
+            if (path == null || path.isEmpty()) {
+                path = "/";
+            }
+
+            log("loadIPvMContent: host=" + host + ", path=" + path + ", displayUrl=" + displayUrl);
+
+            // NetworkAdapterからHTMLを取得
+            jp.moyashi.phoneos.core.service.network.NetworkAdapter networkAdapter = kernel.getNetworkAdapter();
+            if (networkAdapter == null) {
+                log("NetworkAdapter is null, loading error page");
+                loadErrorPageWithUrl(browser, "Network adapter not available", displayUrl);
+                return;
+            }
+
+            jp.moyashi.phoneos.core.service.network.VirtualAdapter virtualAdapter = networkAdapter.getVirtualAdapter();
+            if (virtualAdapter == null) {
+                log("VirtualAdapter is null, loading error page");
+                loadErrorPageWithUrl(browser, "Virtual adapter not available", displayUrl);
+                return;
+            }
+
+            // IPvMアドレスをパース
+            jp.moyashi.phoneos.core.service.network.IPvMAddress destination =
+                    jp.moyashi.phoneos.core.service.network.IPvMAddress.fromString(host);
+
+            final String finalDisplayUrl = displayUrl;
+
+            // 非同期でHTTPリクエストを送信
+            virtualAdapter.httpRequest(destination, path, "GET")
+                    .orTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
+                    .thenAccept(response -> {
+                        if (response.isSuccess()) {
+                            String html = response.getBody();
+                            log("IPvM response received: " + (html != null ? html.length() : 0) + " chars");
+                            loadHtmlWithUrl(browser, html, finalDisplayUrl);
+                        } else {
+                            log("IPvM request failed: " + response.getStatusCode());
+                            loadErrorPageWithUrl(browser, response.getStatusText(), finalDisplayUrl);
+                        }
+                    })
+                    .exceptionally(e -> {
+                        logError("IPvM request error: " + e.getMessage());
+                        loadErrorPageWithUrl(browser, e.getMessage(), finalDisplayUrl);
+                        return null;
+                    });
+
+        } catch (Exception e) {
+            logError("loadIPvMContent error: " + e.getMessage());
+            loadErrorPageWithUrl(browser, e.getMessage(), displayUrl);
+        }
+    }
+
+    /**
+     * HTMLをdata: URLでロードし、表示用URLを設定する。
+     *
+     * @param browser CefBrowser
+     * @param html HTMLコンテンツ
+     * @param displayUrlParam URLバーに表示するURL
+     */
+    private void loadHtmlWithUrl(CefBrowser browser, String html, String displayUrlParam) {
+        if (html == null || html.isEmpty()) {
+            html = "<html><body><h1>Empty Response</h1></body></html>";
+        }
+
+        try {
+            // 表示用URLを設定（getCurrentURL()で使用）
+            this.displayUrl = displayUrlParam;
+            log("Set displayUrl: " + displayUrlParam);
+
+            // data: URLでロード
+            String base64Html = java.util.Base64.getEncoder().encodeToString(
+                    html.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            String dataUrl = "data:text/html;charset=utf-8;base64," + base64Html;
+            log("Loading HTML via data: URL, displayUrl=" + displayUrlParam);
+            browser.loadURL(dataUrl);
+        } catch (Exception e) {
+            logError("loadHtmlWithUrl error: " + e.getMessage());
+            loadHtmlAsDataUrl(browser, html, displayUrlParam);
+        }
+    }
+
+    /**
+     * エラーページをロードし、URLバーに指定URLを表示する。
+     *
+     * @param browser CefBrowser
+     * @param message エラーメッセージ
+     * @param displayUrl URLバーに表示するURL
+     */
+    private void loadErrorPageWithUrl(CefBrowser browser, String message, String displayUrl) {
+        String html = "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>Error</title></head>" +
+                "<body style=\"background:#1a1a2e;color:#fff;font-family:sans-serif;text-align:center;padding:50px;\">" +
+                "<h1 style=\"color:#e74c3c;\">Error</h1><p>" + message + "</p></body></html>";
+        loadHtmlWithUrl(browser, html, displayUrl);
     }
 }

@@ -2,6 +2,7 @@ package jp.moyashi.phoneos.core.service.chromium;
 
 import jp.moyashi.phoneos.core.Kernel;
 import jp.moyashi.phoneos.core.service.chromium.httpm.HttpmSchemeHandlerFactory;
+import jp.moyashi.phoneos.core.service.chromium.interceptor.IPvMSchemeHandlerFactory;
 import jp.moyashi.phoneos.core.service.chromium.webapp.AppAssetSchemeHandlerFactory;
 import jp.moyashi.phoneos.core.service.chromium.webapp.AppSchemeManager;
 import org.cef.CefApp;
@@ -79,6 +80,25 @@ public class ChromiumAppHandler extends CefAppHandlerAdapter {
             log("httpm:// scheme registered successfully");
         } else {
             logError("Failed to register httpm:// scheme");
+        }
+
+        // ipvm:スキームを登録（IPvM仮想ネットワーク用）
+        // http://3-sys-test/ → ipvm://3-sys-test/ に変換されて処理される
+        boolean ipvmRegistered = registrar.addCustomScheme(
+            "ipvm",     // スキーム名
+            true,       // is_standard
+            false,      // is_local
+            false,      // is_display_isolated
+            false,      // is_secure
+            true,       // is_cors_enabled (CORSを有効化してfetchリクエストに対応)
+            false,      // is_csp_bypassing
+            true        // is_fetch_enabled (fetch API対応)
+        );
+
+        if (ipvmRegistered) {
+            log("ipvm:// scheme registered successfully");
+        } else {
+            logError("Failed to register ipvm:// scheme");
         }
 
         // WebApp用 mochiapp:// スキームを登録（汎用スキーム）
@@ -167,6 +187,17 @@ public class ChromiumAppHandler extends CefAppHandlerAdapter {
             appFactory                              // ハンドラーファクトリ
         );
         log("AppAssetSchemeHandlerFactory registered for mochiapp://");
+
+        // IPvM over HTTP: HTTPスキームでIPvMアドレス（0-*, 1-*, 2-*, 3-*）をインターセプト
+        // CefRequestHandler.getResourceRequestHandler()がCefBrowserOsrNoCanvasで動作しないため、
+        // 代替としてCefSchemeHandlerFactoryを使用する
+        IPvMSchemeHandlerFactory ipvmFactory = new IPvMSchemeHandlerFactory(kernel);
+        cefApp.registerSchemeHandlerFactory(
+            "http",                                 // スキーム名
+            "",                                     // ドメイン（空=全ドメイン対応、ファクトリ内でIPvMパターンを検査）
+            ipvmFactory                             // ハンドラーファクトリ
+        );
+        log("IPvMSchemeHandlerFactory registered for http:// (IPvM addresses)");
 
         // 後方互換性: 事前登録済みapp-*スキームのファクトリも登録
         for (String scheme : pendingAppSchemes) {

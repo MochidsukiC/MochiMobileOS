@@ -917,3 +917,119 @@ MochiMobileOS上でProcessingスケッチ（.pde）をアプリケーション�
     → ProcessingScreen経由でMinecraftテクスチャに描画
     ```
   - 結果: **AWT HeadlessException問題が解決し、Forge環境でChromiumブラウザが正常にレンダリングされるようになった**
+
+## 変更(2025-12-18)
+- **サーバーモジュールの作成（IPvMシステムサーバーインフラ）**
+  - 目的: サーバーサイドの仮想ネットワークシステムを構築し、クライアント（Chromium）からのIPvMリクエストをサーバーで処理する
+  - 背景: 従来はクライアント側でテストサーバーを登録していたが、正しい設計としてサーバー側で管理すべき
+  - 作成されたモジュール: `server`
+    - `server/build.gradle.kts`: coreモジュールに依存、Gson追加
+    - `settings.gradle.kts`に`server`を追加
+  - 作成されたクラス:
+    - **`server/src/main/java/jp/moyashi/phoneos/server/MMOSServer.java`**:
+      - サーバーモジュールのエントリーポイント
+      - `initialize()`: 組み込みサーバー（sys-test等）を登録
+      - `handleHttpRequest(VirtualPacket)`: クライアントからのHTTPリクエストを処理
+      - `registerSystemServer()`/`registerExternalServer()`: サーバー登録API
+    - **`server/src/main/java/jp/moyashi/phoneos/server/network/VirtualHttpServer.java`**:
+      - 仮想HTTPサーバーのインターフェース
+      - `getServerId()`: サーバー識別子（例: "sys-test"）
+      - `handleRequest(VirtualHttpRequest)`: リクエスト処理
+    - **`server/src/main/java/jp/moyashi/phoneos/server/network/VirtualHttpRequest.java`**:
+      - HTTPリクエストデータクラス（source、destination、method、path、headers、body）
+      - Builderパターンで構築
+    - **`server/src/main/java/jp/moyashi/phoneos/server/network/VirtualHttpResponse.java`**:
+      - HTTPレスポンスデータクラス（statusCode、statusText、headers、body、mimeType）
+      - ファクトリメソッド: `ok()`, `html()`, `json()`, `notFound()`, `error()`
+    - **`server/src/main/java/jp/moyashi/phoneos/server/network/SystemServerRegistry.java`**:
+      - システムサーバー（Type 3）と外部サーバー（Type 2）の登録レジストリ
+      - シングルトンパターン
+      - IPvMアドレスからサーバーを検索
+    - **`server/src/main/java/jp/moyashi/phoneos/server/network/ServerVirtualRouter.java`**:
+      - サーバーサイドのパケットルーティング
+      - VirtualPacketをVirtualHttpRequestに変換
+      - SystemServerRegistryからサーバーを検索してリクエスト処理
+    - **`server/src/main/java/jp/moyashi/phoneos/server/network/builtin/TestSystemServer.java`**:
+      - テスト用システムサーバー（3-sys-test）
+      - `/`: テストページ（接続成功表示）
+      - `/api/echo`: Echoエンドポイント
+      - `/api/info`: サーバー情報エンドポイント
+  - Forgeモジュールの修正:
+    - **`forge/build.gradle`**:
+      - `implementation project(':server')` 追加
+      - JARビルドにサーバーモジュールクラスを含める
+      - runClient設定にサーバーモジュールソースを追加
+    - **`MochiMobileOSMod.java`**:
+      - `commonSetup()`で`MMOSServer.initialize()`を呼び出し
+    - **`NetworkHandler.java`**:
+      - `handleServerSide()`で`MMOSServer.handleHttpRequest()`を使用
+      - `sendToPlayer(VirtualPacket, ServerPlayer)`メソッド追加
+    - **`ForgeNetworkInitializer.java`**:
+      - クライアント側のテストサーバー登録コードを削除
+      - レスポンスハンドラーのみを登録
+    - **`ForgeVirtualSocket.java`**:
+      - `onPacketReceived()`をサーバーモジュールのレスポンスフォーマットに対応
+      - statusCode、statusText、mimeType、bodyを正しく処理
+  - パケットフロー:
+    ```
+    [クライアント]
+    Chromium → MochiResourceRequestHandler → VirtualNetworkResourceHandler
+    → ForgeVirtualSocket.httpRequest() → NetworkHandler.sendToServer()
+
+    [サーバー]
+    NetworkHandler.handleReceivedPacket() → handleServerSide()
+    → MMOSServer.handleHttpRequest() → ServerVirtualRouter.routeRequest()
+    → SystemServerRegistry.getServer() → TestSystemServer.handleRequest()
+    → VirtualHttpResponse → VirtualPacket → NetworkHandler.sendToPlayer()
+
+    [クライアント]
+    NetworkHandler.handleClientSide() → ForgeNetworkInitializer.onPacketReceived()
+    → ForgeVirtualSocket.onPacketReceived() → CompletableFuture完了
+    → VirtualNetworkResourceHandler → Chromiumに表示
+    ```
+  - 結果: **BUILD SUCCESSFUL** - サーバーモジュールとForgeモジュールの統合完了
+
+- **JCEF getResourceRequestHandler() 問題の修正（onBeforeBrowseアプローチ）**
+  - 問題: Forge環境（CefBrowserOsrNoCanvas）で`CefRequestHandler.getResourceRequestHandler()`がネイティブレベルで呼び出されず、IPvMアドレス（`http://3-sys-test/`等）へのリクエストがインターセプトできない
+  - 原因分析:
+    - `CefBrowserOsrNoCanvas`はAWTを使用しないカスタムOSRブラウザ実装
+    - `CefRequestHandler`のコールバック（`getResourceRequestHandler`）がネイティブCEFから呼び出されない
+    - `client.removeRequestHandler()`を追加しても根本的な解決にならない
+    - `CefSchemeHandlerFactory`によるHTTPスキームのインターセプトも動作しない（ファクトリが呼び出されない）
+  - 解決策: `CefRequestHandler.onBeforeBrowse()`を使用したナビゲーションインターセプト
+    - `onBeforeBrowse()`はCefBrowserOsrNoCanvasでも確実に呼び出される
+    - IPvMアドレスパターン（`0-*`, `1-*`, `2-*`, `3-*`）にマッチするURLを検出
+    - 元のナビゲーションをキャンセル（return true）し、VirtualAdapterで非同期リクエストを実行
+    - レスポンスHTMLをdata: URL経由でブラウザに読み込み
+  - 実装詳細:
+    - **`ChromiumBrowser.java`**:
+      - `isIPvMUrl(String url)`: URLがIPvMパターンにマッチするか判定
+      - `handleIPvMRequest(CefBrowser browser, String url)`: VirtualAdapterで非同期リクエストを実行し、レスポンスをdata: URLで読み込み
+      - `loadHtmlContent()`, `loadErrorPage()`, `loadNoServicePage()`: レスポンス表示用ヘルパーメソッド
+      - `onBeforeBrowse()`内でIPvM URLを検出して処理
+  - 結果: **動作確認済み** - onBeforeBrowse()経由でIPvMアドレスが正しくインターセプトされ、VirtualAdapter経由でサーバーからのレスポンスが表示される
+
+- **IPvM URL表示システムの改善（httpm://スキーム表示）**
+  - 問題: data: URL方式ではURLバーに「data:」が表示され、ユーザーにとって分かりにくい
+  - 要件: URLバーに`httpm://3-sys-test/`のような意味のあるURLを表示したい
+  - 試行した解決策:
+    1. **CefResourceHandler**: OSRモードでHTMLがレンダリングされない（白画面）
+    2. **httpm://カスタムスキーム**: CefSchemeHandlerFactory経由でもOSRレンダリング問題は解決せず
+    3. **CefFrame.loadString()**: このJCEF実装には存在しない
+    4. **history.replaceState()**: data: URLでは同一オリジンポリシーにより動作しない
+  - 最終解決策: **displayUrlフィールドによるUI層での仮想URL表示**
+    - `ChromiumBrowser`に`displayUrl`フィールドを追加
+    - IPvM URLロード時に`displayUrl`を設定（例: `httpm://3-sys-test/`）
+    - `getCurrentURL()`メソッドを修正: 実際のURLがdata:の場合は`displayUrl`を返す
+    - 通常URL（非data:）をロードする場合は`displayUrl`をクリア
+  - 実装詳細:
+    - **`ChromiumBrowser.java`**:
+      - `displayUrl`フィールド: IPvM用の表示URL保持
+      - `loadIPvMContent()`: HTML取得後、`loadHtmlWithUrl()`を呼び出し
+      - `loadHtmlWithUrl()`: `displayUrl`設定後、data: URLでHTML読み込み
+      - `getCurrentURL()`: `displayUrl`が設定済み かつ `currentUrl`がdata:で始まる場合は`displayUrl`を返す
+      - `loadURL()`: 非data: URLの場合は`displayUrl`をnullにリセット
+    - `onBeforeBrowse()`で`http://`と`httpm://`両方のIPvM URLを処理
+      - `http://3-sys-test/` → displayUrl=`httpm://3-sys-test/`、data: URLでロード
+      - `httpm://3-sys-test/` → displayUrl=`httpm://3-sys-test/`、data: URLでロード
+  - 結果: **動作確認済み** - URLバーに`httpm://3-sys-test/`が正しく表示される

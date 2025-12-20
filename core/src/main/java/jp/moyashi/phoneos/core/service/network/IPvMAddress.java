@@ -42,7 +42,18 @@ public class IPvMAddress {
         }
     }
 
-    private static final Pattern ADDRESS_PATTERN = Pattern.compile("^([0-3])-((?:[0-9a-fA-F]{4}-?){1,8})$");
+    /**
+     * IPvMアドレスパターン:
+     * - Player/Device (0,1): 標準UUID形式 (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
+     * - Server/System (2,3): 文字列ID形式 (英数字とハイフン)
+     */
+    private static final Pattern ADDRESS_PATTERN = Pattern.compile(
+        "^([0-3])-(" +
+        "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}" + // 標準UUID
+        "|" +
+        "[a-zA-Z0-9][a-zA-Z0-9_-]*" + // 文字列ID（Server/System用）
+        ")$"
+    );
 
     private final AddressType type;
     private final String uuid;

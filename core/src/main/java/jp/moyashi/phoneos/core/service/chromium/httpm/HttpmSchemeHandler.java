@@ -2,7 +2,9 @@ package jp.moyashi.phoneos.core.service.chromium.httpm;
 
 import jp.moyashi.phoneos.core.Kernel;
 import jp.moyashi.phoneos.core.service.network.IPvMAddress;
-import jp.moyashi.phoneos.core.service.network.VirtualPacket;
+import jp.moyashi.phoneos.core.service.network.NetworkAdapter;
+import jp.moyashi.phoneos.core.service.network.VirtualAdapter;
+import jp.moyashi.phoneos.core.service.network.VirtualSocket;
 import org.cef.callback.CefCallback;
 import org.cef.handler.CefResourceHandlerAdapter;
 import org.cef.misc.IntRef;
@@ -10,32 +12,39 @@ import org.cef.misc.StringRef;
 import org.cef.network.CefRequest;
 import org.cef.network.CefResponse;
 
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
  * httpm:カスタムスキームハンドラー。
  * httpm://[IPvMAddress]/path 形式のURLを処理し、
- * VirtualRouterを通じて仮想ネットワークからHTMLコンテンツを取得する。
+ * VirtualAdapterを通じて仮想ネットワークからHTMLコンテンツを取得する。
  *
  * アーキテクチャ:
- * - processRequest(): URLをパースしてVirtualRouterにリクエスト送信
+ * - processRequest(): URLをパースしてVirtualAdapterにHTTPリクエスト送信
  * - getResponseHeaders(): レスポンスヘッダーを設定
  * - readResponse(): レスポンスデータをストリーム出力
  * - タイムアウト: 10秒
  *
  * @author MochiOS Team
- * @version 1.0
+ * @version 2.0
  */
 public class HttpmSchemeHandler extends CefResourceHandlerAdapter {
 
     private final Kernel kernel;
-    private final Pattern HTTPM_PATTERN = Pattern.compile("^httpm://([0-3]-[0-9a-fA-F-]+)(/.*)?$");
+    // IPvMアドレスパターン: [type]-[identifier]
+    // type: 0=Player, 1=Device, 2=Server, 3=System
+    // identifier: UUID形式 or 文字列ID
+    private static final Pattern HTTPM_PATTERN = Pattern.compile(
+        "^httpm://([0-3]-(?:" +
+        "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}" + // 標準UUID
+        "|" +
+        "[a-zA-Z0-9][a-zA-Z0-9_-]*" + // 文字列ID（Server/System用）
+        "))(/.*)?$"
+    );
 
     private byte[] responseData;
     private String mimeType = "text/html";
@@ -55,7 +64,7 @@ public class HttpmSchemeHandler extends CefResourceHandlerAdapter {
 
     /**
      * リクエストを処理する。
-     * httpm:URLをパースし、VirtualRouterを通じて仮想ネットワークからHTMLを取得する。
+     * httpm:URLをパースし、VirtualAdapterを通じて仮想ネットワークからHTMLを取得する。
      *
      * @param request CefRequest
      * @param callback CefCallback
@@ -105,11 +114,23 @@ public class HttpmSchemeHandler extends CefResourceHandlerAdapter {
 
     /**
      * 仮想HTTPリクエストを送信する（非同期）。
+     * VirtualAdapterを使用して仮想ネットワークにHTTPリクエストを送信する。
      */
     private void sendVirtualHttpRequest(IPvMAddress destination, String path, String originalUrl, CefCallback callback) {
-        if (kernel.getVirtualRouter() == null) {
-            logError("VirtualRouter is not available");
-            responseData = generateErrorPage("503 Service Unavailable", "Virtual network is not available").getBytes(StandardCharsets.UTF_8);
+        // NetworkAdapterを取得
+        NetworkAdapter networkAdapter = kernel.getNetworkAdapter();
+        if (networkAdapter == null) {
+            logError("NetworkAdapter is not available");
+            responseData = generateErrorPage("503 Service Unavailable", "Network adapter not initialized").getBytes(StandardCharsets.UTF_8);
+            statusCode = 503;
+            callback.Continue();
+            return;
+        }
+
+        VirtualAdapter virtualAdapter = networkAdapter.getVirtualAdapter();
+        if (virtualAdapter == null) {
+            logError("VirtualAdapter is not available");
+            responseData = generateErrorPage("503 Service Unavailable", "Virtual adapter not available").getBytes(StandardCharsets.UTF_8);
             statusCode = 503;
             callback.Continue();
             return;
@@ -117,76 +138,55 @@ public class HttpmSchemeHandler extends CefResourceHandlerAdapter {
 
         log("Sending virtual HTTP request to " + destination + " path: " + path);
 
-        // 非同期レスポンスを待つためのラッチ
-        CountDownLatch latch = new CountDownLatch(1);
-        AtomicReference<String> htmlResponse = new AtomicReference<>("");
-        AtomicReference<Integer> statusRef = new AtomicReference<>(200);
+        try {
+            // 非同期でHTTPリクエストを送信
+            CompletableFuture<VirtualSocket.VirtualHttpResponse> future =
+                    virtualAdapter.httpRequest(destination, path, "GET");
 
-        // ブラウザ用のシステムアドレスを取得（System ID: 0000-0000-0000-0002）
-        IPvMAddress browserSystemAddress = IPvMAddress.forSystem("0000-0000-0000-0002");
+            // タイムアウト付きで待機
+            future.orTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                    .thenAccept(response -> {
+                        if (response.isSuccess()) {
+                            // 成功: HTMLを設定
+                            String html = response.getBody();
+                            if (html != null && !html.isEmpty()) {
+                                responseData = html.getBytes(StandardCharsets.UTF_8);
+                                statusCode = response.getStatusCode();
+                                log("Received HTTP response: " + responseData.length + " bytes, status: " + statusCode);
+                            } else {
+                                // HTMLが空
+                                responseData = generateErrorPage("404 Not Found", "Page not found").getBytes(StandardCharsets.UTF_8);
+                                statusCode = 404;
+                            }
+                        } else {
+                            // エラー
+                            responseData = generateErrorPage(
+                                response.getStatusCode() + " " + response.getStatusText(),
+                                response.getBody()
+                            ).getBytes(StandardCharsets.UTF_8);
+                            statusCode = response.getStatusCode();
+                        }
+                        callback.Continue();
+                    })
+                    .exceptionally(e -> {
+                        logError("HTTP request failed: " + e.getMessage());
+                        if (e.getCause() instanceof java.util.concurrent.TimeoutException) {
+                            responseData = generateErrorPage("504 Gateway Timeout", "Request timeout: " + originalUrl).getBytes(StandardCharsets.UTF_8);
+                            statusCode = 504;
+                        } else {
+                            responseData = generateErrorPage("500 Internal Server Error", e.getMessage()).getBytes(StandardCharsets.UTF_8);
+                            statusCode = 500;
+                        }
+                        callback.Continue();
+                        return null;
+                    });
 
-        // HTTPリクエストパケットを作成
-        VirtualPacket packet = VirtualPacket.builder()
-            .source(browserSystemAddress)
-            .destination(destination)
-            .type(VirtualPacket.PacketType.GENERIC_REQUEST)
-            .put("path", path)
-            .put("method", "GET")
-            .put("originalUrl", originalUrl)
-            .build();
-
-        // レスポンスハンドラーを登録（一時的なハンドラー）
-        kernel.getVirtualRouter().registerTypeHandler(VirtualPacket.PacketType.GENERIC_RESPONSE, (response) -> {
-            // 元のリクエストURLと一致するかチェック
-            if (response.getString("originalUrl") != null &&
-                response.getString("originalUrl").equals(originalUrl)) {
-                String html = response.getString("html");
-                String status = response.getString("status");
-
-                htmlResponse.set(html != null ? html : "");
-                statusRef.set(parseStatusCode(status));
-
-                latch.countDown();
-            }
-        });
-
-        // パケットを送信
-        kernel.getVirtualRouter().sendPacket(packet);
-
-        // 別スレッドでタイムアウト待機
-        new Thread(() -> {
-            try {
-                boolean received = latch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS);
-
-                if (received) {
-                    // レスポンスを受信
-                    String html = htmlResponse.get();
-                    if (html != null && !html.isEmpty()) {
-                        responseData = html.getBytes(StandardCharsets.UTF_8);
-                        statusCode = statusRef.get();
-                        log("Received HTTP response: " + responseData.length + " bytes, status: " + statusCode);
-                    } else {
-                        // HTMLが空
-                        responseData = generateErrorPage("404 Not Found", "Page not found").getBytes(StandardCharsets.UTF_8);
-                        statusCode = 404;
-                    }
-                } else {
-                    // タイムアウト
-                    logError("HTTP request timeout: " + originalUrl);
-                    responseData = generateErrorPage("504 Gateway Timeout", "Request timeout").getBytes(StandardCharsets.UTF_8);
-                    statusCode = 504;
-                }
-
-                // Chromiumに処理を継続させる
-                callback.Continue();
-
-            } catch (InterruptedException e) {
-                logError("HTTP request interrupted: " + e.getMessage());
-                responseData = generateErrorPage("500 Internal Server Error", "Request interrupted").getBytes(StandardCharsets.UTF_8);
-                statusCode = 500;
-                callback.Continue();
-            }
-        }).start();
+        } catch (Exception e) {
+            logError("Error sending HTTP request: " + e.getMessage());
+            responseData = generateErrorPage("500 Internal Server Error", e.getMessage()).getBytes(StandardCharsets.UTF_8);
+            statusCode = 500;
+            callback.Continue();
+        }
     }
 
     /**
@@ -247,22 +247,6 @@ public class HttpmSchemeHandler extends CefResourceHandlerAdapter {
             case 503: return "Service Unavailable";
             case 504: return "Gateway Timeout";
             default: return "Unknown";
-        }
-    }
-
-    /**
-     * ステータス文字列からステータスコードをパースする。
-     */
-    private int parseStatusCode(String status) {
-        if (status == null || status.isEmpty()) {
-            return 200;
-        }
-        try {
-            // "200 OK" -> 200
-            String[] parts = status.split(" ");
-            return Integer.parseInt(parts[0]);
-        } catch (Exception e) {
-            return 200;
         }
     }
 

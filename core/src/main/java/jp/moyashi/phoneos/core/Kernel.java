@@ -126,6 +126,9 @@ public class Kernel implements GestureListener {
     /** 仮想ネットワークルーターサービス */
     private jp.moyashi.phoneos.core.service.network.VirtualRouter virtualRouter;
 
+    /** ネットワークアダプター（IPvM/実インターネット統合） */
+    private jp.moyashi.phoneos.core.service.network.NetworkAdapter networkAdapter;
+
     /** メッセージストレージサービス */
     private MessageStorage messageStorage;
 
@@ -1459,6 +1462,12 @@ public class Kernel implements GestureListener {
             virtualRouter = new jp.moyashi.phoneos.core.service.network.VirtualRouter();
         }
 
+        // NetworkAdapterの初期化
+        if (networkAdapter == null) {
+            System.out.println("  -> ネットワークアダプター作成中...");
+            networkAdapter = new jp.moyashi.phoneos.core.service.network.NetworkAdapter(this);
+        }
+
         // MessageStorageの初期化（DIで取得できなかった場合）
         if (messageStorage == null) {
             System.out.println("  -> メッセージストレージサービス作成中（フォールバック）...");
@@ -2115,6 +2124,15 @@ public class Kernel implements GestureListener {
      */
     public jp.moyashi.phoneos.core.service.network.VirtualRouter getVirtualRouter() {
         return virtualRouter;
+    }
+
+    /**
+     * ネットワークアダプターのインスタンスを取得する。
+     *
+     * @return ネットワークアダプター（IPvM/実インターネット統合）
+     */
+    public jp.moyashi.phoneos.core.service.network.NetworkAdapter getNetworkAdapter() {
+        return networkAdapter;
     }
 
     /**

@@ -3,6 +3,7 @@ package jp.moyashi.phoneos.forge;
 import jp.moyashi.phoneos.forge.event.ModAppRegistry;
 import jp.moyashi.phoneos.forge.event.PhoneAppRegistryEvent;
 import jp.moyashi.phoneos.forge.registry.ModItems;
+import jp.moyashi.phoneos.server.MMOSServer;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -80,6 +81,11 @@ public class MochiMobileOSMod {
             System.out.println("[MochiMobileOSMod] Registering virtual network packets...");
             jp.moyashi.phoneos.forge.network.NetworkHandler.register();
             System.out.println("[MochiMobileOSMod] Virtual network packets registered");
+
+            // サーバーモジュールの初期化（IPvMシステムサーバー登録）
+            System.out.println("[MochiMobileOSMod] Initializing MMOS Server module...");
+            MMOSServer.initialize();
+            System.out.println("[MochiMobileOSMod] MMOS Server module initialized");
         });
 
         // 初期化フェーズ2: ModAppRegistryの準備

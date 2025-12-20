@@ -69,6 +69,9 @@ dependencies {
     // Core module dependency - embed in jar
     implementation project(':core')
 
+    // Server module dependency - for server-side virtual network system
+    implementation project(':server')
+
     // Processing dependencies - explicitly declare for Forge environment
     // This ensures Processing classes are available at runtime
     implementation 'org.processing:core:4.4.4'
@@ -159,6 +162,7 @@ minecraft {
                 mochimobileos {
                     source sourceSets.main
                     source project(':core').sourceSets.main
+                    source project(':server').sourceSets.main
                 }
             }
         }
@@ -172,6 +176,7 @@ minecraft {
                 mochimobileos {
                     source sourceSets.main
                     source project(':core').sourceSets.main
+                    source project(':server').sourceSets.main
                 }
             }
         }
@@ -180,9 +185,11 @@ minecraft {
 
 // Configure jar
 jar {
-    // Declare explicit dependency on core module tasks
+    // Declare explicit dependency on core and server module tasks
     dependsOn ':core:classes'
     dependsOn ':core:processResources'
+    dependsOn ':server:classes'
+    dependsOn ':server:processResources'
 
     // Include core module classes in the jar
     // JCEFChromiumProviderがjcefmavenを使用してChromiumを統合
@@ -192,6 +199,16 @@ jar {
 
     // Include core module resources (fonts, webapp assets, etc.)
     from(project(':core').sourceSets.main.output.resourcesDir) {
+        include '**/*'
+    }
+
+    // Include server module classes in the jar
+    from(project(':server').sourceSets.main.output.classesDirs) {
+        include '**/*.class'
+    }
+
+    // Include server module resources
+    from(project(':server').sourceSets.main.output.resourcesDir) {
         include '**/*'
     }
 

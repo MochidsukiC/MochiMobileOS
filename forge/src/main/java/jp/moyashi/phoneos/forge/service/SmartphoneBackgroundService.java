@@ -132,6 +132,11 @@ public class SmartphoneBackgroundService {
             jp.moyashi.phoneos.forge.network.SystemPacketHandler.registerHandlers(kernel);
             LOGGER.info("[SmartphoneBackgroundService] Virtual network router initialized");
 
+            // NetworkAdapter用のForgeVirtualSocketを初期化（IPvM over HTTP用）
+            LOGGER.info("[SmartphoneBackgroundService] Initializing ForgeNetworkInitializer...");
+            jp.moyashi.phoneos.forge.network.ForgeNetworkInitializer.initialize(kernel);
+            LOGGER.info("[SmartphoneBackgroundService] ForgeNetworkInitializer initialized");
+
             // ハードウェアバイパスAPIの初期化（Forge実装に置き換え）
             LOGGER.info("[SmartphoneBackgroundService] Initializing hardware bypass APIs...");
             initializeHardwareAPIs(kernel);
