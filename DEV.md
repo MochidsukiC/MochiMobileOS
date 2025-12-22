@@ -182,9 +182,35 @@
 
 ## TODO
 
+### メディア再生管理システム（完了 2025-12-21）
+- **MediaSession/MediaController API実装**
+  - `core/media/` パッケージに以下のクラスを新規作成:
+    - `PlaybackState.java` - 再生状態列挙型（STOPPED, PLAYING, PAUSED, BUFFERING, ERROR）
+    - `MediaMetadata.java` - メタデータモデル（Builder付き、title/artist/album/duration/artwork）
+    - `MediaSessionCallback.java` - 再生コントロールコールバックインターフェース
+    - `MediaSession.java` - アプリがセッションを作成・状態更新するためのクラス
+    - `MediaController.java` - 外部からセッションを操作するコントローラー
+    - `AudioFocusManager.java` - オーディオフォーカス管理（排他制御）
+    - `MediaSessionManager.java` - システム全体のセッション管理サービス
+  - `NowPlayingItem.java` - コントロールセンター用のメディア再生ウィジェット
+  - `CoreServiceBootstrap.java` - MediaSessionManagerをDIコンテナに登録
+  - `Kernel.java` - NowPlayingItemをコントロールセンターに追加
+- **Chromiumブラウザ統合（完了 2025-12-21）**
+  - `ChromiumBrowser.java` - メディア検出JavaScript注入、`[MochiOS:Media]`コンソールメッセージ処理
+  - `ChromiumSurface.java` - メディア検出インターフェースメソッド追加
+  - `DefaultChromiumService.java` - DefaultChromiumSurfaceでメディアメソッド実装
+  - `ChromiumBrowserScreen.java` - MediaSession統合（コールバック、状態更新、スクリプト注入）
+  - YouTubeなどのWebメディア再生をNow Playingウィジェットに連携
+- **機能:**
+  - 各アプリの再生状態を統合管理
+  - コントロールセンターからの再生/一時停止/スキップ操作
+  - オーディオフォーカスによる音声出力の排他制御
+  - 外部MODアプリからも利用可能なAPI
+  - Webブラウザ（YouTube等）のメディア再生検出・制御
+
 ### Kernelアーキテクチャ移行の次ステップ
 - **既存サービスのDIコンテナ化（ほぼ完了）**
-  - ✅ 完了（25サービス）: VFS、LoggerService、SystemClock、NotificationManager、AppLoader、LayoutManager、SettingsManager、ThemeEngine、ScreenManager、PopupManager、GestureManager、InputManager、RenderPipeline、ClipboardManager、ControlCenterManager、LockManager、ServiceManager、ChromiumService、VirtualRouter、MessageStorage、MobileDataSocket、BluetoothSocket、LocationSocket、BatteryInfo
+  - ✅ 完了（26サービス）: VFS、LoggerService、SystemClock、NotificationManager、AppLoader、LayoutManager、SettingsManager、ThemeEngine、ScreenManager、PopupManager、GestureManager、InputManager、RenderPipeline、ClipboardManager、ControlCenterManager、LockManager、ServiceManager、ChromiumService、VirtualRouter、MessageStorage、MobileDataSocket、BluetoothSocket、LocationSocket、BatteryInfo、**MediaSessionManager**
   - 残りのサービス: その他のハードウェアソケット（CameraSocket、MicrophoneSocket、SpeakerSocket、ICSocket）、SensorManager、BatteryMonitor
 - **画面クラスのDI対応**
   - Screenインターフェースの拡張（依存性を注入可能に）
@@ -215,6 +241,12 @@
 - BaseComponent/主要コンポーネント（Button/Label/Switch/Slider/Text系）をThemeEngine準拠へ順次移行（進行中）
   - (更新) HomeScreen.javaの描画要素は、テーマ対応の色、寸法、フォントサイズ、角丸の定数化により大幅にThemeEngine準拠に近づいた。
   - (更新) LockScreen.javaをThemeEngine準拠に更新（2025-12-20）。背景、文字色、通知カード、パターン入力UIをテーマカラー/角丸トークンに対応。
+  - (更新) コントロールセンターを大幅強化（2025-12-20）。
+    - 4カラム・スクエアグリッドデザインへの刷新
+    - 縦型スライダー（音量/輝度）の実装と左側配置
+    - メディアコントロール（2x2パネル）の右上固定配置
+    - ドラッグ操作の最適化（スライダー操作とパネルスクロールの共存）
+    - 低電力モード切り替えの実装
 - 追加適用: Panel/ListView/Dialog/Dropdown をトークン化（背景/枠線/選択色/文字色）
 - 追加適用: Checkbox/RadioButton をトークン化（境界/選択色/文字色）
 - ~~設定アプリに「外観」セクションを追加（モード/アクセント/角丸/文字サイズ/Reduce Motion）最小実装（完了）~~

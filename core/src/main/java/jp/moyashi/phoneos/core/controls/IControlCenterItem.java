@@ -96,7 +96,7 @@ public interface IControlCenterItem {
     
     /**
      * 指定された座標がこのアイテムの操作可能領域内にあるかを確認する。
-     * 
+     *
      * @param x X座標（アイテム描画領域内での相対座標）
      * @param y Y座標（アイテム描画領域内での相対座標）
      * @param itemX アイテム描画領域のX座標
@@ -107,5 +107,54 @@ public interface IControlCenterItem {
      */
     default boolean isInBounds(float x, float y, float itemX, float itemY, float itemW, float itemH) {
         return x >= itemX && x <= itemX + itemW && y >= itemY && y <= itemY + itemH;
+    }
+
+    /**
+     * このアイテムが占める列数を取得する。
+     * デフォルトは1列。2x2のアイテムは2を返す。
+     *
+     * @return 列スパン数（1〜3）
+     */
+    default int getColumnSpan() {
+        return 1;
+    }
+
+    /**
+     * このアイテムが占める行数を取得する。
+     * デフォルトは1行。2x2のアイテムは2を返す。
+     *
+     * @return 行スパン数（1〜）
+     */
+    default int getRowSpan() {
+        return 1;
+    }
+
+    /**
+     * このアイテムがドラッグ操作を受け付けるかどうかを確認する。
+     * trueの場合、ドラッグ操作はスクロールではなくアイテム自身に転送される。
+     *
+     * @return ドラッグ可能な場合true
+     */
+    default boolean isDraggable() {
+        return false;
+    }
+
+    /**
+     * グリッド配置の水平位置を指定する。
+     * RIGHT指定のアイテムは右寄せで配置される。
+     *
+     * @return 配置位置（LEFT, CENTER, RIGHT）
+     */
+    default GridAlignment getGridAlignment() {
+        return GridAlignment.LEFT;
+    }
+
+    /**
+     * グリッド配置の水平位置を表す列挙型。
+     */
+    enum GridAlignment {
+        LEFT,
+        CENTER,
+        RIGHT
     }
 }

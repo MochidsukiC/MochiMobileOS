@@ -2853,79 +2853,115 @@ public class Kernel implements GestureListener {
         
         System.out.println("  -> コントロールセンターアイテムを追加中...");
         
-        // ToggleItemをimportするため
+        // 必要なクラスの参照
         jp.moyashi.phoneos.core.controls.ToggleItem toggleItem;
+        jp.moyashi.phoneos.core.controls.SliderItem sliderItem;
+        jp.moyashi.phoneos.core.controls.IControlCenterItem.GridAlignment ALIGN_RIGHT = 
+            jp.moyashi.phoneos.core.controls.IControlCenterItem.GridAlignment.RIGHT;
+        
+        // --- 1. 右カラム: スライダー (親指操作エリア) ---
+        
+        // 音量スライダー (右側上段)
+        sliderItem = new jp.moyashi.phoneos.core.controls.SliderItem(
+            "volume", "音量", "🔊", 0.5f, ALIGN_RIGHT,
+            (val) -> System.out.println("Volume changed: " + val)
+        );
+        controlCenterManager.addItem(sliderItem);
+        
+        // 輝度スライダー (右側下段)
+        sliderItem = new jp.moyashi.phoneos.core.controls.SliderItem(
+            "brightness", "輝度", "☀", 0.8f, ALIGN_RIGHT,
+            (val) -> System.out.println("Brightness changed: " + val)
+        );
+        controlCenterManager.addItem(sliderItem);
+        
+        // --- 2. メインエリア: メディア & トグル ---
+
+        // Now Playing（メディア再生コントロール） - 左上 2x2
+        jp.moyashi.phoneos.core.media.MediaSessionManager mediaSessionManager =
+            serviceBootstrap != null ? serviceBootstrap.tryGetService(jp.moyashi.phoneos.core.media.MediaSessionManager.class) : null;
+        if (mediaSessionManager != null) {
+            jp.moyashi.phoneos.core.controls.NowPlayingItem nowPlayingItem =
+                new jp.moyashi.phoneos.core.controls.NowPlayingItem(mediaSessionManager);
+            controlCenterManager.addItem(nowPlayingItem);
+            System.out.println("  -> NowPlayingItemを追加しました");
+        } else {
+            // メディアマネージャーがない場合のダミー（レイアウト確認用）
+            // 将来的にはここで「未再生」状態の表示などを行う
+        }
+        
+        // --- トグルスイッチ群 (左側〜中央) ---
         
         // WiFi切り替え
         toggleItem = new jp.moyashi.phoneos.core.controls.ToggleItem(
-            "wifi", "WiFi", "ワイヤレス接続のオン/オフ", 
+            "wifi", "WiFi", "Wi-Fi", 
             false, (isOn) -> System.out.println("WiFi toggled: " + isOn)
         );
         controlCenterManager.addItem(toggleItem);
         
         // Bluetooth切り替え
         toggleItem = new jp.moyashi.phoneos.core.controls.ToggleItem(
-            "bluetooth", "Bluetooth", "Bluetooth接続のオン/オフ", 
+            "bluetooth", "Bluetooth", "Bluetooth", 
             false, (isOn) -> System.out.println("Bluetooth toggled: " + isOn)
-        );
-        controlCenterManager.addItem(toggleItem);
-        
-        // 機内モード
-        toggleItem = new jp.moyashi.phoneos.core.controls.ToggleItem(
-            "airplane_mode", "機内モード", "すべての通信をオフにする", 
-            false, (isOn) -> System.out.println("Airplane mode toggled: " + isOn)
         );
         controlCenterManager.addItem(toggleItem);
         
         // モバイルデータ
         toggleItem = new jp.moyashi.phoneos.core.controls.ToggleItem(
-            "mobile_data", "モバイルデータ", "携帯電話ネットワーク経由のデータ通信", 
+            "mobile_data", "データ通信", "モバイルデータ", 
             true, (isOn) -> System.out.println("Mobile data toggled: " + isOn)
         );
         controlCenterManager.addItem(toggleItem);
         
-        // 位置情報サービス
+        // 機内モード
         toggleItem = new jp.moyashi.phoneos.core.controls.ToggleItem(
-            "location", "位置情報", "GPS位置情報サービス", 
-            true, (isOn) -> System.out.println("Location services toggled: " + isOn)
+            "airplane_mode", "機内モード", "機内モード", 
+            false, (isOn) -> System.out.println("Airplane mode toggled: " + isOn)
+        );
+        controlCenterManager.addItem(toggleItem);
+        
+        // サイレントモード (マナーモード)
+        toggleItem = new jp.moyashi.phoneos.core.controls.ToggleItem(
+            "silent_mode", "サイレント", "マナーモード", 
+            false, (isOn) -> System.out.println("Silent mode toggled: " + isOn)
+        );
+        controlCenterManager.addItem(toggleItem);
+        
+        // 低電力モード
+        toggleItem = new jp.moyashi.phoneos.core.controls.ToggleItem(
+            "low_power", "低電力", "低電力モード", 
+            false, (isOn) -> {
+                System.out.println("Low power mode toggled: " + isOn);
+                // SettingsManagerに保存してテーマエンジン等に反映させることも可能
+                if (settingsManager != null) {
+                    settingsManager.setSetting("ui.performance.low_power", isOn);
+                    settingsManager.saveSettings();
+                }
+            }
         );
         controlCenterManager.addItem(toggleItem);
         
         // 自動回転
         toggleItem = new jp.moyashi.phoneos.core.controls.ToggleItem(
-            "auto_rotate", "画面回転", "デバイスの向きに応じて画面を回転", 
+            "auto_rotate", "回転ロック", "自動回転", 
             true, (isOn) -> System.out.println("Auto rotate toggled: " + isOn)
         );
         controlCenterManager.addItem(toggleItem);
         
-        // バッテリーセーバー
+        // 位置情報
         toggleItem = new jp.moyashi.phoneos.core.controls.ToggleItem(
-            "battery_saver", "バッテリーセーバー", "電力消費を抑制する省電力モード", 
-            false, (isOn) -> System.out.println("Battery saver toggled: " + isOn)
-        );
-        controlCenterManager.addItem(toggleItem);
-        
-        // ホットスポット
-        toggleItem = new jp.moyashi.phoneos.core.controls.ToggleItem(
-            "hotspot", "ホットスポット", "他のデバイスとの接続を共有", 
-            false, (isOn) -> System.out.println("Hotspot toggled: " + isOn)
-        );
-        controlCenterManager.addItem(toggleItem);
-        
-        // サイレントモード
-        toggleItem = new jp.moyashi.phoneos.core.controls.ToggleItem(
-            "silent_mode", "サイレント", "着信音と通知音をオフにする", 
-            false, (isOn) -> System.out.println("Silent mode toggled: " + isOn)
+            "location", "位置情報", "GPS", 
+            true, (isOn) -> System.out.println("Location services toggled: " + isOn)
         );
         controlCenterManager.addItem(toggleItem);
         
         // ダークモード
         toggleItem = new jp.moyashi.phoneos.core.controls.ToggleItem(
-            "dark_mode", "ダークモード", "暗い色調のテーマを使用", 
+            "dark_mode", "ダーク", "ダークモード",
             false, (isOn) -> System.out.println("Dark mode toggled: " + isOn)
         );
         controlCenterManager.addItem(toggleItem);
-        
+
         System.out.println("  -> " + controlCenterManager.getItemCount() + "個のコントロールアイテムを追加完了");
     }
     

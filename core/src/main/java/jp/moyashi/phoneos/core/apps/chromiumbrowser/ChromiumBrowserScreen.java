@@ -1,6 +1,11 @@
 package jp.moyashi.phoneos.core.apps.chromiumbrowser;
 
 import jp.moyashi.phoneos.core.Kernel;
+import jp.moyashi.phoneos.core.media.MediaMetadata;
+import jp.moyashi.phoneos.core.media.MediaSession;
+import jp.moyashi.phoneos.core.media.MediaSessionCallback;
+import jp.moyashi.phoneos.core.media.MediaSessionManager;
+import jp.moyashi.phoneos.core.media.PlaybackState;
 import jp.moyashi.phoneos.core.service.chromium.ChromiumSurface;
 import jp.moyashi.phoneos.core.service.chromium.ChromiumTextInput;
 import jp.moyashi.phoneos.core.ui.Screen;
@@ -26,6 +31,12 @@ public class ChromiumBrowserScreen implements Screen {
     private Button bookmarkButton;
     private Button menuButton;
     private TextField addressBar;
+
+    // MediaSession integration
+    private MediaSession mediaSession;
+    private MediaSessionManager mediaSessionManager;
+    private String lastMediaUrl = "";
+    private boolean lastMediaPlaying = false;
 
     public ChromiumBrowserScreen(Kernel kernel) {
         this.kernel = kernel;
@@ -53,6 +64,209 @@ public class ChromiumBrowserScreen implements Screen {
         } else {
             log("WARNING: kernel or ChromiumService is null!");
             log("kernel: " + kernel + ", chromiumService: " + (kernel != null ? kernel.getChromiumService() : "N/A"));
+        }
+
+        // Initialize MediaSession for browser media playback
+        initializeMediaSession();
+    }
+
+    private void initializeMediaSession() {
+        if (kernel == null) {
+            log("Cannot initialize MediaSession: kernel is null");
+            return;
+        }
+
+        try {
+            mediaSessionManager = kernel.getService(MediaSessionManager.class);
+            if (mediaSessionManager != null) {
+                mediaSession = mediaSessionManager.createSession("chromium_browser");
+                mediaSession.setCallback(new MediaSessionCallback() {
+                    @Override
+                    public void onPlay() {
+                        // 現在再生中または一時停止中のメディアを見つけて再生
+                        getActiveBrowserSurface().ifPresent(s ->
+                            s.executeScript(
+                                "(function() {" +
+                                "  var medias = document.querySelectorAll('video, audio');" +
+                                "  for (var i = 0; i < medias.length; i++) {" +
+                                "    var m = medias[i];" +
+                                "    if (m.paused && m.currentTime > 0) {" +
+                                "      m.play();" +
+                                "      return;" +
+                                "    }" +
+                                "  }" +
+                                "  for (var i = 0; i < medias.length; i++) {" +
+                                "    if (medias[i].paused) {" +
+                                "      medias[i].play();" +
+                                "      return;" +
+                                "    }" +
+                                "  }" +
+                                "})();"));
+                    }
+
+                    @Override
+                    public void onPause() {
+                        // 再生中のメディアを一時停止
+                        getActiveBrowserSurface().ifPresent(s ->
+                            s.executeScript(
+                                "(function() {" +
+                                "  var medias = document.querySelectorAll('video, audio');" +
+                                "  for (var i = 0; i < medias.length; i++) {" +
+                                "    if (!medias[i].paused) {" +
+                                "      medias[i].pause();" +
+                                "    }" +
+                                "  }" +
+                                "})();"));
+                    }
+
+                    @Override
+                    public void onStop() {
+                        getActiveBrowserSurface().ifPresent(s ->
+                            s.executeScript(
+                                "(function() {" +
+                                "  var medias = document.querySelectorAll('video, audio');" +
+                                "  for (var i = 0; i < medias.length; i++) {" +
+                                "    medias[i].pause();" +
+                                "    medias[i].currentTime = 0;" +
+                                "  }" +
+                                "})();"));
+                    }
+
+                    @Override
+                    public void onSeekTo(long positionMs) {
+                        double positionSec = positionMs / 1000.0;
+                        getActiveBrowserSurface().ifPresent(s ->
+                            s.executeScript(
+                                "(function() {" +
+                                "  var medias = document.querySelectorAll('video, audio');" +
+                                "  for (var i = 0; i < medias.length; i++) {" +
+                                "    if (!medias[i].paused || medias[i].currentTime > 0) {" +
+                                "      medias[i].currentTime = " + positionSec + ";" +
+                                "      return;" +
+                                "    }" +
+                                "  }" +
+                                "})();"));
+                    }
+
+                    @Override
+                    public void onSkipToPrevious() {
+                        // 10秒戻る
+                        getActiveBrowserSurface().ifPresent(s ->
+                            s.executeScript(
+                                "(function() {" +
+                                "  var medias = document.querySelectorAll('video, audio');" +
+                                "  for (var i = 0; i < medias.length; i++) {" +
+                                "    var m = medias[i];" +
+                                "    if (!m.paused || m.currentTime > 0) {" +
+                                "      m.currentTime = Math.max(0, m.currentTime - 10);" +
+                                "      return;" +
+                                "    }" +
+                                "  }" +
+                                "})();"));
+                    }
+
+                    @Override
+                    public void onSkipToNext() {
+                        // 10秒進む
+                        getActiveBrowserSurface().ifPresent(s ->
+                            s.executeScript(
+                                "(function() {" +
+                                "  var medias = document.querySelectorAll('video, audio');" +
+                                "  for (var i = 0; i < medias.length; i++) {" +
+                                "    var m = medias[i];" +
+                                "    if (!m.paused || m.currentTime > 0) {" +
+                                "      m.currentTime = Math.min(m.duration || Infinity, m.currentTime + 10);" +
+                                "      return;" +
+                                "    }" +
+                                "  }" +
+                                "})();"));
+                    }
+                });
+                log("MediaSession initialized for chromium_browser");
+            } else {
+                log("MediaSessionManager not available");
+            }
+        } catch (Exception e) {
+            log("Failed to initialize MediaSession: " + e.getMessage());
+        }
+    }
+
+    private void updateMediaSession() {
+        if (mediaSession == null) return;
+
+        Optional<ChromiumSurface> surfaceOpt = getActiveBrowserSurface();
+        if (!surfaceOpt.isPresent()) {
+            if (mediaSession.isActive()) {
+                mediaSession.setActive(false);
+            }
+            return;
+        }
+
+        ChromiumSurface surface = surfaceOpt.get();
+        String currentUrl = surface.getCurrentUrl();
+
+        if (!currentUrl.equals(lastMediaUrl)) {
+            lastMediaUrl = currentUrl;
+            surface.resetMediaDetection();
+            surface.injectMediaDetectionScript();
+            log("Injected media detection script for: " + currentUrl);
+        }
+
+        boolean isPlaying = surface.isMediaPlaying();
+        long currentTimeMs = (long)(surface.getMediaCurrentTime() * 1000);
+
+        // 状態変更検知: 再生状態が変わったか、あるいは再生中で時間が0から進んだ場合（初期ロード完了）
+        // YouTube等は最初0秒のままPlayingになることがあるため、時間が進み始めたら再度Playingを通知して位置補正する
+        boolean timeAdvancedFromZero = isPlaying && lastMediaTime <= 0 && currentTimeMs > 0;
+        
+        if (isPlaying != lastMediaPlaying || timeAdvancedFromZero) {
+            lastMediaPlaying = isPlaying;
+
+            if (isPlaying) {
+                String title = surface.getMediaTitle();
+                String artist = surface.getMediaArtist();
+                double duration = surface.getMediaDuration();
+
+                if (title == null || title.isEmpty()) {
+                    title = surface.getTitle();
+                }
+                if (artist == null || artist.isEmpty()) {
+                    artist = extractDomain(currentUrl);
+                }
+
+                // 常に最新のメタデータを送る
+                mediaSession.setMetadata(new MediaMetadata.Builder()
+                        .setTitle(title)
+                        .setArtist(artist)
+                        .setDuration((long)(duration * 1000))
+                        .build());
+                mediaSession.setActive(true);
+                mediaSession.setPlaybackState(PlaybackState.PLAYING, currentTimeMs);
+                log("Media playing update: " + title + " (" + currentTimeMs + "ms)");
+            } else {
+                mediaSession.setPlaybackState(PlaybackState.PAUSED, currentTimeMs);
+                log("Media paused (" + currentTimeMs + "ms)");
+            }
+        } else if (isPlaying && mediaSession.isActive()) {
+            // 再生中は定期更新（UI側の補間ズレを防ぐため）
+            // ただし、頻繁すぎると負荷になるため、時間は常に更新しつつ、
+            // ログは抑制する
+            mediaSession.setPlaybackState(PlaybackState.PLAYING, currentTimeMs);
+        }
+        
+        lastMediaTime = currentTimeMs;
+    }
+    
+    private long lastMediaTime = -1;
+
+    private String extractDomain(String url) {
+        if (url == null || url.isEmpty()) return "";
+        try {
+            java.net.URI uri = new java.net.URI(url);
+            String host = uri.getHost();
+            return host != null ? host : "";
+        } catch (Exception e) {
+            return "";
         }
     }
 
@@ -120,6 +334,9 @@ public class ChromiumBrowserScreen implements Screen {
     public void draw(PGraphics g) {
         var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
         if (theme == null) return;
+
+        // Update media session state from browser
+        updateMediaSession();
 
         Optional<ChromiumSurface> activeSurfaceOpt = getActiveBrowserSurface();
 
@@ -216,6 +433,12 @@ public class ChromiumBrowserScreen implements Screen {
 
     @Override
     public void cleanup(PGraphics p) {
+        // Release MediaSession
+        if (mediaSession != null) {
+            mediaSession.release();
+            mediaSession = null;
+            log("MediaSession released");
+        }
         // All surfaces are destroyed by ChromiumService on shutdown
     }
 
@@ -225,10 +448,16 @@ public class ChromiumBrowserScreen implements Screen {
     }
 
     @Override
-    public void onForeground() {}
+    public void onForeground() {
+        // Re-inject media detection when coming back to foreground
+        lastMediaUrl = "";
+    }
 
     @Override
-    public void onBackground() {}
+    public void onBackground() {
+        // Optionally pause media when going to background
+        // For now, leave media playing in background
+    }
 
     public void mousePressed(PGraphics g, int mouseX, int mouseY) {
         if (backButton.onMousePressed(mouseX, mouseY)) return;

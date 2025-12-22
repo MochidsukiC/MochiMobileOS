@@ -86,6 +86,9 @@ public class ControlCenterManager implements GestureListener {
     
     /** ドラッグが開始されているかどうか */
     private boolean isDragScrolling = false;
+
+    /** 現在ドラッグ操作中のアイテム */
+    private IControlCenterItem dragTargetItem = null;
     
     /** 動的優先度（表示状態に応じて変更される） */
     private int dynamicPriority = 0;
@@ -344,29 +347,97 @@ public class ControlCenterManager implements GestureListener {
 
         // アイテムグリッド描画 (ハンドルの下に配置)
         int startY = handleY + 25; // 位置を調整
-        int cols = 3;
-        int itemHeight = 88;
-        int itemWidth = (panelWidth - (PADDING * 2) - (GAP * (cols - 1))) / cols;
+        int cols = 4; // 4カラムに変更して密度を上げる
+        int cellWidth = (panelWidth - (PADDING * 2) - (GAP * (cols - 1))) / cols;
+        int cellHeight = cellWidth; // 正方形グリッドにする（美しさの向上）
 
-        for (int i = 0; i < items.size(); i++) {
-            int col = i % cols;
-            int row = i / cols;
-            int itemX = PADDING + col * (itemWidth + GAP);
-            int itemY = startY + row * (itemHeight + GAP);
+        // グリッド占有状況を追跡（行数は動的に拡張）
+        boolean[][] gridOccupied = new boolean[20][cols];
 
-            if (itemY + itemHeight > panelY + panelHeight - 20) break;
+        // 右寄せアイテムを先に配置するためソート
+        java.util.List<IControlCenterItem> sortedItems = new java.util.ArrayList<>(items);
+        sortedItems.sort((item1, item2) -> {
+            int align1 = item1.getGridAlignment() == IControlCenterItem.GridAlignment.RIGHT ? 0 : 1;
+            int align2 = item2.getGridAlignment() == IControlCenterItem.GridAlignment.RIGHT ? 0 : 1;
+            return align1 - align2;
+        });
+
+        for (IControlCenterItem item : sortedItems) {
+            if (!item.isVisible()) continue;
+
+            int colSpan = Math.min(item.getColumnSpan(), cols);
+            int rowSpan = item.getRowSpan();
+            IControlCenterItem.GridAlignment alignment = item.getGridAlignment();
+
+            // 空いているセルを探す（RIGHT指定は右から探す）
+            int placeCol = -1, placeRow = -1;
+            outer:
+            for (int row = 0; row < gridOccupied.length; row++) {
+                if (alignment == IControlCenterItem.GridAlignment.RIGHT) {
+                    // 右から探す
+                    for (int col = cols - colSpan; col >= 0; col--) {
+                        boolean canPlace = true;
+                        for (int dr = 0; dr < rowSpan && canPlace; dr++) {
+                            for (int dc = 0; dc < colSpan && canPlace; dc++) {
+                                if (row + dr >= gridOccupied.length || gridOccupied[row + dr][col + dc]) {
+                                    canPlace = false;
+                                }
+                            }
+                        }
+                        if (canPlace) {
+                            placeCol = col;
+                            placeRow = row;
+                            break outer;
+                        }
+                    }
+                } else {
+                    // 左から探す
+                    for (int col = 0; col <= cols - colSpan; col++) {
+                        boolean canPlace = true;
+                        for (int dr = 0; dr < rowSpan && canPlace; dr++) {
+                            for (int dc = 0; dc < colSpan && canPlace; dc++) {
+                                if (row + dr >= gridOccupied.length || gridOccupied[row + dr][col + dc]) {
+                                    canPlace = false;
+                                }
+                            }
+                        }
+                        if (canPlace) {
+                            placeCol = col;
+                            placeRow = row;
+                            break outer;
+                        }
+                    }
+                }
+            }
+
+            if (placeCol < 0) continue; // 配置できない
+
+            // グリッドを占有
+            for (int dr = 0; dr < rowSpan; dr++) {
+                for (int dc = 0; dc < colSpan; dc++) {
+                    if (placeRow + dr < gridOccupied.length) {
+                        gridOccupied[placeRow + dr][placeCol + dc] = true;
+                    }
+                }
+            }
+
+            // 座標計算
+            int itemX = PADDING + placeCol * (cellWidth + GAP);
+            int itemY = startY + placeRow * (cellHeight + GAP);
+            int itemW = cellWidth * colSpan + GAP * (colSpan - 1);
+            int itemH = cellHeight * rowSpan + GAP * (rowSpan - 1);
+
+            if (itemY + itemH > panelY + panelHeight - 20) continue;
 
             // 背景スロット（カード）
-            int slotW = itemWidth;
-            int slotH = itemHeight;
-            jp.moyashi.phoneos.core.ui.effects.Elevation.drawRectShadow(g, itemX, itemY, slotW, slotH, 10, 1);
+            jp.moyashi.phoneos.core.ui.effects.Elevation.drawRectShadow(g, itemX, itemY, itemW, itemH, 10, 1);
             g.fill((surface>>16)&0xFF, (surface>>8)&0xFF, surface&0xFF, 245);
             g.stroke((borderCol>>16)&0xFF, (borderCol>>8)&0xFF, borderCol&0xFF);
             g.strokeWeight(1);
-            g.rect(itemX, itemY, slotW, slotH, 10);
+            g.rect(itemX, itemY, itemW, itemH, 10);
 
             // アイテム描画
-            items.get(i).draw(g, itemX, itemY, itemWidth, itemHeight);
+            item.draw(g, itemX, itemY, itemW, itemH);
         }
 
         // 設定復元
@@ -763,39 +834,172 @@ public class ControlCenterManager implements GestureListener {
         debugGesture("Processing gesture - " + event.getType() + " at (" +
                 event.getCurrentX() + ", " + event.getCurrentY() + ")");
         
-        // ジェスチャータイプに応じた処理
         switch (event.getType()) {
             case SWIPE_DOWN:
-                // 下向きスワイプでコントロールセンターを非表示
                 hide();
-                return true; // イベントを消費
+                return true;
                 
             case TAP:
-                // クリックイベント処理（項目選択など）
                 handleControlCenterClick(event.getCurrentX(), event.getCurrentY());
-                return true; // イベントを消費
+                return true;
+                
+            case DRAG_START:
+                // アイテム上でのドラッグ開始か判定
+                IControlCenterItem item = findItemAt(event.getCurrentX(), event.getCurrentY());
+                if (item != null && item.isDraggable()) {
+                    dragTargetItem = item;
+                    item.onGesture(event);
+                    debugGesture("Started dragging item: " + item.getId());
+                } else {
+                    // スクロール開始
+                    isDragScrolling = true;
+                    lastDragY = event.getCurrentY();
+                    scrollVelocity = 0;
+                    debugGesture("Started scrolling panel");
+                }
+                return true;
                 
             case DRAG_MOVE:
-                // ドラッグによるスクロール処理
-                handleControlCenterScroll(event);
-                return true; // イベントを消費
+                if (dragTargetItem != null) {
+                    dragTargetItem.onGesture(event);
+                } else if (isDragScrolling) {
+                    handleControlCenterScroll(event);
+                }
+                return true;
                 
             case DRAG_END:
-                // ドラッグ終了時にフラグをリセット
+                if (dragTargetItem != null) {
+                    dragTargetItem.onGesture(event);
+                    dragTargetItem = null;
+                    debugGesture("Ended dragging item");
+                }
                 isDragScrolling = false;
-                debugGesture("Drag ended, resetting scroll state");
-                return true; // イベントを消費
+                debugGesture("Drag ended, resetting state");
+                return true;
                 
             case SWIPE_UP:
             case SWIPE_LEFT:
             case SWIPE_RIGHT:
-                // その他のスワイプも消費（下位レイヤーに渡さない）
                 return true;
                 
             default:
-                // その他のジェスチャーも消費
                 return true;
         }
+    }
+
+    /**
+     * 指定座標にあるアイテムを特定する。
+     */
+    private IControlCenterItem findItemAt(int x, int y) {
+        // 統一座標変換システムを使用してパネル座標を計算
+        CoordinateTransform.PanelCoordinates panelCoords = null;
+        float panelHeight, panelY;
+
+        if (coordinateTransform != null) {
+            panelCoords = coordinateTransform.calculateAnimatedPanel(CONTROL_CENTER_HEIGHT_RATIO, animationProgress);
+            panelHeight = panelCoords.panelHeight;
+            panelY = panelCoords.panelY;
+        } else {
+            panelHeight = screenHeight * CONTROL_CENTER_HEIGHT_RATIO;
+            panelY = screenHeight - panelHeight * animationProgress;
+        }
+
+        int panelWidthInt = (int) screenWidth;
+        int PADDING = 16;
+        int GAP = 12;
+        int titleY = (int) (panelY + PADDING);
+        int handleY = titleY + 30;
+        int startY = handleY + 25;
+        int cols = 4; // 4カラム
+        int cellWidth = (panelWidthInt - (PADDING * 2) - (GAP * (cols - 1))) / cols;
+        int cellHeight = cellWidth; // 正方形
+
+        // グリッド占有状況を追跡
+        boolean[][] gridOccupied = new boolean[20][cols];
+
+        // 右寄せアイテムを先に配置するためソート
+        java.util.List<IControlCenterItem> sortedItems = new java.util.ArrayList<>(items);
+        sortedItems.sort((item1, item2) -> {
+            int align1 = item1.getGridAlignment() == IControlCenterItem.GridAlignment.RIGHT ? 0 : 1;
+            int align2 = item2.getGridAlignment() == IControlCenterItem.GridAlignment.RIGHT ? 0 : 1;
+            return align1 - align2;
+        });
+
+        for (IControlCenterItem item : sortedItems) {
+            if (!item.isVisible()) continue;
+
+            int colSpan = Math.min(item.getColumnSpan(), cols);
+            int rowSpan = item.getRowSpan();
+            IControlCenterItem.GridAlignment alignment = item.getGridAlignment();
+
+            int placeCol = -1, placeRow = -1;
+            outer:
+            for (int row = 0; row < gridOccupied.length; row++) {
+                if (alignment == IControlCenterItem.GridAlignment.RIGHT) {
+                    for (int col = cols - colSpan; col >= 0; col--) {
+                        boolean canPlace = true;
+                        for (int dr = 0; dr < rowSpan && canPlace; dr++) {
+                            for (int dc = 0; dc < colSpan && canPlace; dc++) {
+                                if (row + dr >= gridOccupied.length || gridOccupied[row + dr][col + dc]) {
+                                    canPlace = false;
+                                }
+                            }
+                        }
+                        if (canPlace) {
+                            placeCol = col;
+                            placeRow = row;
+                            break outer;
+                        }
+                    }
+                } else {
+                    for (int col = 0; col <= cols - colSpan; col++) {
+                        boolean canPlace = true;
+                        for (int dr = 0; dr < rowSpan && canPlace; dr++) {
+                            for (int dc = 0; dc < colSpan && canPlace; dc++) {
+                                if (row + dr >= gridOccupied.length || gridOccupied[row + dr][col + dc]) {
+                                    canPlace = false;
+                                }
+                            }
+                        }
+                        if (canPlace) {
+                            placeCol = col;
+                            placeRow = row;
+                            break outer;
+                        }
+                    }
+                }
+            }
+
+            if (placeCol < 0) continue;
+
+            for (int dr = 0; dr < rowSpan; dr++) {
+                for (int dc = 0; dc < colSpan; dc++) {
+                    if (placeRow + dr < gridOccupied.length) {
+                        gridOccupied[placeRow + dr][placeCol + dc] = true;
+                    }
+                }
+            }
+
+            int itemX = PADDING + placeCol * (cellWidth + GAP);
+            int itemY = startY + placeRow * (cellHeight + GAP);
+            int itemW = cellWidth * colSpan + GAP * (colSpan - 1);
+            int itemH = cellHeight * rowSpan + GAP * (rowSpan - 1);
+
+            // スクロールオフセットを考慮（描画時はスクロールされていないが、
+            // onGestureのイベント座標はスクリーン絶対座標。
+            // しかし、drawItemsWithClippingの実装を見ると、アイテム自体はスクロールオフセット分ずれて描画されるはずだが、
+            // handleControlCenterClickやdraw(PGraphics)の実装にはスクロール計算が含まれていない！
+            // これはバグの可能性があるが、draw(PGraphics)がスクロールに対応していないように見える。
+            // いったん既存のPGraphics描画ロジックに合わせる。）
+            
+            // FIXME: PGraphics版の描画ロジックにスクロールが含まれていないため、
+            // ここでもスクロールは考慮しない。将来的にPGraphics版にスクロールを実装する際に修正が必要。
+
+            if (x >= itemX && x <= itemX + itemW && y >= itemY && y <= itemY + itemH) {
+                return item;
+            }
+        }
+        return null;
     }
     
     /**
@@ -825,46 +1029,102 @@ public class ControlCenterManager implements GestureListener {
 
         // 【重要】PGraphics版の描画ロジックに合わせた3列グリッドレイアウトでのクリック判定
         // draw(PGraphics g)の座標計算と完全に一致させる
-        int panelWidth = (int) screenWidth;
-        int titleY = (int) (panelY + 20);
+        int panelWidthInt = (int) screenWidth;
+        int PADDING = 16;
+        int GAP = 12;
+        int titleY = (int) (panelY + PADDING);
         int handleY = titleY + 30;
         int startY = handleY + 25;
-        int cols = 3;
-        int itemWidth = (panelWidth - 40) / cols;
-        int itemHeight = 80;
-        int margin = 10;
+        int cols = 4; // 4カラム
+        int cellWidth = (panelWidthInt - (PADDING * 2) - (GAP * (cols - 1))) / cols;
+        int cellHeight = cellWidth; // 正方形
 
-        System.out.println("🔧 Grid layout: panelWidth=" + panelWidth + ", cols=" + cols + ", itemWidth=" + itemWidth + ", itemHeight=" + itemHeight + ", margin=" + margin);
+        System.out.println("🔧 Grid layout: panelWidth=" + panelWidthInt + ", cols=" + cols + ", cellWidth=" + cellWidth + ", cellHeight=" + cellHeight);
 
-        for (int i = 0; i < items.size(); i++) {
-            IControlCenterItem item = items.get(i);
+        // グリッド占有状況を追跡（描画と同じロジック）
+        boolean[][] gridOccupied = new boolean[20][cols];
 
-            // 描画と同じように非表示アイテムをスキップ
+        // 右寄せアイテムを先に配置するためソート（描画と同じ）
+        java.util.List<IControlCenterItem> sortedItems = new java.util.ArrayList<>(items);
+        sortedItems.sort((item1, item2) -> {
+            int align1 = item1.getGridAlignment() == IControlCenterItem.GridAlignment.RIGHT ? 0 : 1;
+            int align2 = item2.getGridAlignment() == IControlCenterItem.GridAlignment.RIGHT ? 0 : 1;
+            return align1 - align2;
+        });
+
+        for (IControlCenterItem item : sortedItems) {
             if (!item.isVisible()) {
-                System.out.println("ControlCenterManager: Skipping invisible item '" + item.getDisplayName() + "'");
                 continue;
             }
 
-            int col = i % cols;
-            int row = i / cols;
-            int itemX = 20 + col * itemWidth;
-            int itemY = startY + row * (itemHeight + margin);
+            int colSpan = Math.min(item.getColumnSpan(), cols);
+            int rowSpan = item.getRowSpan();
+            IControlCenterItem.GridAlignment alignment = item.getGridAlignment();
 
-            // パネル境界チェック（描画と同じ条件）
-            if (itemY + itemHeight > panelY + panelHeight - 20) {
-                System.out.println("ControlCenterManager: Item '" + item.getDisplayName() + "' beyond panel boundary, stopping");
-                break;
+            // 空いているセルを探す（RIGHT指定は右から探す）
+            int placeCol = -1, placeRow = -1;
+            outer:
+            for (int row = 0; row < gridOccupied.length; row++) {
+                if (alignment == IControlCenterItem.GridAlignment.RIGHT) {
+                    for (int col = cols - colSpan; col >= 0; col--) {
+                        boolean canPlace = true;
+                        for (int dr = 0; dr < rowSpan && canPlace; dr++) {
+                            for (int dc = 0; dc < colSpan && canPlace; dc++) {
+                                if (row + dr >= gridOccupied.length || gridOccupied[row + dr][col + dc]) {
+                                    canPlace = false;
+                                }
+                            }
+                        }
+                        if (canPlace) {
+                            placeCol = col;
+                            placeRow = row;
+                            break outer;
+                        }
+                    }
+                } else {
+                    for (int col = 0; col <= cols - colSpan; col++) {
+                        boolean canPlace = true;
+                        for (int dr = 0; dr < rowSpan && canPlace; dr++) {
+                            for (int dc = 0; dc < colSpan && canPlace; dc++) {
+                                if (row + dr >= gridOccupied.length || gridOccupied[row + dr][col + dc]) {
+                                    canPlace = false;
+                                }
+                            }
+                        }
+                        if (canPlace) {
+                            placeCol = col;
+                            placeRow = row;
+                            break outer;
+                        }
+                    }
+                }
             }
 
-            // 実際の描画サイズに合わせたクリック判定（itemWidth - marginを使用）
-            int actualItemWidth = itemWidth - margin;
+            if (placeCol < 0) continue;
 
-            System.out.println("  Item[" + i + "] '" + item.getDisplayName() + "' at grid[" + col + "," + row + "] = (" +
-                itemX + "," + itemY + ") size(" + actualItemWidth + "x" + itemHeight + ")");
+            // グリッドを占有
+            for (int dr = 0; dr < rowSpan; dr++) {
+                for (int dc = 0; dc < colSpan; dc++) {
+                    if (placeRow + dr < gridOccupied.length) {
+                        gridOccupied[placeRow + dr][placeCol + dc] = true;
+                    }
+                }
+            }
 
-            // 実際の描画領域でのクリック判定
-            if (x >= itemX && x <= itemX + actualItemWidth && y >= itemY && y <= itemY + itemHeight) {
-                System.out.println("🎯 ControlCenterManager: Grid item clicked - " + item.getDisplayName() + " at grid[" + col + "," + row + "]");
+            // 座標計算
+            int itemX = PADDING + placeCol * (cellWidth + GAP);
+            int itemY = startY + placeRow * (cellHeight + GAP);
+            int itemW = cellWidth * colSpan + GAP * (colSpan - 1);
+            int itemH = cellHeight * rowSpan + GAP * (rowSpan - 1);
+
+            // パネル境界チェック
+            if (itemY + itemH > panelY + panelHeight - 20) {
+                continue;
+            }
+
+            // クリック判定
+            if (x >= itemX && x <= itemX + itemW && y >= itemY && y <= itemY + itemH) {
+                System.out.println("ControlCenterManager: Grid item clicked - " + item.getDisplayName());
                 GestureEvent tapEvent = new GestureEvent(jp.moyashi.phoneos.core.input.GestureType.TAP, x, y, x, y, System.currentTimeMillis(), System.currentTimeMillis());
                 item.onGesture(tapEvent);
                 return;
