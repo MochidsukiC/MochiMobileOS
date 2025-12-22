@@ -2,19 +2,22 @@ package jp.moyashi.phoneos.core.controls;
 
 import jp.moyashi.phoneos.core.input.GestureEvent;
 import jp.moyashi.phoneos.core.input.GestureType;
+import jp.moyashi.phoneos.core.ui.theme.ThemeContext;
+import jp.moyashi.phoneos.core.ui.theme.ThemeEngine;
 import processing.core.PApplet;
+import processing.core.PConstants;
 import processing.core.PGraphics;
 import processing.core.PImage;
 
 import java.util.function.Consumer;
 
 /**
- * ON/OFF状態を持つ基本的なトグルスイッチコントロールセンターアイテム。
- * アイコン、ラベル、現在の状態、状態変更時のアクションを保持し、
- * ユーザーのタップ操作で状態を切り替える機能を提供する。
+ * ON/OFF状態を持つモダンなトグルボタン。
+ * iOSのコントロールセンターのように、ON状態で背景色が変化し、アイコンのみ（またはアイコン＋ラベル）を表示する。
+ * 4カラム・スクエアグリッドに最適化されたデザイン。
  * 
  * @author YourName
- * @version 1.1
+ * @version 2.0 (Modern Square Design)
  * @since 1.0
  */
 public class ToggleItem implements IControlCenterItem {
@@ -27,9 +30,11 @@ public class ToggleItem implements IControlCenterItem {
     private final Consumer<Boolean> onStateChanged;
     private boolean enabled;
     private boolean visible;
-    private float animationProgress;
+    
+    // アニメーション用
+    private float animationProgress; // 0.0 (OFF) -> 1.0 (ON)
     private float targetAnimationProgress;
-    private static final float ANIMATION_SPEED = 0.15f;
+    private static final float ANIMATION_SPEED = 0.2f; // 少し早めに
 
     public ToggleItem(String id, String displayName, String description, 
                      PImage icon, boolean initialState, Consumer<Boolean> onStateChanged) {
@@ -43,7 +48,6 @@ public class ToggleItem implements IControlCenterItem {
         this.visible = true;
         this.targetAnimationProgress = initialState ? 1.0f : 0.0f;
         this.animationProgress = this.targetAnimationProgress;
-        System.out.println("ToggleItem: Created toggle '" + displayName + "' (ID: " + id + ") with initial state: " + initialState);
     }
 
     public ToggleItem(String id, String displayName, String description, 
@@ -54,216 +58,138 @@ public class ToggleItem implements IControlCenterItem {
     @Override
     public void draw(PGraphics g, float x, float y, float w, float h) {
         updateAnimation();
-        drawBackground(g, x, y, w, h);
-        drawIcon(g, x, y, w, h);
-        drawLabel(g, x, y, w, h);
-        drawToggleSwitch(g, x, y, w, h);
+        drawModernToggle(g, x, y, w, h);
     }
 
     @Override
     public void draw(PApplet p, float x, float y, float w, float h) {
-        updateAnimation();
-        p.pushMatrix();
-        p.pushStyle();
-        try {
-            drawBackground(p, x, y, w, h);
-            drawIcon(p, x, y, w, h);
-            drawLabel(p, x, y, w, h);
-            drawToggleSwitch(p, x, y, w, h);
-        } finally {
-            p.popStyle();
-            p.popMatrix();
-        }
+        draw(p.g, x, y, w, h);
     }
 
-    private void drawBackground(PGraphics g, float x, float y, float w, float h) {
-        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
-        int surface = theme != null ? theme.colorSurface() : 0xFFFFFFFF;
-        int border  = theme != null ? theme.colorBorder()  : 0xFFDDDDDD;
-        int acc     = theme != null ? theme.colorPrimary() : 0xFF4A90E2;
-        int radius  = theme != null ? theme.radiusMd() : 12;
+    /**
+     * モダンなトグルボタンを描画する。
+     */
+    private void drawModernToggle(PGraphics g, float x, float y, float w, float h) {
+        ThemeEngine theme = ThemeContext.getTheme();
+        
+        // カラーパレット
+        int colorOff = 0xFF4A4A4A; // 暗めのグレー (OFF時背景)
+        int colorOn = theme != null ? theme.colorPrimary() : 0xFF007AFF; // アクセントカラー (ON時背景)
+        int colorIconOff = 0xFFFFFFFF; // 白 (OFF時アイコン)
+        int colorIconOn = 0xFFFFFFFF;  // 白 (ON時アイコン)
+        
+        if (theme != null && theme.getMode() == ThemeEngine.Mode.LIGHT) {
+            colorOff = 0xFFE0E0E0; // ライトモード時は明るめのグレー
+            colorIconOff = 0xFF333333; // ライトモードOFF時は濃いグレーアイコン
+        }
 
-        // base card: スロット（ControlCenter側）の上に重なるため、少し濃いめ＋半透明で差層を作る
-        int sr = (surface>>16)&0xFF, sg = (surface>>8)&0xFF, sb = surface&0xFF;
-        // 8%ほど暗く（クランプ）
-        sr = Math.max(0, (int)(sr * 0.92f));
-        sg = Math.max(0, (int)(sg * 0.92f));
-        sb = Math.max(0, (int)(sb * 0.92f));
+        // アニメーションに基づいた色補間
+        // 背景色
+        int rOff = (colorOff >> 16) & 0xFF;
+        int gOff = (colorOff >> 8) & 0xFF;
+        int bOff = colorOff & 0xFF;
+        
+        int rOn = (colorOn >> 16) & 0xFF;
+        int gOn = (colorOn >> 8) & 0xFF;
+        int bOn = colorOn & 0xFF;
+        
+        int rCurrent = (int) lerp(rOff, rOn, animationProgress);
+        int gCurrent = (int) lerp(gOff, gOn, animationProgress);
+        int bCurrent = (int) lerp(bOff, bOn, animationProgress);
+        
+        // アイコン色
+        int rIconOff = (colorIconOff >> 16) & 0xFF;
+        int gIconOff = (colorIconOff >> 8) & 0xFF;
+        int bIconOff = colorIconOff & 0xFF;
+        
+        int rIconOn = (colorIconOn >> 16) & 0xFF;
+        int gIconOn = (colorIconOn >> 8) & 0xFF;
+        int bIconOn = colorIconOn & 0xFF;
+        
+        int rIcon = (int) lerp(rIconOff, rIconOn, animationProgress);
+        int gIcon = (int) lerp(gIconOff, gIconOn, animationProgress);
+        int bIcon = (int) lerp(bIconOff, bIconOn, animationProgress);
+
+        g.pushStyle();
+        
+        // 1. 背景 (円形または角丸四角)
+        // 4カラムグリッドなので、正方形に近い。完全な円にするのが最も美しい。
+        float radius = Math.min(w, h) / 2.0f;
+        // しかし、ControlCenterManager側ですでに角丸矩形の背景を描画している可能性がある。
+        // ControlCenterManager.java を確認すると、
+        // g.rect(itemX, itemY, itemW, itemH, 10); と背景を描画している。
+        // ToggleItemはそれに重ねて描画するので、背景色はControlCenterManagerの背景を上書きする形になる。
+        // アイテム自体が「ボタン」として見えるように、ここで独自の背景を描く。
+        
         g.noStroke();
-        g.fill(sr, sg, sb, enabled ? 220 : 180);
-        g.rect(x, y, w, h, radius);
+        g.fill(rCurrent, gCurrent, bCurrent);
+        // セルいっぱいではなく、少しマージンを取って円形にするのがモダン。
+        // ただしタップ領域はセル全体なので、見た目だけ調整。
+        // ControlCenterManagerの背景描画と競合しないよう、ControlCenterManager側で
+        // 「アイテムが背景を描画する場合は、マネージャー側の背景をスキップする」仕組みがないため、
+        // 重ね書きになる。
+        
+        // ここでは「角丸四角」で塗りつぶす（マネージャーと一致させる）。
+        // ただし、マネージャーのカード背景は「枠」のような役割。
+        // ToggleItemは「中身」として振る舞うべきか、それとも「ボタンそのもの」か？
+        // iOS風にするなら、ToggleItemが「背景色を持つボタン」そのものになるべき。
+        
+        g.rect(x, y, w, h, 12); // 半径はThemeに合わせて調整すべきだが一旦固定
 
-        // border
-        g.stroke((border>>16)&0xFF, (border>>8)&0xFF, border&0xFF);
-        g.strokeWeight(1);
-        g.noFill();
-        g.rect(x, y, w, h, radius);
-
-        // ON highlight overlay (low alpha accent)
-        if (enabled && isOn) {
-            int ar = (acc>>16)&0xFF, ag = (acc>>8)&0xFF, ab = acc&0xFF;
-            int a = Math.min(120, 28 + (int)(52 * animationProgress));
-            try {
-                if (theme != null && theme.getTone() == jp.moyashi.phoneos.core.ui.theme.ThemeEngine.Tone.LIGHT &&
-                    theme.getFamily() == jp.moyashi.phoneos.core.ui.theme.ThemeEngine.Mode.GREEN) {
-                    a = Math.min(96, 20 + (int)(40 * animationProgress)); // Greenライト時は控えめ
-                }
-            } catch (Throwable ignored) {}
-            g.noStroke();
-            g.fill(ar, ag, ab, a);
-            g.rect(x, y, w, h, radius);
-        }
-    }
-
-    private void drawBackground(PApplet p, float x, float y, float w, float h) {
-        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
-        int surface = theme != null ? theme.colorSurface() : 0xFFFFFFFF;
-        int border  = theme != null ? theme.colorBorder()  : 0xFFDDDDDD;
-        int acc     = theme != null ? theme.colorPrimary() : 0xFF4A90E2;
-        int radius  = theme != null ? theme.radiusMd() : 12;
-
-        // base card（少し濃いめ＋半透明）
-        int sr = (surface>>16)&0xFF, sg = (surface>>8)&0xFF, sb = surface&0xFF;
-        sr = Math.max(0, (int)(sr * 0.92f));
-        sg = Math.max(0, (int)(sg * 0.92f));
-        sb = Math.max(0, (int)(sb * 0.92f));
-        p.noStroke();
-        p.fill(sr, sg, sb, enabled ? 220 : 180);
-        p.rect(x, y, w, h, radius);
-
-        // border
-        p.stroke((border>>16)&0xFF, (border>>8)&0xFF, border&0xFF);
-        p.strokeWeight(1);
-        p.noFill();
-        p.rect(x, y, w, h, radius);
-
-        // ON highlight overlay
-        if (enabled && isOn) {
-            int ar = (acc>>16)&0xFF, ag = (acc>>8)&0xFF, ab = acc&0xFF;
-            int a = Math.min(120, 28 + (int)(52 * animationProgress));
-            try {
-                if (theme != null && theme.getTone() == jp.moyashi.phoneos.core.ui.theme.ThemeEngine.Tone.LIGHT &&
-                    theme.getFamily() == jp.moyashi.phoneos.core.ui.theme.ThemeEngine.Mode.GREEN) {
-                    a = Math.min(96, 20 + (int)(40 * animationProgress));
-                }
-            } catch (Throwable ignored) {}
-            p.noStroke();
-            p.fill(ar, ag, ab, a);
-            p.rect(x, y, w, h, radius);
-        }
-    }
-
-    private void drawIcon(PGraphics g, float x, float y, float w, float h) {
-        float iconSize = h * 0.3f;
+        // 2. アイコン
+        float iconSize = Math.min(w, h) * 0.4f;
         float iconX = x + (w - iconSize) / 2;
-        float iconY = y + h * 0.1f;
+        float iconY = y + (h - iconSize) / 2;
+        
+        // ラベルがある場合は少し上にずらす
+        boolean showLabel = true;
+        if (showLabel) {
+            iconY -= h * 0.1f;
+        }
 
         if (icon != null) {
+            g.tint(rIcon, gIcon, bIcon);
             g.image(icon, iconX, iconY, iconSize, iconSize);
+            g.noTint();
         } else {
-            var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
-            int acc = theme != null ? theme.colorPrimary() : 0xFF4A90E2;
-            int onP = theme != null ? theme.colorOnPrimary() : 0xFFFFFFFF;
-            g.noStroke();
-            g.fill((acc>>16)&0xFF, (acc>>8)&0xFF, acc&0xFF, enabled ? 220 : 140);
-            g.rect(iconX, iconY, iconSize, iconSize, 6);
-            g.fill((onP>>16)&0xFF, (onP>>8)&0xFF, onP&0xFF);
-            g.textAlign(PApplet.CENTER, PApplet.CENTER);
-            g.textSize(iconSize * 0.45f);
-            g.text(id.substring(0, 1).toUpperCase(), iconX + iconSize / 2, iconY + iconSize / 2);
+            // アイコン画像がない場合のフォールバック（文字アイコン）
+            g.fill(rIcon, gIcon, bIcon);
+            g.textAlign(PConstants.CENTER, PConstants.CENTER);
+            g.textSize(iconSize * 0.8f);
+            
+            // IDの頭文字などを表示するが、もっと適切な記号があればそれを使う
+            // 簡易的にIDの頭文字を表示
+            String symbol = displayName.substring(0, 1);
+            // 特定のIDには絵文字を割り当ててみる
+            if (id.contains("wifi")) symbol = "📶";
+            else if (id.contains("blue")) symbol = "Bluetooth"; // フォント次第だが
+            else if (id.contains("data")) symbol = "📡";
+            else if (id.contains("air")) symbol = "✈";
+            else if (id.contains("silent")) symbol = "🔔";
+            else if (id.contains("low")) symbol = "🔋";
+            else if (id.contains("rot")) symbol = "🔄";
+            else if (id.contains("loc")) symbol = "📍";
+            else if (id.contains("dark")) symbol = "🌙";
+            
+            // 絵文字が使えないフォント環境を考慮し、フォールバックはdisplayNameの頭文字
+            // ここではシンプルに描画
+            g.text(symbol, iconX + iconSize/2, iconY + iconSize/2);
         }
-    }
 
-    private void drawIcon(PApplet p, float x, float y, float w, float h) {
-        float iconSize = h * 0.3f;
-        float iconX = x + (w - iconSize) / 2;
-        float iconY = y + h * 0.1f;
-
-        if (icon != null) {
-            p.tint(enabled ? 255 : 120);
-            p.image(icon, iconX, iconY, iconSize, iconSize);
-            p.noTint();
-        } else {
-            var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
-            int acc = theme != null ? theme.colorPrimary() : 0xFF4A90E2;
-            int onP = theme != null ? theme.colorOnPrimary() : 0xFFFFFFFF;
-            p.noStroke();
-            p.fill((acc>>16)&0xFF, (acc>>8)&0xFF, acc&0xFF, enabled ? 220 : 140);
-            p.rect(iconX, iconY, iconSize, iconSize, 6);
-            p.fill((onP>>16)&0xFF, (onP>>8)&0xFF, onP&0xFF);
-            p.textAlign(PApplet.CENTER, PApplet.CENTER);
-            p.textSize(iconSize * 0.45f);
-            p.text(id.substring(0, 1).toUpperCase(), iconX + iconSize / 2, iconY + iconSize / 2);
+        // 3. ラベル (極小サイズ)
+        if (showLabel) {
+            g.fill(rIcon, gIcon, bIcon); // アイコンと同じ色
+            g.textAlign(PConstants.CENTER, PConstants.TOP);
+            g.textSize(10); // 小さく
+            // はみ出さないようにクリップするか、短くする
+            g.text(displayName, x + w/2, iconY + iconSize + 2);
         }
+
+        g.popStyle();
     }
 
-    private void drawLabel(PGraphics g, float x, float y, float w, float h) {
-        float labelY = y + h * 0.5f;
-        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
-        int onSurface = theme != null ? theme.colorOnSurface() : 0xFF111111;
-        int textCol = enabled ? onSurface : 0xFF999999;
-        g.fill((textCol>>16)&0xFF, (textCol>>8)&0xFF, textCol&0xFF);
-        g.textAlign(PApplet.CENTER, PApplet.CENTER);
-        g.textSize(12);
-        g.text(displayName, x + w / 2, labelY);
-    }
-
-    private void drawLabel(PApplet p, float x, float y, float w, float h) {
-        float labelY = y + h * 0.5f;
-        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
-        int onSurface = theme != null ? theme.colorOnSurface() : 0xFF111111;
-        int textCol = enabled ? onSurface : 0xFF999999;
-        p.fill((textCol>>16)&0xFF, (textCol>>8)&0xFF, textCol&0xFF);
-        p.textAlign(PApplet.CENTER, PApplet.CENTER);
-        p.textSize(12);
-        p.text(displayName, x + w / 2, labelY);
-    }
-
-    private void drawToggleSwitch(PGraphics g, float x, float y, float w, float h) {
-        float switchWidth = w * 0.5f;
-        float switchHeight = h * 0.2f;
-        float switchX = x + (w - switchWidth) / 2;
-        float switchY = y + h - switchHeight - (h * 0.1f);
-
-        var theme2 = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
-        int acc2 = theme2 != null ? theme2.colorPrimary() : 0xFF4A90E2;
-        int off = 0xFFB0B0B0;
-        int r = (isOn ? (acc2>>16)&0xFF : (off>>16)&0xFF);
-        int gC = (isOn ? (acc2>>8)&0xFF : (off>>8)&0xFF);
-        int b = (isOn ? acc2&0xFF : off&0xFF);
-        g.fill(r, gC, b, enabled ? 220 : 140);
-        g.rect(switchX, switchY, switchWidth, switchHeight, switchHeight / 2);
-
-        float knobSize = switchHeight * 0.8f;
-        float knobX = switchX + (switchWidth - knobSize - 4) * animationProgress + 2;
-        float knobY = switchY + (switchHeight - knobSize) / 2;
-
-        g.fill(255, 255, 255, enabled ? 255 : 180);
-        g.ellipse(knobX + knobSize / 2, knobY + knobSize / 2, knobSize, knobSize);
-    }
-
-    private void drawToggleSwitch(PApplet p, float x, float y, float w, float h) {
-        float switchWidth = w * 0.5f;
-        float switchHeight = h * 0.2f;
-        float switchX = x + (w - switchWidth) / 2;
-        float switchY = y + h - switchHeight - (h * 0.1f);
-
-        var theme3 = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
-        int acc = theme3 != null ? theme3.colorPrimary() : 0xFF4A90E2;
-        int off2 = 0xFFB0B0B0;
-        int r2 = (isOn ? (acc>>16)&0xFF : (off2>>16)&0xFF);
-        int g2 = (isOn ? (acc>>8)&0xFF : (off2>>8)&0xFF);
-        int b2 = (isOn ? acc&0xFF : off2&0xFF);
-        p.fill(r2, g2, b2, enabled ? 220 : 140);
-        p.noStroke();
-        p.rect(switchX, switchY, switchWidth, switchHeight, switchHeight / 2);
-
-        float knobSize = switchHeight - 4;
-        float knobX = switchX + 2 + (switchWidth - knobSize - 4) * animationProgress;
-        float knobY = switchY + 2;
-
-        p.fill(255, 255, 255, enabled ? 255 : 200);
-        p.ellipse(knobX + knobSize / 2, knobY + knobSize / 2, knobSize, knobSize);
+    private float lerp(float start, float stop, float amt) {
+        return start + (stop - start) * amt;
     }
 
     private void updateAnimation() {
@@ -281,7 +207,7 @@ public class ToggleItem implements IControlCenterItem {
         }
         if (event.getType() == GestureType.TAP) {
             toggle();
-            System.out.println("ToggleItem: '" + displayName + "' toggled to " + isOn);
+            // System.out.println("ToggleItem: '" + displayName + "' toggled to " + isOn);
             return true;
         }
         return false;
