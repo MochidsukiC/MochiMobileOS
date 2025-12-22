@@ -2858,24 +2858,66 @@ public class Kernel implements GestureListener {
         jp.moyashi.phoneos.core.controls.SliderItem sliderItem;
         jp.moyashi.phoneos.core.controls.IControlCenterItem.GridAlignment ALIGN_RIGHT = 
             jp.moyashi.phoneos.core.controls.IControlCenterItem.GridAlignment.RIGHT;
+        jp.moyashi.phoneos.core.controls.IControlCenterItem.GridAlignment ALIGN_LEFT = 
+            jp.moyashi.phoneos.core.controls.IControlCenterItem.GridAlignment.LEFT;
         
-        // --- 1. 右カラム: スライダー (親指操作エリア) ---
+        // --- 1. 左カラム: 縦型スライダー ---
         
-        // 音量スライダー (右側上段)
+        // 音量スライダー (左端)
+        // 設定から初期値を読み込む (0-100 -> 0.0-1.0)
+        int currentVolume = settingsManager != null ? settingsManager.getIntSetting("audio.master_volume", 75) : 75;
+        float initVolume = currentVolume / 100.0f;
+        
         sliderItem = new jp.moyashi.phoneos.core.controls.SliderItem(
-            "volume", "音量", "🔊", 0.5f, ALIGN_RIGHT,
-            (val) -> System.out.println("Volume changed: " + val)
+            "volume", "音量", "🔊", initVolume, ALIGN_LEFT,
+            (val) -> {
+                int volPercent = (int)(val * 100);
+                System.out.println("Volume changed: " + volPercent + "%");
+                
+                // 設定を保存
+                if (settingsManager != null) {
+                    settingsManager.setSetting("audio.master_volume", volPercent);
+                    settingsManager.saveSettings();
+                }
+                
+                // 実際のスピーカー音量を変更 (簡易マッピング)
+                if (speakerSocket != null) {
+                    jp.moyashi.phoneos.core.service.hardware.SpeakerSocket.VolumeLevel level;
+                    if (val <= 0.01f) level = jp.moyashi.phoneos.core.service.hardware.SpeakerSocket.VolumeLevel.OFF;
+                    else if (val <= 0.33f) level = jp.moyashi.phoneos.core.service.hardware.SpeakerSocket.VolumeLevel.LOW;
+                    else if (val <= 0.66f) level = jp.moyashi.phoneos.core.service.hardware.SpeakerSocket.VolumeLevel.MEDIUM;
+                    else level = jp.moyashi.phoneos.core.service.hardware.SpeakerSocket.VolumeLevel.HIGH;
+                    
+                    if (speakerSocket.getVolumeLevel() != level) {
+                        speakerSocket.setVolumeLevel(level);
+                    }
+                }
+            }
         );
         controlCenterManager.addItem(sliderItem);
         
-        // 輝度スライダー (右側下段)
+        // 輝度スライダー (左から2番目)
+        // 設定から初期値を読み込む (0-100 -> 0.0-1.0)
+        int currentBrightness = settingsManager != null ? settingsManager.getIntSetting("display.brightness", 80) : 80;
+        float initBrightness = currentBrightness / 100.0f;
+        
         sliderItem = new jp.moyashi.phoneos.core.controls.SliderItem(
-            "brightness", "輝度", "☀", 0.8f, ALIGN_RIGHT,
-            (val) -> System.out.println("Brightness changed: " + val)
+            "brightness", "輝度", "☀", initBrightness, ALIGN_LEFT,
+            (val) -> {
+                int brPercent = (int)(val * 100);
+                System.out.println("Brightness changed: " + brPercent + "%");
+                
+                // 設定を保存
+                if (settingsManager != null) {
+                    settingsManager.setSetting("display.brightness", brPercent);
+                    settingsManager.saveSettings();
+                }
+                // 実際の輝度変更APIがあればここで呼ぶ
+            }
         );
         controlCenterManager.addItem(sliderItem);
         
-        // --- 2. メインエリア: メディア & トグル ---
+        // --- 2. 右カラム: メディアプレーヤー ---
 
         // Now Playing（メディア再生コントロール） - 左上 2x2
         jp.moyashi.phoneos.core.media.MediaSessionManager mediaSessionManager =
