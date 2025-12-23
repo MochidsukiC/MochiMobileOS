@@ -1,7 +1,7 @@
 # MochiMobileOS ネットワークシステム仕様書
 
-**バージョン:** 2.0
-**最終更新:** 2024年
+**バージョン:** 2.1
+**最終更新:** 2025年12月17日
 **対象:** アプリケーション開発者、外部MOD開発者
 
 ---
@@ -12,9 +12,10 @@
 2. [IPvMアドレス体系](#2-ipvmアドレス体系)
 3. [NetworkAdapter API](#3-networkadapter-api)
 4. [VirtualSocketインターフェース](#4-virtualsocketインターフェース)
-5. [ゲーム内仮想インターネット回線](#5-ゲーム内仮想インターネット回線)
-6. [アプリ開発者向けガイド](#6-アプリ開発者向けガイド)
-7. [外部MOD連携](#7-外部mod連携)
+5. [サーバーサイドアーキテクチャ](#5-サーバーサイドアーキテクチャ)
+6. [ゲーム内仮想インターネット回線](#6-ゲーム内仮想インターネット回線)
+7. [アプリ開発者向けガイド](#7-アプリ開発者向けガイド)
+8. [外部MOD連携](#8-外部mod連携)
 
 ---
 
@@ -52,7 +53,15 @@ MochiMobileOSは、2種類のネットワーク通信をサポートします：
 │   │                                                     │   │
 │   │   Forge環境: ForgeVirtualSocket                     │   │
 │   │   Standalone環境: StandaloneVirtualSocket           │   │
-│   │   将来: GTAVirtualSocket, RustVirtualSocket等       │   │
+│   └─────────────┬───────────────────────────────────────┘   │
+│                 │ (パケット通信)                             │
+│                 ▼                                           │
+│   ┌─────────────────────────────────────────────────────┐   │
+│   │               MochiMobileOS Server                  │   │
+│   │               (serverモジュール)                     │   │
+│   │                                                     │   │
+│   │   SystemServerRegistry: サーバーの登録・検索          │   │
+│   │   VirtualHttpServer: リクエスト処理                  │   │
 │   └─────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -65,10 +74,10 @@ MochiMobileOSは、2種類のネットワーク通信をサポートします：
 - 実行モジュール（Forge/Standalone等）が実装を提供
 - 新モジュール追加時にCore変更不要
 
-**圏外状態の管理**
+**クライアント・サーバー分離**
 
-- `VirtualSocket`が未設定の場合は「圏外」状態
-- SIMカードのない携帯電話と同様の動作
+- クライアント側（Core/Forge）は通信と表示に専念
+- サーバー側（Serverモジュール）がリクエスト処理とレスポンス生成を担当
 
 ---
 
@@ -104,27 +113,20 @@ xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 例: 2-mod-myservice
 ```
 
-### 2.3 IPvMアドレスの例
+### 2.3 URL形式と表示スキーム
 
-| アドレス | 説明 |
-|---------|------|
-| `0-550e8400-e29b-41d4-a716-446655440000` | プレイヤーUUIDへの直接通信 |
-| `3-sys-google` | システム提供のGoogle検索サービス |
-| `3-sys-appstore` | システム提供のアプリストア |
-| `2-mymod-chat` | 外部MOD「mymod」のチャットサーバー |
-
-### 2.4 URL形式
-
-IPvMアドレスを使用したURLは以下の形式です：
+IPvMアドレスを使用したURLは以下の形式です。
+ブラウザのアドレスバーには、ユーザーが認識しやすいよう `httpm://` スキームが表示されます。
 
 ```
-http://[IPvMアドレス]/[パス]
+httpm://[IPvMアドレス]/[パス]
 ```
 
 例：
-- `http://3-sys-google/search?q=minecraft`
-- `http://0-550e8400-e29b-41d4-a716-446655440000/profile`
-- `http://2-mymod-chat/messages`
+- `httpm://3-sys-google/search?q=minecraft`
+- `httpm://2-mymod-chat/messages`
+
+※ 内部的には `http://` または `data:` URLとして処理される場合がありますが、ユーザーインターフェース上は `httpm://` で統一されます。
 
 ---
 
@@ -254,8 +256,7 @@ public enum NetworkStatus {
 ### 4.1 概要
 
 `VirtualSocket`は、外部モジュールがMochiMobileOSの仮想ネットワークに参加するためのインターフェースです。
-
-**このインターフェースを実装することで、任意の通信基盤（Minecraft Forge、Rust、GTA V等）をMochiMobileOSの仮想ネットワークに接続できます。**
+Coreモジュールは具体的な通信手段を持たず、このインターフェースを通じてパケットを送受信します。
 
 ### 4.2 インターフェース定義
 
@@ -341,133 +342,90 @@ public class VirtualHttpResponse {
 }
 ```
 
-### 4.4 Kernelへの登録方法
+---
+
+## 5. サーバーサイドアーキテクチャ
+
+バージョン2.1より、IPvMリクエストを処理するための専用サーバーモジュール（`:server`）が導入されました。
+
+### 5.1 MMOSServer
+
+サーバーサイドのエントリーポイントです。
 
 ```java
-// 1. VirtualSocketを実装
-public class MyVirtualSocket implements VirtualSocket {
-    // 実装...
+package jp.moyashi.phoneos.server;
+
+public class MMOSServer {
+    // 初期化（サーバー起動時）
+    public static void initialize();
+    
+    // パケット処理（クライアントからのリクエスト受信時）
+    public static void handleHttpRequest(VirtualPacket packet, ResponseCallback callback);
+    
+    // システムサーバー登録
+    public static void registerSystemServer(VirtualHttpServer server);
 }
-
-// 2. Kernel初期化後にバインド
-Kernel kernel = new Kernel();
-kernel.setup();
-
-// 3. VirtualAdapterにソケットを設定
-VirtualSocket socket = new MyVirtualSocket();
-kernel.getNetworkAdapter().getVirtualAdapter().setSocket(socket);
 ```
 
-### 4.5 サンプル実装（Standalone環境）
+### 5.2 SystemServerRegistry
+
+稼働中の仮想サーバーを管理するレジストリです。
+
+- **Type 3 (SYSTEM)**: システム組み込みサーバー（例: `3-sys-test`）
+- **Type 2 (SERVER)**: 外部MOD/アドオン提供サーバー
+
+### 5.3 仮想サーバーの実装
+
+`VirtualHttpServer` インターフェースを実装することで、独自のサーバーロジックを定義できます。
 
 ```java
-public class StandaloneVirtualSocket implements VirtualSocket {
-
-    private final Kernel kernel;
-    private Consumer<VirtualPacket> packetListener;
-    private boolean connected = true;
-
-    public StandaloneVirtualSocket(Kernel kernel) {
-        this.kernel = kernel;
+public class MyServer implements VirtualHttpServer {
+    @Override
+    public String getServerId() {
+        return "sys-myserver";
     }
 
     @Override
-    public boolean isAvailable() {
-        return connected;
-    }
-
-    @Override
-    public NetworkStatus getStatus() {
-        return connected ? NetworkStatus.CONNECTED : NetworkStatus.OFFLINE;
-    }
-
-    @Override
-    public CompletableFuture<Boolean> sendPacket(VirtualPacket packet) {
-        return CompletableFuture.supplyAsync(() -> {
-            // VirtualRouterに直接ルーティング
-            VirtualRouter router = kernel.getVirtualRouter();
-            if (router != null) {
-                router.receivePacket(packet);
-                return true;
-            }
-            return false;
-        });
-    }
-
-    @Override
-    public CompletableFuture<VirtualHttpResponse> httpRequest(
-            IPvMAddress destination, String path, String method)
-            throws NetworkException {
-
-        if (!isAvailable()) {
-            throw NetworkException.noService();
+    public VirtualHttpResponse handleRequest(VirtualHttpRequest request) {
+        if (request.getPath().equals("/hello")) {
+            return VirtualHttpResponse.ok("Hello IPvM!");
         }
-
-        // HTTPリクエストパケットを作成
-        VirtualPacket packet = VirtualPacket.builder()
-                .source(IPvMAddress.forSystem("standalone-browser"))
-                .destination(destination)
-                .type(VirtualPacket.PacketType.GENERIC_REQUEST)
-                .put("path", path)
-                .put("method", method)
-                .build();
-
-        // 非同期でレスポンスを待機
-        CompletableFuture<VirtualHttpResponse> future = new CompletableFuture<>();
-
-        // パケット送信とレスポンス待機の実装...
-
-        return future;
-    }
-
-    @Override
-    public void setPacketListener(Consumer<VirtualPacket> listener) {
-        this.packetListener = listener;
-    }
-
-    @Override
-    public void close() {
-        connected = false;
-    }
-
-    @Override
-    public int getSignalStrength() {
-        return connected ? 5 : 0;
-    }
-
-    @Override
-    public String getCarrierName() {
-        return "Standalone Network";
+        return VirtualHttpResponse.notFound("Page not found");
     }
 }
 ```
 
 ---
 
-## 5. ゲーム内仮想インターネット回線
+## 6. ゲーム内仮想インターネット回線
 
-### 5.1 Minecraft Forge環境
+### 6.1 Minecraft Forge環境
 
 Forge環境では、Minecraft ForgeのSimpleChannelを使用してパケット通信を行います。
 
 #### 通信フロー
 
 ```
-┌────────────────┐                    ┌────────────────┐
-│   クライアント   │                    │    サーバー     │
-│  (MochiMobileOS) │                    │  (VirtualRouter) │
-└───────┬────────┘                    └────────┬───────┘
-        │                                      │
-        │  1. HTTPリクエストパケット送信        │
-        │ ─────────────────────────────────→   │
-        │                                      │
-        │                                      │ 2. VirtualRouterで
-        │                                      │    パケット処理
-        │                                      │
-        │  3. HTTPレスポンスパケット返信        │
-        │ ←─────────────────────────────────   │
-        │                                      │
-        ▼                                      ▼
+[クライアント (Phone)]
+   ↓ HTTPリクエスト (Chrome/App)
+   ↓
+VirtualSocket (ForgeVirtualSocket)
+   ↓ パケット送信 (NetworkHandler)
+   ↓
+[サーバー (Dedicated/Integrated)]
+   ↓ パケット受信
+   ↓
+MMOSServer.handleHttpRequest()
+   ↓ ルーティング
+VirtualHttpServer (例: sys-google)
+   ↓ レスポンス生成
+   ↓
+[クライアント (Phone)]
+   ↓ パケット受信
+   ↓
+VirtualSocket (コールバック完了)
+   ↓
+ブラウザに表示
 ```
 
 #### 電波強度の計算
@@ -493,19 +451,18 @@ Minecraft環境では、プレイヤーのY座標に基づいて電波強度が�
 | the_end | End Network |
 | その他 | [ディメンション名] Network |
 
-### 5.2 Standalone環境
+### 6.2 Standalone環境
 
-Standalone環境（デスクトップアプリ）では、すべての通信がローカルで処理されます。
+Standalone環境（デスクトップアプリ）では、サーバーモジュールが同じプロセス内で動作し、すべての通信がローカルで処理されます。
 
 - 電波強度: 常に5（最強）
 - キャリア名: "Standalone Network"
-- パケット: VirtualRouterに直接ルーティング
 
 ---
 
-## 6. アプリ開発者向けガイド
+## 7. アプリ開発者向けガイド
 
-### 6.1 基本的な使用方法
+### 7.1 基本的な使用方法
 
 ```java
 public class MyApp {
@@ -522,7 +479,7 @@ public class MyApp {
 
         // IPvMアドレスへリクエスト
         try {
-            network.request("http://3-sys-myservice/api/data", "GET")
+            network.request("httpm://3-sys-myservice/api/data", "GET")
                 .thenAccept(response -> {
                     if (response.isSuccess()) {
                         processData(response.getBody());
@@ -535,17 +492,13 @@ public class MyApp {
                     return null;
                 });
         } catch (NetworkException e) {
-            if (e.getErrorType() == NetworkException.ErrorType.NO_SERVICE) {
-                showError("圏外です");
-            } else {
-                showError("ネットワークエラー");
-            }
+            // エラー処理
         }
     }
 }
 ```
 
-### 6.2 ネットワーク状態の監視
+### 7.2 ネットワーク状態の監視
 
 ```java
 public class StatusBarComponent {
@@ -568,96 +521,39 @@ public class StatusBarComponent {
 }
 ```
 
-### 6.3 エラーハンドリング
+---
+
+## 8. 外部MOD連携
+
+### 8.1 概要
+
+外部MODは以下の方法でMochiMobileOSネットワークに参加できます：
+
+1. **VirtualHttpServerの実装** - サーバーサイドでコンテンツを提供
+2. **VirtualSocketの実装** - 新しい通信基盤（GTA V, Rust連携等）を追加
+
+### 8.2 仮想サーバーの実装（推奨）
+
+`jp.moyashi.phoneos.server` モジュールを利用して、サーバーサイドでコンテンツを提供します。
 
 ```java
-try {
-    networkAdapter.request(url, "GET").get();
-} catch (NetworkException e) {
-    switch (e.getErrorType()) {
-        case NO_SERVICE:
-            // 圏外
-            showNoServicePage();
-            break;
-        case TIMEOUT:
-            // タイムアウト
-            showRetryDialog();
-            break;
-        case UNKNOWN_HOST:
-            // 不明なホスト
-            showNotFoundPage();
-            break;
-        case PROTOCOL_ERROR:
-            // プロトコルエラー
-            showErrorPage(e.getMessage());
-            break;
-        default:
-            showGenericError();
+// サーバー初期化時に登録
+MMOSServer.registerExternalServer(new MyModServer());
+
+public class MyModServer implements VirtualHttpServer {
+    @Override
+    public String getServerId() {
+        return "mod-mymod"; // アドレス: 2-mod-mymod
+    }
+    
+    @Override
+    public VirtualHttpResponse handleRequest(VirtualHttpRequest req) {
+        // ...
     }
 }
 ```
 
-### 6.4 VirtualAdapterの直接使用
-
-IPvM専用の機能を使用する場合：
-
-```java
-VirtualAdapter virtualAdapter = kernel.getNetworkAdapter().getVirtualAdapter();
-
-// IPvMアドレスへ直接リクエスト
-virtualAdapter.httpRequest("3-sys-google", "/search", "GET")
-    .thenAccept(response -> {
-        // VirtualSocket.VirtualHttpResponse として受け取る
-        String html = response.getBody();
-    });
-
-// パケット送信
-VirtualPacket packet = VirtualPacket.builder()
-    .source(IPvMAddress.forPlayer(playerUUID))
-    .destination(IPvMAddress.forSystem("chat"))
-    .type(VirtualPacket.PacketType.GENERIC_REQUEST)
-    .put("message", "Hello!")
-    .build();
-
-virtualAdapter.sendPacket(packet);
-```
-
----
-
-## 7. 外部MOD連携
-
-### 7.1 概要
-
-外部MODは以下の方法でMochiMobileOSネットワークに参加できます：
-
-1. **VirtualSocketの実装** - 新しい通信基盤を追加
-2. **VirtualRouterへのサーバー登録** - 仮想サーバーを提供
-3. **パケットハンドラーの登録** - カスタムパケット処理
-
-### 7.2 仮想サーバーの実装
-
-```java
-// VirtualRouterにサーバーを登録
-VirtualRouter router = kernel.getVirtualRouter();
-
-// IPvMアドレス: 2-mymod-chat
-router.registerServer("2-mymod-chat", new VirtualServerHandler() {
-    @Override
-    public void handleRequest(VirtualPacket request, ResponseCallback callback) {
-        String path = request.getString("path");
-
-        if ("/messages".equals(path)) {
-            // メッセージ一覧を返す
-            String html = generateMessagesHtml();
-            callback.respond(VirtualSocket.VirtualHttpResponse.ok(html));
-        } else {
-            callback.respond(VirtualSocket.VirtualHttpResponse.notFound("Page not found"));
-        }
-    }
-});
-```
-
-### 7.3 新しい通信基盤の追加
+### 8.3 新しい通信基盤の追加
 
 GTA V MODの例：
 
@@ -671,57 +567,10 @@ public class GTAVirtualSocket implements VirtualSocket {
         // GTA V内のネットワーク接続状態を確認
         return scriptHook.isOnline();
     }
-
-    @Override
-    public int getSignalStrength() {
-        // GTA V内の位置に基づいて電波強度を計算
-        Vector3 pos = scriptHook.getPlayerPosition();
-        // 山岳部では弱い、都市部では強い等
-        return calculateSignalFromPosition(pos);
-    }
-
-    @Override
-    public String getCarrierName() {
-        return "LS Mobile";  // Los Santos Mobile
-    }
-
-    // その他のメソッド実装...
+    
+    // ...
 }
 ```
-
-### 7.4 パケットタイプの拡張
-
-```java
-// カスタムパケットタイプのハンドラーを登録
-VirtualRouter router = kernel.getVirtualRouter();
-
-router.registerTypeHandler(VirtualPacket.PacketType.CUSTOM, packet -> {
-    String customType = packet.getString("customType");
-
-    if ("MY_MOD_DATA".equals(customType)) {
-        // カスタムパケットを処理
-        processMyModData(packet);
-    }
-});
-```
-
-### 7.5 ベストプラクティス
-
-1. **一意なアドレス空間を使用**
-   - サーバーアドレスには`2-[modid]-[service]`形式を使用
-   - 例: `2-mymod-chat`, `2-mymod-shop`
-
-2. **エラーハンドリング**
-   - `NetworkException`を適切にスロー
-   - タイムアウトを設定（推奨: 10秒）
-
-3. **非同期処理**
-   - すべてのネットワーク操作は`CompletableFuture`で非同期に
-   - UIスレッドをブロックしない
-
-4. **リソース管理**
-   - `close()`メソッドでリソースを適切に解放
-   - 未完了のリクエストをキャンセル
 
 ---
 
@@ -738,17 +587,21 @@ jp.moyashi.phoneos.core.service.network/
 ├── NetworkStatus.java           # 接続状態enum
 ├── NetworkException.java        # ネットワーク例外
 ├── IPvMAddress.java             # IPvMアドレス
-├── VirtualPacket.java           # 仮想パケット
-└── VirtualRouter.java           # パケットルーター
+└── VirtualPacket.java           # 仮想パケット
+
+jp.moyashi.phoneos.server/       # サーバーモジュール
+├── MMOSServer.java              # サーバーエントリーポイント
+├── SystemServerRegistry.java    # サーバーレジストリ
+├── VirtualHttpServer.java       # 仮想サーバーIF
+├── VirtualHttpRequest.java      # リクエストデータ
+└── VirtualHttpResponse.java     # レスポンスデータ
 
 jp.moyashi.phoneos.forge.network/
 ├── ForgeVirtualSocket.java      # Forge用実装
-├── ForgeNetworkInitializer.java # 初期化処理
 └── NetworkHandler.java          # パケット送受信
 
 jp.moyashi.phoneos.standalone.network/
 ├── StandaloneVirtualSocket.java # Standalone用実装
-└── StandaloneNetworkInitializer.java
 ```
 
 ### B. エラーコード一覧
@@ -766,6 +619,7 @@ jp.moyashi.phoneos.standalone.network/
 
 | バージョン | 日付 | 変更内容 |
 |-----------|------|---------|
+| 2.1 | 2025/12/17 | サーバーモジュール仕様、httpm://スキームの追加 |
 | 2.0 | 2024年 | 依存性逆転パターン導入、VirtualSocketインターフェース追加 |
 | 1.0 | - | 初版 |
 

@@ -24,3 +24,60 @@
   - ✅ Standalone環境: 正常動作
   - ✅ Forge環境: 正常動作（文字化け解消）
   - ✅ LoggerServiceによるログ出力: VFSログで初期化プロセスを確認可能
+
+## 絵文字サポート (✅ 実装完了 - 2025-12-23)
+
+**目的**: Unicode絵文字の文字化け（□表示）を修正し、モノクロ絵文字を正しく表示する
+
+### 実装内容
+
+#### 新規ファイル
+1. **`core/src/main/resources/fonts/NotoEmoji-Regular.ttf`** (約2MB)
+   - Google Noto Emoji（モノクロ版）を埋め込み
+   - 最新Unicode絵文字規格に対応
+
+2. **`core/src/main/java/jp/moyashi/phoneos/core/util/EmojiUtil.java`**
+   - 絵文字判定ユーティリティ
+   - `isEmoji(int codePoint)` - Unicodeコードポイントで絵文字判定
+   - `containsEmoji(String text)` - テキストに絵文字が含まれるか判定
+   - `segmentText(String text)` - テキストを絵文字/非絵文字セグメントに分割
+   - 対応Unicode範囲: Emoticons, Misc Symbols/Pictographs, Transport/Map, Supplemental Symbols, Dingbats等
+
+3. **`core/src/main/java/jp/moyashi/phoneos/core/render/TextRenderer.java`**
+   - フォントフォールバック対応テキストレンダラー
+   - `drawText(g, text, x, y, textSize)` - 絵文字/非絵文字を適切なフォントで描画
+   - `getTextWidth(g, text, textSize)` - 混合テキストの幅を正確に計算
+   - `getCharacterWidths(...)` - カーソル位置計算用の累積幅配列取得
+
+4. **`core/src/main/java/jp/moyashi/phoneos/core/render/TextRendererContext.java`**
+   - UIコンポーネントからTextRendererにアクセスするための静的コンテキスト
+
+#### 変更ファイル
+- **ResourceManager.java**: `loadEmojiFont()`, `getEmojiFont()` 追加
+- **Kernel.java**: `emojiFont`, `textRenderer` フィールド追加、`getTextRenderer()` 追加
+- **Label.java**: 絵文字含有時にTextRendererで描画
+- **TextField.java**: 絵文字対応（テキスト描画、選択、カーソル位置）
+- **BaseTextInput.java**: `getTextWidth()` で絵文字対応
+- **Button.java**: ボタンテキストの絵文字対応
+- **Checkbox.java**: ラベルの絵文字対応
+- **ToggleItem.java**: コントロールセンターのアイコン絵文字対応
+- **SliderItem.java**: コントロールセンターのスライダーアイコン絵文字対応
+
+### アーキテクチャ
+```
+テキスト描画リクエスト
+    ↓
+EmojiUtil.containsEmoji(text)
+    ↓
+[絵文字なし] → 従来の g.text() で高速描画
+[絵文字あり] → TextRenderer.drawText()
+                 ↓
+              EmojiUtil.segmentText(text)
+                 ↓
+              セグメントごとにフォント切替
+              (日本語フォント / 絵文字フォント)
+```
+
+### 最適化
+- **Fast Path**: 絵文字を含まないテキストは `containsEmoji()` チェック後すぐに従来の描画パスを使用
+- **セグメントベース**: 文字単位ではなくセグメント単位でフォント切替（パフォーマンス向上）
