@@ -32,6 +32,7 @@
 
 - **[08_Font_System.md](./docs/development/08_Font_System.md)**
   - 多言語（特に日本語）フォントの表示を実現するためのフォントシステムについて説明します。
+  - **絵文字サポート** (2025-12-23追加): Noto Emojiフォントによるモノクロ絵文字表示機能
 
 - **[09_Known_Issues_And_TODO.md](./docs/development/09_Known_Issues_And_TODO.md)**
   - 現在把握している既知の問題点と、今後の開発タスク（TODO）を管理します。
@@ -57,6 +58,11 @@
   - 代表API: `colorPrimary()`, `colorBackground()`, `colorSurface()`, `colorOnSurface()`, `radiusSm()` など
   - 付随ユーティリティ: `ui/effects/Motion`（Reduce Motion対応の継続時間/イージング）, `ui/effects/Elevation`（簡易影）
 - パフォーマンスセーバー: `ui.performance.low_power`（低電力/低負荷モード）設定を追加（UI/設定のみ）。挙動は今後実装。
+- 絵文字サポート（2025-12-23）
+  - Noto Emoji（モノクロ版）フォントを追加し、Unicode絵文字の文字化けを解消
+  - `EmojiUtil`で絵文字判定、`TextRenderer`でフォントフォールバック実装
+  - Label、TextField、Button等のUIコンポーネントで絵文字描画に対応
+  - Fast Path最適化: 絵文字なしテキストは従来どおり高速描画
 
 ## 現在の仕様（抜粋）
 
@@ -250,6 +256,8 @@
     - 音量スライダーとシステム設定("audio.master_volume")の双方向連携実装
     - Chromium連携強化: 再生状態/時間の同期ロジック改善
     - ToggleItemのデザイン刷新: スイッチ廃止、iOS風のアイコン・背景色変化スタイルに変更
+    - SliderItemのデザイン刷新: iOS風の太いバーとアイコンによる視覚的フィードバック（絵文字位置補正済み）
+    - ControlCenterパネルの質感向上: 背景色、角丸、影の調整
 - 追加適用: Panel/ListView/Dialog/Dropdown をトークン化（背景/枠線/選択色/文字色）
 - 追加適用: Checkbox/RadioButton をトークン化（境界/選択色/文字色）
 - ~~設定アプリに「外観」セクションを追加（モード/アクセント/角丸/文字サイズ/Reduce Motion）最小実装（完了）~~
