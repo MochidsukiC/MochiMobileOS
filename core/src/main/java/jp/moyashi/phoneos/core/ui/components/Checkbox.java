@@ -1,5 +1,8 @@
 package jp.moyashi.phoneos.core.ui.components;
 
+import jp.moyashi.phoneos.core.render.TextRenderer;
+import jp.moyashi.phoneos.core.render.TextRendererContext;
+import jp.moyashi.phoneos.core.util.EmojiUtil;
 import processing.core.PApplet;
 import processing.core.PGraphics;
 
@@ -103,12 +106,19 @@ public class Checkbox extends BaseComponent implements Clickable {
             g.rect(x + 4, y + 4, boxSize - 8, boxSize - 8, 2);
         }
 
-        // ラベルテキスト
+        // ラベルテキスト（絵文字対応）
         if (label != null && !label.isEmpty()) {
             g.fill(enabled ? labelColor : 0xFF999999);
             g.textAlign(PApplet.LEFT, PApplet.CENTER);
-            g.textSize(14);
-            g.text(label, x + boxSize + 8, y + boxSize / 2);
+            float labelSize = 14;
+            g.textSize(labelSize);
+
+            TextRenderer textRenderer = TextRendererContext.getTextRenderer();
+            if (textRenderer != null && EmojiUtil.containsEmoji(label)) {
+                textRenderer.drawText(g, label, x + boxSize + 8, y + boxSize / 2, labelSize);
+            } else {
+                g.text(label, x + boxSize + 8, y + boxSize / 2);
+            }
         }
 
         g.popStyle();

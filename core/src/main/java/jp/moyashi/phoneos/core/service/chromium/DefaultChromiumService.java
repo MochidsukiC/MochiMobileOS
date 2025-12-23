@@ -365,6 +365,41 @@ public class DefaultChromiumService implements ChromiumService {
         public boolean isMCEF() {
             return browser.isMCEF();
         }
+
+        @Override
+        public void injectMediaDetectionScript() {
+            browser.injectMediaDetectionScript();
+        }
+
+        @Override
+        public boolean isMediaPlaying() {
+            return browser.isMediaPlaying();
+        }
+
+        @Override
+        public String getMediaTitle() {
+            return browser.getMediaTitle();
+        }
+
+        @Override
+        public String getMediaArtist() {
+            return browser.getMediaArtist();
+        }
+
+        @Override
+        public double getMediaDuration() {
+            return browser.getMediaDuration();
+        }
+
+        @Override
+        public double getMediaCurrentTime() {
+            return browser.getMediaCurrentTime();
+        }
+
+        @Override
+        public void resetMediaDetection() {
+            browser.resetMediaDetection();
+        }
     }
 
     private static class PumpThreadFactory implements ThreadFactory {

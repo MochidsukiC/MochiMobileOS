@@ -49,8 +49,14 @@ public class ResourceManager {
     /** 日本語フォント */
     private PFont japaneseFont;
 
+    /** 絵文字フォント */
+    private PFont emojiFont;
+
     /** 日本語フォントのパス */
     private static final String JAPANESE_FONT_PATH = "/fonts/NotoSansJP-Regular.ttf";
+
+    /** 絵文字フォントのパス */
+    private static final String EMOJI_FONT_PATH = "/fonts/NotoEmoji-Regular.ttf";
 
     /** デフォルトフォントサイズ */
     private static final int DEFAULT_FONT_SIZE = 16;
@@ -95,6 +101,12 @@ public class ResourceManager {
         japaneseFont = loadJapaneseFont();
         if (japaneseFont != null) {
             fontCache.put("japanese", japaneseFont);
+        }
+
+        // 絵文字フォントを読み込む
+        emojiFont = loadEmojiFont();
+        if (emojiFont != null) {
+            fontCache.put("emoji", emojiFont);
         }
     }
 
@@ -170,6 +182,81 @@ public class ResourceManager {
             }
             e.printStackTrace();
             return createSystemJapaneseFont();
+        }
+    }
+
+    /**
+     * 絵文字フォントを読み込む。
+     * 複数のClassLoaderを試してリソースを読み込む（Forge環境対応）。
+     *
+     * @return 読み込まれたPFont、失敗時はnull
+     */
+    public PFont loadEmojiFont() {
+        try {
+            if (loggerService != null) {
+                loggerService.debug("ResourceManager", "リソースからNoto Emoji TTFファイルを読み込み中...");
+            }
+
+            InputStream fontStream = null;
+
+            // 1. このクラスのClassLoaderから試す
+            fontStream = getClass().getResourceAsStream(EMOJI_FONT_PATH);
+            if (fontStream != null && loggerService != null) {
+                loggerService.debug("ResourceManager", "ResourceManagerクラスのクラスローダーから絵文字フォントを読み込みました");
+            }
+
+            // 2. コンテキストClassLoaderから試す
+            if (fontStream == null) {
+                ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+                if (contextClassLoader != null) {
+                    fontStream = contextClassLoader.getResourceAsStream(EMOJI_FONT_PATH.substring(1));
+                    if (fontStream != null && loggerService != null) {
+                        loggerService.debug("ResourceManager", "コンテキストクラスローダーから絵文字フォントを読み込みました");
+                    }
+                }
+            }
+
+            // 3. システムClassLoaderから試す
+            if (fontStream == null) {
+                fontStream = ClassLoader.getSystemResourceAsStream(EMOJI_FONT_PATH.substring(1));
+                if (fontStream != null && loggerService != null) {
+                    loggerService.debug("ResourceManager", "システムクラスローダーから絵文字フォントを読み込みました");
+                }
+            }
+
+            if (fontStream == null) {
+                if (loggerService != null) {
+                    loggerService.warn("ResourceManager", "絵文字フォントファイルが見つかりません: " + EMOJI_FONT_PATH);
+                }
+                return null;
+            }
+
+            // InputStreamからフォントを作成
+            Font awtFont = Font.createFont(Font.TRUETYPE_FONT, fontStream);
+            fontStream.close();
+
+            // システムにフォントを登録
+            GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+            ge.registerFont(awtFont);
+
+            // PFontに変換（PAppletが必要）
+            if (applet != null) {
+                PFont pFont = new PFont(awtFont.deriveFont((float) DEFAULT_FONT_SIZE), true);
+                if (loggerService != null) {
+                    loggerService.info("ResourceManager", "Noto Emoji フォントを正常に読み込みました (サイズ: " + DEFAULT_FONT_SIZE + ")");
+                }
+                return pFont;
+            } else {
+                logger.warning("PApplet not set, cannot create emoji PFont");
+                return null;
+            }
+
+        } catch (Exception e) {
+            if (loggerService != null) {
+                loggerService.error("ResourceManager", "絵文字フォントの読み込みエラー: " + e.getMessage());
+            }
+            e.printStackTrace();
+            return null;
         }
     }
 
@@ -291,6 +378,15 @@ public class ResourceManager {
     }
 
     /**
+     * 絵文字フォントを取得する。
+     *
+     * @return 絵文字フォント
+     */
+    public PFont getEmojiFont() {
+        return emojiFont;
+    }
+
+    /**
      * 指定した名前のフォントを取得する。
      *
      * @param fontName フォント名
@@ -321,6 +417,9 @@ public class ResourceManager {
         }
         if (japaneseFont != null) {
             fontCache.put("japanese", japaneseFont);
+        }
+        if (emojiFont != null) {
+            fontCache.put("emoji", emojiFont);
         }
         logger.info("Font cache cleared");
     }

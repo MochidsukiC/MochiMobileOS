@@ -2,6 +2,7 @@ package jp.moyashi.phoneos.core.notification;
 
 import processing.core.PApplet;
 import processing.core.PGraphics;
+import processing.core.PImage;
 
 /**
  * 通知アイテムのインターフェース。
@@ -112,4 +113,22 @@ public interface INotification {
      * 通知を削除する。
      */
     void dismiss();
+
+    /**
+     * 通知のアプリアイコンを取得する。
+     *
+     * @return アプリアイコン（nullの場合はデフォルトアイコンを使用）
+     */
+    default PImage getIcon() {
+        return null;
+    }
+
+    /**
+     * 通知クリック時のアクションを取得する。
+     *
+     * @return クリック時に実行するアクション（nullの場合は何もしない）
+     */
+    default Runnable getClickAction() {
+        return null;
+    }
 }

@@ -6,7 +6,9 @@ import jp.moyashi.phoneos.forge.registry.ModItems;
 import jp.moyashi.phoneos.server.MMOSServer;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 
@@ -46,6 +48,11 @@ public class MochiMobileOSMod {
         System.out.println("[MochiMobileOSMod] Initializing MochiMobileOS Forge Integration");
 
         try {
+            // 設定ファイルを登録
+            System.out.println("[MochiMobileOSMod] Registering config...");
+            ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, MMOSConfig.SPEC);
+            System.out.println("[MochiMobileOSMod] Config registered successfully");
+
             // アイテム登録
             System.out.println("[MochiMobileOSMod] Registering items...");
             ModItems.register(FMLJavaModLoadingContext.get().getModEventBus());

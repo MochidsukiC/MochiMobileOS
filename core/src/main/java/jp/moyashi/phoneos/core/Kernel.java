@@ -83,7 +83,13 @@ public class Kernel implements GestureListener {
     
     /** コントロールセンター管理サービス */
     private ControlCenterManager controlCenterManager;
-    
+
+    /** コントロールセンターカードレジストリ */
+    private jp.moyashi.phoneos.core.controls.ControlCenterCardRegistry cardRegistry;
+
+    /** ダッシュボードウィジェットレジストリ */
+    private jp.moyashi.phoneos.core.dashboard.DashboardWidgetRegistry dashboardWidgetRegistry;
+
     /** 通知センター管理サービス */
     private NotificationManager notificationManager;
     
@@ -224,6 +230,12 @@ public class Kernel implements GestureListener {
 
     /** 日本語フォント */
     private PFont japaneseFont;
+
+    /** 絵文字フォント */
+    private PFont emojiFont;
+
+    /** テキストレンダラー（絵文字フォールバック対応） */
+    private jp.moyashi.phoneos.core.render.TextRenderer textRenderer;
 
     // ESCキー長押し検出用変数
     /** ESCキーが押されている時間 */
@@ -1364,10 +1376,22 @@ public class Kernel implements GestureListener {
             } else {
                 logger.warn("Kernel", "日本語フォントの読み込みに失敗しました。デフォルトフォントを使用します");
             }
+            // 絵文字フォントの初期化
+            emojiFont = resourceManager.getEmojiFont();
+            if (emojiFont != null) {
+                logger.info("Kernel", "絵文字フォント (Noto Emoji) を正常に読み込みました");
+            } else {
+                logger.warn("Kernel", "絵文字フォントの読み込みに失敗しました");
+            }
         } else {
             // ResourceManagerが利用できない場合は従来の方法
             japaneseFont = loadJapaneseFont();
         }
+
+        // TextRendererの初期化
+        textRenderer = new jp.moyashi.phoneos.core.render.TextRenderer(japaneseFont, emojiFont);
+        jp.moyashi.phoneos.core.render.TextRendererContext.setTextRenderer(textRenderer);
+        logger.info("Kernel", "TextRenderer初期化完了");
 
         // SettingsManagerの初期化（DIで取得できなかった場合）
         if (settingsManager == null) {
@@ -1438,6 +1462,22 @@ public class Kernel implements GestureListener {
         }
         controlCenterManager.setGestureManager(gestureManager);
         controlCenterManager.setCoordinateTransform(coordinateTransform);
+
+        // CardRegistryの初期化
+        if (settingsManager != null) {
+            cardRegistry = new jp.moyashi.phoneos.core.controls.ControlCenterCardRegistry(settingsManager);
+            controlCenterManager.setCardRegistry(cardRegistry);
+            System.out.println("  -> コントロールセンターカードレジストリ初期化完了");
+        }
+
+        // DashboardWidgetRegistryの初期化
+        if (settingsManager != null) {
+            dashboardWidgetRegistry = new jp.moyashi.phoneos.core.dashboard.DashboardWidgetRegistry(settingsManager);
+            dashboardWidgetRegistry.setKernel(this);
+            registerSystemDashboardWidgets();
+            System.out.println("  -> ダッシュボードウィジェットレジストリ初期化完了");
+        }
+
         setupControlCenter();
 
         // NotificationManagerの初期化（DIで取得できなかった場合）
@@ -1446,6 +1486,25 @@ public class Kernel implements GestureListener {
             notificationManager = new NotificationManager();
         }
         notificationManager.setKernel(this); // Kernelの参照を設定
+
+        // 通知システムへの依存サービス注入
+        try {
+            jp.moyashi.phoneos.core.service.hardware.ChatSocket chatSocket =
+                serviceBootstrap.tryGetService(jp.moyashi.phoneos.core.service.hardware.ChatSocket.class);
+            if (chatSocket != null) {
+                notificationManager.setChatSocket(chatSocket);
+                System.out.println("  -> NotificationManager: ChatSocket注入成功");
+            }
+
+            jp.moyashi.phoneos.core.service.NotificationSoundService soundService =
+                serviceBootstrap.tryGetService(jp.moyashi.phoneos.core.service.NotificationSoundService.class);
+            if (soundService != null) {
+                notificationManager.setSoundService(soundService);
+                System.out.println("  -> NotificationManager: NotificationSoundService注入成功");
+            }
+        } catch (Exception e) {
+            System.err.println("  -> NotificationManager: 依存サービス注入失敗: " + e.getMessage());
+        }
         
         // LockManagerの初期化（DIで取得できなかった場合）
         if (lockManager == null) {
@@ -2080,7 +2139,25 @@ public class Kernel implements GestureListener {
     public ControlCenterManager getControlCenterManager() {
         return controlCenterManager;
     }
-    
+
+    /**
+     * コントロールセンターカードレジストリを取得する。
+     * 外部アプリケーションはこのレジストリを通じてカードを登録できる。
+     * @return ControlCenterCardRegistryインスタンス
+     */
+    public jp.moyashi.phoneos.core.controls.ControlCenterCardRegistry getControlCenterCardRegistry() {
+        return cardRegistry;
+    }
+
+    /**
+     * ダッシュボードウィジェットレジストリを取得する。
+     * 外部アプリケーションはこのレジストリを通じてダッシュボードウィジェットを登録できる。
+     * @return DashboardWidgetRegistryインスタンス
+     */
+    public jp.moyashi.phoneos.core.dashboard.DashboardWidgetRegistry getDashboardWidgetRegistry() {
+        return dashboardWidgetRegistry;
+    }
+
     /**
      * 通知センター管理サービスのインスタンスを取得する。
      *
@@ -2552,7 +2629,26 @@ public class Kernel implements GestureListener {
     public PFont getJapaneseFont() {
         return japaneseFont;
     }
-    
+
+    /**
+     * 絵文字フォントを取得する。
+     *
+     * @return 絵文字フォント、初期化されていない場合はnull
+     */
+    public PFont getEmojiFont() {
+        return emojiFont;
+    }
+
+    /**
+     * テキストレンダラーを取得する。
+     * 絵文字フォールバック対応のテキスト描画に使用。
+     *
+     * @return TextRenderer、初期化されていない場合はnull
+     */
+    public jp.moyashi.phoneos.core.render.TextRenderer getTextRenderer() {
+        return textRenderer;
+    }
+
     /**
      * Kernelレベルでのジェスチャーイベント処理。
      * 主に画面上からのスワイプダウンで通知センター、画面下からのスワイプアップでコントロールセンターを表示する処理を行う。
@@ -2963,9 +3059,17 @@ public class Kernel implements GestureListener {
         controlCenterManager.addItem(toggleItem);
         
         // サイレントモード (マナーモード)
+        boolean initialSilentMode = settingsManager != null &&
+            settingsManager.getBooleanSetting("audio.silent_mode", false);
         toggleItem = new jp.moyashi.phoneos.core.controls.ToggleItem(
-            "silent_mode", "サイレント", "マナーモード", 
-            false, (isOn) -> System.out.println("Silent mode toggled: " + isOn)
+            "silent_mode", "サイレント", "マナーモード",
+            initialSilentMode, (isOn) -> {
+                System.out.println("Silent mode toggled: " + isOn);
+                if (settingsManager != null) {
+                    settingsManager.setSetting("audio.silent_mode", isOn);
+                    settingsManager.saveSettings();
+                }
+            }
         );
         controlCenterManager.addItem(toggleItem);
         
@@ -3247,5 +3351,47 @@ public class Kernel implements GestureListener {
      */
     public int getFrameRate() {
         return targetFrameRate;
+    }
+
+    /**
+     * システムダッシュボードウィジェットを登録する。
+     * Kernel初期化時に呼び出される。
+     */
+    private void registerSystemDashboardWidgets() {
+        if (dashboardWidgetRegistry == null) {
+            return;
+        }
+
+        System.out.println("  -> システムダッシュボードウィジェットを登録中...");
+
+        // 時計ウィジェット（常に固定）
+        jp.moyashi.phoneos.core.dashboard.widgets.ClockWidget clockWidget =
+            new jp.moyashi.phoneos.core.dashboard.widgets.ClockWidget();
+        dashboardWidgetRegistry.registerWidget(clockWidget);
+
+        // 検索ウィジェット
+        jp.moyashi.phoneos.core.dashboard.widgets.SearchWidget searchWidget =
+            new jp.moyashi.phoneos.core.dashboard.widgets.SearchWidget();
+        dashboardWidgetRegistry.registerWidget(searchWidget);
+
+        // メッセージウィジェット
+        jp.moyashi.phoneos.core.dashboard.widgets.MessagesWidget messagesWidget =
+            new jp.moyashi.phoneos.core.dashboard.widgets.MessagesWidget();
+        dashboardWidgetRegistry.registerWidget(messagesWidget);
+
+        // 電子マネーウィジェット
+        jp.moyashi.phoneos.core.dashboard.widgets.EMoneyWidget eMoneyWidget =
+            new jp.moyashi.phoneos.core.dashboard.widgets.EMoneyWidget();
+        dashboardWidgetRegistry.registerWidget(eMoneyWidget);
+
+        // AIアシスタントウィジェット
+        jp.moyashi.phoneos.core.dashboard.widgets.AIAssistantWidget aiAssistantWidget =
+            new jp.moyashi.phoneos.core.dashboard.widgets.AIAssistantWidget();
+        dashboardWidgetRegistry.registerWidget(aiAssistantWidget);
+
+        // デフォルトの割り当てを設定
+        dashboardWidgetRegistry.setDefaultAssignments();
+
+        System.out.println("  -> " + dashboardWidgetRegistry.getAllWidgets().size() + " 個のシステムウィジェットを登録完了");
     }
 }

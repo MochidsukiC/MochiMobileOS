@@ -3,6 +3,7 @@ package jp.moyashi.phoneos.core.notification;
 import processing.core.PApplet;
 import processing.core.PGraphics;
 import processing.core.PFont;
+import processing.core.PImage;
 import jp.moyashi.phoneos.core.Kernel;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -25,6 +26,12 @@ public class SimpleNotification implements INotification {
     private final int priority;
     private boolean isRead;
     private boolean isDismissed;
+
+    /** アプリアイコン */
+    private PImage icon;
+
+    /** クリック時のアクション */
+    private Runnable clickAction;
 
     /** Kernelへの参照 */
     private jp.moyashi.phoneos.core.Kernel kernel;
@@ -136,8 +143,33 @@ public class SimpleNotification implements INotification {
             g.rect(x + width - 4, y + 4, 3, height - 8, 1);
         }
 
-        // テキスト描画エリア
-        float textX = x + (isRead ? 12 : 16);
+        // アイコン描画
+        float iconSize = 32;
+        float iconMargin = 8;
+        float iconX = x + (isRead ? 12 : 16);
+        float iconY = y + (height - iconSize) / 2;
+
+        if (icon != null) {
+            g.image(icon, iconX, iconY, iconSize, iconSize);
+        } else {
+            // デフォルトアイコン（ベルマーク）
+            g.fill((onSurfaceSec >> 16) & 0xFF, (onSurfaceSec >> 8) & 0xFF, onSurfaceSec & 0xFF, 150);
+            g.ellipse(iconX + iconSize / 2, iconY + iconSize / 2, iconSize - 4, iconSize - 4);
+            g.fill((onSurface >> 16) & 0xFF, (onSurface >> 8) & 0xFF, onSurface & 0xFF);
+            g.textAlign(PApplet.CENTER, PApplet.CENTER);
+            g.textSize(16);
+            // ベルの形を描画
+            float cx = iconX + iconSize / 2;
+            float cy = iconY + iconSize / 2;
+            g.noStroke();
+            g.fill((onSurface >> 16) & 0xFF, (onSurface >> 8) & 0xFF, onSurface & 0xFF);
+            g.arc(cx, cy - 2, 14, 14, (float)Math.PI, (float)Math.PI * 2);
+            g.rect(cx - 7, cy - 2, 14, 8);
+            g.ellipse(cx, cy + 8, 6, 4);
+        }
+
+        // テキスト描画エリア（アイコン分右にずらす）
+        float textX = iconX + iconSize + iconMargin;
         float textWidth = width - (textX - x) - DISMISS_BUTTON_SIZE - 8;
 
         // 送信者とタイムスタンプ
@@ -197,23 +229,45 @@ public class SimpleNotification implements INotification {
             p.fill(120, 120, 120); // 低優先度：灰色
             p.rect(x + width - 4, y + 4, 3, height - 8, 1);
         }
-        
-        // テキスト描画エリア
-        float textX = x + (isRead ? 12 : 16);
+
+        // アイコン描画
+        float iconSize = 32;
+        float iconMargin = 8;
+        float iconX = x + (isRead ? 12 : 16);
+        float iconY = y + (height - iconSize) / 2;
+
+        if (icon != null) {
+            p.image(icon, iconX, iconY, iconSize, iconSize);
+        } else {
+            // デフォルトアイコン（ベルマーク）
+            p.fill(150, 150, 150, 150);
+            p.ellipse(iconX + iconSize / 2, iconY + iconSize / 2, iconSize - 4, iconSize - 4);
+            // ベルの形を描画
+            float cx = iconX + iconSize / 2;
+            float cy = iconY + iconSize / 2;
+            p.noStroke();
+            p.fill(220, 220, 220);
+            p.arc(cx, cy - 2, 14, 14, (float)Math.PI, (float)Math.PI * 2);
+            p.rect(cx - 7, cy - 2, 14, 8);
+            p.ellipse(cx, cy + 8, 6, 4);
+        }
+
+        // テキスト描画エリア（アイコン分右にずらす）
+        float textX = iconX + iconSize + iconMargin;
         float textWidth = width - (textX - x) - DISMISS_BUTTON_SIZE - 8;
-        
+
         // 送信者とタイムスタンプ
         p.fill(180, 180, 180);
         p.textAlign(PApplet.LEFT, PApplet.TOP);
         p.textSize(10);
         String timeStr = TIME_FORMAT.format(new Date(timestamp));
         p.text(sender + " • " + timeStr, textX, y + 6);
-        
+
         // タイトル
         p.fill(255, 255, 255);
         p.textSize(12);
         p.text(truncateText(p, title, textWidth), textX, y + 20);
-        
+
         // 内容
         p.fill(200, 200, 200);
         p.textSize(10);
@@ -400,8 +454,18 @@ public class SimpleNotification implements INotification {
     @Override
     public boolean onClick(float x, float y) {
         if (isDismissed) return false;
-        
+
         markAsRead();
+
+        // クリックアクションがあれば実行
+        if (clickAction != null) {
+            try {
+                clickAction.run();
+            } catch (Exception e) {
+                System.err.println("SimpleNotification: Error executing click action: " + e.getMessage());
+            }
+        }
+
         return true;
     }
     
@@ -440,5 +504,43 @@ public class SimpleNotification implements INotification {
      */
     public void setKernel(jp.moyashi.phoneos.core.Kernel kernel) {
         this.kernel = kernel;
+    }
+
+    /**
+     * アプリアイコンを設定する。
+     *
+     * @param icon アプリアイコン
+     */
+    public void setIcon(PImage icon) {
+        this.icon = icon;
+    }
+
+    /**
+     * アプリアイコンを取得する。
+     *
+     * @return アプリアイコン
+     */
+    @Override
+    public PImage getIcon() {
+        return icon;
+    }
+
+    /**
+     * クリック時のアクションを設定する。
+     *
+     * @param clickAction クリック時に実行するアクション
+     */
+    public void setClickAction(Runnable clickAction) {
+        this.clickAction = clickAction;
+    }
+
+    /**
+     * クリック時のアクションを取得する。
+     *
+     * @return クリック時に実行するアクション
+     */
+    @Override
+    public Runnable getClickAction() {
+        return clickAction;
     }
 }

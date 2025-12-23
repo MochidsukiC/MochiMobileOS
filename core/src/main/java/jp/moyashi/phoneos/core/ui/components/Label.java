@@ -1,5 +1,8 @@
 package jp.moyashi.phoneos.core.ui.components;
 
+import jp.moyashi.phoneos.core.render.TextRenderer;
+import jp.moyashi.phoneos.core.render.TextRendererContext;
+import jp.moyashi.phoneos.core.util.EmojiUtil;
 import processing.core.PApplet;
 import processing.core.PFont;
 import processing.core.PGraphics;
@@ -20,6 +23,9 @@ public class Label extends BaseComponent {
     private int horizontalAlign;
     private int verticalAlign;
     private PFont font;
+    
+    // カスタム設定フラグ
+    private boolean isCustomTextColor = false;
 
     /**
      * コンストラクタ。
@@ -38,6 +44,12 @@ public class Label extends BaseComponent {
         this.horizontalAlign = PApplet.LEFT;
         this.verticalAlign = PApplet.TOP;
         this.font = null;
+        
+        // テーマ初期化
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        if (theme != null) {
+            this.textColor = theme.colorOnSurface();
+        }
     }
 
     /**
@@ -57,15 +69,10 @@ public class Label extends BaseComponent {
 
         g.pushStyle();
 
-        // テーマ反映（未指定時の既定色/サイズ）
+        // テーマ反映（カスタム設定優先）
         var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
-        int useTextColor = textColor;
-        float useTextSize = textSize;
-        if (theme != null) {
-            // 既定テキスト色に onSurface を採用
-            if (useTextColor == 0xFF000000) {
-                useTextColor = theme.colorOnSurface();
-            }
+        if (theme != null && !isCustomTextColor) {
+            this.textColor = theme.colorOnSurface();
         }
 
         // フォント設定
@@ -74,9 +81,9 @@ public class Label extends BaseComponent {
         }
 
         // テキスト設定
-        g.fill(enabled ? useTextColor : 0xFF999999);
+        g.fill(enabled ? textColor : 0xFF999999);
         g.textAlign(horizontalAlign, verticalAlign);
-        g.textSize(useTextSize);
+        g.textSize(textSize);
 
         // 描画位置の計算
         float drawX = x;
@@ -94,8 +101,24 @@ public class Label extends BaseComponent {
             drawY = y + height;
         }
 
-        // テキスト描画
-        g.text(text, drawX, drawY);
+        // テキスト描画（絵文字対応）
+        TextRenderer textRenderer = TextRendererContext.getTextRenderer();
+        if (textRenderer != null && EmojiUtil.containsEmoji(text)) {
+            // 絵文字を含む場合はTextRendererを使用
+            // アライメント調整（TextRendererはLEFT基準）
+            float textWidth = textRenderer.getTextWidth(g, text, textSize);
+            float adjustedX = drawX;
+            if (horizontalAlign == PApplet.CENTER) {
+                adjustedX = drawX - textWidth / 2;
+            } else if (horizontalAlign == PApplet.RIGHT) {
+                adjustedX = drawX - textWidth;
+            }
+            g.textAlign(PApplet.LEFT, verticalAlign);
+            textRenderer.drawText(g, text, adjustedX, drawY, textSize);
+        } else {
+            // 通常のテキスト描画
+            g.text(text, drawX, drawY);
+        }
 
         g.popStyle();
     }
@@ -112,6 +135,7 @@ public class Label extends BaseComponent {
 
     public void setTextColor(int color) {
         this.textColor = color;
+        this.isCustomTextColor = true;
     }
 
     public void setTextSize(float size) {

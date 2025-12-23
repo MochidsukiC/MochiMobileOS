@@ -1,5 +1,8 @@
 package jp.moyashi.phoneos.core.ui.components;
 
+import jp.moyashi.phoneos.core.render.TextRenderer;
+import jp.moyashi.phoneos.core.render.TextRendererContext;
+import jp.moyashi.phoneos.core.util.EmojiUtil;
 import processing.core.PGraphics;
 import processing.core.PImage;
 import processing.core.PApplet;
@@ -26,6 +29,14 @@ public class Button extends BaseComponent implements Clickable {
     private boolean hovered = false;
     private boolean pressed = false;
     private Runnable onClickListener;
+    
+    // カスタム設定フラグ
+    private boolean isCustomBackgroundColor = false;
+    private boolean isCustomTextColor = false;
+    private boolean isCustomBorderColor = false;
+    private boolean isCustomHoverColor = false;
+    private boolean isCustomPressColor = false;
+    private boolean isCustomCornerRadius = false;
 
     // アニメーション
     private float animationProgress = 0.0f;
@@ -84,22 +95,24 @@ public class Button extends BaseComponent implements Clickable {
 
         g.pushStyle();
 
-        // 毎フレームテーマを反映（動的切替対応）
+        // 毎フレームテーマを反映（動的切替対応、カスタム設定優先）
         var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
         if (theme != null) {
-            // 明示的に上書きされていない前提で、ボタン既定色をテーマに同期
-            this.borderColor = theme.colorPrimary();
-            this.cornerRadius = theme.radiusSm();
-            // base/hover/press/textは状態に応じて下で使用
+            if (!isCustomBackgroundColor) this.backgroundColor = theme.colorPrimary();
+            if (!isCustomTextColor) this.textColor = theme.colorOnPrimary();
+            if (!isCustomBorderColor) this.borderColor = theme.colorPrimary();
+            if (!isCustomHoverColor) this.hoverColor = theme.colorHover();
+            if (!isCustomPressColor) this.pressColor = theme.colorPressed();
+            if (!isCustomCornerRadius) this.cornerRadius = theme.radiusSm();
         }
 
         // アニメーション更新
         updateAnimation();
 
-        // 背景色の決定
-        int baseBgColor = theme != null ? theme.colorPrimary() : backgroundColor;
-        int hoverBgColor = theme != null ? theme.colorHover() : hoverColor;
-        int pressBgColor = theme != null ? theme.colorPressed() : pressColor;
+        // 背景色の決定（既にフィールドに同期済み）
+        int baseBgColor = backgroundColor;
+        int hoverBgColor = hoverColor;
+        int pressBgColor = pressColor;
         
         int currentColor;
         int alpha;
@@ -152,11 +165,17 @@ public class Button extends BaseComponent implements Clickable {
         float contentX = x + width / 2;
         float contentY = y + height / 2;
 
+        TextRenderer textRenderer = TextRendererContext.getTextRenderer();
+        boolean hasEmoji = text != null && EmojiUtil.containsEmoji(text);
+
         if (icon != null && text != null && !text.isEmpty()) {
             // アイコン + テキスト
             float iconSize = height * 0.5f;
             float spacing = 5;
-            float totalWidth = iconSize + spacing + g.textWidth(text);
+            float textWidth = textRenderer != null && hasEmoji
+                ? textRenderer.getTextWidth(g, text, 14)
+                : g.textWidth(text);
+            float totalWidth = iconSize + spacing + textWidth;
             float startX = contentX - totalWidth / 2;
 
             g.image(icon, startX, contentY - iconSize / 2, iconSize, iconSize);
@@ -164,18 +183,29 @@ public class Button extends BaseComponent implements Clickable {
             g.fill(enabled ? tCol : 0xFFCCCCCC);
             g.textAlign(PApplet.LEFT, PApplet.CENTER);
             g.textSize(14);
-            g.text(text, startX + iconSize + spacing, contentY);
+            if (textRenderer != null && hasEmoji) {
+                textRenderer.drawText(g, text, startX + iconSize + spacing, contentY, 14);
+            } else {
+                g.text(text, startX + iconSize + spacing, contentY);
+            }
         } else if (icon != null) {
             // アイコンのみ
             float iconSize = Math.min(width, height) * 0.6f;
             g.image(icon, contentX - iconSize / 2, contentY - iconSize / 2, iconSize, iconSize);
         } else if (text != null && !text.isEmpty()) {
-            // テキストのみ
+            // テキストのみ（絵文字対応）
             int tCol = this.textColor;
             g.fill(enabled ? tCol : 0xFFCCCCCC);
-            g.textAlign(PApplet.CENTER, PApplet.CENTER);
             g.textSize(14);
-            g.text(text, contentX, contentY);
+            if (textRenderer != null && hasEmoji) {
+                // 中央揃えのために幅を計算
+                float textWidth = textRenderer.getTextWidth(g, text, 14);
+                g.textAlign(PApplet.LEFT, PApplet.CENTER);
+                textRenderer.drawText(g, text, contentX - textWidth / 2, contentY, 14);
+            } else {
+                g.textAlign(PApplet.CENTER, PApplet.CENTER);
+                g.text(text, contentX, contentY);
+            }
         }
     }
 
@@ -277,25 +307,31 @@ public class Button extends BaseComponent implements Clickable {
 
     public void setBackgroundColor(int color) {
         this.backgroundColor = color;
+        this.isCustomBackgroundColor = true;
     }
 
     public void setTextColor(int color) {
         this.textColor = color;
+        this.isCustomTextColor = true;
     }
 
     public void setBorderColor(int color) {
         this.borderColor = color;
+        this.isCustomBorderColor = true;
     }
 
     public void setHoverColor(int color) {
         this.hoverColor = color;
+        this.isCustomHoverColor = true;
     }
 
     public void setPressColor(int color) {
         this.pressColor = color;
+        this.isCustomPressColor = true;
     }
 
     public void setCornerRadius(float radius) {
         this.cornerRadius = radius;
+        this.isCustomCornerRadius = true;
     }
 }

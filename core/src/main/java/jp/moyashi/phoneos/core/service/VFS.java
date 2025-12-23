@@ -116,13 +116,66 @@ public class VFS {
             String content = Files.readString(filePath);
             //System.out.println("VFS: ファイル読み込み成功: " + path + " (" + content.length() + "文字)");
             return content;
-            
+
         } catch (IOException e) {
             System.err.println("VFS: ファイル読み込みエラー [" + path + "]: " + e.getMessage());
             return null;
         }
     }
-    
+
+    /**
+     * 仮想ファイルからバイナリデータを読み取る。
+     *
+     * @param path 読み取るファイルのパス（VFS内の相対パス）
+     * @return ファイルの内容をバイト配列として返す、ファイルが見つからない場合はnull
+     */
+    public byte[] readBinaryFile(String path) {
+        try {
+            Path filePath = resolveVFSPath(path);
+
+            if (!Files.exists(filePath)) {
+                System.out.println("VFS: ファイルが見つかりません: " + path);
+                return null;
+            }
+
+            byte[] data = Files.readAllBytes(filePath);
+            //System.out.println("VFS: バイナリファイル読み込み成功: " + path + " (" + data.length + "バイト)");
+            return data;
+
+        } catch (IOException e) {
+            System.err.println("VFS: バイナリファイル読み込みエラー [" + path + "]: " + e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * 仮想ファイルにバイナリデータを書き込む。
+     *
+     * @param path 書き込み先ファイルのパス（VFS内の相対パス）
+     * @param data ファイルに書き込むバイナリデータ
+     * @return 書き込みが成功した場合true、失敗した場合false
+     */
+    public boolean writeBinaryFile(String path, byte[] data) {
+        try {
+            Path filePath = resolveVFSPath(path);
+
+            // 親ディレクトリが存在しない場合は作成
+            Path parentDir = filePath.getParent();
+            if (parentDir != null && !Files.exists(parentDir)) {
+                Files.createDirectories(parentDir);
+            }
+
+            // ファイルに書き込み（既存ファイルを上書き）
+            Files.write(filePath, data, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+            //System.out.println("VFS: バイナリファイル書き込み成功: " + path + " (" + data.length + "バイト)");
+            return true;
+
+        } catch (IOException e) {
+            System.err.println("VFS: バイナリファイル書き込みエラー [" + path + "]: " + e.getMessage());
+            return false;
+        }
+    }
+
     /**
      * 仮想ファイルにデータを書き込む。
      * 

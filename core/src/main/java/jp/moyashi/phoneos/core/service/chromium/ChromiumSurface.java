@@ -194,4 +194,53 @@ public interface ChromiumSurface {
      * @return MCEF環境の場合true
      */
     boolean isMCEF();
+
+    // ========== メディア再生状態関連 ==========
+
+    /**
+     * メディア検出スクリプトを注入します。
+     * ページ内のvideo/audio要素の再生状態を監視し、Java側に通知します。
+     */
+    default void injectMediaDetectionScript() {}
+
+    /**
+     * メディアが再生中かどうかを返します。
+     *
+     * @return 再生中の場合true
+     */
+    default boolean isMediaPlaying() { return false; }
+
+    /**
+     * 再生中のメディアのタイトルを返します。
+     *
+     * @return タイトル
+     */
+    default String getMediaTitle() { return ""; }
+
+    /**
+     * 再生中のメディアのアーティストを返します。
+     *
+     * @return アーティスト
+     */
+    default String getMediaArtist() { return ""; }
+
+    /**
+     * メディアの長さ（秒）を返します。
+     *
+     * @return 長さ（秒）
+     */
+    default double getMediaDuration() { return 0; }
+
+    /**
+     * メディアの現在再生位置（秒）を返します。
+     *
+     * @return 現在位置（秒）
+     */
+    default double getMediaCurrentTime() { return 0; }
+
+    /**
+     * メディア検出状態をリセットします。
+     * ページ遷移時に呼び出します。
+     */
+    default void resetMediaDetection() {}
 }

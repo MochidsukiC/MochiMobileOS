@@ -61,6 +61,14 @@ public class ChromiumBrowser {
     private volatile boolean webPageClicked = false; // Webページがクリックされたか（テキスト入力可能性）
     private volatile String cachedSelectedText = ""; // 選択テキストキャッシュ（TextInputProtocol用）
 
+    // メディア再生状態
+    private volatile boolean mediaPlaying = false;
+    private volatile String mediaTitle = "";
+    private volatile String mediaArtist = "";
+    private volatile double mediaDuration = 0;
+    private volatile double mediaCurrentTime = 0;
+    private volatile boolean mediaDetectionInjected = false;
+
     private final ConcurrentLinkedQueue<InputEvent> inputQueue = new ConcurrentLinkedQueue<>();
     private long lastInputLogNs = System.nanoTime();
     
@@ -121,6 +129,12 @@ public class ChromiumBrowser {
                 if (message != null && message.startsWith("[MochiOS:Selection]")) {
                     cachedSelectedText = message.substring("[MochiOS:Selection]".length());
                     return true; // メッセージを処理したのでtrueを返す
+                }
+                // JavaScriptからのメディア再生状態通知を受信
+                if (message != null && message.startsWith("[MochiOS:Media]")) {
+                    String mediaState = message.substring("[MochiOS:Media]".length());
+                    parseMediaState(mediaState);
+                    return true;
                 }
                 return false; // 他のコンソールメッセージは通常通り処理
             }
@@ -815,6 +829,162 @@ public class ChromiumBrowser {
      */
     public String getCachedSelectedText() {
         return cachedSelectedText;
+    }
+
+    // ========== メディア再生状態関連 ==========
+
+    /**
+     * メディア検出スクリプトを注入する。
+     * ページ内のvideo/audio要素の再生状態を監視し、console.logでJava側に通知する。
+     */
+    public void injectMediaDetectionScript() {
+        if (browser == null || mediaDetectionInjected) {
+            return;
+        }
+
+        String script = "(function() {" +
+            "if (window.__mochiMediaDetectionInjected) return;" +
+            "window.__mochiMediaDetectionInjected = true;" +
+            "function sendMediaState(media, playing) {" +
+            "  var title = '';" +
+            "  var artist = '';" +
+            "  if (navigator.mediaSession && navigator.mediaSession.metadata) {" +
+            "    title = navigator.mediaSession.metadata.title || '';" +
+            "    artist = navigator.mediaSession.metadata.artist || '';" +
+            "  }" +
+            "  if (!title && document.title) {" +
+            "    title = document.title;" +
+            "  }" +
+            "  var state = {" +
+            "    playing: playing," +
+            "    title: title," +
+            "    artist: artist," +
+            "    duration: media.duration || 0," +
+            "    currentTime: media.currentTime || 0" +
+            "  };" +
+            "  console.log('[MochiOS:Media]' + JSON.stringify(state));" +
+            "}" +
+            "function attachMediaListeners(media) {" +
+            "  if (media.__mochiListenersAttached) return;" +
+            "  media.__mochiListenersAttached = true;" +
+            "  media.addEventListener('play', function() { sendMediaState(media, true); });" +
+            "  media.addEventListener('pause', function() { sendMediaState(media, false); });" +
+            "  media.addEventListener('ended', function() { sendMediaState(media, false); });" +
+            "  media.addEventListener('timeupdate', function() {" +
+            "    if (!media.paused) sendMediaState(media, true);" +
+            "  });" +
+            "}" +
+            "function scanForMedia() {" +
+            "  var medias = document.querySelectorAll('video, audio');" +
+            "  medias.forEach(function(m) { attachMediaListeners(m); });" +
+            "}" +
+            "scanForMedia();" +
+            "var observer = new MutationObserver(function(mutations) {" +
+            "  scanForMedia();" +
+            "});" +
+            "observer.observe(document.body, { childList: true, subtree: true });" +
+            "setInterval(scanForMedia, 2000);" +
+            "})();";
+
+        browser.executeJavaScript(script, browser.getURL(), 0);
+        mediaDetectionInjected = true;
+        log("Media detection script injected");
+    }
+
+    /**
+     * メディア状態をパースして保存する。
+     */
+    private void parseMediaState(String jsonState) {
+        try {
+            // 簡易JSONパース
+            if (jsonState.contains("\"playing\":true")) {
+                mediaPlaying = true;
+            } else if (jsonState.contains("\"playing\":false")) {
+                mediaPlaying = false;
+            }
+
+            // title抽出
+            int titleStart = jsonState.indexOf("\"title\":\"");
+            if (titleStart >= 0) {
+                titleStart += 9;
+                int titleEnd = jsonState.indexOf("\"", titleStart);
+                if (titleEnd > titleStart) {
+                    mediaTitle = jsonState.substring(titleStart, titleEnd);
+                }
+            }
+
+            // artist抽出
+            int artistStart = jsonState.indexOf("\"artist\":\"");
+            if (artistStart >= 0) {
+                artistStart += 10;
+                int artistEnd = jsonState.indexOf("\"", artistStart);
+                if (artistEnd > artistStart) {
+                    mediaArtist = jsonState.substring(artistStart, artistEnd);
+                }
+            }
+
+            // duration抽出
+            int durationStart = jsonState.indexOf("\"duration\":");
+            if (durationStart >= 0) {
+                durationStart += 11;
+                int durationEnd = jsonState.indexOf(",", durationStart);
+                if (durationEnd < 0) durationEnd = jsonState.indexOf("}", durationStart);
+                if (durationEnd > durationStart) {
+                    try {
+                        mediaDuration = Double.parseDouble(jsonState.substring(durationStart, durationEnd).trim());
+                    } catch (NumberFormatException e) { /* ignore */ }
+                }
+            }
+
+            // currentTime抽出
+            int currentStart = jsonState.indexOf("\"currentTime\":");
+            if (currentStart >= 0) {
+                currentStart += 14;
+                int currentEnd = jsonState.indexOf("}", currentStart);
+                if (currentEnd > currentStart) {
+                    try {
+                        mediaCurrentTime = Double.parseDouble(jsonState.substring(currentStart, currentEnd).trim());
+                    } catch (NumberFormatException e) { /* ignore */ }
+                }
+            }
+        } catch (Exception e) {
+            log("Error parsing media state: " + e.getMessage());
+        }
+    }
+
+    /** メディアが再生中かどうかを取得する */
+    public boolean isMediaPlaying() {
+        return mediaPlaying;
+    }
+
+    /** メディアのタイトルを取得する */
+    public String getMediaTitle() {
+        return mediaTitle;
+    }
+
+    /** メディアのアーティストを取得する */
+    public String getMediaArtist() {
+        return mediaArtist;
+    }
+
+    /** メディアの長さ（秒）を取得する */
+    public double getMediaDuration() {
+        return mediaDuration;
+    }
+
+    /** メディアの現在再生位置（秒）を取得する */
+    public double getMediaCurrentTime() {
+        return mediaCurrentTime;
+    }
+
+    /** メディア検出スクリプトの注入状態をリセットする（ページ遷移時に呼び出す） */
+    public void resetMediaDetection() {
+        mediaDetectionInjected = false;
+        mediaPlaying = false;
+        mediaTitle = "";
+        mediaArtist = "";
+        mediaDuration = 0;
+        mediaCurrentTime = 0;
     }
 
     /**

@@ -1,5 +1,8 @@
 package jp.moyashi.phoneos.core.ui.components;
 
+import jp.moyashi.phoneos.core.render.TextRenderer;
+import jp.moyashi.phoneos.core.render.TextRendererContext;
+import jp.moyashi.phoneos.core.util.EmojiUtil;
 import processing.core.PApplet;
 import processing.core.PGraphics;
 
@@ -50,10 +53,18 @@ public class TextField extends BaseTextInput {
         g.textAlign(PApplet.LEFT, PApplet.CENTER);
         g.textSize(14);
 
+        TextRenderer textRenderer = TextRendererContext.getTextRenderer();
+        boolean hasEmoji = EmojiUtil.containsEmoji(text);
+
         // テキストまたはプレースホルダーを表示
         if (text.isEmpty() && !placeholder.isEmpty() && !focused) {
             g.fill(placeholderColor);
-            g.text(placeholder, textX, textY);
+            // プレースホルダーも絵文字対応
+            if (textRenderer != null && EmojiUtil.containsEmoji(placeholder)) {
+                textRenderer.drawText(g, placeholder, textX, textY, 14);
+            } else {
+                g.text(placeholder, textX, textY);
+            }
         } else {
             // 選択範囲のハイライト
             if (hasSelection()) {
@@ -65,22 +76,32 @@ public class TextField extends BaseTextInput {
                 String beforeSelection = text.substring(0, start);
                 String selection = text.substring(start, end);
 
-                float beforeWidth = g.textWidth(beforeSelection);
-                float selectionWidth = g.textWidth(selection);
+                float beforeWidth = textRenderer != null && hasEmoji
+                    ? textRenderer.getTextWidth(g, beforeSelection, 14)
+                    : g.textWidth(beforeSelection);
+                float selectionWidth = textRenderer != null && hasEmoji
+                    ? textRenderer.getTextWidth(g, selection, 14)
+                    : g.textWidth(selection);
 
                 g.fill(100, 150, 255, 100);
                 g.noStroke();
                 g.rect(textX + beforeWidth, y + height / 2 - 10, selectionWidth, 20);
             }
 
-            // テキスト描画
+            // テキスト描画（絵文字対応）
             g.fill(enabled ? textColor : 0xFF666666);
-            g.text(text, textX, textY);
+            if (textRenderer != null && hasEmoji) {
+                textRenderer.drawText(g, text, textX, textY, 14);
+            } else {
+                g.text(text, textX, textY);
+            }
 
             // カーソル描画（フォーカス時、選択なし）
             if (focused && !hasSelection() && System.currentTimeMillis() % 1000 < 500) {
                 String beforeCursor = text.substring(0, Math.min(cursorPosition, text.length()));
-                float cursorX = textX + g.textWidth(beforeCursor);
+                float cursorX = textX + (textRenderer != null && hasEmoji
+                    ? textRenderer.getTextWidth(g, beforeCursor, 14)
+                    : g.textWidth(beforeCursor));
 
                 g.stroke(textColor);
                 g.strokeWeight(2);

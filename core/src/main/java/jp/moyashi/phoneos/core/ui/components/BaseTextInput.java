@@ -1,6 +1,9 @@
 package jp.moyashi.phoneos.core.ui.components;
 
+import jp.moyashi.phoneos.core.render.TextRenderer;
+import jp.moyashi.phoneos.core.render.TextRendererContext;
 import jp.moyashi.phoneos.core.service.LoggerService;
+import jp.moyashi.phoneos.core.util.EmojiUtil;
 import processing.core.PApplet;
 import processing.core.PFont;
 import processing.core.PGraphics;
@@ -52,7 +55,6 @@ public abstract class BaseTextInput extends BaseComponent implements Focusable, 
     protected boolean pressed = false;
     protected boolean isDragging = false;
 
-    // 修飾キー状態
     protected boolean shiftPressed = false;
     protected boolean ctrlPressed = false;
 
@@ -61,6 +63,15 @@ public abstract class BaseTextInput extends BaseComponent implements Focusable, 
 
     // テキスト幅計算用のPGraphics参照（draw時に更新）
     protected PGraphics lastGraphics;
+    
+    // カスタム設定フラグ
+    protected boolean isCustomBackgroundColor = false;
+    protected boolean isCustomFocusedBackgroundColor = false;
+    protected boolean isCustomTextColor = false;
+    protected boolean isCustomPlaceholderColor = false;
+    protected boolean isCustomBorderColor = false;
+    protected boolean isCustomFocusedBorderColor = false;
+    protected boolean isCustomCornerRadius = false;
 
     /**
      * コンストラクタ。
@@ -141,15 +152,15 @@ public abstract class BaseTextInput extends BaseComponent implements Focusable, 
 
         g.pushStyle();
 
-        // 動的切替に追従
+        // 動的切替に追従（カスタム設定優先）
         var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
         if (theme != null) {
-            this.borderColor = theme.colorBorder();
-            this.focusedBorderColor = theme.colorPrimary();
-            this.backgroundColor = theme.colorSurface();
-            this.focusedBackgroundColor = theme.colorSurface();
-            this.textColor = theme.colorOnSurface();
-            this.cornerRadius = theme.radiusSm();
+            if (!isCustomBorderColor) this.borderColor = theme.colorBorder();
+            if (!isCustomFocusedBorderColor) this.focusedBorderColor = theme.colorPrimary();
+            if (!isCustomBackgroundColor) this.backgroundColor = theme.colorSurface();
+            if (!isCustomFocusedBackgroundColor) this.focusedBackgroundColor = theme.colorSurface();
+            if (!isCustomTextColor) this.textColor = theme.colorOnSurface();
+            if (!isCustomCornerRadius) this.cornerRadius = theme.radiusSm();
         }
 
         // 背景色
@@ -172,7 +183,8 @@ public abstract class BaseTextInput extends BaseComponent implements Focusable, 
         g.strokeWeight(focused ? 2 : 1);
         if (cornerRadius > 0) {
             g.rect(x, y, width, height, cornerRadius);
-        } else {
+        }
+        else {
             g.rect(x, y, width, height);
         }
 
@@ -339,9 +351,16 @@ public abstract class BaseTextInput extends BaseComponent implements Focusable, 
      * テキスト幅を取得（フォント考慮）。
      * 描画時と同じフォント設定で幅を計算するため、PGraphicsが必要。
      * draw()の外で呼ばれる場合は概算値を返す。
+     * 絵文字を含む場合はTextRendererを使用して正確な幅を計算する。
      */
     protected float getTextWidth(String str, PGraphics g) {
         if (g != null) {
+            // 絵文字が含まれる場合はTextRendererを使用
+            TextRenderer textRenderer = TextRendererContext.getTextRenderer();
+            if (textRenderer != null && EmojiUtil.containsEmoji(str)) {
+                return textRenderer.getTextWidth(g, str, 14);
+            }
+
             g.pushStyle();
             if (font != null) {
                 g.textFont(font);
@@ -470,14 +489,37 @@ public abstract class BaseTextInput extends BaseComponent implements Focusable, 
 
     public void setBackgroundColor(int color) {
         this.backgroundColor = color;
+        this.isCustomBackgroundColor = true;
+    }
+    
+    public void setFocusedBackgroundColor(int color) {
+        this.focusedBackgroundColor = color;
+        this.isCustomFocusedBackgroundColor = true;
     }
 
     public void setTextColor(int color) {
         this.textColor = color;
+        this.isCustomTextColor = true;
+    }
+    
+    public void setPlaceholderColor(int color) {
+        this.placeholderColor = color;
+        this.isCustomPlaceholderColor = true;
     }
 
     public void setBorderColor(int color) {
         this.borderColor = color;
+        this.isCustomBorderColor = true;
+    }
+    
+    public void setFocusedBorderColor(int color) {
+        this.focusedBorderColor = color;
+        this.isCustomFocusedBorderColor = true;
+    }
+    
+    public void setCornerRadius(float radius) {
+        this.cornerRadius = radius;
+        this.isCustomCornerRadius = true;
     }
 
     public void setFont(PFont font) {

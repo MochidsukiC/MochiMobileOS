@@ -147,6 +147,11 @@ public class SmartphoneBackgroundService {
             initializeClipboardProvider(kernel);
             LOGGER.info("[SmartphoneBackgroundService] Clipboard provider initialized");
 
+            // MODアプリケーションの同期とプリインストール
+            LOGGER.info("[SmartphoneBackgroundService] Syncing MOD applications...");
+            syncAndPreinstallModApps(kernel);
+            LOGGER.info("[SmartphoneBackgroundService] MOD applications sync complete");
+
             LOGGER.info("[SmartphoneBackgroundService] Shared kernel created successfully for world: " + worldId);
             return kernel;
 
@@ -207,6 +212,14 @@ public class SmartphoneBackgroundService {
 
             kernel.setSIMInfo(new jp.moyashi.phoneos.forge.hardware.ForgeSIMInfo(player));
             LOGGER.info("[SmartphoneBackgroundService] - SIMInfo set");
+
+            // ChatSocket: Minecraftチャットに通知を送信
+            jp.moyashi.phoneos.core.service.NotificationManager notificationManager =
+                kernel.getService(jp.moyashi.phoneos.core.service.NotificationManager.class);
+            if (notificationManager != null) {
+                notificationManager.setChatSocket(new jp.moyashi.phoneos.forge.hardware.ForgeChatSocket());
+                LOGGER.info("[SmartphoneBackgroundService] - ForgeChatSocket set to NotificationManager");
+            }
 
             LOGGER.info("[SmartphoneBackgroundService] All hardware APIs initialized with Forge implementations");
 
@@ -311,6 +324,56 @@ public class SmartphoneBackgroundService {
 
         } catch (Exception e) {
             LOGGER.error("[SmartphoneBackgroundService] Failed to update hardware APIs", e);
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * MODアプリケーションの同期とプリインストールを行う。
+     *
+     * 1. ModAppRegistryからAppLoaderに利用可能なアプリを同期
+     * 2. MMOSConfigのプリインストールリストに含まれるアプリを自動インストール
+     * 3. AppStoreアプリを組み込みアプリとして登録
+     *
+     * @param kernel Kernelインスタンス
+     */
+    private static void syncAndPreinstallModApps(jp.moyashi.phoneos.core.Kernel kernel) {
+        try {
+            // 1. ModAppRegistryからAppLoaderに同期
+            kernel.getAppLoader().syncWithModRegistry();
+            int availableCount = kernel.getAppLoader().getAvailableModAppsCount();
+            LOGGER.info("[SmartphoneBackgroundService] Synced " + availableCount + " MOD apps from registry");
+
+            // 2. プリインストールリストのアプリを自動インストール
+            java.util.List<String> preinstalledIds = jp.moyashi.phoneos.forge.MMOSConfig.getPreinstalledAppIds();
+            LOGGER.info("[SmartphoneBackgroundService] Preinstall list: " + preinstalledIds);
+
+            for (String appId : preinstalledIds) {
+                if (kernel.getAppLoader().getAvailableModApp(appId) != null) {
+                    boolean success = kernel.getAppLoader().installModApp(appId, kernel);
+                    if (success) {
+                        LOGGER.info("[SmartphoneBackgroundService] Preinstalled: " + appId);
+                    } else {
+                        LOGGER.warn("[SmartphoneBackgroundService] Failed to preinstall: " + appId);
+                    }
+                } else {
+                    LOGGER.warn("[SmartphoneBackgroundService] Preinstall app not found: " + appId);
+                }
+            }
+
+            // 3. AppStoreアプリを組み込みアプリとして登録
+            LOGGER.info("[SmartphoneBackgroundService] Registering AppStore app...");
+            kernel.getAppLoader().registerApplication(
+                new jp.moyashi.phoneos.core.apps.appstore.AppStoreApp()
+            );
+            LOGGER.info("[SmartphoneBackgroundService] AppStore app registered");
+
+            int installedCount = kernel.getAppLoader().getInstalledModAppsCount();
+            LOGGER.info("[SmartphoneBackgroundService] MOD app sync complete - " +
+                       availableCount + " available, " + installedCount + " installed");
+
+        } catch (Exception e) {
+            LOGGER.error("[SmartphoneBackgroundService] Error syncing MOD applications", e);
             e.printStackTrace();
         }
     }

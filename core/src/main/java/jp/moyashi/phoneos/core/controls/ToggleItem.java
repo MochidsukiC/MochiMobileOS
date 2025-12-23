@@ -2,8 +2,11 @@ package jp.moyashi.phoneos.core.controls;
 
 import jp.moyashi.phoneos.core.input.GestureEvent;
 import jp.moyashi.phoneos.core.input.GestureType;
+import jp.moyashi.phoneos.core.render.TextRenderer;
+import jp.moyashi.phoneos.core.render.TextRendererContext;
 import jp.moyashi.phoneos.core.ui.theme.ThemeContext;
 import jp.moyashi.phoneos.core.ui.theme.ThemeEngine;
+import jp.moyashi.phoneos.core.util.EmojiUtil;
 import processing.core.PApplet;
 import processing.core.PConstants;
 import processing.core.PGraphics;
@@ -155,14 +158,15 @@ public class ToggleItem implements IControlCenterItem {
             // アイコン画像がない場合のフォールバック（文字アイコン）
             g.fill(rIcon, gIcon, bIcon);
             g.textAlign(PConstants.CENTER, PConstants.CENTER);
-            g.textSize(iconSize * 0.8f);
-            
+            float symbolSize = iconSize * 0.8f;
+            g.textSize(symbolSize);
+
             // IDの頭文字などを表示するが、もっと適切な記号があればそれを使う
             // 簡易的にIDの頭文字を表示
             String symbol = displayName.substring(0, 1);
             // 特定のIDには絵文字を割り当ててみる
             if (id.contains("wifi")) symbol = "📶";
-            else if (id.contains("blue")) symbol = "Bluetooth"; // フォント次第だが
+            else if (id.contains("blue")) symbol = "🔵";
             else if (id.contains("data")) symbol = "📡";
             else if (id.contains("air")) symbol = "✈";
             else if (id.contains("silent")) symbol = "🔔";
@@ -170,10 +174,19 @@ public class ToggleItem implements IControlCenterItem {
             else if (id.contains("rot")) symbol = "🔄";
             else if (id.contains("loc")) symbol = "📍";
             else if (id.contains("dark")) symbol = "🌙";
-            
-            // 絵文字が使えないフォント環境を考慮し、フォールバックはdisplayNameの頭文字
-            // ここではシンプルに描画
-            g.text(symbol, iconX + iconSize/2, iconY + iconSize/2);
+
+            // 絵文字対応のTextRendererを使用
+            TextRenderer textRenderer = TextRendererContext.getTextRenderer();
+            if (textRenderer != null && EmojiUtil.containsEmoji(symbol)) {
+                // 絵文字の中央揃えを計算
+                float textWidth = textRenderer.getTextWidth(g, symbol, symbolSize);
+                float drawX = iconX + iconSize/2 - textWidth/2;
+                float drawY = iconY + iconSize/2;
+                g.textAlign(PConstants.LEFT, PConstants.CENTER);
+                textRenderer.drawText(g, symbol, drawX, drawY, symbolSize);
+            } else {
+                g.text(symbol, iconX + iconSize/2, iconY + iconSize/2);
+            }
         }
 
         // 3. ラベル (極小サイズ)
@@ -231,6 +244,19 @@ public class ToggleItem implements IControlCenterItem {
                     System.err.println("ToggleItem: Error in state change action: " + e.getMessage());
                 }
             }
+        }
+    }
+
+    /**
+     * コールバックを発火させずに状態を変更する（外部同期用）
+     *
+     * @param on 新しい状態
+     */
+    public void setOnSilent(boolean on) {
+        if (this.isOn != on) {
+            this.isOn = on;
+            this.targetAnimationProgress = on ? 1.0f : 0.0f;
+            // コールバックは発火しない
         }
     }
 

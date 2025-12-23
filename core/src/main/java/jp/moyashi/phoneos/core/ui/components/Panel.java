@@ -21,6 +21,11 @@ public class Panel extends BaseComponent implements Container {
     private float cornerRadius;
     private float borderWidth;
     private float padding;
+    
+    // カスタム設定フラグ
+    private boolean isCustomBackgroundColor = false;
+    private boolean isCustomBorderColor = false;
+    private boolean isCustomCornerRadius = false;
 
     /**
      * コンストラクタ。
@@ -53,12 +58,12 @@ public class Panel extends BaseComponent implements Container {
 
         g.pushStyle();
 
-        // 動的切替に追従
+        // 動的切替に追従（カスタム設定優先）
         var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
         if (theme != null) {
-            this.backgroundColor = theme.colorSurface();
-            this.borderColor = theme.colorBorder();
-            this.cornerRadius = theme.radiusMd();
+            if (!isCustomBackgroundColor) this.backgroundColor = theme.colorSurface();
+            if (!isCustomBorderColor) this.borderColor = theme.colorBorder();
+            if (!isCustomCornerRadius) this.cornerRadius = theme.radiusMd();
         }
 
         // 背景
@@ -188,14 +193,17 @@ public class Panel extends BaseComponent implements Container {
 
     public void setBackgroundColor(int color) {
         this.backgroundColor = color;
+        this.isCustomBackgroundColor = true;
     }
 
     public void setBorderColor(int color) {
         this.borderColor = color;
+        this.isCustomBorderColor = true;
     }
 
     public void setCornerRadius(float radius) {
         this.cornerRadius = radius;
+        this.isCustomCornerRadius = true;
     }
 
     public void setBorderWidth(float width) {

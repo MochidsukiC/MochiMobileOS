@@ -98,6 +98,29 @@ public class SettingsScreen implements Screen {
     private jp.moyashi.phoneos.core.ui.components.Switch switchVibration;
     private jp.moyashi.phoneos.core.ui.components.Button btnRingtone;
 
+    // Notifications: 通知パネル
+    private boolean showNotificationsPanel = false;
+    private jp.moyashi.phoneos.core.ui.components.Panel notificationsPanel;
+    private jp.moyashi.phoneos.core.ui.components.Switch switchSilentMode;
+    private jp.moyashi.phoneos.core.ui.components.Switch switchChatNotification;
+    private jp.moyashi.phoneos.core.ui.components.Button btnNotificationSound;
+    private jp.moyashi.phoneos.core.ui.components.Label labelCurrentNotificationSound;
+    // 通知音選択リスト用
+    private java.util.List<String> availableSounds = new java.util.ArrayList<>();
+    private int selectedSoundIndex = -1;
+
+    // Control Center: コントロールセンターパネル
+    private boolean showControlCenterPanel = false;
+    private jp.moyashi.phoneos.core.ui.components.Panel controlCenterSettingsPanel;
+    private java.util.List<jp.moyashi.phoneos.core.controls.CardPlacement> ccPlacements = new java.util.ArrayList<>();
+    private String selectedCardId = null;
+    private float ccPreviewScale = 0.5f;
+
+    // Dashboard: ダッシュボードウィジェット設定パネル
+    private boolean showDashboardPanel = false;
+    private jp.moyashi.phoneos.core.dashboard.DashboardSlot selectedDashboardSlot = null;
+    private java.util.List<jp.moyashi.phoneos.core.dashboard.IDashboardWidget> availableWidgets = new java.util.ArrayList<>();
+
     // Storage: ストレージパネル
     private jp.moyashi.phoneos.core.ui.components.Panel storagePanel;
     private jp.moyashi.phoneos.core.ui.components.ProgressBar progressStorageUsage;
@@ -110,19 +133,23 @@ public class SettingsScreen implements Screen {
     /** Settings items configuration */
     private static final String[] SETTING_ITEMS = {
         "Appearance",
-        "Sound & Vibration", 
+        "Sound & Vibration",
         "Apps & Notifications",
         "Storage",
         "Battery",
+        "Control Center",
+        "Dashboard",
         "About System"
     };
-    
+
     private static final String[] SETTING_DESCRIPTIONS = {
         "Brightness, wallpaper, theme",
         "Volume, ringtones, alerts",
         "App permissions, notifications",
         "Storage usage and management",
         "Battery usage and optimization",
+        "Customize control center cards",
+        "Customize home screen widgets",
         "System version and information"
     };
     
@@ -250,6 +277,21 @@ public class SettingsScreen implements Screen {
         if (showStoragePanel) {
             drawStoragePanelComponents(g);
         }
+
+        // Notifications パネル
+        if (showNotificationsPanel) {
+            drawNotificationsPanelComponents(g);
+        }
+
+        // Control Center パネル
+        if (showControlCenterPanel) {
+            drawControlCenterPanelComponents(g);
+        }
+
+        // Dashboard パネル
+        if (showDashboardPanel) {
+            drawDashboardPanelComponents(g);
+        }
     }
 
     /**
@@ -289,6 +331,14 @@ public class SettingsScreen implements Screen {
                 showSoundVibrationPanel = false;
             } else if (showStoragePanel) {
                 showStoragePanel = false;
+            } else if (showNotificationsPanel) {
+                showNotificationsPanel = false;
+            } else if (showControlCenterPanel) {
+                showControlCenterPanel = false;
+                selectedCardId = null;
+            } else if (showDashboardPanel) {
+                showDashboardPanel = false;
+                selectedDashboardSlot = null;
             } else {
                 goBack();
             }
@@ -342,6 +392,27 @@ public class SettingsScreen implements Screen {
             if (storagePanel != null && storagePanel.onMousePressed(mouseX, mouseY)) {
                 return;
             }
+            return;
+        }
+
+        // Notifications panel: delegate to components
+        if (showNotificationsPanel) {
+            ensureNotificationsComponents();
+            if (notificationsPanel != null && notificationsPanel.onMousePressed(mouseX, mouseY)) {
+                return;
+            }
+            return;
+        }
+
+        // Control Center panel: handle card selection
+        if (showControlCenterPanel) {
+            handleControlCenterClick(mouseX, mouseY);
+            return;
+        }
+
+        // Dashboard panel: handle slot/widget selection
+        if (showDashboardPanel) {
+            handleDashboardClick(mouseX, mouseY);
             return;
         }
 
@@ -468,6 +539,10 @@ public class SettingsScreen implements Screen {
             System.out.println("  Forwarding to storagePanel");
             storagePanel.onMouseReleased(mouseX, mouseY);
         }
+        if (showNotificationsPanel && notificationsPanel != null) {
+            System.out.println("  Forwarding to notificationsPanel");
+            notificationsPanel.onMouseReleased(mouseX, mouseY);
+        }
     }
     
     /**
@@ -497,6 +572,9 @@ public class SettingsScreen implements Screen {
         }
         if (showStoragePanel && storagePanel != null) {
             storagePanel.onMouseMoved(mouseX, mouseY);
+        }
+        if (showNotificationsPanel && notificationsPanel != null) {
+            notificationsPanel.onMouseMoved(mouseX, mouseY);
         }
     }
     
@@ -560,7 +638,7 @@ public class SettingsScreen implements Screen {
                 showSoundVibrationPanel = true;
                 break;
             case 2:
-                System.out.println("SettingsScreen: App settings would open here");
+                showNotificationsPanel = true;
                 break;
             case 3:
                 showStoragePanel = true;
@@ -569,6 +647,14 @@ public class SettingsScreen implements Screen {
                 showBatteryPanel = true;
                 break;
             case 5:
+                showControlCenterPanel = true;
+                loadControlCenterPlacements();
+                break;
+            case 6:
+                showDashboardPanel = true;
+                loadDashboardWidgets();
+                break;
+            case 7:
                 showAboutSystemPanel = true;
                 break;
         }
@@ -1557,9 +1643,977 @@ public class SettingsScreen implements Screen {
         if (btnClearAllData != null) btnClearAllData.draw(g);
     }
 
+    // =========================================================================
+    // Notifications Section
+    // =========================================================================
+
+    /**
+     * Notificationsパネルのコンポーネントを初期化する
+     */
+    private void ensureNotificationsComponents() {
+        if (notificationsPanel != null) return;
+
+        int px = ITEM_PADDING;
+        int py = 80;
+        int pw = 400 - 2 * ITEM_PADDING;
+        int ph = 480;
+
+        // パネルを作成
+        notificationsPanel = new jp.moyashi.phoneos.core.ui.components.Panel(px, py, pw, ph);
+
+        int y = py + 60;
+
+        // 消音モードスイッチ
+        switchSilentMode = new jp.moyashi.phoneos.core.ui.components.Switch(px + 16, y, "サイレントモード");
+        boolean silentMode = kernel.getSettingsManager().getBooleanSetting("audio.silent_mode", false);
+        switchSilentMode.setOn(silentMode);
+        switchSilentMode.setOnChangeListener(enabled -> {
+            var sm = kernel != null ? kernel.getSettingsManager() : null;
+            if (sm != null) {
+                sm.setSetting("audio.silent_mode", enabled);
+                sm.saveSettings();
+                System.out.println("SettingsScreen: Silent mode " + (enabled ? "enabled" : "disabled"));
+
+                // コントロールセンターのトグルも同期
+                syncControlCenterToggle("silent_mode", enabled);
+            }
+        });
+        y += 50;
+
+        // チャット通知スイッチ（Forge環境でMinecraftチャットに通知を送信）
+        switchChatNotification = new jp.moyashi.phoneos.core.ui.components.Switch(px + 16, y, "チャット通知");
+        boolean chatNotification = kernel.getSettingsManager().getBooleanSetting("notification.chat_enabled", true);
+        switchChatNotification.setOn(chatNotification);
+        switchChatNotification.setOnChangeListener(enabled -> {
+            var sm = kernel != null ? kernel.getSettingsManager() : null;
+            if (sm != null) {
+                sm.setSetting("notification.chat_enabled", enabled);
+                sm.saveSettings();
+                System.out.println("SettingsScreen: Chat notification " + (enabled ? "enabled" : "disabled"));
+            }
+        });
+        y += 70;
+
+        // 現在の通知音を表示
+        String currentSoundPath = kernel.getSettingsManager().getStringSetting("notification.sound_path", null);
+        String displayName = (currentSoundPath == null || currentSoundPath.isEmpty()) ? "デフォルト" : getFileName(currentSoundPath);
+        labelCurrentNotificationSound = new jp.moyashi.phoneos.core.ui.components.Label(px + 16, y, "通知音: " + displayName);
+        y += 30;
+
+        // 通知音選択ボタン
+        btnNotificationSound = new jp.moyashi.phoneos.core.ui.components.Button(px + 16, y, pw - 32, 40, "通知音を選択...");
+        btnNotificationSound.setOnClickListener(() -> {
+            System.out.println("SettingsScreen: Notification sound selection clicked");
+            showNotificationSoundSelector();
+        });
+        y += 60;
+
+        // VFS内のsoundsディレクトリから利用可能な音声ファイルを取得
+        loadAvailableSounds();
+
+        // パネルに全てのコンポーネントを追加
+        notificationsPanel.addChild(switchSilentMode);
+        notificationsPanel.addChild(switchChatNotification);
+        notificationsPanel.addChild(labelCurrentNotificationSound);
+        notificationsPanel.addChild(btnNotificationSound);
+    }
+
+    /**
+     * VFSからシステムのsoundsディレクトリの音声ファイル一覧を取得する
+     */
+    private void loadAvailableSounds() {
+        availableSounds.clear();
+        availableSounds.add("デフォルト"); // 最初にデフォルトを追加
+
+        if (kernel == null || kernel.getVFS() == null) return;
+
+        var vfs = kernel.getVFS();
+
+        // system/soundsディレクトリが存在するか確認
+        if (!vfs.directoryExists("system/sounds")) {
+            vfs.createDirectory("system/sounds");
+            System.out.println("SettingsScreen: Created system/sounds directory");
+        }
+
+        // 音声ファイルを検索
+        java.util.List<String> wavFiles = vfs.listFilesByExtension("system/sounds", ".wav");
+        java.util.List<String> mp3Files = vfs.listFilesByExtension("system/sounds", ".mp3");
+
+        for (String file : wavFiles) {
+            availableSounds.add("system/sounds/" + file);
+        }
+        for (String file : mp3Files) {
+            availableSounds.add("system/sounds/" + file);
+        }
+
+        System.out.println("SettingsScreen: Found " + (availableSounds.size() - 1) + " notification sounds");
+    }
+
+    /**
+     * コントロールセンターのトグルと設定を同期する
+     *
+     * @param toggleId トグルID
+     * @param enabled 有効/無効
+     */
+    private void syncControlCenterToggle(String toggleId, boolean enabled) {
+        if (kernel == null || kernel.getControlCenterManager() == null) return;
+
+        var item = kernel.getControlCenterManager().getItem(toggleId);
+        if (item instanceof jp.moyashi.phoneos.core.controls.ToggleItem) {
+            var toggle = (jp.moyashi.phoneos.core.controls.ToggleItem) item;
+            // コールバックを発火させずに状態のみ更新
+            if (toggle.isOn() != enabled) {
+                toggle.setOnSilent(enabled);
+            }
+        }
+    }
+
+    /**
+     * ファイルパスからファイル名を取得する
+     */
+    private String getFileName(String path) {
+        if (path == null || path.isEmpty()) return "";
+        int lastSlash = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
+        return lastSlash >= 0 ? path.substring(lastSlash + 1) : path;
+    }
+
+    /**
+     * 通知音選択ダイアログを表示する（簡易版：コンソール出力＋次の音を選択）
+     */
+    private void showNotificationSoundSelector() {
+        if (availableSounds.isEmpty()) {
+            loadAvailableSounds();
+        }
+
+        if (availableSounds.size() <= 1) {
+            System.out.println("SettingsScreen: No custom notification sounds available");
+            System.out.println("SettingsScreen: Place .wav or .mp3 files in system/sounds directory");
+            return;
+        }
+
+        // 現在の設定を取得
+        String currentPath = kernel.getSettingsManager().getStringSetting("notification.sound_path", null);
+
+        // 現在の選択インデックスを特定
+        selectedSoundIndex = 0;
+        for (int i = 0; i < availableSounds.size(); i++) {
+            String sound = availableSounds.get(i);
+            if ("デフォルト".equals(sound)) {
+                if (currentPath == null || currentPath.isEmpty()) {
+                    selectedSoundIndex = i;
+                    break;
+                }
+            } else if (sound.equals(currentPath)) {
+                selectedSoundIndex = i;
+                break;
+            }
+        }
+
+        // 次の音声に切り替え
+        selectedSoundIndex = (selectedSoundIndex + 1) % availableSounds.size();
+        String selected = availableSounds.get(selectedSoundIndex);
+
+        // 設定を更新
+        var sm = kernel.getSettingsManager();
+        if ("デフォルト".equals(selected)) {
+            sm.setSetting("notification.sound_path", "");
+        } else {
+            sm.setSetting("notification.sound_path", selected);
+        }
+        sm.saveSettings();
+
+        // ラベルを更新
+        String displayName = "デフォルト".equals(selected) ? "デフォルト" : getFileName(selected);
+        if (labelCurrentNotificationSound != null) {
+            labelCurrentNotificationSound.setText("通知音: " + displayName);
+        }
+
+        System.out.println("SettingsScreen: Notification sound set to: " + displayName);
+    }
+
+    /**
+     * Notificationsパネルのコンポーネントを描画する
+     */
+    private void drawNotificationsPanelComponents(PGraphics g) {
+        int px = ITEM_PADDING;
+        int py = 80;
+
+        ensureNotificationsComponents();
+
+        // 設定状態を更新
+        var sm = kernel != null ? kernel.getSettingsManager() : null;
+        if (sm != null) {
+            if (switchSilentMode != null) {
+                switchSilentMode.setOn(sm.getBooleanSetting("audio.silent_mode", false));
+            }
+            if (switchChatNotification != null) {
+                switchChatNotification.setOn(sm.getBooleanSetting("notification.chat_enabled", true));
+            }
+            if (labelCurrentNotificationSound != null) {
+                String currentPath = sm.getStringSetting("notification.sound_path", null);
+                String displayName = (currentPath == null || currentPath.isEmpty()) ? "デフォルト" : getFileName(currentPath);
+                labelCurrentNotificationSound.setText("通知音: " + displayName);
+            }
+        }
+
+        if (notificationsPanel != null) {
+            notificationsPanel.draw(g);
+        }
+
+        // ヘッダー
+        if (kernel != null && kernel.getJapaneseFont() != null) g.textFont(kernel.getJapaneseFont());
+        int tcol = (kernel != null && kernel.getThemeEngine() != null) ? kernel.getThemeEngine().colorOnSurface() : textColor;
+        g.fill((tcol>>16)&0xFF, (tcol>>8)&0xFF, tcol&0xFF);
+        g.textAlign(g.LEFT, g.TOP);
+        g.textSize(16);
+        g.text("Notifications", px + 16, py + 12);
+
+        // セクションヘッダー
+        g.textSize(14);
+        g.fill(0xFF4A90E2);
+        g.text("通知モード", px + 16, py + 48);
+        g.text("通知音", px + 16, py + 168);
+
+        // 説明テキスト
+        g.textSize(12);
+        // colorOnSurface()を薄くして使用
+        int baseColor = (kernel != null && kernel.getThemeEngine() != null)
+            ? kernel.getThemeEngine().colorOnSurface()
+            : 0xFFFFFFFF;
+        g.fill((baseColor >> 16) & 0xFF, (baseColor >> 8) & 0xFF, baseColor & 0xFF, 150);
+        g.text("サイレントモード: 通知音とチャット通知をオフにします", px + 16, py + 108);
+        g.text("system/sounds にwav/mp3ファイルを配置して選択できます", px + 16, py + 268);
+    }
+
+    // ==================== Control Center Panel ====================
+
+    /**
+     * CardRegistryから配置情報を読み込む。
+     */
+    private void loadControlCenterPlacements() {
+        ccPlacements.clear();
+        if (kernel != null && kernel.getControlCenterCardRegistry() != null) {
+            var registry = kernel.getControlCenterCardRegistry();
+            ccPlacements.addAll(registry.getAllPlacements());
+            System.out.println("SettingsScreen: Loaded " + ccPlacements.size() + " card placements");
+        }
+    }
+
+    /**
+     * Control Centerパネルの描画。
+     */
+    private void drawControlCenterPanelComponents(PGraphics g) {
+        // 背景
+        g.fill(backgroundColor);
+        g.noStroke();
+        g.rect(0, 0, g.width, g.height);
+
+        // ヘッダー
+        drawPanelHeader(g, "Control Center");
+
+        int py = 70;  // ヘッダー下からスタート
+        int px = 16;
+        int pw = g.width - 32;
+
+        // グリッドプレビュー領域
+        g.fill(textColor);
+        g.textAlign(g.LEFT, g.TOP);
+        g.textSize(14);
+        g.text("プレビュー（カードをタップして選択）", px, py);
+        py += 24;
+
+        // プレビュー背景
+        int previewHeight = 200;
+        g.fill(itemColor);
+        g.stroke(accentColor);
+        g.strokeWeight(1);
+        g.rect(px, py, pw, previewHeight, 8);
+
+        // プレビュー描画
+        drawControlCenterPreview(g, px + 4, py + 4, pw - 8, previewHeight - 8);
+        py += previewHeight + 16;
+
+        // カードリスト（セクション別）
+        g.fill(textColor);
+        g.noStroke();
+        g.textAlign(g.LEFT, g.TOP);
+        g.textSize(14);
+        g.text("カード一覧", px, py);
+        py += 24;
+
+        // セクションごとにカードをリスト表示
+        for (jp.moyashi.phoneos.core.controls.ControlCenterSection section :
+                jp.moyashi.phoneos.core.controls.ControlCenterSection.values()) {
+
+            // セクションヘッダー
+            g.fill(accentColor);
+            g.textSize(12);
+            g.text(section.getDisplayName(), px, py);
+            py += 18;
+
+            // セクション内のカード
+            for (var placement : ccPlacements) {
+                if (placement.getSection() != section) continue;
+
+                String cardId = placement.getCardId();
+                String cardName = getCardDisplayName(cardId);
+                boolean isVisible = placement.isVisible();
+                boolean isSelected = cardId.equals(selectedCardId);
+
+                // カード行の背景
+                if (isSelected) {
+                    g.fill(accentColor, 50);
+                } else {
+                    g.fill(itemColor);
+                }
+                g.noStroke();
+                g.rect(px, py, pw, 36, 4);
+
+                // チェックボックス（表示/非表示）
+                int cbX = px + 8;
+                int cbY = py + 8;
+                int cbSize = 20;
+                g.stroke(textColor);
+                g.strokeWeight(1);
+                g.noFill();
+                g.rect(cbX, cbY, cbSize, cbSize, 4);
+                if (isVisible) {
+                    g.fill(accentColor);
+                    g.noStroke();
+                    g.rect(cbX + 4, cbY + 4, cbSize - 8, cbSize - 8, 2);
+                }
+
+                // カード名
+                g.fill(textColor);
+                g.textSize(13);
+                g.textAlign(g.LEFT, g.CENTER);
+                g.text(cardName, cbX + cbSize + 12, py + 18);
+
+                // 選択時のオプション
+                if (isSelected) {
+                    // 上移動ボタン
+                    int btnY = py + 4;
+                    int btnSize = 28;
+                    int upX = pw - 70;
+                    int downX = pw - 35;
+
+                    g.fill(itemColor);
+                    g.stroke(textColor);
+                    g.rect(upX, btnY, btnSize, btnSize, 4);
+                    g.rect(downX, btnY, btnSize, btnSize, 4);
+
+                    g.fill(textColor);
+                    g.textAlign(g.CENTER, g.CENTER);
+                    g.textSize(16);
+                    g.text("↑", upX + btnSize / 2, btnY + btnSize / 2);
+                    g.text("↓", downX + btnSize / 2, btnY + btnSize / 2);
+                }
+
+                py += 40;
+            }
+
+            py += 8; // セクション間スペース
+        }
+
+        // 保存ボタン
+        py += 8;
+        int btnW = 120;
+        int btnH = 36;
+        int btnX = (g.width - btnW) / 2;
+        g.fill(accentColor);
+        g.noStroke();
+        g.rect(btnX, py, btnW, btnH, 8);
+        g.fill(0xFFFFFFFF);
+        g.textAlign(g.CENTER, g.CENTER);
+        g.textSize(14);
+        g.text("保存", btnX + btnW / 2, py + btnH / 2);
+    }
+
+    /**
+     * Control Centerのグリッドプレビューを描画。
+     */
+    private void drawControlCenterPreview(PGraphics g, float x, float y, float w, float h) {
+        // ミニチュア版のコントロールセンターを描画
+        float scale = 0.4f;
+        int cols = 4;
+        float cellSize = w / cols;
+        float cellHeight = cellSize;
+        int row = 0, col = 0;
+
+        // グリッド占有状況
+        boolean[][] occupied = new boolean[10][cols];
+
+        var registry = kernel != null ? kernel.getControlCenterCardRegistry() : null;
+        if (registry == null) return;
+
+        // 配置順序でソート
+        var sortedPlacements = new java.util.ArrayList<>(ccPlacements);
+        sortedPlacements.sort((a, b) -> {
+            int secCompare = Integer.compare(a.getSection().getDefaultOrder(), b.getSection().getDefaultOrder());
+            if (secCompare != 0) return secCompare;
+            return Integer.compare(a.getOrder(), b.getOrder());
+        });
+
+        for (var placement : sortedPlacements) {
+            if (!placement.isVisible()) continue;
+
+            var card = registry.getCard(placement.getCardId());
+            if (card == null) continue;
+
+            int colSpan = Math.min(card.getColumnSpan(), cols);
+            int rowSpan = card.getRowSpan();
+
+            // 配置位置を探す
+            int placeCol = -1, placeRow = -1;
+            outer:
+            for (int r = 0; r < occupied.length; r++) {
+                for (int c = 0; c <= cols - colSpan; c++) {
+                    boolean canPlace = true;
+                    for (int dr = 0; dr < rowSpan && canPlace; dr++) {
+                        for (int dc = 0; dc < colSpan && canPlace; dc++) {
+                            if (r + dr >= occupied.length || occupied[r + dr][c + dc]) {
+                                canPlace = false;
+                            }
+                        }
+                    }
+                    if (canPlace) {
+                        placeCol = c;
+                        placeRow = r;
+                        break outer;
+                    }
+                }
+            }
+
+            if (placeCol < 0) continue;
+
+            // グリッドを占有
+            for (int dr = 0; dr < rowSpan; dr++) {
+                for (int dc = 0; dc < colSpan; dc++) {
+                    if (placeRow + dr < occupied.length) {
+                        occupied[placeRow + dr][placeCol + dc] = true;
+                    }
+                }
+            }
+
+            // カード描画
+            float cardX = x + placeCol * cellSize + 2;
+            float cardY = y + placeRow * cellHeight + 2;
+            float cardW = cellSize * colSpan - 4;
+            float cardH = cellHeight * rowSpan - 4;
+
+            boolean isSelected = placement.getCardId().equals(selectedCardId);
+
+            // 背景
+            if (isSelected) {
+                g.fill(accentColor);
+            } else {
+                g.fill(0xFF3A3A3C);
+            }
+            g.noStroke();
+            g.rect(cardX, cardY, cardW, cardH, 4);
+
+            // カード名（短縮表示）
+            g.fill(0xFFFFFFFF);
+            g.textAlign(g.CENTER, g.CENTER);
+            g.textSize(Math.max(8, cardW / 6));
+            String shortName = getCardShortName(placement.getCardId());
+            g.text(shortName, cardX + cardW / 2, cardY + cardH / 2);
+        }
+    }
+
+    /**
+     * Control Centerパネルでのクリック処理。
+     */
+    private void handleControlCenterClick(int mouseX, int mouseY) {
+        int py = 70 + 24;  // ヘッダー + タイトル
+        int px = 16;
+        int pw = 400 - 32;
+        int previewHeight = 200;
+
+        // プレビュー領域のクリック判定
+        if (mouseY >= py && mouseY < py + previewHeight) {
+            handlePreviewClick(mouseX - px, mouseY - py, pw, previewHeight);
+            return;
+        }
+
+        py += previewHeight + 16 + 24;  // カードリストのタイトル分
+
+        // セクションごとのカードリストのクリック判定
+        for (jp.moyashi.phoneos.core.controls.ControlCenterSection section :
+                jp.moyashi.phoneos.core.controls.ControlCenterSection.values()) {
+
+            py += 18;  // セクションヘッダー
+
+            for (var placement : ccPlacements) {
+                if (placement.getSection() != section) continue;
+
+                String cardId = placement.getCardId();
+                boolean isSelected = cardId.equals(selectedCardId);
+
+                if (mouseY >= py && mouseY < py + 36) {
+                    // チェックボックス領域
+                    int cbX = px + 8;
+                    int cbSize = 20;
+                    if (mouseX >= cbX && mouseX < cbX + cbSize + 12 &&
+                            mouseY >= py + 8 && mouseY < py + 28) {
+                        // 表示/非表示トグル
+                        toggleCardVisibility(cardId);
+                        return;
+                    }
+
+                    // 上下ボタン（選択中のみ）
+                    if (isSelected) {
+                        int upX = pw - 70 + px;
+                        int downX = pw - 35 + px;
+                        int btnY = py + 4;
+                        int btnSize = 28;
+
+                        if (mouseX >= upX && mouseX < upX + btnSize &&
+                                mouseY >= btnY && mouseY < btnY + btnSize) {
+                            moveCardUp(cardId);
+                            return;
+                        }
+                        if (mouseX >= downX && mouseX < downX + btnSize &&
+                                mouseY >= btnY && mouseY < btnY + btnSize) {
+                            moveCardDown(cardId);
+                            return;
+                        }
+                    }
+
+                    // カード選択
+                    selectedCardId = cardId;
+                    System.out.println("SettingsScreen: Selected card: " + cardId);
+                    return;
+                }
+
+                py += 40;
+            }
+
+            py += 8;
+        }
+
+        // 保存ボタン
+        py += 8;
+        int btnW = 120;
+        int btnH = 36;
+        int btnX = (400 - btnW) / 2;
+        if (mouseX >= btnX && mouseX < btnX + btnW && mouseY >= py && mouseY < py + btnH) {
+            saveControlCenterPlacements();
+        }
+    }
+
+    /**
+     * プレビュー領域でのクリック処理。
+     */
+    private void handlePreviewClick(int localX, int localY, int previewW, int previewH) {
+        float cellSize = (float) previewW / 4;
+        float cellHeight = cellSize;
+        int cols = 4;
+
+        boolean[][] occupied = new boolean[10][cols];
+
+        var registry = kernel != null ? kernel.getControlCenterCardRegistry() : null;
+        if (registry == null) return;
+
+        var sortedPlacements = new java.util.ArrayList<>(ccPlacements);
+        sortedPlacements.sort((a, b) -> {
+            int secCompare = Integer.compare(a.getSection().getDefaultOrder(), b.getSection().getDefaultOrder());
+            if (secCompare != 0) return secCompare;
+            return Integer.compare(a.getOrder(), b.getOrder());
+        });
+
+        for (var placement : sortedPlacements) {
+            if (!placement.isVisible()) continue;
+
+            var card = registry.getCard(placement.getCardId());
+            if (card == null) continue;
+
+            int colSpan = Math.min(card.getColumnSpan(), cols);
+            int rowSpan = card.getRowSpan();
+
+            int placeCol = -1, placeRow = -1;
+            outer:
+            for (int r = 0; r < occupied.length; r++) {
+                for (int c = 0; c <= cols - colSpan; c++) {
+                    boolean canPlace = true;
+                    for (int dr = 0; dr < rowSpan && canPlace; dr++) {
+                        for (int dc = 0; dc < colSpan && canPlace; dc++) {
+                            if (r + dr >= occupied.length || occupied[r + dr][c + dc]) {
+                                canPlace = false;
+                            }
+                        }
+                    }
+                    if (canPlace) {
+                        placeCol = c;
+                        placeRow = r;
+                        break outer;
+                    }
+                }
+            }
+
+            if (placeCol < 0) continue;
+
+            for (int dr = 0; dr < rowSpan; dr++) {
+                for (int dc = 0; dc < colSpan; dc++) {
+                    if (placeRow + dr < occupied.length) {
+                        occupied[placeRow + dr][placeCol + dc] = true;
+                    }
+                }
+            }
+
+            float cardX = placeCol * cellSize + 2;
+            float cardY = placeRow * cellHeight + 2;
+            float cardW = cellSize * colSpan - 4;
+            float cardH = cellHeight * rowSpan - 4;
+
+            if (localX >= cardX && localX < cardX + cardW &&
+                    localY >= cardY && localY < cardY + cardH) {
+                selectedCardId = placement.getCardId();
+                System.out.println("SettingsScreen: Selected card from preview: " + selectedCardId);
+                return;
+            }
+        }
+    }
+
+    /**
+     * カードの表示/非表示をトグル。
+     */
+    private void toggleCardVisibility(String cardId) {
+        for (var placement : ccPlacements) {
+            if (placement.getCardId().equals(cardId)) {
+                placement.setVisible(!placement.isVisible());
+                System.out.println("SettingsScreen: Toggled visibility for " + cardId + " to " + placement.isVisible());
+                break;
+            }
+        }
+    }
+
+    /**
+     * カードを上に移動。
+     */
+    private void moveCardUp(String cardId) {
+        if (kernel == null || kernel.getControlCenterCardRegistry() == null) return;
+        kernel.getControlCenterCardRegistry().moveCardUp(cardId);
+        loadControlCenterPlacements();
+        System.out.println("SettingsScreen: Moved card up: " + cardId);
+    }
+
+    /**
+     * カードを下に移動。
+     */
+    private void moveCardDown(String cardId) {
+        if (kernel == null || kernel.getControlCenterCardRegistry() == null) return;
+        kernel.getControlCenterCardRegistry().moveCardDown(cardId);
+        loadControlCenterPlacements();
+        System.out.println("SettingsScreen: Moved card down: " + cardId);
+    }
+
+    /**
+     * 配置情報を保存。
+     */
+    private void saveControlCenterPlacements() {
+        if (kernel == null || kernel.getControlCenterCardRegistry() == null) return;
+
+        var registry = kernel.getControlCenterCardRegistry();
+        for (var placement : ccPlacements) {
+            registry.setCardVisible(placement.getCardId(), placement.isVisible());
+        }
+        registry.savePlacements();
+        System.out.println("SettingsScreen: Saved control center placements");
+    }
+
+    /**
+     * カードIDから表示名を取得。
+     */
+    private String getCardDisplayName(String cardId) {
+        if (kernel == null || kernel.getControlCenterCardRegistry() == null) return cardId;
+        var card = kernel.getControlCenterCardRegistry().getCard(cardId);
+        return card != null ? card.getDisplayName() : cardId;
+    }
+
+    /**
+     * カードIDから短縮名を取得（プレビュー用）。
+     */
+    private String getCardShortName(String cardId) {
+        String name = getCardDisplayName(cardId);
+        if (name.length() > 6) {
+            return name.substring(0, 5) + "…";
+        }
+        return name;
+    }
+
+    /**
+     * パネルヘッダーを描画（共通）。
+     */
+    private void drawPanelHeader(PGraphics g, String title) {
+        g.fill(itemColor);
+        g.noStroke();
+        g.rect(0, 0, g.width, 60);
+
+        // 戻るボタン
+        g.stroke(textColor);
+        g.strokeWeight(2);
+        g.line(20, 30, 30, 20);
+        g.line(20, 30, 30, 40);
+
+        // タイトル
+        g.fill(textColor);
+        g.noStroke();
+        g.textAlign(g.LEFT, g.CENTER);
+        g.textSize(18);
+        if (kernel != null && kernel.getJapaneseFont() != null) {
+            g.textFont(kernel.getJapaneseFont());
+        }
+        g.text(title, 50, 30);
+
+        // 下線
+        g.stroke(textColor);
+        g.strokeWeight(1);
+        g.line(0, 59, g.width, 59);
+    }
+
     private String toHex(int argb) {
         int rgb = argb & 0x00FFFFFF;
         return String.format("#%06X", rgb);
+    }
+
+    // ==================== Dashboard Panel Methods ====================
+
+    /**
+     * ダッシュボードウィジェット一覧を読み込む。
+     */
+    private void loadDashboardWidgets() {
+        availableWidgets.clear();
+        selectedDashboardSlot = null;
+
+        if (kernel == null || kernel.getDashboardWidgetRegistry() == null) return;
+
+        var registry = kernel.getDashboardWidgetRegistry();
+        availableWidgets.addAll(registry.getAllWidgets());
+        System.out.println("SettingsScreen: Loaded " + availableWidgets.size() + " dashboard widgets");
+    }
+
+    /**
+     * Dashboardパネルの描画。
+     */
+    private void drawDashboardPanelComponents(PGraphics g) {
+        // 背景
+        g.fill(backgroundColor);
+        g.noStroke();
+        g.rect(0, 0, g.width, g.height);
+
+        // ヘッダー
+        drawPanelHeader(g, "Dashboard");
+
+        int py = 70;  // ヘッダー下からスタート
+        int px = 16;
+        int pw = g.width - 32;
+
+        // 説明
+        g.fill(textColor);
+        g.textAlign(g.LEFT, g.TOP);
+        g.textSize(12);
+        g.text("ホーム画面のダッシュボードウィジェットを設定します。", px, py);
+        g.text("スロットをタップしてウィジェットを選択してください。", px, py + 16);
+        py += 40;
+
+        // プレビュー領域
+        g.fill(textColor);
+        g.textSize(14);
+        g.text("プレビュー", px, py);
+        py += 24;
+
+        // プレビュー背景
+        int previewHeight = 220;
+        g.fill(itemColor);
+        g.stroke(accentColor);
+        g.strokeWeight(1);
+        g.rect(px, py, pw, previewHeight, 8);
+
+        // プレビュー描画
+        drawDashboardPreview(g, px + 4, py + 4, pw - 8, previewHeight - 8);
+        py += previewHeight + 16;
+
+        // 選択中のスロットがある場合、ウィジェット選択リストを表示
+        if (selectedDashboardSlot != null) {
+            g.fill(textColor);
+            g.textSize(14);
+            g.text(selectedDashboardSlot.name() + " スロットのウィジェットを選択", px, py);
+            py += 24;
+
+            // ウィジェットリスト
+            var registry = kernel != null ? kernel.getDashboardWidgetRegistry() : null;
+            if (registry != null) {
+                // 選択中スロットに適合するウィジェットのみ表示
+                var compatibleWidgets = new java.util.ArrayList<jp.moyashi.phoneos.core.dashboard.IDashboardWidget>();
+                for (var widget : availableWidgets) {
+                    if (widget.getSize() == selectedDashboardSlot.getRequiredSize()) {
+                        compatibleWidgets.add(widget);
+                    }
+                }
+
+                // 現在割り当てられているウィジェット
+                var currentWidget = registry.getWidgetForSlot(selectedDashboardSlot);
+                String currentId = currentWidget != null ? currentWidget.getId() : null;
+
+                for (var widget : compatibleWidgets) {
+                    boolean isSelected = widget.getId().equals(currentId);
+
+                    // ウィジェット行の背景
+                    if (isSelected) {
+                        g.fill(accentColor, 80);
+                    } else {
+                        g.fill(itemColor);
+                    }
+                    g.noStroke();
+                    g.rect(px, py, pw, 44, 4);
+
+                    // ウィジェット名と説明
+                    g.fill(textColor);
+                    g.textSize(14);
+                    g.textAlign(g.LEFT, g.TOP);
+                    g.text(widget.getDisplayName(), px + 12, py + 6);
+                    g.textSize(11);
+                    g.fill(textColor, 180);
+                    g.text(widget.getDescription(), px + 12, py + 24);
+
+                    // 選択マーク
+                    if (isSelected) {
+                        g.fill(accentColor);
+                        g.textSize(16);
+                        g.textAlign(g.RIGHT, g.CENTER);
+                        g.text("✓", px + pw - 12, py + 22);
+                    }
+
+                    py += 48;
+                }
+            }
+        } else {
+            g.fill(textColor, 150);
+            g.textSize(12);
+            g.textAlign(g.CENTER, g.TOP);
+            g.text("上のプレビューでスロットをタップしてください", g.width / 2, py);
+        }
+    }
+
+    /**
+     * ダッシュボードのプレビューを描画。
+     */
+    private void drawDashboardPreview(PGraphics g, float x, float y, float w, float h) {
+        var registry = kernel != null ? kernel.getDashboardWidgetRegistry() : null;
+        if (registry == null) return;
+
+        float scale = w / 360f;  // 360px を基準にスケール
+
+        // 各スロットを描画
+        for (var slot : jp.moyashi.phoneos.core.dashboard.DashboardSlot.values()) {
+            float slotX = x + (slot.getX() - 20) * scale;  // 左マージン分を調整
+            float slotY = y + (slot.getY() - 80) * scale;  // 上マージン分を調整
+            float slotW = slot.getWidth() * scale;
+            float slotH = slot.getHeight() * scale;
+
+            // スロット背景
+            boolean isSelected = slot == selectedDashboardSlot;
+            if (isSelected) {
+                g.fill(accentColor, 100);
+                g.stroke(accentColor);
+                g.strokeWeight(2);
+            } else {
+                g.fill(0xFFE0E0E0);
+                g.stroke(0xFF999999);
+                g.strokeWeight(1);
+            }
+            g.rect(slotX, slotY, slotW, slotH, 4);
+
+            // ウィジェット名を表示
+            var widget = registry.getWidgetForSlot(slot);
+            String label = widget != null ? widget.getDisplayName() : "(空き)";
+            if (!slot.isConfigurable()) {
+                label = widget != null ? widget.getDisplayName() : slot.name();
+            }
+
+            g.fill(isSelected ? accentColor : textColor);
+            g.textAlign(g.CENTER, g.CENTER);
+            g.textSize(Math.max(8, 10 * scale));
+            g.noStroke();
+
+            // 長いラベルは切り詰め
+            if (label.length() > 8) {
+                label = label.substring(0, 7) + "…";
+            }
+            g.text(label, slotX + slotW / 2, slotY + slotH / 2);
+
+            // 変更不可スロットにはロックアイコン
+            if (!slot.isConfigurable()) {
+                g.textSize(8 * scale);
+                g.text("🔒", slotX + slotW - 10 * scale, slotY + 10 * scale);
+            }
+        }
+    }
+
+    /**
+     * Dashboardパネルのクリック処理。
+     */
+    private void handleDashboardClick(int mouseX, int mouseY) {
+        int px = 16;
+        int pw = 400 - 32;
+        int previewY = 70 + 40 + 24;  // ヘッダー + 説明 + ラベル
+        int previewHeight = 220;
+
+        // プレビュー領域内のクリック
+        if (mouseY >= previewY && mouseY < previewY + previewHeight) {
+            handleDashboardPreviewClick(mouseX - px - 4, mouseY - previewY - 4, pw - 8, previewHeight - 8);
+            return;
+        }
+
+        // ウィジェットリストのクリック
+        if (selectedDashboardSlot != null) {
+            int listY = previewY + previewHeight + 16 + 24;  // プレビュー後 + スペース + ラベル
+            int itemHeight = 48;
+
+            var registry = kernel != null ? kernel.getDashboardWidgetRegistry() : null;
+            if (registry != null) {
+                // 選択中スロットに適合するウィジェットのリスト
+                var compatibleWidgets = new java.util.ArrayList<jp.moyashi.phoneos.core.dashboard.IDashboardWidget>();
+                for (var widget : availableWidgets) {
+                    if (widget.getSize() == selectedDashboardSlot.getRequiredSize()) {
+                        compatibleWidgets.add(widget);
+                    }
+                }
+
+                int widgetIndex = (mouseY - listY) / itemHeight;
+                if (widgetIndex >= 0 && widgetIndex < compatibleWidgets.size()) {
+                    var selectedWidget = compatibleWidgets.get(widgetIndex);
+                    registry.assignWidgetToSlot(selectedDashboardSlot, selectedWidget.getId());
+                    registry.saveAssignments();
+                    System.out.println("SettingsScreen: Assigned widget " + selectedWidget.getId() + " to slot " + selectedDashboardSlot.name());
+                }
+            }
+        }
+    }
+
+    /**
+     * プレビュー領域でのクリック処理（Dashboard）。
+     */
+    private void handleDashboardPreviewClick(int localX, int localY, int previewW, int previewH) {
+        float scale = (float) previewW / 360f;
+
+        for (var slot : jp.moyashi.phoneos.core.dashboard.DashboardSlot.values()) {
+            // 変更不可スロットはスキップ
+            if (!slot.isConfigurable()) continue;
+
+            float slotX = (slot.getX() - 20) * scale;
+            float slotY = (slot.getY() - 80) * scale;
+            float slotW = slot.getWidth() * scale;
+            float slotH = slot.getHeight() * scale;
+
+            if (localX >= slotX && localX < slotX + slotW &&
+                    localY >= slotY && localY < slotY + slotH) {
+                selectedDashboardSlot = slot;
+                System.out.println("SettingsScreen: Selected dashboard slot: " + slot.name());
+                return;
+            }
+        }
     }
 }
 

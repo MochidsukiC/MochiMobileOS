@@ -17,6 +17,7 @@ import jp.moyashi.phoneos.core.service.hardware.*;
 import jp.moyashi.phoneos.core.service.sensor.SensorManager;
 import jp.moyashi.phoneos.core.service.sensor.SensorManagerImpl;
 import jp.moyashi.phoneos.core.service.BatteryMonitor;
+import jp.moyashi.phoneos.core.media.MediaSessionManager;
 import jp.moyashi.phoneos.core.service.SettingsManager;
 import jp.moyashi.phoneos.core.ui.ScreenManager;
 import jp.moyashi.phoneos.core.ui.popup.PopupManager;
@@ -186,6 +187,17 @@ public class CoreServiceBootstrap {
         container.registerSingleton(ClipboardManager.class,
             () -> new SimpleClipboardManager());
 
+        // チャットソケット（スタンドアロン用デフォルト実装）
+        container.registerSingleton(ChatSocket.class,
+            () -> new DefaultChatSocket());
+
+        // 通知音サービス
+        container.registerSingleton(NotificationSoundService.class,
+            () -> new NotificationSoundService(
+                container.resolve(SpeakerSocket.class),
+                container.resolve(SettingsManager.class),
+                container.resolve(VFS.class)));
+
         // 通知システム（既存実装を使用）
         container.registerSingleton(NotificationManager.class,
             () -> new NotificationManager());
@@ -275,6 +287,10 @@ public class CoreServiceBootstrap {
 
         // サウンド管理（将来実装）
         // TODO: SoundManagerクラスを実装
+
+        // メディアセッション管理
+        container.registerSingleton(MediaSessionManager.class,
+            () -> new MediaSessionManager());
     }
 
     /**

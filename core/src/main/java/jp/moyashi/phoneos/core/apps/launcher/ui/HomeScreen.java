@@ -12,6 +12,12 @@ import jp.moyashi.phoneos.core.input.GestureListener;
 import jp.moyashi.phoneos.core.input.GestureEvent;
 import jp.moyashi.phoneos.core.input.GestureType;
 import jp.moyashi.phoneos.core.ui.components.TextField;
+import jp.moyashi.phoneos.core.dashboard.DashboardSlot;
+import jp.moyashi.phoneos.core.dashboard.DashboardWidgetRegistry;
+import jp.moyashi.phoneos.core.dashboard.DashboardWidgetType;
+import jp.moyashi.phoneos.core.dashboard.IDashboardWidget;
+import jp.moyashi.phoneos.core.dashboard.widgets.ClockWidget;
+import jp.moyashi.phoneos.core.dashboard.widgets.SearchWidget;
 import processing.core.PApplet;
 import processing.core.PGraphics;
 
@@ -1864,11 +1870,28 @@ public class HomeScreen implements Screen, GestureListener, SensorEventListener 
      * @param g The PGraphics instance for drawing
      */
     private void drawDashboard(PGraphics g) {
-        drawClockAndWeatherCard(g);
-        drawSearchCard(g);
-        drawMessagesCard(g);
-        drawEMoneyCard(g);
-        drawAIAssistantCard(g);
+        DashboardWidgetRegistry registry = kernel != null ? kernel.getDashboardWidgetRegistry() : null;
+
+        if (registry == null) {
+            // フォールバック: 従来の描画
+            drawClockAndWeatherCard(g);
+            drawSearchCard(g);
+            drawMessagesCard(g);
+            drawEMoneyCard(g);
+            drawAIAssistantCard(g);
+            return;
+        }
+
+        // レジストリベースの描画
+        for (DashboardSlot slot : DashboardSlot.values()) {
+            IDashboardWidget widget = registry.getWidgetForSlot(slot);
+            if (widget != null && widget.isVisible()) {
+                widget.draw(g, slot.getX(), slot.getY(), slot.getWidth(), slot.getHeight());
+            } else if (slot == DashboardSlot.CLOCK) {
+                // 時計スロットにウィジェットがない場合は従来の描画
+                drawClockAndWeatherCard(g);
+            }
+        }
     }
 
     /**
@@ -1941,6 +1964,56 @@ public class HomeScreen implements Screen, GestureListener, SensorEventListener 
         g.textAlign(g.LEFT, g.CENTER);
         g.textSize(TEXT_SIZE_LARGE);
         g.text("AI Assistant...", cardX + 20, cardY + cardHeight / 2);
+    }
+
+    /**
+     * ダッシュボードウィジェットのタップを処理する。
+     *
+     * @param x タップX座標
+     * @param y タップY座標
+     * @return タップを処理した場合true
+     */
+    private boolean handleDashboardWidgetTap(int x, int y) {
+        DashboardWidgetRegistry registry = kernel != null ? kernel.getDashboardWidgetRegistry() : null;
+        if (registry == null) {
+            return false;
+        }
+
+        // どのスロットがタップされたかを判定
+        DashboardSlot slot = DashboardSlot.getSlotAt(x, y);
+        if (slot == null) {
+            return false;
+        }
+
+        IDashboardWidget widget = registry.getWidgetForSlot(slot);
+        if (widget == null) {
+            return false;
+        }
+
+        // ウィジェットタイプに応じた処理
+        if (widget.getType() == DashboardWidgetType.DISPLAY) {
+            // 情報表示型: アプリを開く
+            String appId = widget.getTargetApplicationId();
+            if (appId != null && kernel.getAppLoader() != null) {
+                IApplication app = kernel.getAppLoader().findApplicationById(appId);
+                if (app != null) {
+                    // アニメーション付きで起動（スロットの中心を起点に）
+                    float iconX = slot.getX() + slot.getWidth() / 2f;
+                    float iconY = slot.getY() + slot.getHeight() / 2f;
+                    launchApplicationWithAnimation(app, iconX, iconY, Math.min(slot.getWidth(), slot.getHeight()));
+                    return true;
+                } else {
+                    System.err.println("HomeScreen: App not found: " + appId);
+                }
+            }
+        } else if (widget.getType() == DashboardWidgetType.INTERACTIVE) {
+            // インタラクティブ型: ウィジェットにイベントを転送
+            float localX = x - slot.getX();
+            float localY = y - slot.getY();
+            return widget.onTouch(localX, localY, IDashboardWidget.ACTION_TAP);
+        }
+
+        return false;
     }
 
     /**
@@ -2372,20 +2445,32 @@ public class HomeScreen implements Screen, GestureListener, SensorEventListener 
     private boolean handleTap(int x, int y) {
         System.out.println("HomeScreen: Handling tap at (" + x + ", " + y + ")");
 
+        // ダッシュボードページ（ページ0）の場合、ウィジェットのタップ処理
+        if (currentPageIndex == 0) {
+            if (handleDashboardWidgetTap(x, y)) {
+                return true;
+            }
+        }
+
+        // 従来の検索処理（フォールバック）
         // Check if tap is on the search card
         if (!isSearching && x > 20 && x < 380 && y > 170 && y < 220) {
             isSearching = true;
-            searchField.setVisible(true);
-            searchField.setFocused(true);
-            searchField.setText("");
+            if (searchField != null) {
+                searchField.setVisible(true);
+                searchField.setFocused(true);
+                searchField.setText("");
+            }
             return true;
         }
 
         // If searching, and tapped outside, stop searching
         if (isSearching && (searchField == null || !searchField.contains(x, y))) {
             isSearching = false;
-            searchField.setFocused(false);
-            searchField.setVisible(false);
+            if (searchField != null) {
+                searchField.setFocused(false);
+                searchField.setVisible(false);
+            }
         }
 
         // マウス座標を変換

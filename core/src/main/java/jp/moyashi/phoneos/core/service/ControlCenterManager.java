@@ -1,5 +1,6 @@
 package jp.moyashi.phoneos.core.service;
 
+import jp.moyashi.phoneos.core.controls.ControlCenterCardRegistry;
 import jp.moyashi.phoneos.core.controls.IControlCenterItem;
 import jp.moyashi.phoneos.core.input.GestureEvent;
 import jp.moyashi.phoneos.core.input.GestureListener;
@@ -98,7 +99,10 @@ public class ControlCenterManager implements GestureListener {
 
     /** 統一座標変換システム */
     private CoordinateTransform coordinateTransform;
-    
+
+    /** カードレジストリ */
+    private ControlCenterCardRegistry cardRegistry;
+
     /**
      * ControlCenterManagerを作成する。
      */
@@ -295,28 +299,27 @@ public class ControlCenterManager implements GestureListener {
 
         // テーマに基づくパネル背景描画 (ビジュアル改善)
         var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
-        float tl = theme != null ? theme.radiusLg() : 20;
+        float tl = theme != null ? theme.radiusLg() : 20; // radiusXlがないためLgを使用、値は大きめに
 
-        // 背景スクラム（暗幕）で背面を落としてパネルを浮かせる（さらに強め）
-        g.fill(0, 0, 0, 140);
+        // 背景スクラム（暗幕）
+        g.fill(0, 0, 0, 100);
         g.noStroke();
         g.rect(0, 0, (int)screenWidth, (int)screenHeight);
 
-        // 影（エレベーション）
-        // TODO: 低電力モード(ui.performance.low_power)時は影レベルの引き下げ/省略を検討
-        jp.moyashi.phoneos.core.ui.effects.Elevation.drawRectShadow(g, 0, panelY, panelWidth, panelHeight, tl, 4);
-        int surface = theme != null ? theme.colorSurface() : 0xFF28303A;
+        // パネル本体（フロストガラス風演出）
+        // 1. 影（エレベーション）
+        jp.moyashi.phoneos.core.ui.effects.Elevation.drawRectShadow(g, 0, panelY, panelWidth, panelHeight, tl, 16);
+        
+        // 2. ベースレイヤー（濃い背景）
+        int surface = 0xFF1C1C1E; // モダンなダークグレー
         int r = (surface>>16)&0xFF, gr = (surface>>8)&0xFF, b = surface&0xFF;
-        g.fill(r, gr, b, 245);
+        g.fill(r, gr, b, 240); // 高い不透明度
         g.noStroke();
         g.rect(0, panelY, panelWidth, panelHeight, tl, tl, 0, 0);
 
-        // ライトモードでは面をさらにグレー寄りに見せるため黒の薄いオーバーレイを重ねる
-        if (theme == null || theme.getMode() == jp.moyashi.phoneos.core.ui.theme.ThemeEngine.Mode.LIGHT) {
-            g.noStroke();
-            g.fill(0, 0, 0, 28);
-            g.rect(0, panelY, panelWidth, panelHeight, tl, tl, 0, 0);
-        }
+        // 3. 質感向上用オーバーレイ（ノイズやグラデーションがあれば尚良いが、シンプルに）
+        g.fill(255, 255, 255, 5); // わずかなハイライト
+        g.rect(0, panelY, panelWidth, panelHeight, tl, tl, 0, 0);
 
         // 上端ボーダーで分離
         int borderCol = theme != null ? theme.colorBorder() : 0xFF444444;
@@ -327,8 +330,8 @@ public class ControlCenterManager implements GestureListener {
         // --- レイアウト変更：タイトルを一番上に配置 ---
 
         // タイトル領域とレイアウト定数
-        final int PADDING = 16;
-        final int GAP = 12;
+        final int PADDING = 20; // 余白を広げる
+        final int GAP = 14;     // ギャップを広げる
         int titleY = panelY + PADDING;
         int textCol = theme != null ? theme.colorOnSurface() : 0xFFFFFFFF;
         g.fill((textCol>>16)&0xFF, (textCol>>8)&0xFF, textCol&0xFF);
@@ -815,7 +818,53 @@ public class ControlCenterManager implements GestureListener {
     public void setCoordinateTransform(CoordinateTransform coordinateTransform) {
         this.coordinateTransform = coordinateTransform;
     }
-    
+
+    /**
+     * カードレジストリを設定する。
+     * レジストリが設定されると、カードの追加/削除がレジストリ経由で管理される。
+     *
+     * @param registry カードレジストリ
+     */
+    public void setCardRegistry(ControlCenterCardRegistry registry) {
+        this.cardRegistry = registry;
+
+        if (registry != null) {
+            // レジストリからカードを同期
+            registry.addListener(new ControlCenterCardRegistry.CardRegistryListener() {
+                @Override
+                public void onCardAdded(IControlCenterItem card) {
+                    // 重複チェックして追加
+                    if (items.stream().noneMatch(i -> i.getId().equals(card.getId()))) {
+                        items.add(card);
+                        System.out.println("ControlCenterManager: Card synced from registry: " + card.getId());
+                    }
+                }
+
+                @Override
+                public void onCardRemoved(IControlCenterItem card) {
+                    items.removeIf(i -> i.getId().equals(card.getId()));
+                    System.out.println("ControlCenterManager: Card removed via registry: " + card.getId());
+                }
+
+                @Override
+                public void onPlacementChanged(String cardId) {
+                    // 配置変更時は再描画が必要（自動的に次フレームで反映される）
+                }
+            });
+
+            System.out.println("ControlCenterManager: CardRegistry connected");
+        }
+    }
+
+    /**
+     * カードレジストリを取得する。
+     *
+     * @return カードレジストリ、設定されていない場合はnull
+     */
+    public ControlCenterCardRegistry getCardRegistry() {
+        return cardRegistry;
+    }
+
     /**
      * ジェスチャーイベントを処理する。
      * コントロールセンターが表示中の場合、すべてのジェスチャーを受け取り、

@@ -10,6 +10,9 @@ import processing.core.PApplet;
 import processing.core.PGraphics;
 import processing.core.PFont;
 
+import jp.moyashi.phoneos.core.service.hardware.ChatSocket;
+import processing.core.PImage;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -77,6 +80,12 @@ public class NotificationManager implements GestureListener {
     /** 最大表示可能通知数 */
     private static final int maxVisibleNotifications = 5;
     
+    /** チャットソケット（ハードウェア通知用） */
+    private ChatSocket chatSocket;
+
+    /** 通知音サービス */
+    private NotificationSoundService soundService;
+
     /**
      * NotificationManagerを作成する。
      */
@@ -85,28 +94,8 @@ public class NotificationManager implements GestureListener {
         this.isVisible = false;
         this.animationProgress = 0.0f;
         this.targetAnimationProgress = 0.0f;
-        
+
         System.out.println("NotificationManager: Notification center service initialized");
-        
-        // テスト用通知を追加
-        addTestNotifications();
-    }
-    
-    /**
-     * テスト用の通知を追加する。
-     */
-    private void addTestNotifications() {
-        addNotification("\u30b7\u30b9\u30c6\u30e0", "\u30b7\u30b9\u30c6\u30e0\u66f4\u65b0", "MochiMobileOS\u306e\u65b0\u3057\u3044\u30d0\u30fc\u30b8\u30e7\u30f3\u304c\u5229\u7528\u53ef\u80fd\u3067\u3059", 1);
-        addNotification("\u8a2d\u5b9a", "Wi-Fi\u63a5\u7d9a", "\u30db\u30fc\u30e0\u30cd\u30c3\u30c8\u30ef\u30fc\u30af\u306b\u63a5\u7d9a\u3057\u307e\u3057\u305f", 0);
-        addNotification("\u30e1\u30c3\u30bb\u30fc\u30b8", "\u65b0\u7740\u30e1\u30c3\u30bb\u30fc\u30b8", "\u53cb\u9054\u304b\u3089\u30e1\u30c3\u30bb\u30fc\u30b8\u304c\u5c4a\u304d\u307e\u3057\u305f", 2);
-        addNotification("\u30a2\u30d7\u30ea\u30b9\u30c8\u30a2", "\u30a2\u30d7\u30ea\u66f4\u65b0", "3\u3064\u306e\u30a2\u30d7\u30ea\u304c\u66f4\u65b0\u3055\u308c\u307e\u3057\u305f", 0);
-        // スクロールテスト用の追加通知
-        addNotification("\u30e1\u30fc\u30eb", "\u65b0\u7740\u30e1\u30fc\u30eb", "\u4ed5\u4e8b\u306e\u30e1\u30fc\u30eb\u304c\u5c4a\u3044\u3066\u3044\u307e\u3059", 1);
-        addNotification("\u30ab\u30ec\u30f3\u30c0\u30fc", "\u4f1a\u8b70\u306e\u30ea\u30de\u30a4\u30f3\u30c0\u30fc", "15\u5206\u5f8c\u306b\u4f1a\u8b70\u304c\u59cb\u307e\u308a\u307e\u3059", 2);
-        addNotification("\u5929\u6c17", "\u96e8\u306e\u4e88\u5831", "\u4eca\u65e5\u306e\u5348\u5f8c\u304b\u3089\u96e8\u304c\u964d\u308a\u307e\u3059", 0);
-        addNotification("\u30bb\u30ad\u30e5\u30ea\u30c6\u30a3", "\u30bb\u30ad\u30e5\u30ea\u30c6\u30a3\u66f4\u65b0", "\u30bb\u30ad\u30e5\u30ea\u30c6\u30a3\u30a2\u30c3\u30d7\u30c7\u30fc\u30c8\u304c\u5fc5\u8981\u3067\u3059", 2);
-        addNotification("\u30d0\u30c3\u30c6\u30ea\u30fc", "\u30d0\u30c3\u30c6\u30ea\u30fc\u4f4e\u4e0b", "\u30d0\u30c3\u30c6\u30ea\u30fc\u304c20%\u4ee5\u4e0b\u3067\u3059", 1);
-        addNotification("\u30b9\u30c8\u30ec\u30fc\u30b8", "\u30b9\u30c8\u30ec\u30fc\u30b8\u4e0d\u8db3", "\u30b9\u30c8\u30ec\u30fc\u30b8\u304c\u6e80\u5bb9\u306b\u8fd1\u3065\u3044\u3066\u3044\u307e\u3059", 1);
     }
     
     /**
@@ -147,7 +136,7 @@ public class NotificationManager implements GestureListener {
     
     /**
      * 新しい通知を追加する。
-     * 
+     *
      * @param sender 送信者
      * @param title タイトル
      * @param content 内容
@@ -155,17 +144,117 @@ public class NotificationManager implements GestureListener {
      * @return 追加された通知のID
      */
     public String addNotification(String sender, String title, String content, int priority) {
+        return addNotification(sender, title, content, priority, null, null);
+    }
+
+    /**
+     * 新しい通知を追加する（拡張版）。
+     *
+     * @param sender 送信者
+     * @param title タイトル
+     * @param content 内容
+     * @param priority 優先度（0=低、1=通常、2=高）
+     * @param icon アプリアイコン（nullでデフォルト）
+     * @param clickAction クリック時のアクション（nullで何もしない）
+     * @return 追加された通知のID
+     */
+    public String addNotification(String sender, String title, String content, int priority, PImage icon, Runnable clickAction) {
         String id = "notification_" + System.currentTimeMillis() + "_" + notifications.size();
         SimpleNotification notification = new SimpleNotification(id, title, content, sender, priority);
-        notification.setKernel(this.kernel); // Kernelの参照を設定
+        notification.setKernel(this.kernel);
+        notification.setIcon(icon);
+        notification.setClickAction(clickAction);
 
         // 優先度順でソート（高優先度が上に）
         notifications.add(notification);
         notifications.sort((n1, n2) -> Integer.compare(n2.getPriority(), n1.getPriority()));
-        
+
         System.out.println("NotificationManager: Added notification '" + title + "' from " + sender);
         updateScrollLimits();
+
+        // 消音モードでなければ通知音とチャット通知を実行
+        if (!isSilentMode()) {
+            playNotificationSound();
+            // チャット通知が有効な場合のみ送信
+            if (isChatNotificationEnabled()) {
+                sendChatNotification(sender, title, content);
+            }
+        }
+
         return id;
+    }
+
+    /**
+     * 消音モードかどうかを確認する。
+     *
+     * @return 消音モードの場合true
+     */
+    private boolean isSilentMode() {
+        if (kernel == null || kernel.getSettingsManager() == null) {
+            return false;
+        }
+        return kernel.getSettingsManager().getBooleanSetting("audio.silent_mode", false);
+    }
+
+    /**
+     * チャット通知が有効かどうかを確認する。
+     *
+     * @return チャット通知が有効な場合true
+     */
+    private boolean isChatNotificationEnabled() {
+        if (kernel == null || kernel.getSettingsManager() == null) {
+            return true; // デフォルトは有効
+        }
+        return kernel.getSettingsManager().getBooleanSetting("notification.chat_enabled", true);
+    }
+
+    /**
+     * 通知音を再生する。
+     */
+    private void playNotificationSound() {
+        if (soundService != null) {
+            try {
+                soundService.playNotificationSound();
+            } catch (Exception e) {
+                System.err.println("NotificationManager: Error playing notification sound: " + e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * チャット通知を送信する。
+     *
+     * @param sender 送信者
+     * @param title タイトル
+     * @param content 内容
+     */
+    private void sendChatNotification(String sender, String title, String content) {
+        if (chatSocket != null && chatSocket.isAvailable()) {
+            try {
+                String message = "[" + sender + "] " + title + ": " + content;
+                chatSocket.sendMessage(message);
+            } catch (Exception e) {
+                System.err.println("NotificationManager: Error sending chat notification: " + e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * チャットソケットを設定する。
+     *
+     * @param chatSocket チャットソケット
+     */
+    public void setChatSocket(ChatSocket chatSocket) {
+        this.chatSocket = chatSocket;
+    }
+
+    /**
+     * 通知音サービスを設定する。
+     *
+     * @param soundService 通知音サービス
+     */
+    public void setSoundService(NotificationSoundService soundService) {
+        this.soundService = soundService;
     }
     
     /**
