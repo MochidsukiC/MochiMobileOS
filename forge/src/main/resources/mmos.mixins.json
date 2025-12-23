@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "jp.moyashi.phoneos.forge.mixins",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "mmos.refmap.json",
+  "client": [
+    "MMOSInstallMixin",
+    "MMOSInitMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
