@@ -15,6 +15,8 @@ import org.cef.network.CefRequest;
 import org.cef.network.CefResponse;
 
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -72,7 +74,6 @@ public class VirtualNetworkResourceHandler extends CefResourceHandlerAdapter {
      */
     @Override
     public boolean processRequest(CefRequest request, CefCallback callback) {
-        System.out.println("[VirtualNetworkResourceHandler] processRequest() ENTER - url: " + originalUrl);
         log("processRequest() ENTER - url: " + originalUrl);
         log("Processing virtual network request: " + originalUrl);
 
@@ -113,48 +114,69 @@ public class VirtualNetworkResourceHandler extends CefResourceHandlerAdapter {
             return true;
         }
 
-        // 非同期でHTTPリクエストを送信
-        sendHttpRequestAsync(virtualAdapter, destination, callback);
+        // CefRequestからメソッドとボディを取得
+        String method = request.getMethod();
+        if (method == null || method.isEmpty()) {
+            method = "GET";
+        }
+
+        String body = null;
+        if ("POST".equalsIgnoreCase(method) || "PUT".equalsIgnoreCase(method)) {
+            org.cef.network.CefPostData postData = request.getPostData();
+            if (postData != null) {
+                java.util.Vector<org.cef.network.CefPostDataElement> elements = new java.util.Vector<>();
+                postData.getElements(elements);
+                StringBuilder bodyBuilder = new StringBuilder();
+                for (org.cef.network.CefPostDataElement element : elements) {
+                    int size = element.getBytesCount();
+                    if (size > 0) {
+                        byte[] bytes = new byte[size];
+                        element.getBytes(size, bytes);
+                        bodyBuilder.append(new String(bytes, StandardCharsets.UTF_8));
+                    }
+                }
+                body = bodyBuilder.toString();
+            }
+        }
+
+        log("Request method: " + method + ", body length: " + (body != null ? body.length() : 0));
+
+        // 同期的にHTTPリクエストを送信（JCEFではprocessRequest内で完了する必要がある）
+        sendHttpRequestSync(virtualAdapter, destination, method, body, callback);
         return true;
     }
 
     /**
-     * 非同期でHTTPリクエストを送信する。
+     * 同期的にHTTPリクエストを送信する。
+     * JCEFではprocessRequest内で同期的にレスポンスを準備する必要がある。
      */
-    private void sendHttpRequestAsync(VirtualAdapter virtualAdapter, IPvMAddress destination, CefCallback callback) {
+    private void sendHttpRequestSync(VirtualAdapter virtualAdapter, IPvMAddress destination,
+                                      String method, String body, CefCallback callback) {
         try {
+            log("sendHttpRequestSync: starting sync request to " + destination + " method=" + method);
+
             CompletableFuture<VirtualSocket.VirtualHttpResponse> future =
-                    virtualAdapter.httpRequest(destination, path, "GET");
+                    virtualAdapter.httpRequest(destination, path, method, body);
 
-            log("sendHttpRequestAsync: starting async request to " + destination);
-            // タイムアウト付きで待機
-            future.orTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
-                    .thenAccept(response -> {
-                        log("sendHttpRequestAsync: thenAccept called, response.isSuccess=" + response.isSuccess());
-                        if (response.isSuccess()) {
-                            // 成功: 直接HTMLを返却
-                            String html = response.getBody();
-                            setSuccessResponse(html);
-                            log("Received HTTP response: " + (html != null ? html.length() : 0) + " chars");
-                        } else {
-                            // エラー: エラーページを表示
-                            setErrorResponse(response.getStatusCode(), response.getStatusText(), response.getBody());
-                        }
-                        log("sendHttpRequestAsync: calling callback.Continue()");
-                        callback.Continue();
-                        log("sendHttpRequestAsync: callback.Continue() returned");
-                    })
-                    .exceptionally(e -> {
-                        logError("HTTP request failed: " + e.getMessage());
-                        if (e.getCause() instanceof java.util.concurrent.TimeoutException) {
-                            setErrorResponse(504, "Gateway Timeout", "Request timeout: " + originalUrl);
-                        } else {
-                            setErrorResponse(500, "Internal Server Error", e.getMessage());
-                        }
-                        callback.Continue();
-                        return null;
-                    });
+            // 同期的に待機（JCEFではprocessRequest内でレスポンスを準備する必要がある）
+            VirtualSocket.VirtualHttpResponse response = future.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
+            log("sendHttpRequestSync: response received, isSuccess=" + response.isSuccess());
+
+            if (response.isSuccess()) {
+                // 成功: レスポンスボディとContent-Typeを返却
+                String responseBody = response.getBody();
+                String contentType = response.getContentType();
+                setSuccessResponse(responseBody, contentType);
+                log("Received HTTP response: " + (responseBody != null ? responseBody.length() : 0) + " chars, contentType=" + contentType);
+            } else {
+                // エラー: エラーページを表示
+                setErrorResponse(response.getStatusCode(), response.getStatusText(), response.getBody());
+            }
+
+        } catch (java.util.concurrent.TimeoutException e) {
+            logError("HTTP request timeout: " + e.getMessage());
+            setErrorResponse(504, "Gateway Timeout", "Request timeout: " + originalUrl);
         } catch (NetworkException e) {
             logError("Network error: " + e.getMessage());
             if (e.getErrorType() == NetworkException.ErrorType.NO_SERVICE) {
@@ -162,32 +184,36 @@ public class VirtualNetworkResourceHandler extends CefResourceHandlerAdapter {
             } else {
                 setErrorResponse(503, "Service Unavailable", e.getMessage());
             }
-            callback.Continue();
+        } catch (Exception e) {
+            logError("HTTP request failed: " + e.getMessage());
+            setErrorResponse(500, "Internal Server Error", e.getMessage());
         }
+
+        log("sendHttpRequestSync: calling callback.Continue()");
+        callback.Continue();
+        log("sendHttpRequestSync: callback.Continue() returned");
     }
 
     /**
-     * 成功レスポンスを設定する（直接HTML返却）。
+     * 成功レスポンスを設定する。
+     *
+     * @param body レスポンスボディ
+     * @param contentType Content-Type（nullの場合はtext/htmlを使用）
      */
-    private void setSuccessResponse(String html) {
-        if (html == null || html.isEmpty()) {
-            html = generateErrorPage("404 Not Found", "Page not found");
+    private void setSuccessResponse(String body, String contentType) {
+        if (body == null || body.isEmpty()) {
+            body = generateErrorPage("404 Not Found", "Page not found");
             statusCode = 404;
+            mimeType = "text/html";
         } else {
             statusCode = 200;
+            mimeType = (contentType != null && !contentType.isEmpty()) ? contentType : "text/html";
         }
 
-        // デバッグ: 簡単なテストHTMLを使用してCEFレンダリングを確認
-        String testHtml = "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>Test</title></head>" +
-                "<body style=\"background:red;color:white;font-size:48px;text-align:center;padding:100px;\">" +
-                "<h1>IPvM TEST</h1><p>If you see this, rendering works!</p></body></html>";
-
-        responseData = testHtml.getBytes(StandardCharsets.UTF_8);
-        mimeType = "text/html";
+        responseData = body.getBytes(StandardCharsets.UTF_8);
         redirectUrl = null;
 
-        log("Set success response (HTML length: " + responseData.length + " bytes)");
-        log("Using TEST HTML for debugging");
+        log("Set success response (length: " + responseData.length + " bytes, mimeType: " + mimeType + ")");
     }
 
     /**
@@ -219,19 +245,30 @@ public class VirtualNetworkResourceHandler extends CefResourceHandlerAdapter {
      */
     @Override
     public void getResponseHeaders(CefResponse response, IntRef responseLength, StringRef redirectUrlRef) {
-        log("getResponseHeaders called - status: " + statusCode + ", redirectUrl: " + (redirectUrl != null ? "set" : "null"));
+        int dataLength = (responseData != null) ? responseData.length : 0;
+
+        log("getResponseHeaders called - status: " + statusCode + ", mimeType: " + mimeType +
+            ", responseData: " + dataLength + " bytes");
+
         response.setStatus(statusCode);
         response.setMimeType(mimeType);
         response.setStatusText(getStatusText(statusCode));
+
+        // CORSヘッダーを個別に設定（setHeaderMapではなくsetHeaderByNameを使用）
+        response.setHeaderByName("Access-Control-Allow-Origin", "*", true);
+        response.setHeaderByName("Access-Control-Allow-Methods", "GET, POST, OPTIONS", true);
+        response.setHeaderByName("Access-Control-Allow-Headers", "*", true);
+        // Content-LengthはresponseLength.set()で設定されるため、ここでは設定しない
+        
+        log("Headers set via setHeaderByName: CORS");
 
         if (redirectUrl != null) {
             redirectUrlRef.set(redirectUrl);
             responseLength.set(0);
             log("Setting redirect URL");
-        } else if (responseData != null) {
-            responseLength.set(responseData.length);
         } else {
-            responseLength.set(0);
+            responseLength.set(dataLength);
+            log("Set responseLength to " + dataLength);
         }
     }
 
@@ -258,7 +295,10 @@ public class VirtualNetworkResourceHandler extends CefResourceHandlerAdapter {
 
         log("readResponse: copied " + bytesToCopy + " bytes, remaining: " + (responseData.length - readPosition));
 
-        return readPosition < responseData.length;
+        // JCEF仕様準拠: データが読み込まれた場合(bytesRead > 0)は必ずtrueを返す。
+        // falseを返すと、データが破棄されたりリクエストが失敗扱いになる場合がある。
+        // 次回の呼び出しで (readPosition >= responseData.length) となり false が返される。
+        return true;
     }
 
     /**

@@ -180,13 +180,19 @@ public class ForgeVirtualSocket implements VirtualSocket {
     @Override
     public CompletableFuture<VirtualHttpResponse> httpRequest(IPvMAddress destination, String path, String method)
             throws NetworkException {
+        return httpRequest(destination, path, method, null);
+    }
+
+    @Override
+    public CompletableFuture<VirtualHttpResponse> httpRequest(IPvMAddress destination, String path, String method, String body)
+            throws NetworkException {
 
         if (!isAvailable()) {
             throw NetworkException.noService();
         }
 
         String originalUrl = "http://" + destination.toString() + path;
-        log("HTTP request: " + method + " " + originalUrl);
+        log("HTTP request: " + method + " " + originalUrl + (body != null ? " (with body)" : ""));
 
         // レスポンス待ち用のFutureを作成
         CompletableFuture<VirtualHttpResponse> future = new CompletableFuture<>();
@@ -203,17 +209,21 @@ public class ForgeVirtualSocket implements VirtualSocket {
         IPvMAddress sourceAddress = getPlayerAddress();
 
         // HTTPリクエストパケットを作成
-        VirtualPacket packet = VirtualPacket.builder()
+        VirtualPacket.Builder packetBuilder = VirtualPacket.builder()
                 .source(sourceAddress)
                 .destination(destination)
                 .type(VirtualPacket.PacketType.GENERIC_REQUEST)
                 .put("path", path)
                 .put("method", method)
-                .put("originalUrl", originalUrl)
-                .build();
+                .put("originalUrl", originalUrl);
+
+        // ボディがある場合は追加
+        if (body != null && !body.isEmpty()) {
+            packetBuilder.put("body", body);
+        }
 
         // パケットを送信
-        NetworkHandler.sendToServer(packet);
+        NetworkHandler.sendToServer(packetBuilder.build());
 
         return future;
     }

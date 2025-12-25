@@ -5,11 +5,15 @@ import org.cef.browser.CefBrowser;
 import org.cef.browser.CefPaintEvent;
 import org.cef.callback.CefDragData;
 import org.cef.handler.CefRenderHandlerAdapter;
+import processing.core.PGraphics;
 import processing.core.PImage;
+import processing.opengl.PGL;
+import processing.opengl.PGraphicsOpenGL;
 
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
@@ -38,6 +42,12 @@ public class ChromiumRenderHandler extends CefRenderHandlerAdapter {
     // フレームスキップ用（過剰なフレーム更新を防止）
     private long lastPaintTimeNs = 0L;
     private static final long MIN_PAINT_INTERVAL_NS = 16_000_000L; // 16ms = 60FPS（P2D GPU描画対応）
+
+    // GPU直接テクスチャアップロード用
+    private int glTextureId = -1;
+    private boolean useGPUUpload = true;
+    private boolean gpuUploadInitialized = false;
+    private static final int GL_BGRA = 0x80E1;  // OpenGL GL_BGRA定数
 
     /**
      * ChromiumRenderHandlerを構築する。
@@ -69,6 +79,7 @@ public class ChromiumRenderHandler extends CefRenderHandlerAdapter {
     /**
      * Chromiumからのペイントコールバック。
      * ByteBuffer（BGRA形式）をPImage（ARGB形式）に変換する。
+     * 最適化: IntBufferによるバルク読み取りとビットマスク演算で高速変換。
      *
      * @param browser CEFブラウザ
      * @param popup ポップアップフラグ
@@ -77,134 +88,136 @@ public class ChromiumRenderHandler extends CefRenderHandlerAdapter {
      * @param width 幅
      * @param height 高さ
      */
-    // デバッグ用: onPaint呼び出しカウンター
-    private int onPaintCount = 0;
-
     @Override
     public void onPaint(CefBrowser browser, boolean popup, Rectangle[] dirtyRects,
                         ByteBuffer buffer, int width, int height) {
-        onPaintCount++;
-
-        // デバッグ: onPaintが呼ばれていることを確認
-        log("onPaint called #" + onPaintCount + ": " + width + "x" + height + ", popup=" + popup + ", buffer=" + (buffer != null ? buffer.remaining() + " bytes" : "null"));
-
-        // デバッグ: バッファの最初の数ピクセルの内容を確認
-        if (buffer != null && buffer.remaining() >= 16) {
-            buffer.position(0);
-            StringBuilder sb = new StringBuilder("First 4 pixels (BGRA): ");
-            for (int i = 0; i < 4; i++) {
-                int b = buffer.get() & 0xFF;
-                int g = buffer.get() & 0xFF;
-                int r = buffer.get() & 0xFF;
-                int a = buffer.get() & 0xFF;
-                sb.append(String.format("[B:%d G:%d R:%d A:%d] ", b, g, r, a));
-            }
-            buffer.position(0); // リセット
-            log(sb.toString());
-
-            // 中央付近のピクセルも確認
-            int centerIndex = (height / 2 * width + width / 2) * 4;
-            if (buffer.remaining() > centerIndex + 4) {
-                buffer.position(centerIndex);
-                int b = buffer.get() & 0xFF;
-                int g = buffer.get() & 0xFF;
-                int r = buffer.get() & 0xFF;
-                int a = buffer.get() & 0xFF;
-                log(String.format("Center pixel (BGRA): [B:%d G:%d R:%d A:%d]", b, g, r, a));
-                buffer.position(0); // リセット
-            }
-        }
-
         // フレームスキップ：前回から16ms未満の場合はスキップ（60FPS制限）
         long now = System.nanoTime();
         if (now - lastPaintTimeNs < MIN_PAINT_INTERVAL_NS) {
-            log("Frame skipped (too soon)");
-            return; // スキップ
+            return;
         }
         lastPaintTimeNs = now;
-        
-                boolean isHiDPI = isMac && (width == this.width * 2);
-        
-                // サイズチェック（HiDPI/Retinaディスプレイ対応）
-                // Mac Retinaでは2倍サイズ（800x952）でレンダリングされる可能性がある
-                if (width != this.width && !isHiDPI) {
-            log("Size difference: expected " + this.width + "x" + this.height +
-                ", got " + width + "x" + height + " - using received size");
-            // サイズが違っても続行（エラーで返さない）
+
+        // バッファチェック
+        if (buffer == null || buffer.remaining() < width * height * 4) {
+            return;
         }
+
+        boolean isHiDPI = isMac && (width == this.width * 2);
 
         synchronized (imageLock) {
             buffer.position(0);
             image.loadPixels();
+            int[] pixels = image.pixels;
 
             if (isHiDPI) {
                 // HiDPI: 2x2ピクセルブロックを1ピクセルにダウンサンプリング
-                // 800x952 → 400x476（2倍スケールを1/2に縮小）
+                // バイト単位でアクセス（エンディアン問題を回避）
                 for (int y = 0; y < this.height; y++) {
                     for (int x = 0; x < this.width; x++) {
-                        // 2x2ブロックの左上ピクセルをサンプリング（Nearest Neighbor）
                         int srcX = x * 2;
                         int srcY = y * 2;
-                        int srcIndex = (srcY * width + srcX) * 4; // 4 bytes per pixel (BGRA)
-
-                        // BGRAバイトを読み取り
-                        int b = buffer.get(srcIndex) & 0xFF;
-                        int g = buffer.get(srcIndex + 1) & 0xFF;
-                        int r = buffer.get(srcIndex + 2) & 0xFF;
-                        int a = buffer.get(srcIndex + 3) & 0xFF;
-
-                        // ARGBフォーマットに変換
-                        int argb = (a << 24) | (r << 16) | (g << 8) | b;
-
-                        // PImageピクセル配列に設定
-                        image.pixels[y * this.width + x] = argb;
+                        int srcOffset = (srcY * width + srcX) * 4;
+                        int b = buffer.get(srcOffset) & 0xFF;
+                        int g = buffer.get(srcOffset + 1) & 0xFF;
+                        int r = buffer.get(srcOffset + 2) & 0xFF;
+                        int a = buffer.get(srcOffset + 3) & 0xFF;
+                        pixels[y * this.width + x] = (a << 24) | (r << 16) | (g << 8) | b;
                     }
                 }
             } else {
-                // 非HiDPI: 通常の1:1変換
-                for (int y = 0; y < height; y++) {
-                    for (int x = 0; x < width; x++) {
-                        // BGRAバイトを読み取り
-                        int b = buffer.get() & 0xFF;
-                        int g = buffer.get() & 0xFF;
-                        int r = buffer.get() & 0xFF;
-                        int a = buffer.get() & 0xFF;
-
-                        // ARGBフォーマットに変換
-                        int argb = (a << 24) | (r << 16) | (g << 8) | b;
-
-                        // PImageピクセル配列に設定
-                        image.pixels[y * width + x] = argb;
-                    }
+                // 非HiDPI: インデックスアクセスで高速化（position管理不要）
+                int pixelCount = width * height;
+                for (int i = 0; i < pixelCount; i++) {
+                    int offset = i * 4;
+                    int b = buffer.get(offset) & 0xFF;
+                    int g = buffer.get(offset + 1) & 0xFF;
+                    int r = buffer.get(offset + 2) & 0xFF;
+                    int a = buffer.get(offset + 3) & 0xFF;
+                    pixels[i] = (a << 24) | (r << 16) | (g << 8) | b;
                 }
             }
 
             image.updatePixels();
             needsUpdate.set(true);
-
-            // デバッグ: 変換後のPImageの内容を確認
-            if (onPaintCount <= 3) {
-                int whiteCount = 0;
-                int nonWhiteCount = 0;
-                int sampleSize = Math.min(100, image.pixels.length);
-                StringBuilder pixelSamples = new StringBuilder("PImage samples: ");
-                for (int i = 0; i < sampleSize; i++) {
-                    int pixel = image.pixels[i];
-                    if (pixel == 0xFFFFFFFF) {
-                        whiteCount++;
-                    } else {
-                        nonWhiteCount++;
-                        if (nonWhiteCount <= 3) {
-                            pixelSamples.append(String.format("[%d:0x%08X] ", i, pixel));
-                        }
-                    }
-                }
-                log("PImage after conversion: white=" + whiteCount + ", nonWhite=" + nonWhiteCount + "/" + sampleSize);
-                if (nonWhiteCount > 0) {
-                    log(pixelSamples.toString());
-                }
-            }
         }
+    }
+
+    /**
+     * GPU直接テクスチャアップロード。
+     * OpenGLテクスチャにBGRAデータを直接アップロードし、GPU内部で色変換を行う。
+     * P2D（JOGL）レンダラー使用時に最高のパフォーマンスを発揮。
+     *
+     * @param g PGraphicsインスタンス（PGraphicsOpenGLが必要）
+     * @param buffer BGRAピクセルデータ
+     * @param width 幅
+     * @param height 高さ
+     * @return 成功した場合true
+     */
+    public boolean uploadToGPUTexture(PGraphics g, ByteBuffer buffer, int width, int height) {
+        if (!(g instanceof PGraphicsOpenGL)) {
+            useGPUUpload = false;
+            return false;
+        }
+
+        try {
+            PGraphicsOpenGL pg = (PGraphicsOpenGL) g;
+            PGL pgl = pg.beginPGL();
+
+            try {
+                // テクスチャ作成（初回のみ）
+                if (glTextureId == -1) {
+                    IntBuffer texID = IntBuffer.allocate(1);
+                    pgl.genTextures(1, texID);
+                    glTextureId = texID.get(0);
+                    gpuUploadInitialized = true;
+                }
+
+                pgl.bindTexture(PGL.TEXTURE_2D, glTextureId);
+
+                // GL_BGRA形式で直接アップロード（CPU変換不要！）
+                buffer.position(0);
+                pgl.texImage2D(
+                        PGL.TEXTURE_2D,
+                        0,
+                        PGL.RGBA8,
+                        width, height,
+                        0,
+                        GL_BGRA,
+                        PGL.UNSIGNED_BYTE,
+                        buffer
+                );
+
+                pgl.texParameteri(PGL.TEXTURE_2D, PGL.TEXTURE_MIN_FILTER, PGL.LINEAR);
+                pgl.texParameteri(PGL.TEXTURE_2D, PGL.TEXTURE_MAG_FILTER, PGL.LINEAR);
+                pgl.bindTexture(PGL.TEXTURE_2D, 0);
+
+                return true;
+            } finally {
+                pg.endPGL();
+            }
+        } catch (Exception e) {
+            useGPUUpload = false;
+            return false;
+        }
+    }
+
+    /**
+     * GPU直接アップロードが利用可能かを確認する。
+     *
+     * @return GPU直接アップロードが利用可能な場合true
+     */
+    public boolean isGPUUploadAvailable() {
+        return useGPUUpload && gpuUploadInitialized;
+    }
+
+    /**
+     * OpenGLテクスチャIDを取得する。
+     *
+     * @return テクスチャID（未作成の場合-1）
+     */
+    public int getGLTextureId() {
+        return glTextureId;
     }
 
     /**

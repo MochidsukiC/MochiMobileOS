@@ -58,11 +58,45 @@
   - 代表API: `colorPrimary()`, `colorBackground()`, `colorSurface()`, `colorOnSurface()`, `radiusSm()` など
   - 付随ユーティリティ: `ui/effects/Motion`（Reduce Motion対応の継続時間/イージング）, `ui/effects/Elevation`（簡易影）
 - パフォーマンスセーバー: `ui.performance.low_power`（低電力/低負荷モード）設定を追加（UI/設定のみ）。挙動は今後実装。
+- Chromiumレンダリングパフォーマンス最適化（2025-12-23）
+  - 問題: Windows環境でFPSが不安定（M4 MacBookでは安定）→ CPU-GPU間転送オーバーヘッドが原因
+  - **ChromiumRenderHandler最適化**:
+    - デバッグログ削除（毎フレームのピクセルダンプを完全削除）
+    - IntBuffer + ビットマスク演算によるBGRA→ARGB高速変換（1ピクセルずつ→バルク処理）
+    - GPU直接テクスチャアップロードAPI追加（`uploadToGPUTexture()`: GL_BGRA形式で直接OpenGLにアップロード）
+  - **StandaloneWrapper最適化**:
+    - ESCキー処理のリフレクションをsetup()でキャッシュ化（毎フレームのリフレクション削除）
+  - **StandaloneChromiumProvider最適化**:
+    - Windows固有GPU設定追加（`--enable-zero-copy`, `--enable-native-gpu-memory-buffers`, `--disable-software-rasterizer`）
 - 絵文字サポート（2025-12-23）
   - Noto Emoji（モノクロ版）フォントを追加し、Unicode絵文字の文字化けを解消
   - `EmojiUtil`で絵文字判定、`TextRenderer`でフォントフォールバック実装
   - Label、TextField、Button等のUIコンポーネントで絵文字描画に対応
   - Fast Path最適化: 絵文字なしテキストは従来どおり高速描画
+- コントロールセンターカード外部開放（2025-12-23）
+  - 外部アプリがコントロールセンターにカードを登録可能
+  - `ControlCenterCardRegistry` - カード登録・配置管理レジストリ
+  - `IAppControlCenterItem` - 外部アプリ用カードインターフェース
+  - `ControlCenterSection` - セクション列挙型（QUICK_SETTINGS, MEDIA, DISPLAY, APP_WIDGETS）
+  - `CardPlacement` - カード配置情報モデル（JSONシリアライズ対応）
+  - 設定画面にグリッドプレビュー形式のカード管理UI追加（表示/非表示、順序変更）
+  - カード配置設定の永続化（`control_center.card_placements`）
+  - 2種類のカードサイズをサポート（1×1スクエア、2×2ラージ）
+  - 開発ガイド: `EXTERNAL_APP_DEVELOPMENT_GUIDE.md` セクション7
+- ダッシュボードウィジェット外部開放（2025-12-23）
+  - ホーム画面1ページ目のダッシュボードにウィジェットを配置可能
+  - iPhoneのウィジェットに類似した機能
+  - 新規パッケージ: `jp.moyashi.phoneos.core.dashboard`
+  - `IDashboardWidget` - ウィジェットインターフェース（描画、タッチ処理、ライフサイクル）
+  - `DashboardWidgetRegistry` - ウィジェット登録・配置管理レジストリ
+  - `DashboardSlot` - 5つの固定スロット（CLOCK, SEARCH, LEFT, RIGHT, BOTTOM）
+  - `DashboardWidgetSize` - 2種類のサイズ（FULL_WIDTH: 360px, HALF_WIDTH: 175px）
+  - `DashboardWidgetType` - 2種類のタイプ（DISPLAY: タップでアプリ起動, INTERACTIVE: ウィジェット内インタラクション）
+  - `DashboardSlotAssignment` - スロット割り当て情報（JSONシリアライズ対応）
+  - システムウィジェット5種: ClockWidget, SearchWidget, MessagesWidget, EMoneyWidget, AIAssistantWidget
+  - 設定画面「Dashboard」パネルでスロット毎のウィジェット選択UI
+  - ウィジェット配置設定の永続化（`dashboard.slot_assignments`）
+  - 開発ガイド: `EXTERNAL_APP_DEVELOPMENT_GUIDE.md` セクション8
 
 ## 現在の仕様（抜粋）
 
@@ -131,6 +165,28 @@
     - ヘッダーエリア、通知エリア、スクロール処理の優先順位を整理
     - `isInBounds()`メソッドで画面全体をカバー（背景の暗幕を含む）
     - `onGesture()`メソッドで、パネル内であれば常に`true`を返すように改善
+- 通知システムの実装（2025-12-23）
+  - **通知センターの実機能化**
+    - モック通知データを削除し、アプリからの実通知を受信・表示
+    - 通知にアプリアイコン表示対応（`INotification.getIcon()`）
+    - 通知クリック時にアプリ起動可能（`INotification.getClickAction()`）
+  - **通知音システム**
+    - `NotificationSoundService`: デフォルト通知音（リソース内蔵）とカスタム通知音（VFS）対応
+    - VFSの`readBinaryFile()`/`writeBinaryFile()`メソッド追加
+    - 設定キー: `notification.sound_path`（カスタム音声ファイルパス）
+  - **チャット通知（ハードウェアAPI）**
+    - `ChatSocket`インターフェース追加（`hardware/`パッケージ）
+    - `DefaultChatSocket`: スタンドアロン用（ログ出力のみ）
+    - `ForgeChatSocket`: Forge用（Minecraftプレイヤーチャットに送信）
+    - 設定キー: `notification.chat_enabled`（チャット通知の有効/無効）
+  - **消音モード**
+    - 設定キー: `audio.silent_mode`（消音時は通知音・チャット通知をオフ）
+    - コントロールセンターのトグルと設定アプリの同期を実装
+    - `ToggleItem.setOnSilent()`: コールバックなしで状態変更（外部同期用）
+  - **設定アプリの通知設定パネル**
+    - Settings > Apps & Notifications に通知設定画面を追加
+    - サイレントモードスイッチ、チャット通知スイッチ
+    - 通知音選択機能（`system/sounds/`内のwav/mp3ファイルを検索・選択）
 
 ## 初期マイルストーン：ダッシュボード構成と主要アプリ
 
@@ -185,6 +241,11 @@
     - `core/src/main/java/jp/moyashi/phoneos/core/service/chromium/ChromiumRenderHandler.java`
     - `standalone/src/main/java/jp/moyashi/phoneos/standalone/StandaloneChromiumProvider.java`
   - 対応方針: 実際にChromiumが送ってくるバッファサイズを確認し、適切なダウンサンプリングロジックを実装する必要がある
+- **JCEF CefResourceHandler レスポンスボディ消失問題**（2025-12-25分析）
+  - 症状: `VirtualNetworkResourceHandler` (http://X-serverId) で、サーバー側は79バイトを送信したログがあるが、クライアントJSの `fetch` が "Unexpected end of JSON input" で失敗する。
+  - 原因: `readResponse` メソッドの実装不備。最後のデータチャンクを書き込んだ際、`bytesRead > 0` であっても `readPosition < length` が `false` となり、`false` を返却していた。
+  - JCEF仕様: `readResponse` はデータが利用可能な場合（`bytesRead > 0`）、必ず `true` を返すべきである。`false` はエラーまたはEOF（`bytesRead == 0`）を示す。
+  - 解決策: `readResponse` でデータを書き込んだ場合は常に `true` を返すように修正する。
 
 ## TODO
 

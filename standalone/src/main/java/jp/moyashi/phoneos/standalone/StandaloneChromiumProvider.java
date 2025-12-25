@@ -160,6 +160,18 @@ public class StandaloneChromiumProvider implements ChromiumProvider {
             builder.addJcefArgs("--max-fps=60"); // 最大60FPS
             builder.addJcefArgs("--disable-frame-rate-limit"); // フレームレート制限解除
 
+            // Windows固有のGPU最適化設定
+            boolean isWindows = osName.contains("windows");
+            if (isWindows) {
+                System.out.println("[StandaloneChromiumProvider] Detected Windows - applying GPU optimizations");
+                // ゼロコピー転送を有効化（GPU→CPU転送オーバーヘッド削減）
+                builder.addJcefArgs("--enable-zero-copy");
+                // 共有メモリを使用してバッファ転送を最適化
+                builder.addJcefArgs("--enable-native-gpu-memory-buffers");
+                // ソフトウェアラスタライザを無効化（GPUを強制使用）
+                builder.addJcefArgs("--disable-software-rasterizer");
+            }
+
             // JCEFをビルドして初期化
             CefApp cefApp = builder.build();
 

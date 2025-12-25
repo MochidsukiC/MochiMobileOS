@@ -229,18 +229,59 @@ public class ForgeChromiumProvider extends JCEFChromiumProvider {
             cefSettings.command_line_args_disabled = false;
 
             // ChromiumAppHandlerを作成（coreモジュール）
+            log("Creating ChromiumAppHandler - kernel: " + (kernel != null ? "available" : "NULL") +
+                ", logger: " + (kernel != null && kernel.getLogger() != null ? "available" : "NULL"));
             ChromiumAppHandler coreAppHandler = new ChromiumAppHandler(kernel);
 
             // CefAppHandlerAdapterでラップ
             CefAppHandlerAdapter appHandler = new CefAppHandlerAdapter(null) {
                 @Override
                 public void onRegisterCustomSchemes(CefSchemeRegistrar registrar) {
+                    log("onRegisterCustomSchemes() called");
                     coreAppHandler.onRegisterCustomSchemes(registrar);
+                    log("onRegisterCustomSchemes() completed");
                 }
 
                 @Override
                 public void onContextInitialized() {
-                    coreAppHandler.onContextInitialized();
+                    log("onContextInitialized() called");
+                    // Debug: Check kernel and logger state before calling core handler
+                    log("DEBUG: kernel=" + (kernel != null ? "available" : "NULL") +
+                        ", logger=" + (kernel != null && kernel.getLogger() != null ? "available" : "NULL"));
+
+                    // Try to log via MMOS logger directly
+                    if (kernel != null && kernel.getLogger() != null) {
+                        var logger = kernel.getLogger();
+                        log("DEBUG: LoggerService instance = " + logger.getClass().getName() + "@" + Integer.toHexString(System.identityHashCode(logger)));
+                        try {
+                            logger.info("ForgeChromiumProvider", "onContextInitialized - logging via MMOS logger");
+                            log("DEBUG: logger.info() completed without exception");
+                        } catch (Exception e) {
+                            log("DEBUG: logger.info() THREW EXCEPTION: " + e.getClass().getName() + " - " + e.getMessage());
+                            e.printStackTrace();
+                        }
+                        try {
+                            logger.error("ForgeChromiumProvider", "TEST ERROR LOG - this should appear in MMOS log");
+                            log("DEBUG: logger.error() completed without exception");
+                        } catch (Exception e) {
+                            log("DEBUG: logger.error() THREW EXCEPTION: " + e.getClass().getName() + " - " + e.getMessage());
+                            e.printStackTrace();
+                        }
+                    }
+
+                    try {
+                        coreAppHandler.onContextInitialized();
+                    } catch (Exception e) {
+                        logError("onContextInitialized() FAILED: " + e.getMessage(), e);
+                    }
+
+                    // Debug: Check again after core handler
+                    log("DEBUG: After coreAppHandler.onContextInitialized()");
+                    if (kernel != null && kernel.getLogger() != null) {
+                        kernel.getLogger().info("ForgeChromiumProvider", "onContextInitialized - completed via MMOS logger");
+                    }
+
+                    log("onContextInitialized() completed");
                 }
             };
 

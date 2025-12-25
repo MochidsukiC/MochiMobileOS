@@ -225,8 +225,7 @@ public class ChromiumAppHandler extends CefAppHandlerAdapter {
      * ログ出力（INFO）。
      */
     private void log(String message) {
-        System.out.println("[ChromiumAppHandler] " + message);
-        if (kernel.getLogger() != null) {
+        if (kernel != null && kernel.getLogger() != null) {
             kernel.getLogger().info("ChromiumAppHandler", message);
         }
     }
@@ -235,8 +234,7 @@ public class ChromiumAppHandler extends CefAppHandlerAdapter {
      * エラーログ出力。
      */
     private void logError(String message) {
-        System.err.println("[ChromiumAppHandler] " + message);
-        if (kernel.getLogger() != null) {
+        if (kernel != null && kernel.getLogger() != null) {
             kernel.getLogger().error("ChromiumAppHandler", message);
         }
     }

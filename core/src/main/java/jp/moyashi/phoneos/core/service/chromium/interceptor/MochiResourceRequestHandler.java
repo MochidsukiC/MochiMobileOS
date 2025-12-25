@@ -99,7 +99,12 @@ public class MochiResourceRequestHandler extends CefResourceRequestHandlerAdapte
             // IPvMアドレスの場合
             if (IPVM_PATTERN.matcher(host).matches()) {
                 log("IPvM address detected: " + host);
-                return new VirtualNetworkResourceHandler(kernel, host, uri.getPath(), url);
+                String path = uri.getPath();
+                String query = uri.getQuery();
+                if (query != null && !query.isEmpty()) {
+                    path = path + "?" + query;
+                }
+                return new VirtualNetworkResourceHandler(kernel, host, path, url);
             }
 
             // app.local の場合（アプリアセット）

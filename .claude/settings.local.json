@@ -76,7 +76,8 @@
       "Bash(forge/src/main/java/jp/moyashi/phoneos/forge/network/SystemPacketHandler.java )",
       "Bash(forge/src/main/java/jp/moyashi/phoneos/forge/network/VirtualNetworkPacket.java )",
       "Bash(forge/src/main/java/jp/moyashi/phoneos/forge/network/VirtualNetworkRegistry.java)",
-      "WebFetch(domain:jcefbuild.github.io)"
+      "WebFetch(domain:jcefbuild.github.io)",
+      "WebFetch(domain:processing.org)"
     ],
     "deny": [],
     "ask": [],

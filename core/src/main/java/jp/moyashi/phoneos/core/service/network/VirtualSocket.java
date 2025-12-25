@@ -74,6 +74,20 @@ public interface VirtualSocket {
             throws NetworkException;
 
     /**
+     * HTTPリクエストを送信し、レスポンスを取得する（ボディ付き）。
+     * IPvMアドレスへのHTTPリクエストを仮想ネットワーク経由で送信する。
+     *
+     * @param destination 宛先IPvMアドレス
+     * @param path リクエストパス（例: "/api/purchase"）
+     * @param method HTTPメソッド（GET, POST等）
+     * @param body リクエストボディ（POSTデータ等）
+     * @return HTTPレスポンス
+     * @throws NetworkException ネットワークエラー時
+     */
+    CompletableFuture<VirtualHttpResponse> httpRequest(IPvMAddress destination, String path, String method, String body)
+            throws NetworkException;
+
+    /**
      * 接続を閉じる。
      * ソケットを破棄し、リソースを解放する。
      */

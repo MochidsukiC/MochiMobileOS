@@ -69,8 +69,6 @@ public class IPvMSchemeHandlerFactory implements CefSchemeHandlerFactory {
     @Override
     public CefResourceHandler create(CefBrowser browser, CefFrame frame, String schemeName, CefRequest request) {
         String url = request.getURL();
-        // デバッグ: このメソッドが呼び出されたことをログに記録
-        System.out.println("[IPvMSchemeHandlerFactory] create() called for URL: " + url);
         log("create() called for URL: " + url);
 
         if (url == null || url.isEmpty()) {
@@ -95,6 +93,10 @@ public class IPvMSchemeHandlerFactory implements CefSchemeHandlerFactory {
             if (IPVM_PATTERN.matcher(host).matches()) {
                 log("IPvM address detected: " + host + " - creating VirtualNetworkResourceHandler");
                 String path = uri.getPath();
+                String query = uri.getQuery();
+                if (query != null && !query.isEmpty()) {
+                    path = path + "?" + query;
+                }
                 return new VirtualNetworkResourceHandler(kernel, host, path, url);
             }
 

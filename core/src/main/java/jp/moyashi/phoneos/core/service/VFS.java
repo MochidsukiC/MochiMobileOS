@@ -36,17 +36,17 @@ public class VFS {
 
     /**
      * ワールドIDを指定して新しいVFSインスタンスを構築する。
-     * ワールド毎にデータを分離する。
-     * Forge環境で使用され、./mochi_os_data/{worldId}/mochi_os_data/ にデータを保存する。
+     * ワールド/サーバー毎にデータをサンドボックス化する。
+     * Forge環境で使用され、./mochi_os_data/{worldId}/ にデータを保存する。
      *
      * @param worldId ワールドID（nullの場合は共通データ）
      */
     public VFS(String worldId) {
         try {
-            // ルートディレクトリパスを設定（ワールドID毎に分離）
+            // ルートディレクトリパスを設定（ワールドID毎にサンドボックス化）
             if (worldId != null && !worldId.isEmpty()) {
-                // Forge環境: mochi_os_data/{worldId}/mochi_os_data/
-                this.rootPath = Paths.get("mochi_os_data", worldId, "mochi_os_data");
+                // Forge環境: mochi_os_data/{worldId}/
+                this.rootPath = Paths.get("mochi_os_data", worldId);
             } else {
                 // スタンドアロン環境: mochi_os_data/
                 this.rootPath = Paths.get("mochi_os_data");

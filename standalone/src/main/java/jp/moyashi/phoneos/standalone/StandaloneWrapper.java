@@ -35,6 +35,9 @@ public class StandaloneWrapper extends PApplet {
     /** 画面高さ */
     private static final int SCREEN_HEIGHT = 600;
 
+    /** ESCキー終了防止用のリフレクションキャッシュ */
+    private java.lang.reflect.Field exitCalledField;
+    private boolean exitFieldAccessible = false;
 
     /**
      * Processing設定メソッド。
@@ -90,13 +93,14 @@ public class StandaloneWrapper extends PApplet {
 
         // ProcessingのESCキーによる終了を無効化
         // これによりESCキーを通常のキー入力として使用可能にする
+        // リフレクションは一度だけ実行してキャッシュ
         try {
-            // PAppletの内部変数 exitCalled を無効化
-            java.lang.reflect.Field exitCalledField = PApplet.class.getDeclaredField("exitCalled");
+            exitCalledField = PApplet.class.getDeclaredField("exitCalled");
             exitCalledField.setAccessible(true);
-            // ESCキー処理中は常にfalseになるように設定される
+            exitFieldAccessible = true;
         } catch (Exception e) {
             System.out.println("StandaloneWrapper: Note - exitCalled field access: " + e);
+            exitFieldAccessible = false;
         }
 
         // IMEを有効化（日本語入力のインライン編集対応）
@@ -302,17 +306,15 @@ public class StandaloneWrapper extends PApplet {
      */
     @Override
     public void draw() {
-        // ProcessingのESCキーによる終了を防ぐ
-        // 毎フレーム、exitCalledフラグをリセット
-        try {
-            java.lang.reflect.Field exitCalledField = PApplet.class.getDeclaredField("exitCalled");
-            exitCalledField.setAccessible(true);
-            if ((Boolean) exitCalledField.get(this)) {
-                System.out.println("StandaloneWrapper: ESC exit detected and cancelled");
-                exitCalledField.set(this, false);
+        // ProcessingのESCキーによる終了を防ぐ（キャッシュ済みフィールドを使用）
+        if (exitFieldAccessible && exitCalledField != null) {
+            try {
+                if ((Boolean) exitCalledField.get(this)) {
+                    exitCalledField.set(this, false);
+                }
+            } catch (Exception e) {
+                // Silent failure
             }
-        } catch (Exception e) {
-            // Silent failure - continue normal operation
         }
 
         if (kernel == null) {

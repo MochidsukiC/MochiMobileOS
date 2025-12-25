@@ -166,6 +166,21 @@ public class VirtualAdapter {
      */
     public CompletableFuture<VirtualSocket.VirtualHttpResponse> httpRequest(
             IPvMAddress destination, String path, String method) throws NetworkException {
+        return httpRequest(destination, path, method, null);
+    }
+
+    /**
+     * IPvMアドレスへHTTPリクエストを送信する（ボディ付き）。
+     *
+     * @param destination 宛先IPvMAddress
+     * @param path リクエストパス
+     * @param method HTTPメソッド
+     * @param body リクエストボディ
+     * @return HTTPレスポンスのFuture
+     * @throws NetworkException 圏外またはネットワークエラー時
+     */
+    public CompletableFuture<VirtualSocket.VirtualHttpResponse> httpRequest(
+            IPvMAddress destination, String path, String method, String body) throws NetworkException {
 
         if (socket == null) {
             throw NetworkException.noService();
@@ -176,7 +191,7 @@ public class VirtualAdapter {
                     NetworkException.ErrorType.NO_SERVICE);
         }
 
-        return socket.httpRequest(destination, path, method);
+        return socket.httpRequest(destination, path, method, body);
     }
 
     /**
