@@ -88,54 +88,72 @@ public class SettingsApp implements IApplication {
         java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_ARGB);
         java.awt.Graphics2D g = image.createGraphics();
         
-        // アンチエイリアス有効化
+        // アンチエイリアス
         g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
 
-        // テーマカラーの取得
-        java.awt.Color backgroundColor = new java.awt.Color(100, 100, 100); // デフォルト: ダークグレー
-        java.awt.Color foregroundColor = java.awt.Color.WHITE;
-        
+        // テーマカラーの取得とベース色の生成
+        java.awt.Color baseColor = new java.awt.Color(66, 66, 66); // デフォルト: ダークグレー
+        java.awt.Color accentColor = new java.awt.Color(200, 200, 200); // 歯車: ライトグレー
+
         if (kernel != null && kernel.getThemeEngine() != null) {
             int primary = kernel.getThemeEngine().colorPrimary();
-            int onPrimary = kernel.getThemeEngine().colorOnPrimary();
-            // AWT Colorに変換 (alphaは無視してRGBのみ使用)
-            backgroundColor = new java.awt.Color((primary >> 16) & 0xFF, (primary >> 8) & 0xFF, primary & 0xFF);
-            foregroundColor = new java.awt.Color((onPrimary >> 16) & 0xFF, (onPrimary >> 8) & 0xFF, onPrimary & 0xFF);
+            java.awt.Color themeColor = new java.awt.Color((primary >> 16) & 0xFF, (primary >> 8) & 0xFF, primary & 0xFF);
+            
+            // 背景: テーマカラーをベースに、かなり暗く彩度を落とした色を作成
+            // これにより「設定アプリらしい落ち着き」と「テーマ色」を両立
+            float[] hsb = java.awt.Color.RGBtoHSB(themeColor.getRed(), themeColor.getGreen(), themeColor.getBlue(), null);
+            baseColor = java.awt.Color.getHSBColor(hsb[0], hsb[1] * 0.3f, 0.3f); // 彩度低め、明度低め
         }
 
-        // 背景
-        g.setColor(backgroundColor);
+        // 背景: グラデーション (上:少し明るい -> 下:暗い)
+        java.awt.GradientPaint bgGradient = new java.awt.GradientPaint(
+            0, 0, baseColor.brighter(),
+            0, size, baseColor.darker()
+        );
+        g.setPaint(bgGradient);
         g.fillRoundRect(0, 0, size, size, 16, 16);
 
         // 歯車
-        g.setColor(foregroundColor);
         int centerX = size / 2;
         int centerY = size / 2;
-        int outerRadius = 20;
+        int outerRadius = 22;
         int innerRadius = 8;
         int teeth = 8;
-        
-        // 歯を描画
-        for (int i = 0; i < teeth; i++) {
-            double angle = Math.PI * 2 * i / teeth;
-            
-            g.translate(centerX, centerY);
-            g.rotate(angle);
-            g.fillRect(outerRadius - 6, -5, 12, 10);
-            g.rotate(-angle);
-            g.translate(-centerX, -centerY);
-        }
-        
-        // 歯車本体
-        g.fillOval(centerX - outerRadius, centerY - outerRadius, outerRadius * 2, outerRadius * 2);
-        
-        // 中心穴 (背景色と同じ)
-        g.setColor(backgroundColor);
+
+        // 歯車の影 (ドロップシャドウ)
+        g.setColor(new java.awt.Color(0, 0, 0, 80));
+        g.translate(2, 2);
+        drawGear(g, centerX, centerY, outerRadius, innerRadius, teeth);
+        g.translate(-2, -2);
+
+        // 歯車本体: 金属的なグラデーション
+        java.awt.GradientPaint gearGradient = new java.awt.GradientPaint(
+            0, 0, new java.awt.Color(245, 245, 245),
+            size, size, new java.awt.Color(180, 180, 180)
+        );
+        g.setPaint(gearGradient);
+        drawGear(g, centerX, centerY, outerRadius, innerRadius, teeth);
+
+        // 中心穴 (背景色に合わせて抜くように見せる -> 暗い色で塗りつぶし)
+        g.setColor(baseColor.darker());
         g.fillOval(centerX - innerRadius, centerY - innerRadius, innerRadius * 2, innerRadius * 2);
 
         g.dispose();
-        
         return new PImage(image);
+    }
+
+    private void drawGear(java.awt.Graphics2D g, int centerX, int centerY, int outerRadius, int innerRadius, int teeth) {
+        // 歯を描画
+        for (int i = 0; i < teeth; i++) {
+            double angle = Math.PI * 2 * i / teeth;
+            g.translate(centerX, centerY);
+            g.rotate(angle);
+            g.fillRoundRect(outerRadius - 6, -6, 14, 12, 4, 4); // 角を少し丸める
+            g.rotate(-angle);
+            g.translate(-centerX, -centerY);
+        }
+        // 歯車円盤
+        g.fillOval(centerX - outerRadius, centerY - outerRadius, outerRadius * 2, outerRadius * 2);
     }
     
     /**

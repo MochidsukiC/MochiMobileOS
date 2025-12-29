@@ -26,53 +26,57 @@ public class NoteApp implements IApplication {
         java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_ARGB);
         java.awt.Graphics2D g = image.createGraphics();
         
-        // アンチエイリアス有効化
         g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
 
-        // テーマカラー取得
-        java.awt.Color backgroundColor = new java.awt.Color(255, 235, 59); // デフォルト: 黄色 (Yellow 500)
-        java.awt.Color lineColor = new java.awt.Color(0, 0, 0, 50); // 薄い黒線
+        // ベース色 (紙の色): 淡いクリームイエロー
+        java.awt.Color paperColor = new java.awt.Color(255, 245, 157); // Light Yellow 200
+        java.awt.Color tapeColor = new java.awt.Color(255, 235, 59); // Default tape (Yellow 500)
         
         if (kernel != null && kernel.getThemeEngine() != null) {
-            // テーマに合わせて少し色味を変えるなどの調整も可能だが、
-            // メモ帳は黄色いイメージが強いので、ベースは黄色系を維持しつつ、
-            // ダークモードなら少し暗くするなどの調整を行う
-            // ここではシンプルに固定色とするが、将来的にテーマ対応可能
+            int primary = kernel.getThemeEngine().colorPrimary();
+            // テープの色をテーマカラーにする
+            tapeColor = new java.awt.Color((primary >> 16) & 0xFF, (primary >> 8) & 0xFF, primary & 0xFF);
+            
+            // もしテーマがダークモードなら、紙の色も少し暗くする
+            if (kernel.getThemeEngine().getMode() == jp.moyashi.phoneos.core.ui.theme.ThemeEngine.Mode.DARK) {
+                 paperColor = new java.awt.Color(210, 200, 130);
+            }
         }
 
-        // 背景 (角丸四角形)
-        g.setColor(backgroundColor);
-        g.fillRoundRect(0, 0, size, size, 16, 16);
-        
-        // 上部のテープ風装飾（オプション）
-        // g.setColor(new java.awt.Color(255, 255, 255, 100));
-        // g.fillRect(16, 0, 32, 12);
+        // 背景 (紙)
+        g.setColor(paperColor);
+        g.fillRoundRect(0, 0, size, size, 4, 4); // 角は少しだけ丸める
 
-        // 罫線を描画
-        g.setColor(lineColor);
+        // 罫線
+        g.setColor(new java.awt.Color(0, 0, 0, 40));
         g.setStroke(new java.awt.BasicStroke(2));
-        int startY = 20;
-        int gap = 12;
-        for (int i = 0; i < 3; i++) {
+        int startY = 28;
+        int gap = 10;
+        for (int i = 0; i < 4; i++) {
             int y = startY + i * gap;
-            g.drawLine(12, y, size - 12, y);
+            g.drawLine(10, y, size - 10, y);
         }
 
+        // 上部のテープ装飾 (テーマカラーを使用)
+        // 半透明にして下の紙が透けている感じを出す
+        g.setColor(new java.awt.Color(tapeColor.getRed(), tapeColor.getGreen(), tapeColor.getBlue(), 200));
+        g.fillRect(16, -5, 32, 20); // 上にはみ出させて貼っている感を出す
+        
         // めくれ効果（右下）
-        java.awt.Color foldColor = new java.awt.Color(0, 0, 0, 30);
-        g.setColor(foldColor);
+        java.awt.Color foldShadow = new java.awt.Color(0, 0, 0, 40);
+        g.setColor(foldShadow);
         java.awt.Polygon fold = new java.awt.Polygon();
-        fold.addPoint(size - 16, size);
-        fold.addPoint(size, size - 16);
+        fold.addPoint(size - 18, size);
+        fold.addPoint(size, size - 18);
         fold.addPoint(size, size);
         g.fillPolygon(fold);
         
-        // めくれ部分の裏側
-        g.setColor(new java.awt.Color(255, 255, 255, 200));
+        // めくれ部分の裏側 (紙の色より少し明るく)
+        g.setColor(paperColor.brighter());
         java.awt.Polygon foldBack = new java.awt.Polygon();
-        foldBack.addPoint(size - 16, size);
-        foldBack.addPoint(size, size - 16);
-        foldBack.addPoint(size - 16, size - 16);
+        foldBack.addPoint(size - 18, size);
+        foldBack.addPoint(size, size - 18);
+        foldBack.addPoint(size - 18, size - 18);
         g.fillPolygon(foldBack);
 
         g.dispose();

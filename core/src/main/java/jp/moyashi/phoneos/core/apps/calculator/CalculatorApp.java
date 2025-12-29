@@ -49,40 +49,51 @@ public class CalculatorApp implements IApplication {
         java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_ARGB);
         java.awt.Graphics2D g = image.createGraphics();
         
-        // Enable antialiasing
         g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
 
-        // Theme colors
-        java.awt.Color backgroundColor = new java.awt.Color(255, 149, 0); // Default: Orange
-        java.awt.Color foregroundColor = java.awt.Color.WHITE;
+        // テーマカラー
+        java.awt.Color themeColor = new java.awt.Color(255, 149, 0); // Default: Orange
         
         if (kernel != null && kernel.getThemeEngine() != null) {
             int primary = kernel.getThemeEngine().colorPrimary();
-            int onPrimary = kernel.getThemeEngine().colorOnPrimary();
-            backgroundColor = new java.awt.Color((primary >> 16) & 0xFF, (primary >> 8) & 0xFF, primary & 0xFF);
-            foregroundColor = new java.awt.Color((onPrimary >> 16) & 0xFF, (onPrimary >> 8) & 0xFF, onPrimary & 0xFF);
+            themeColor = new java.awt.Color((primary >> 16) & 0xFF, (primary >> 8) & 0xFF, primary & 0xFF);
         }
 
-        // Background
-        g.setColor(backgroundColor);
+        // 背景: 鮮やかなグラデーション (左上:明るい -> 右下:テーマ色)
+        java.awt.GradientPaint bgGradient = new java.awt.GradientPaint(
+            0, 0, themeColor.brighter(),
+            size, size, themeColor
+        );
+        g.setPaint(bgGradient);
         g.fillRoundRect(0, 0, size, size, 16, 16);
 
-        // Calculator symbols
-        g.setColor(foregroundColor);
-        g.setFont(new java.awt.Font("SansSerif", java.awt.Font.BOLD, 40));
-        
+        // かすかなグリッド模様 (電卓のキー配列をイメージ)
+        g.setColor(new java.awt.Color(255, 255, 255, 30));
+        g.fillRect(32, 0, 1, size);
+        g.fillRect(0, 32, size, 1);
+
+        // メイン記号 (+): ドロップシャドウ付き
+        g.setFont(new java.awt.Font("SansSerif", java.awt.Font.BOLD, 42));
         String text = "+";
         int textWidth = g.getFontMetrics().stringWidth(text);
         int textHeight = g.getFontMetrics().getAscent();
+        int x = (size - textWidth) / 2 + 1;
+        int y = (size + textHeight) / 2 - 12;
+
+        // 影
+        g.setColor(new java.awt.Color(0, 0, 0, 60));
+        g.drawString(text, x + 2, y + 2);
         
-        // Center the "+" symbol
-        g.drawString(text, (size - textWidth) / 2 + 1, (size + textHeight) / 2 - 12);
+        // 本体
+        g.setColor(java.awt.Color.WHITE);
+        g.drawString(text, x, y);
         
-        // Small decorative symbols
-        g.setFont(new java.awt.Font("SansSerif", java.awt.Font.BOLD, 14));
-        g.drawString("-", 12, size/2 + 5);
-        g.drawString("=", size - 20, size/2 + 5);
-        g.drawString("x", size/2 - 4, 15);
+        // 装飾記号: 右下に "=" を配置 (アクセントカラーの補色などで強調してもいいが、今回は白で統一し透明度で調整)
+        g.setFont(new java.awt.Font("SansSerif", java.awt.Font.BOLD, 18));
+        g.setColor(new java.awt.Color(255, 255, 255, 180));
+        g.drawString("=", size - 18, size - 10);
+        g.drawString("-", 10, size - 10);
+        g.drawString("×", 10, 20);
 
         g.dispose();
         
