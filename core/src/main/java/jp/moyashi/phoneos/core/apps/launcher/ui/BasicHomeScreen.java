@@ -171,21 +171,31 @@ public class BasicHomeScreen implements Screen {
             g.strokeWeight(2);
             g.rect(x, y, ICON_SIZE, ICON_SIZE, 12);
 
-            // App icon placeholder (bright blue for visibility)
-            g.fill(0, 150, 255); // Bright blue
-            g.noStroke();
-            g.rect(x + 12, y + 12, ICON_SIZE - 24, ICON_SIZE - 24, 8);
-
-            // App initial (white text)
-            var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
-            int onSurface = theme != null ? theme.colorOnSurface() : 0xFF111111;
-            { int c=onSurface; g.fill((c>>16)&0xFF, (c>>8)&0xFF, c&0xFF); }
-            g.textAlign(g.CENTER, g.CENTER);
-            g.textSize(18);
-            String initial = app.getName().substring(0, 1).toUpperCase();
-            g.text(initial, x + ICON_SIZE/2, y + ICON_SIZE/2 - 2);
+            // Try to get actual app icon
+            processing.core.PImage icon = app.getIcon(kernel);
+            
+            if (icon != null) {
+                // Draw actual icon
+                g.image(icon, x, y, ICON_SIZE, ICON_SIZE);
+            } else {
+                // App icon placeholder (bright blue for visibility)
+                g.fill(0, 150, 255); // Bright blue
+                g.noStroke();
+                g.rect(x + 12, y + 12, ICON_SIZE - 24, ICON_SIZE - 24, 8);
+                
+                // App initial (white text)
+                var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+                int onSurface = theme != null ? theme.colorOnSurface() : 0xFF111111;
+                { int c=onSurface; g.fill((c>>16)&0xFF, (c>>8)&0xFF, c&0xFF); }
+                g.textAlign(g.CENTER, g.CENTER);
+                g.textSize(18);
+                String initial = app.getName().substring(0, 1).toUpperCase();
+                g.text(initial, x + ICON_SIZE/2, y + ICON_SIZE/2 - 2);
+            }
 
             // App name (white text)
+            var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+            int onSurface = theme != null ? theme.colorOnSurface() : 0xFFFFFFFF;
             { int c=onSurface; g.fill((c>>16)&0xFF, (c>>8)&0xFF, c&0xFF); }
             g.textSize(10);
             g.textAlign(g.CENTER, g.TOP);
