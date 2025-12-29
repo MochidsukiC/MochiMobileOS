@@ -30,39 +30,58 @@ public class ChromiumBrowserApp implements IApplication {
         java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_ARGB);
         java.awt.Graphics2D g = image.createGraphics();
         
-        // アンチエイリアス有効化
+        // アンチエイリアスと高品質描画設定
         g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+        g.setRenderingHint(java.awt.RenderingHints.KEY_RENDERING, java.awt.RenderingHints.VALUE_RENDER_QUALITY);
 
-        // テーマカラー取得
-        java.awt.Color backgroundColor = new java.awt.Color(33, 150, 243); // デフォルト: 青 (Blue 500)
+        // 背景: リッチなグラデーション (左上:水色 -> 右下:濃い青)
+        java.awt.Color colorTopLeft = new java.awt.Color(41, 182, 246); // Light Blue 400
+        java.awt.Color colorBottomRight = new java.awt.Color(2, 119, 189); // Light Blue 800
         
+        // テーマが適用されていれば、プライマリカラーをベースにグラデーション生成
         if (kernel != null && kernel.getThemeEngine() != null) {
             int primary = kernel.getThemeEngine().colorPrimary();
-            // テーマのプライマリカラーを使用
-            backgroundColor = new java.awt.Color((primary >> 16) & 0xFF, (primary >> 8) & 0xFF, primary & 0xFF);
+            java.awt.Color themeColor = new java.awt.Color((primary >> 16) & 0xFF, (primary >> 8) & 0xFF, primary & 0xFF);
+            colorTopLeft = themeColor;
+            colorBottomRight = themeColor.darker().darker();
         }
 
-        // 背景 (円形)
-        g.setColor(backgroundColor);
-        g.fillOval(4, 4, size - 8, size - 8);
+        java.awt.GradientPaint gradient = new java.awt.GradientPaint(
+            0, 0, colorTopLeft,
+            size, size, colorBottomRight
+        );
+        g.setPaint(gradient);
+        g.fillRoundRect(0, 0, size, size, 16, 16); // 少し角丸にする
 
-        // 地球儀のグリッド (薄い白線)
-        g.setColor(new java.awt.Color(255, 255, 255, 100));
-        g.setStroke(new java.awt.BasicStroke(2));
-        
-        // 縦線 (経線)
-        g.drawOval(size/2 - 12, 4, 24, size - 8);
-        g.drawLine(size/2, 4, size/2, size - 4);
-        
-        // 横線 (緯線)
-        g.drawArc(4, 16, size - 8, size - 32, 0, 180); // 上
-        g.drawArc(4, size - 16 - (size - 32), size - 8, size - 32, 180, 180); // 下
-        g.drawLine(4, size/2, size - 4, size/2); // 赤道
-
-        // コンパスのような中心点
+        // シンボル: 惑星と軌道
         g.setColor(java.awt.Color.WHITE);
-        int centerSize = 8;
-        g.fillOval((size - centerSize) / 2, (size - centerSize) / 2, centerSize, centerSize);
+        g.setStroke(new java.awt.BasicStroke(3.0f, java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND));
+
+        int centerX = size / 2;
+        int centerY = size / 2;
+
+        // メインの惑星
+        int planetSize = 24;
+        g.fillOval(centerX - planetSize/2, centerY - planetSize/2, planetSize, planetSize);
+        
+        // 軌道リング (傾いた楕円)
+        java.awt.geom.AffineTransform oldTransform = g.getTransform();
+        g.rotate(Math.toRadians(-30), centerX, centerY);
+        
+        // 外側のリング
+        g.setStroke(new java.awt.BasicStroke(3.5f));
+        g.drawOval(centerX - 24, centerY - 10, 48, 20);
+        
+        // リングの手前側を少し消して、惑星の後ろを通っているように見せる工夫（簡易的）
+        // 実際には惑星を再描画して隠す
+        g.setTransform(oldTransform);
+        
+        // 惑星を少し小さく再描画して、リングの一部を上書きする（立体感）
+        // ただしシンプルにするため、今回は「リングの中にある惑星」としてベタ塗り
+        g.fillOval(centerX - planetSize/2, centerY - planetSize/2, planetSize, planetSize);
+
+        // 小さな衛星（装飾）
+        g.fillOval(centerX + 16, centerY - 16, 6, 6);
 
         g.dispose();
         
