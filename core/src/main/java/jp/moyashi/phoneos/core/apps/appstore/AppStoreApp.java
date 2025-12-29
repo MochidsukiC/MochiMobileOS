@@ -78,6 +78,72 @@ public class AppStoreApp implements IApplication {
     }
 
     /**
+     * アプリケーションのアイコンを取得する。
+     * 動的に生成されたショッピングバッグアイコンを返す。
+     * 
+     * @param kernel OSカーネルインスタンス
+     * @return アプリケーションアイコン
+     */
+    @Override
+    public PImage getIcon(Kernel kernel) {
+        int size = 64;
+        java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        java.awt.Graphics2D g = image.createGraphics();
+        
+        g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+        g.setRenderingHint(java.awt.RenderingHints.KEY_RENDERING, java.awt.RenderingHints.VALUE_RENDER_QUALITY);
+
+        // テーマカラー取得
+        java.awt.Color themeColor = new java.awt.Color(30, 136, 229); // Blue 600
+        if (kernel != null && kernel.getThemeEngine() != null) {
+            int primary = kernel.getThemeEngine().colorPrimary();
+            themeColor = new java.awt.Color((primary >> 16) & 0xFF, (primary >> 8) & 0xFF, primary & 0xFF);
+        }
+
+        // 背景: グラデーション
+        java.awt.GradientPaint bgGradient = new java.awt.GradientPaint(
+            0, 0, themeColor.brighter(),
+            size, size, themeColor.darker()
+        );
+        g.setPaint(bgGradient);
+        g.fillRoundRect(0, 0, size, size, 16, 16);
+
+        // ショッピングバッグの描画
+        g.setColor(java.awt.Color.WHITE);
+        int bagWidth = 36;
+        int bagHeight = 32;
+        int bagX = (size - bagWidth) / 2;
+        int bagY = (size - bagHeight) / 2 + 4;
+
+        // 持ち手
+        g.setStroke(new java.awt.BasicStroke(3));
+        g.drawArc(bagX + 8, bagY - 12, 20, 20, 0, 180);
+
+        // バッグ本体
+        java.awt.geom.RoundRectangle2D bag = new java.awt.geom.RoundRectangle2D.Float(bagX, bagY, bagWidth, bagHeight, 8, 8);
+        g.fill(bag);
+        
+        // バッグの中のシンボル（A字型のハイライト）
+        g.setColor(themeColor);
+        java.awt.Polygon symbol = new java.awt.Polygon();
+        // Aの形
+        int symCenterX = size / 2;
+        int symBaseY = bagY + 22;
+        symbol.addPoint(symCenterX, bagY + 8); // Top
+        symbol.addPoint(symCenterX - 8, symBaseY); // Bottom Left
+        symbol.addPoint(symCenterX + 8, symBaseY); // Bottom Right
+        
+        // 三角形を描画
+        g.fillPolygon(symbol);
+        
+        // Aの横棒（白で抜くために少し工夫が必要だが、ここではシンプルに三角形だけで「矢印/再生」的な意味合いを持たせる）
+        
+        g.dispose();
+        
+        return new PImage(image);
+    }
+    
+    /**
      * このアプリケーションのエントリースクリーンを取得する。
      *
      * @param kernel OSカーネルインスタンス
