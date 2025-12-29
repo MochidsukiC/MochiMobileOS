@@ -26,6 +26,11 @@ public class NoOpChromiumService implements ChromiumService {
     }
 
     @Override
+    public ChromiumSurface createTab(int width, int height, String initialUrl, String appId) {
+        return null;
+    }
+
+    @Override
     public void closeTab(String surfaceId) {
         // 何もしない
     }

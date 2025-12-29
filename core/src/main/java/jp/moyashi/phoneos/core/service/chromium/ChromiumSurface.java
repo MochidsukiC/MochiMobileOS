@@ -16,6 +16,12 @@ public interface ChromiumSurface {
     String getSurfaceId();
 
     /**
+     * このサーフェスを作成したアプリケーションのIDを返します。
+     * @return アプリケーションID（nullの場合は不明）
+     */
+    String getAppId();
+
+    /**
      * 現在のサーフェスの幅を返します。
      */
     int getWidth();

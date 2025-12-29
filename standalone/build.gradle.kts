@@ -6,27 +6,24 @@ plugins {
 
 dependencies {
     // Dependency on the core module
-    implementation(project(":core"))
+    implementation(project(":core")) {
+        exclude(group = "org.jogamp.jogl")
+        exclude(group = "org.jogamp.gluegen")
+    }
 
     // Processing 4 Core library (needed for Main.java)
-    implementation("org.processing:core:4.4.4")
+    implementation("org.processing:core:4.4.4") {
+        exclude(group = "org.jogamp.jogl")
+        exclude(group = "org.jogamp.gluegen")
+    }
 
-    // Additional Processing dependencies that might be needed
-    implementation("org.jogamp.gluegen:gluegen-rt:2.4.0")
-    implementation("org.jogamp.jogl:jogl-all:2.4.0")
+    // Additional Processing dependencies are handled by jcefmaven's jogl or explicit runtimeOnly
+    // implementation("org.jogamp.gluegen:gluegen-rt:2.4.0")
+    // implementation("org.jogamp.jogl:jogl-all:2.4.0")
 
     // JOGAMP native libraries for Windows
-    val os = org.gradle.internal.os.OperatingSystem.current()
-    if (os.isWindows) {
-        runtimeOnly("org.jogamp.gluegen:gluegen-rt:2.4.0:natives-windows-amd64")
-        runtimeOnly("org.jogamp.jogl:jogl-all:2.4.0:natives-windows-amd64")
-    } else if (os.isMacOsX) {
-        runtimeOnly("org.jogamp.gluegen:gluegen-rt:2.4.0:natives-macosx-universal")
-        runtimeOnly("org.jogamp.jogl:jogl-all:2.4.0:natives-macosx-universal")
-    } else if (os.isLinux) {
-        runtimeOnly("org.jogamp.gluegen:gluegen-rt:2.4.0:natives-linux-amd64")
-        runtimeOnly("org.jogamp.jogl:jogl-all:2.4.0:natives-linux-amd64")
-    }
+    // val os = org.gradle.internal.os.OperatingSystem.current()
+    // ... (JOGL natives are provided by jcefmaven at runtime)
 
     // Logging dependencies
     implementation("org.apache.logging.log4j:log4j-api:2.20.0")

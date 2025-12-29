@@ -26,6 +26,7 @@ public class ChromiumManager {
     private CefApp cefApp;
     private ChromiumProvider provider;
     private boolean initialized = false;
+    private final java.util.Map<String, org.cef.browser.CefRequestContext> contextCache = new java.util.concurrent.ConcurrentHashMap<>();
 
     /**
      * ChromiumManagerを構築する。
@@ -97,6 +98,20 @@ public class ChromiumManager {
      * @return ChromiumBrowserインスタンス
      */
     public ChromiumBrowser createBrowser(String url, int width, int height) {
+        return createBrowser(url, width, height, null);
+    }
+
+    /**
+     * ChromiumBrowserインスタンスを作成する（App ID指定あり）。
+     * App IDを指定することで、アプリごとに独立したCookie/キャッシュ環境（サンドボックス）を提供する。
+     *
+     * @param url 初期URL
+     * @param width 幅
+     * @param height 高さ
+     * @param appId アプリID（nullの場合は共有環境を使用）
+     * @return ChromiumBrowserインスタンス
+     */
+    public ChromiumBrowser createBrowser(String url, int width, int height, String appId) {
         if (!initialized) {
             throw new IllegalStateException("ChromiumManager is not initialized");
         }
@@ -104,8 +119,32 @@ public class ChromiumManager {
         if (provider == null) {
             throw new IllegalStateException("ChromiumProvider is not set");
         }
-        log("Creating ChromiumBrowser: " + url + " (" + width + "x" + height + ")");
-        return new ChromiumBrowser(kernel, cefApp, provider, url, width, height);
+        
+        org.cef.browser.CefRequestContext context = null;
+        if (appId != null) {
+            // CRITICAL NOTE: As of JCEF 135 (jcefmaven 135.0.20), CefRequestContext.createContext() 
+            // and even getGlobalContext() cause native crashes or version mismatch errors (invalid version -1).
+            // This is likely due to an incomplete JNI implementation in this specific JCEF build
+            // (confirmed by 'TODO: Expose CefRequestContextSettings' in CefRequestContext_N.cpp).
+            //
+            // We keep the AppID logic here so isolation can be easily re-enabled once JCEF is stabilized.
+            log("WARNING: RequestContext isolation for AppID '" + appId + "' is disabled due to JCEF native instability. Using shared context.");
+            /*
+            context = contextCache.computeIfAbsent(appId, id -> {
+                String cachePath = kernel.getVFS().getFullPath("system/browser_cache/" + id);
+                log("Creating isolated RequestContext for AppID: " + id + " (Path: " + cachePath + ")");
+                return provider.createRequestContext(cefApp, cachePath);
+            });
+            */
+        }
+        
+        String logMsg = "Creating ChromiumBrowser: " + url + " (" + width + "x" + height + ")";
+        if (appId != null) {
+            logMsg += " [AppID: " + appId + "]";
+        }
+        log(logMsg);
+        
+        return new ChromiumBrowser(kernel, cefApp, provider, url, width, height, context);
     }
 
     /**
@@ -182,6 +221,17 @@ public class ChromiumManager {
         log("Shutting down Chromium...");
 
         try {
+            // キャッシュされたRequestContextを破棄
+            for (java.util.Map.Entry<String, org.cef.browser.CefRequestContext> entry : contextCache.entrySet()) {
+                try {
+                    log("Disposing RequestContext for AppID: " + entry.getKey());
+                    entry.getValue().dispose();
+                } catch (Exception e) {
+                    logError("Error disposing RequestContext for " + entry.getKey(), e);
+                }
+            }
+            contextCache.clear();
+
             if (provider != null && cefApp != null) {
                 provider.shutdown(cefApp);
             }

@@ -1,6 +1,8 @@
 package jp.moyashi.phoneos.core.input;
 
 import jp.moyashi.phoneos.core.Kernel;
+import jp.moyashi.phoneos.core.Kernel.LayerType;
+import jp.moyashi.phoneos.core.navigation.LayerController;
 import jp.moyashi.phoneos.core.ui.popup.PopupManager;
 import jp.moyashi.phoneos.core.ui.ScreenManager;
 import jp.moyashi.phoneos.core.service.LoggerService;
@@ -32,6 +34,12 @@ public class InputManager {
     /** ロガーサービス */
     private LoggerService logger;
 
+    /** システムジェスチャー領域の比率（画面下部10%） */
+    private static final float SYSTEM_GESTURE_ZONE_RATIO = 0.1f;
+
+    /** 現在のタッチセッションがシステムジェスチャー領域から開始されたか */
+    private boolean isSystemGestureSession = false;
+
     /**
      * InputManagerを初期化する。
      *
@@ -62,6 +70,15 @@ public class InputManager {
         ScreenManager screenManager = kernel.getScreenManager();
         GestureManager gestureManager = kernel.getGestureManager();
 
+        // システムジェスチャー領域（画面下部10%）からのタッチかチェック
+        int screenHeight = kernel.height;
+        float gestureZoneY = screenHeight * (1.0f - SYSTEM_GESTURE_ZONE_RATIO);
+        isSystemGestureSession = (y >= gestureZoneY);
+
+        if (isSystemGestureSession && logger != null) {
+            logger.debug("InputManager", "System gesture session started at y=" + y + " (zone starts at " + gestureZoneY + ")");
+        }
+
         // ポップアップが処理した場合は終了
         if (popupManager != null && popupManager.handleMouseClick(x, y)) {
             return;
@@ -70,6 +87,16 @@ public class InputManager {
         // ジェスチャーマネージャーに通知
         if (gestureManager != null) {
             gestureManager.handleMousePressed(x, y);
+        }
+
+        // システムジェスチャーセッション中はScreenにイベントを転送しない
+        if (isSystemGestureSession) {
+            return;
+        }
+
+        // レイヤー優先度チェック: トップレイヤーがアプリ/ホーム以外の場合はScreenに転送しない
+        if (!shouldForwardToScreen()) {
+            return;
         }
 
         // スクリーンマネージャーに委譲
@@ -95,15 +122,22 @@ public class InputManager {
         ScreenManager screenManager = kernel.getScreenManager();
         GestureManager gestureManager = kernel.getGestureManager();
 
-        // ポップアップが処理した場合は終了
-        // TODO: PopupManagerにはhandleMouseReleaseメソッドがない
-        // if (popupManager != null && popupManager.handleMouseRelease(x, y)) {
-        //     return;
-        // }
-
-        // ジェスチャーマネージャーに通知
+        // ジェスチャーマネージャーに通知（セッション終了前に処理）
         if (gestureManager != null) {
             gestureManager.handleMouseReleased(x, y);
+        }
+
+        // システムジェスチャーセッション中はScreenにイベントを転送しない
+        boolean wasSystemGesture = isSystemGestureSession;
+        isSystemGestureSession = false; // セッション終了
+
+        if (wasSystemGesture) {
+            return;
+        }
+
+        // レイヤー優先度チェック: トップレイヤーがアプリ/ホーム以外の場合はScreenに転送しない
+        if (!shouldForwardToScreen()) {
+            return;
         }
 
         // スクリーンマネージャーに委譲
@@ -125,19 +159,27 @@ public class InputManager {
             return;
         }
 
-        PopupManager popupManager = kernel.getPopupManager();
         ScreenManager screenManager = kernel.getScreenManager();
         GestureManager gestureManager = kernel.getGestureManager();
-
-        // ポップアップが処理した場合は終了
-        // TODO: PopupManagerにはhandleMouseDragメソッドがない
-        // if (popupManager != null && popupManager.handleMouseDrag(x, y)) {
-        //     return;
-        // }
 
         // ジェスチャーマネージャーに通知
         if (gestureManager != null) {
             gestureManager.handleMouseDragged(x, y);
+        }
+
+        // システムジェスチャーセッション中、またはジェスチャードラッグ中はScreenにイベントを転送しない
+        if (isSystemGestureSession) {
+            return;
+        }
+
+        // GestureManagerがドラッグ中の場合もScreenに転送しない
+        if (gestureManager != null && gestureManager.isDragging()) {
+            return;
+        }
+
+        // レイヤー優先度チェック: トップレイヤーがアプリ/ホーム以外の場合はScreenに転送しない
+        if (!shouldForwardToScreen()) {
+            return;
         }
 
         // スクリーンマネージャーに委譲
@@ -293,6 +335,27 @@ public class InputManager {
             logger.info("InputManager", "Calling kernel.handleHomeButton()");
         }
         kernel.handleHomeButton();
+    }
+
+    /**
+     * 現在のレイヤー状態に基づいて、Screenにイベントを転送すべきかを判定する。
+     * トップレイヤーがアプリケーションまたはホーム画面の場合のみ転送する。
+     *
+     * @return Screenにイベントを転送すべき場合true
+     */
+    private boolean shouldForwardToScreen() {
+        LayerController layerController = kernel.getLayerController();
+        if (layerController == null) {
+            return true; // LayerControllerがない場合はデフォルトで転送
+        }
+
+        LayerType topLayer = layerController.getTopLayer();
+        if (topLayer == null) {
+            return true;
+        }
+
+        // トップレイヤーがHOME_SCREENまたはAPPLICATIONの場合のみ転送
+        return topLayer == LayerType.HOME_SCREEN || topLayer == LayerType.APPLICATION;
     }
 
     /**

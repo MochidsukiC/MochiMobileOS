@@ -36,6 +36,9 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
     /** setup()が呼ばれていないスクリーンを追跡するためのリスト */
     private java.util.Set<Screen> unsetupScreens;
 
+    /** setup()が既に完了したスクリーンを追跡するためのSet */
+    private java.util.Set<Screen> setupCompletedScreens;
+
     /** Kernelインスタンスへの参照（レイヤー管理のため） */
     private Kernel kernel;
 
@@ -94,6 +97,7 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
         screenTransition = new ScreenTransition();
         screenTransition.setAnimationCallback(this); // Set callback to handle animation completion
         unsetupScreens = new java.util.HashSet<>();
+        setupCompletedScreens = new java.util.HashSet<>();
         log("Screen manager initialized with animation support");
     }
 
@@ -124,8 +128,13 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
 
             screenStack.push(screen);
             // setup()にPGraphicsを渡すため、currentPAppletが利用可能な場合のみ呼び出し
-            if (currentPApplet != null) {
+            // 既にセットアップ済みのスクリーンはスキップ（インスタンス再利用時）
+            if (setupCompletedScreens.contains(screen)) {
+                log("Screen " + screen.getScreenTitle() + " already setup, skipping setup()");
+            } else if (currentPApplet != null) {
                 screen.setup(currentPApplet.g);
+                setupCompletedScreens.add(screen);
+                log("Screen " + screen.getScreenTitle() + " setup completed");
             } else {
                 // PAppletが利用できない場合、後で初期化するためにリストに追加
                 unsetupScreens.add(screen);
@@ -178,13 +187,19 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
             // スクリーンを即座にプッシュするが、アニメーション中は描画をブロック
             screenStack.push(screen);
 
-            // デバッグ: setup()呼び出し前
-            log("Calling setup() on screen: " + screen.getScreenTitle() + ", PGraphics available: " + (currentPApplet.g != null));
-            try {
-                screen.setup(currentPApplet.g);
-                log("setup() completed successfully for: " + screen.getScreenTitle());
-            } catch (Exception e) {
-                logError("Error calling setup() on " + screen.getScreenTitle() + ": " + e.getMessage(), e);
+            // 既にセットアップ済みのスクリーンはスキップ（インスタンス再利用時）
+            if (setupCompletedScreens.contains(screen)) {
+                log("Screen " + screen.getScreenTitle() + " already setup, skipping setup() (animation)");
+            } else {
+                // デバッグ: setup()呼び出し前
+                log("Calling setup() on screen: " + screen.getScreenTitle() + ", PGraphics available: " + (currentPApplet.g != null));
+                try {
+                    screen.setup(currentPApplet.g);
+                    setupCompletedScreens.add(screen);
+                    log("setup() completed successfully for: " + screen.getScreenTitle());
+                } catch (Exception e) {
+                    logError("Error calling setup() on " + screen.getScreenTitle() + ": " + e.getMessage(), e);
+                }
             }
 
             unsetupScreens.remove(screen); // セットアップ完了なのでリストから削除
@@ -232,8 +247,21 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
     public Screen popScreen() {
         if (!screenStack.isEmpty()) {
             Screen poppedScreen = screenStack.pop();
-            if (currentPApplet != null) {
-                poppedScreen.cleanup(currentPApplet);
+
+            // ServiceManagerで管理されるスクリーン（applicationIdが設定されている）は
+            // cleanup()を呼ばずに再利用可能な状態を維持する
+            String appId = poppedScreen.getApplicationId();
+            if (appId != null && !appId.isEmpty()) {
+                // アプリ画面: cleanup()を呼ばず、onBackground()のみ呼び出す
+                // （ServiceManagerがインスタンスを再利用するため）
+                log("Screen " + poppedScreen.getScreenTitle() + " is managed by ServiceManager (appId=" + appId + "), skipping cleanup()");
+            } else {
+                // 非アプリ画面: 通常通りcleanup()を呼び出す
+                if (currentPApplet != null) {
+                    poppedScreen.cleanup(currentPApplet);
+                }
+                // セットアップ完了リストからも削除（再度プッシュ時にsetup()が呼ばれるように）
+                setupCompletedScreens.remove(poppedScreen);
             }
             // 未セットアップリストからも削除
             unsetupScreens.remove(poppedScreen);
@@ -279,8 +307,20 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
 
             // スクリーンをポップ
             Screen poppedScreen = screenStack.pop();
-            if (currentPApplet != null) {
-                poppedScreen.cleanup(currentPApplet);
+
+            // ServiceManagerで管理されるスクリーン（applicationIdが設定されている）は
+            // cleanup()を呼ばずに再利用可能な状態を維持する
+            String appId = poppedScreen.getApplicationId();
+            if (appId != null && !appId.isEmpty()) {
+                // アプリ画面: cleanup()を呼ばず、インスタンスを再利用可能にする
+                log("Screen " + poppedScreen.getScreenTitle() + " is managed by ServiceManager (appId=" + appId + "), skipping cleanup() (animation)");
+            } else {
+                // 非アプリ画面: 通常通りcleanup()を呼び出す
+                if (currentPApplet != null) {
+                    poppedScreen.cleanup(currentPApplet);
+                }
+                // セットアップ完了リストからも削除（再度プッシュ時にsetup()が呼ばれるように）
+                setupCompletedScreens.remove(poppedScreen);
             }
             // 未セットアップリストからも削除
             unsetupScreens.remove(poppedScreen);
@@ -371,7 +411,13 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
                             kernel.getLogger().debug("ScreenManager", "Drawing current screen: " + currentScreen.getScreenTitle());
                         }
                     }
-                    currentScreen.draw(g);
+                    // アプリ描画をサンドボックス化（ellipseMode等の状態漏れを防止）
+                    g.pushStyle();
+                    try {
+                        currentScreen.draw(g);
+                    } finally {
+                        g.popStyle();
+                    }
                 } catch (Exception e) {
                     logError("Error drawing current screen: " + e.getMessage(), e);
 
@@ -414,7 +460,13 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
         if (!isAnimating) {
             Screen currentScreen = getCurrentScreen();
             if (currentScreen != null) {
-                currentScreen.draw(p);
+                // アプリ描画をサンドボックス化（ellipseMode等の状態漏れを防止）
+                p.pushStyle();
+                try {
+                    currentScreen.draw(p);
+                } finally {
+                    p.popStyle();
+                }
             } else {
                 // Draw a default screen if no screens are active
                 drawEmptyScreen(p);
@@ -429,7 +481,13 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
                         // アニメーション対象スクリーンを除いた前のスクリーン
                         Screen backgroundScreen = screenStack.get(screenStack.size() - 2);
                         log("Drawing background screen during zoom-in: " + backgroundScreen.getScreenTitle());
-                        backgroundScreen.draw(p);
+                        // アプリ描画をサンドボックス化
+                        p.pushStyle();
+                        try {
+                            backgroundScreen.draw(p);
+                        } finally {
+                            p.popStyle();
+                        }
                     } else {
                         log("Drawing empty screen during zoom-in");
                         drawEmptyScreen(p);
@@ -437,12 +495,18 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
                     log("Drawing zoom-in animation overlay");
                     screenTransition.draw(p);
                     break;
-                    
+
                 case ZOOM_OUT:
                     // ズームアウトアニメーション中は次のスクリーンを背景として描画
                     Screen currentScreen = getCurrentScreen();
                     if (currentScreen != null) {
-                        currentScreen.draw(p);
+                        // アプリ描画をサンドボックス化
+                        p.pushStyle();
+                        try {
+                            currentScreen.draw(p);
+                        } finally {
+                            p.popStyle();
+                        }
                     } else {
                         drawEmptyScreen(p);
                     }
@@ -631,6 +695,7 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
                 try {
                     log("Delayed setup for screen - " + screen.getScreenTitle());
                     screen.setup(currentPApplet.g);
+                    setupCompletedScreens.add(screen); // セットアップ完了を記録
                     iterator.remove(); // セットアップ完了後にリストから削除
                 } catch (Exception e) {
                     logError("Error in delayed setup for " + screen.getScreenTitle() + ": " + e.getMessage(), e);
@@ -701,6 +766,7 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
             for (Screen screen : unsetupScreens.toArray(new Screen[0])) {
                 try {
                     screen.setup(pApplet.g);
+                    setupCompletedScreens.add(screen); // セットアップ完了を記録
                     unsetupScreens.remove(screen);
                     log(screen.getScreenTitle() + "のsetup()完了");
                 } catch (Exception e) {

@@ -66,8 +66,8 @@ public class DefaultChromiumService implements ChromiumService {
     }
 
     @Override
-    public ChromiumSurface createTab(int width, int height, String initialUrl) {
-        log("createTab called: " + width + "x" + height + ", URL: " + initialUrl);
+    public ChromiumSurface createTab(int width, int height, String initialUrl, String appId) {
+        log("createTab called: " + width + "x" + height + ", URL: " + initialUrl + ", AppID: " + appId);
 
         if (manager == null) {
             log("ERROR: manager is null!");
@@ -85,7 +85,7 @@ public class DefaultChromiumService implements ChromiumService {
         try {
             DefaultChromiumSurface surface = surfaces.computeIfAbsent(surfaceId, id -> {
                 log("computeIfAbsent: creating browser for " + id);
-                ChromiumBrowser browser = manager.createBrowser(initialUrl, width, height);
+                ChromiumBrowser browser = manager.createBrowser(initialUrl, width, height, appId);
                 log("computeIfAbsent: browser created");
 
                 browser.addLoadListener(new ChromiumBrowser.LoadListener() {
@@ -102,8 +102,8 @@ public class DefaultChromiumService implements ChromiumService {
                     }
                 });
 
-                log("computeIfAbsent: returning new surface");
-                return new DefaultChromiumSurface(id, browser);
+                log("computeIfAbsent: returning new surface (appId=" + appId + ")");
+                return new DefaultChromiumSurface(id, browser, appId);
             });
 
             log("Surface created, total surfaces: " + surfaces.size());
@@ -211,10 +211,12 @@ public class DefaultChromiumService implements ChromiumService {
 
         private final String id;
         private final ChromiumBrowser browser;
+        private final String appId;
 
-        private DefaultChromiumSurface(String id, ChromiumBrowser browser) {
+        private DefaultChromiumSurface(String id, ChromiumBrowser browser, String appId) {
             this.id = id;
             this.browser = browser;
+            this.appId = appId;
         }
 
         ChromiumBrowser getBrowser() {
@@ -224,6 +226,11 @@ public class DefaultChromiumService implements ChromiumService {
         @Override
         public String getSurfaceId() {
             return id;
+        }
+
+        @Override
+        public String getAppId() {
+            return appId;
         }
 
         @Override

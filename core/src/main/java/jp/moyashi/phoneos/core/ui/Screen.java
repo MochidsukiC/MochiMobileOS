@@ -395,4 +395,24 @@ public interface Screen {
         // デフォルト実装：フォーカスされたテキスト入力なし
         return null;
     }
+
+    /**
+     * このスクリーンが属するアプリケーションのIDを設定する。
+     * システムによって自動的に呼び出される。
+     *
+     * @param appId アプリケーションID
+     */
+    default void setApplicationId(String appId) {
+        // デフォルト実装：何もしない
+        // 必要に応じてオーバーライドしてください
+    }
+
+    /**
+     * このスクリーンが属するアプリケーションのIDを取得する。
+     *
+     * @return アプリケーションID、設定されていない場合はnull
+     */
+    default String getApplicationId() {
+        return null;
+    }
 }

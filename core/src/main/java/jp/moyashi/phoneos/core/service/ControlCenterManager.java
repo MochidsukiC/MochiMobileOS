@@ -1,10 +1,12 @@
 package jp.moyashi.phoneos.core.service;
 
+import jp.moyashi.phoneos.core.Kernel;
 import jp.moyashi.phoneos.core.controls.ControlCenterCardRegistry;
 import jp.moyashi.phoneos.core.controls.IControlCenterItem;
 import jp.moyashi.phoneos.core.input.GestureEvent;
 import jp.moyashi.phoneos.core.input.GestureListener;
 import jp.moyashi.phoneos.core.coordinate.CoordinateTransform;
+import jp.moyashi.phoneos.core.navigation.LayerController;
 import processing.core.PApplet;
 import processing.core.PGraphics;
 
@@ -103,6 +105,9 @@ public class ControlCenterManager implements GestureListener {
     /** カードレジストリ */
     private ControlCenterCardRegistry cardRegistry;
 
+    /** Kernelへの参照（LayerController連携用） */
+    private Kernel kernel;
+
     /**
      * ControlCenterManagerを作成する。
      */
@@ -116,16 +121,31 @@ public class ControlCenterManager implements GestureListener {
     }
     
     /**
+     * Kernelへの参照を設定する。
+     * LayerControllerとの連携に必要。
+     *
+     * @param kernel Kernelインスタンス
+     */
+    public void setKernel(Kernel kernel) {
+        this.kernel = kernel;
+    }
+
+    /**
      * コントロールセンターを表示する。
      */
     public void show() {
         if (!isVisible) {
             isVisible = true;
             targetAnimationProgress = 1.0f;
-            
+
             // コントロールセンターが表示される時は最高優先度に設定
             setDynamicPriority(15000); // ロック画面(8000)より高い優先度
-            
+
+            // LayerControllerにCONTROL_CENTERレイヤーを追加
+            if (kernel != null && kernel.getLayerController() != null) {
+                kernel.getLayerController().activateControlCenterLayer();
+            }
+
             System.out.println("ControlCenterManager: Showing control center with " + items.size() + " items");
             System.out.println("ControlCenterManager: Set priority to 15000 (highest)");
         }
@@ -138,16 +158,21 @@ public class ControlCenterManager implements GestureListener {
         if (isVisible) {
             isVisible = false;
             targetAnimationProgress = 0.0f;
-            
+
             // コントロールセンターが非表示になる時は低い優先度に設定
             setDynamicPriority(0); // 低い優先度に戻す
-            
+
+            // LayerControllerからCONTROL_CENTERレイヤーを削除
+            if (kernel != null && kernel.getLayerController() != null) {
+                kernel.getLayerController().removeLayer(Kernel.LayerType.CONTROL_CENTER);
+            }
+
             // スクロール状態をリセット（次回表示時に先頭から表示される）
             scrollOffset = 0.0f;
             scrollVelocity = 0.0f;
             isDragScrolling = false;
             lastDragY = 0;
-            
+
             System.out.println("ControlCenterManager: Hiding control center");
             System.out.println("ControlCenterManager: Set priority to 0 (low)");
         }

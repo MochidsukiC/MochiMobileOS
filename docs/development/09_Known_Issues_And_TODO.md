@@ -98,7 +98,26 @@
     - **症状**: Forge環境でChromiumブラウザアプリを開こうとすると、`java.lang.NoSuchMethodError: 'void org.cef.browser.CefBrowser.setWindowlessFrameRate(int)'`でクラッシュする
     - **原因**: `setWindowlessFrameRate(int)`メソッドは、java-cef master（jcefmaven 135.0.20+）でのみ追加された新しいAPIであり、MCEFが使用している古いjava-cefバージョンには存在しない
     - **対応**: `ChromiumBrowser.java`の150行目付近で、`ChromiumProvider.getName()`を使用してForge環境（MCEF）かどうかを判別し、MCEFの場合はこのメソッド呼び出しをスキップするよう条件分岐を追加
-11. **Standalone環境でIME（日本語入力）が機能しない問題（✅ 解決 2025-10-26）**:
+11. **外部アプリケーションのセッション管理問題（✅ 解決 2025-12-29）**:
+    - **症状**:
+      - Forge追加型アプリ: インスタンス再利用に失敗し、毎回新しいセッションが作成される
+      - WebScreen型アプリ: 開くたびにリロードが入り、二回目以降で画面描画エラーが発生
+    - **根本原因**:
+      1. `AppLoader.installModApp()`が`resolveAppId()`を呼ばず、appIdRegistryに登録されなかった
+      2. `ScreenManager.pushScreen()`が毎回`setup()`を呼び出し、再初期化が発生
+      3. `ScreenManager.popScreen()`が`cleanup()`を呼び出し、ChromiumSurfaceが破壊されていた
+    - **解決策**:
+      1. **AppLoader.java修正**: `installModApp()`で`resolveAppId()`を呼び出してレジストリに登録
+      2. **ScreenManager.java修正**:
+         - `setupCompletedScreens`セットを追加し、既にsetup()済みのスクリーンをスキップ
+         - `popScreen()`/`popScreenWithAnimation()`で、ServiceManager管理スクリーン（applicationIdあり）の`cleanup()`をスキップ
+    - **実装ファイル**:
+      - `core/src/main/java/jp/moyashi/phoneos/core/service/AppLoader.java`
+      - `core/src/main/java/jp/moyashi/phoneos/core/ui/ScreenManager.java`
+    - **ビルド結果**: ✅ BUILD SUCCESSFUL
+    - **検証結果**: ✅ スタンドアロン・Forge両環境で正常動作確認
+
+12. **Standalone環境でIME（日本語入力）が機能しない問題（✅ 解決 2025-10-26）**:
     - **症状**: P2DレンダラーへGPU最適化後、日本語入力ができなくなった。IME変換候補すら表示されず、半角入力のみ動作する
     - **根本原因**:
       1. P2DレンダラーはNEWT（Native Windowing Toolkit）を使用しており、NEWTウィンドウはIME（Input Method Editor）をネイティブサポートしていない

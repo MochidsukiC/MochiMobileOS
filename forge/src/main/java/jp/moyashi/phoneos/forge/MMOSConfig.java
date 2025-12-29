@@ -38,7 +38,7 @@ public class MMOSConfig {
             .comment("Apps in this list will be installed without requiring user action in AppStore.")
             .comment("Example: [\"jp.mochidsuki.phoneos.moymoy\", \"com.example.myapp\"]")
             .defineList("preinstalled",
-                List.of(), // デフォルトは空リスト
+                List.of("jp.mochidsuki.phoneos.moymoy"), // デフォルトでMoyMoyをプリインストール
                 obj -> obj instanceof String && !((String) obj).isEmpty());
 
         builder.pop();

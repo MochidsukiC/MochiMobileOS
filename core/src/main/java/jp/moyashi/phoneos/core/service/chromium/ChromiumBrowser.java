@@ -87,15 +87,31 @@ public class ChromiumBrowser {
     private volatile boolean glContextReady = false;
 
     /**
-     * ChromiumBrowserを構築する。
+     * ChromiumBrowserを構築する（デフォルトコンテキスト）。
      *
      * @param kernel Kernelインスタンス
      * @param cefApp CefAppインスタンス
+     * @param provider ChromiumProviderインスタンス
      * @param url 初期URL
      * @param width 幅
      * @param height 高さ
      */
     public ChromiumBrowser(Kernel kernel, CefApp cefApp, ChromiumProvider provider, String url, int width, int height) {
+        this(kernel, cefApp, provider, url, width, height, null);
+    }
+
+    /**
+     * ChromiumBrowserを構築する（コンテキスト指定）。
+     *
+     * @param kernel Kernelインスタンス
+     * @param cefApp CefAppインスタンス
+     * @param provider ChromiumProviderインスタンス
+     * @param url 初期URL
+     * @param width 幅
+     * @param height 高さ
+     * @param context RequestContext（nullの場合はデフォルト）
+     */
+    public ChromiumBrowser(Kernel kernel, CefApp cefApp, ChromiumProvider provider, String url, int width, int height, org.cef.browser.CefRequestContext context) {
         this.kernel = kernel;
         this.provider = provider;
         this.width = width;
@@ -197,7 +213,8 @@ public class ChromiumBrowser {
         }
 
         // プロバイダー経由でブラウザを作成（環境ごとのAPI差異を吸収）
-        this.browser = provider.createBrowser(client, url, true, false);
+        // contextを指定して作成（nullの場合はデフォルト）
+        this.browser = provider.createBrowser(client, url, true, false, context);
 
         // ブラウザインスタンスの状態を確認
         if (browser == null) {

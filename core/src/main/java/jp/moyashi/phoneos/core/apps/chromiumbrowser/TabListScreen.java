@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 public class TabListScreen implements Screen {
 
     private final Kernel kernel;
+    private static final String BROWSER_APP_ID = "jp.moyashi.phoneos.core.apps.chromiumbrowser";
 
     private Button backButton; // Button to close TabListScreen
 
@@ -66,8 +67,13 @@ public class TabListScreen implements Screen {
     private void drawTabCards(PGraphics g) {
         if (kernel == null || kernel.getChromiumService() == null) return;
 
+        // ブラウザアプリが作成したサーフェスのみをフィルタリング
         Collection<ChromiumSurface> surfaces = kernel.getChromiumService().getSurfaces();
-        if (surfaces.isEmpty()) {
+        List<ChromiumSurface> browserSurfaces = surfaces.stream()
+                .filter(s -> BROWSER_APP_ID.equals(s.getAppId()))
+                .collect(Collectors.toList());
+
+        if (browserSurfaces.isEmpty()) {
             g.fill(255);
             g.textAlign(g.CENTER, g.CENTER);
             g.textSize(16);
@@ -75,7 +81,7 @@ public class TabListScreen implements Screen {
             return;
         }
 
-        List<ChromiumSurface> sortedSurfaces = surfaces.stream()
+        List<ChromiumSurface> sortedSurfaces = browserSurfaces.stream()
                 .sorted((s1, s2) -> s1.getSurfaceId().compareTo(s2.getSurfaceId())) // Sort by ID for consistent order
                 .collect(Collectors.toList());
 
@@ -171,8 +177,12 @@ public class TabListScreen implements Screen {
 
         // Handle clicks on tab cards and close buttons
         if (kernel == null || kernel.getChromiumService() == null) return;
+        // ブラウザアプリが作成したサーフェスのみをフィルタリング
         Collection<ChromiumSurface> surfaces = kernel.getChromiumService().getSurfaces();
-        List<ChromiumSurface> sortedSurfaces = surfaces.stream().sorted((s1, s2) -> s1.getSurfaceId().compareTo(s2.getSurfaceId())).collect(Collectors.toList());
+        List<ChromiumSurface> sortedSurfaces = surfaces.stream()
+                .filter(s -> BROWSER_APP_ID.equals(s.getAppId()))
+                .sorted((s1, s2) -> s1.getSurfaceId().compareTo(s2.getSurfaceId()))
+                .collect(Collectors.toList());
 
         int startX = (g.width - (COLUMNS * CARD_WIDTH + (COLUMNS - 1) * CARD_SPACING)) / 2;
         int startY = 80;

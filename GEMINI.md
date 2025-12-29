@@ -1,4 +1,4 @@
-# CodeX 指示書 (Instructions for Agent)
+# GEMINI 指示書 (Instructions for Agent)
 
 ## 基本的な指示 (Core Instructions)
 

@@ -1,10 +1,13 @@
 package jp.moyashi.phoneos.core.service;
 
 import jp.moyashi.phoneos.core.app.IApplication;
+import jp.moyashi.phoneos.core.service.LoggerContext;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.io.File;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -43,7 +46,13 @@ public class AppLoader {
 
     /** インストール済みMODアプリケーションのリスト */
     private final List<IApplication> installedModApps;
-    
+
+    /** baseAppId -> resolvedAppIdのマッピング（永続化対応） */
+    private final Map<String, String> appIdRegistry;
+
+    /** 永続化ファイルパス */
+    private static final String APP_ID_REGISTRY_PATH = "system/app_id_registry.json";
+
     /**
      * 新しいAppLoaderサービスインスタンスを構築する。
      * 
@@ -55,6 +64,10 @@ public class AppLoader {
         this.hasScannedApps = false;
         this.availableModApps = new ArrayList<>();
         this.installedModApps = new ArrayList<>();
+        this.appIdRegistry = new HashMap<>();
+
+        // 永続化データを読み込み
+        loadAppIdRegistry();
 
         System.out.println("AppLoader: Application loader service initialized");
     }
@@ -171,8 +184,12 @@ public class AppLoader {
                         
                         try {
                             // クラスローダーを作成してクラスをロード
+                            // 親クラスローダーを指定して、IApplicationなどのコアクラスを参照可能にする
                             URL jarUrl = jarFile.toURI().toURL();
-                            URLClassLoader classLoader = new URLClassLoader(new URL[]{jarUrl});
+                            URLClassLoader classLoader = new URLClassLoader(
+                                new URL[]{jarUrl},
+                                getClass().getClassLoader()
+                            );
                             Class<?> clazz = classLoader.loadClass(className);
                             
                             // IApplicationインターフェースを実装しているかチェック
@@ -257,15 +274,22 @@ public class AppLoader {
     
     /**
      * 一意のアプリケーションIDでアプリケーションを検索する。
-     * 
+     * 解決済みappIdを使用して検索する。
+     *
      * @param applicationId 検索するアプリケーションの一意識別子
      * @return 一致するIDを持つIApplicationインスタンス、または見つからない場合null
      */
     public IApplication findApplicationById(String applicationId) {
-        return loadedApps.stream()
-                .filter(app -> app.getApplicationId().equals(applicationId))
-                .findFirst()
-                .orElse(null);
+        for (IApplication app : loadedApps) {
+            String baseId = app.getApplicationId();
+            String resolvedId = appIdRegistry.get(baseId);
+            // 解決済みIDまたは元のIDで検索
+            if ((resolvedId != null && resolvedId.equals(applicationId)) ||
+                baseId.equals(applicationId)) {
+                return app;
+            }
+        }
+        return null;
     }
     
     /**
@@ -287,7 +311,7 @@ public class AppLoader {
      * ローダーにアプリケーションを手動で登録する。
      * このメソッドはシステムランチャーなど、JARファイルから
      * 読み込みを行う必要のない組み込みアプリケーションに有用である。
-     * 
+     *
      * @param application 登録するアプリケーションインスタンス
      * @return アプリケーションが正常に登録された場合true、すでに登録済みの場合false
      */
@@ -296,16 +320,19 @@ public class AppLoader {
             System.err.println("AppLoader: Cannot register null application");
             return false;
         }
-        
-        // Check if already registered
-        if (findApplicationById(application.getApplicationId()) != null) {
+
+        // appIdを解決（重複時はナンバリング）
+        String resolvedId = resolveAppId(application);
+
+        // 既に登録済みかチェック（解決済みIDで検索）
+        if (findApplicationById(resolvedId) != null) {
             System.out.println("AppLoader: Application " + application.getName() + " already registered");
             return false;
         }
-        
+
         loadedApps.add(application);
-        System.out.println("AppLoader: Registered application: " + application.getName() + 
-                          " (ID: " + application.getApplicationId() + ")");
+        System.out.println("AppLoader: Registered application: " + application.getName() +
+                          " (ID: " + resolvedId + ")");
         return true;
     }
     
@@ -396,6 +423,15 @@ public class AppLoader {
             }
         }
 
+        // プリインストールアプリ（loadedApps）との重複チェック
+        for (IApplication loadedApp : loadedApps) {
+            if (loadedApp.getApplicationId().equals(application.getApplicationId())) {
+                System.out.println("AppLoader: App " + application.getApplicationId() +
+                                 " is a pre-installed app, skipping MOD registration");
+                return false;
+            }
+        }
+
         availableModApps.add(application);
         System.out.println("AppLoader: Registered available MOD app: " +
                           application.getName() + " (" + application.getApplicationId() + ")");
@@ -480,6 +516,9 @@ public class AppLoader {
                 appToInstall.onInitialize((jp.moyashi.phoneos.core.Kernel) kernel);
             }
 
+            // appIdを解決してレジストリに登録（セッション再利用のため）
+            String resolvedId = resolveAppId(appToInstall);
+
             // 利用可能リストから削除してインストール済みリストに追加
             availableModApps.remove(appToInstall);
             installedModApps.add(appToInstall);
@@ -488,7 +527,7 @@ public class AppLoader {
             loadedApps.add(appToInstall);
 
             System.out.println("AppLoader: Successfully installed MOD app: " +
-                             appToInstall.getName());
+                             appToInstall.getName() + " (ID: " + resolvedId + ")");
             return true;
 
         } catch (Exception e) {
@@ -567,6 +606,142 @@ public class AppLoader {
             System.out.println("AppLoader: Forge module not found - running in standalone mode");
         } catch (Exception e) {
             System.err.println("AppLoader: Error syncing with ModAppRegistry: " + e.getMessage());
+        }
+    }
+
+    // ==================== appId解決・永続化機構 ====================
+
+    /**
+     * アプリケーションの解決済みappIdを取得する。
+     * 重複がある場合はナンバリングで一意化し、永続化する。
+     *
+     * @param application アプリケーションインスタンス
+     * @return 解決済みappId
+     */
+    public String resolveAppId(IApplication application) {
+        if (application == null) {
+            return null;
+        }
+
+        String baseId = application.getApplicationId();
+        LoggerContext.info("AppLoader", "resolveAppId called for: " + baseId);
+
+        // 既にレジストリにあればそれを返す
+        if (appIdRegistry.containsKey(baseId)) {
+            String cached = appIdRegistry.get(baseId);
+            LoggerContext.info("AppLoader", "Found in registry: " + baseId + " -> " + cached);
+            return cached;
+        }
+
+        // 新規登録: 重複をチェックしてナンバリング
+        String resolvedId = baseId;
+        int counter = 2;
+
+        while (isAppIdInUse(resolvedId)) {
+            resolvedId = baseId + "_" + counter;
+            counter++;
+        }
+
+        // マッピングを保存
+        appIdRegistry.put(baseId, resolvedId);
+        saveAppIdRegistry();
+
+        LoggerContext.info("AppLoader", "New appId registered: " + baseId + " -> " + resolvedId);
+
+        return resolvedId;
+    }
+
+    /**
+     * 指定されたappIdが既に使用中かどうかを確認する。
+     *
+     * @param appId 確認するappId
+     * @return 使用中の場合true
+     */
+    private boolean isAppIdInUse(String appId) {
+        return appIdRegistry.containsValue(appId);
+    }
+
+    /**
+     * アプリケーションの解決済みappIdを取得する。
+     * 解決されていない場合は解決してから返す。
+     *
+     * @param application アプリケーションインスタンス
+     * @return 解決済みappId
+     */
+    public String getResolvedAppId(IApplication application) {
+        if (application == null) {
+            return null;
+        }
+        return resolveAppId(application);
+    }
+
+    /**
+     * VFSからappIdレジストリを読み込む。
+     */
+    private void loadAppIdRegistry() {
+        try {
+            if (!vfs.fileExists(APP_ID_REGISTRY_PATH)) {
+                System.out.println("AppLoader: No app ID registry found, starting fresh");
+                return;
+            }
+
+            String json = vfs.readFile(APP_ID_REGISTRY_PATH);
+            if (json == null || json.trim().isEmpty()) {
+                return;
+            }
+
+            // 簡易JSONパース（{ "key": "value", ... } 形式）
+            json = json.trim();
+            if (json.startsWith("{") && json.endsWith("}")) {
+                json = json.substring(1, json.length() - 1).trim();
+                if (!json.isEmpty()) {
+                    String[] entries = json.split(",");
+                    for (String entry : entries) {
+                        String[] keyValue = entry.split(":");
+                        if (keyValue.length == 2) {
+                            String key = keyValue[0].trim().replace("\"", "");
+                            String value = keyValue[1].trim().replace("\"", "");
+                            appIdRegistry.put(key, value);
+                        }
+                    }
+                }
+            }
+
+            System.out.println("AppLoader: Loaded " + appIdRegistry.size() + " app ID mappings from registry");
+
+        } catch (Exception e) {
+            System.err.println("AppLoader: Error loading app ID registry: " + e.getMessage());
+        }
+    }
+
+    /**
+     * appIdレジストリをVFSに保存する。
+     */
+    private void saveAppIdRegistry() {
+        try {
+            // systemディレクトリが存在しない場合は作成
+            if (!vfs.directoryExists("system")) {
+                vfs.createDirectory("system");
+            }
+
+            // 簡易JSON生成
+            StringBuilder json = new StringBuilder();
+            json.append("{\n");
+            boolean first = true;
+            for (Map.Entry<String, String> entry : appIdRegistry.entrySet()) {
+                if (!first) {
+                    json.append(",\n");
+                }
+                json.append("  \"").append(entry.getKey()).append("\": \"").append(entry.getValue()).append("\"");
+                first = false;
+            }
+            json.append("\n}");
+
+            vfs.writeFile(APP_ID_REGISTRY_PATH, json.toString());
+            System.out.println("AppLoader: Saved app ID registry with " + appIdRegistry.size() + " mappings");
+
+        } catch (Exception e) {
+            System.err.println("AppLoader: Error saving app ID registry: " + e.getMessage());
         }
     }
 }

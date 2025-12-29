@@ -372,6 +372,18 @@ public class SmartphoneBackgroundService {
             LOGGER.info("[SmartphoneBackgroundService] MOD app sync complete - " +
                        availableCount + " available, " + installedCount + " installed");
 
+            // 4. 現在の画面がHomeScreenの場合、アプリリストをリフレッシュ
+            // ログイン済み状態でOS起動した場合、HomeScreenはすでに表示されているため
+            // 新しくインストールされたアプリを反映する必要がある
+            if (kernel.getScreenManager() != null) {
+                jp.moyashi.phoneos.core.ui.Screen currentScreen = kernel.getScreenManager().getCurrentScreen();
+                if (currentScreen instanceof jp.moyashi.phoneos.core.apps.launcher.ui.HomeScreen) {
+                    LOGGER.info("[SmartphoneBackgroundService] Refreshing HomeScreen apps after preinstall...");
+                    ((jp.moyashi.phoneos.core.apps.launcher.ui.HomeScreen) currentScreen).refreshApps();
+                    LOGGER.info("[SmartphoneBackgroundService] HomeScreen apps refreshed");
+                }
+            }
+
         } catch (Exception e) {
             LOGGER.error("[SmartphoneBackgroundService] Error syncing MOD applications", e);
             e.printStackTrace();

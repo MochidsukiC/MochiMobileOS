@@ -25,6 +25,7 @@ import jp.moyashi.phoneos.core.render.RenderPipeline;
 import jp.moyashi.phoneos.core.apps.launcher.LauncherApp;
 import jp.moyashi.phoneos.core.apps.settings.SettingsApp;
 import jp.moyashi.phoneos.core.apps.calculator.CalculatorApp;
+import jp.moyashi.phoneos.core.apps.appstore.AppStoreApp;
 import jp.moyashi.phoneos.core.ui.LayerManager;
 import jp.moyashi.phoneos.core.coordinate.CoordinateTransform;
 import jp.moyashi.phoneos.core.event.EventBus;
@@ -1460,6 +1461,7 @@ public class Kernel implements GestureListener {
             System.out.println("  -> コントロールセンター管理サービス作成中（フォールバック）...");
             controlCenterManager = new ControlCenterManager();
         }
+        controlCenterManager.setKernel(this);
         controlCenterManager.setGestureManager(gestureManager);
         controlCenterManager.setCoordinateTransform(coordinateTransform);
 
@@ -1731,19 +1733,18 @@ public class Kernel implements GestureListener {
         jp.moyashi.phoneos.core.apps.samplewebapp.SampleWebApp sampleWebApp = new jp.moyashi.phoneos.core.apps.samplewebapp.SampleWebApp();
         appLoader.registerApplication(sampleWebApp);
 
+        // App Store（MODアプリインストール用）
+        AppStoreApp appStoreApp = new AppStoreApp();
+        appLoader.registerApplication(appStoreApp);
+
         System.out.println("Kernel: " + appLoader.getLoadedApps().size() + " 個のアプリケーションを登録");
 
-        // MODアプリケーションを同期して自動登録
+        // MODアプリケーションの同期・インストールはSmartphoneBackgroundService（Forge環境）
+        // またはスタンドアロン環境の初期化処理に委譲する
+        // ここではsyncのみ行い、プリインストールはプラットフォーム側で制御する
         System.out.println("  -> MODアプリケーションを同期中...");
         appLoader.syncWithModRegistry();
-        // availableModAppsから直接loadedAppsに追加（自動インストール）
-        for (IApplication modApp : appLoader.getAvailableModApps()) {
-            if (appLoader.registerApplication(modApp)) {
-                System.out.println("Kernel: MODアプリを登録: " + modApp.getName());
-                modApp.onInitialize(this);
-            }
-        }
-        System.out.println("Kernel: MODアプリ同期完了 - 合計 " + appLoader.getLoadedApps().size() + " 個のアプリ");
+        System.out.println("Kernel: MODアプリ同期完了 - " + appLoader.getAvailableModAppsCount() + " 個が利用可能");
 
         // すべてのアプリ登録後に初期化を実行
         System.out.println("  -> アプリケーションを初期化中...");
@@ -1755,6 +1756,7 @@ public class Kernel implements GestureListener {
         noteApp.onInitialize(this);
         chromiumBrowserApp.onInitialize(this);
         sampleWebApp.onInitialize(this);
+        appStoreApp.onInitialize(this);
 
         // ScreenManagerの初期化（DIで取得できなかった場合）
         if (screenManager == null) {

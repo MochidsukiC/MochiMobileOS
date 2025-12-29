@@ -42,10 +42,12 @@ public class WebScreen implements Screen {
     private final String modId;
     private final String resourcePath;
     private final ClassLoader classLoader;
+    private String applicationId;
 
     private int contentWidth;
     private int contentHeight;
     private boolean initialized = false;
+    private String mySurfaceId = null;  // 自分専用のサーフェスID
 
     /**
      * WebScreenを構築する（内部用）。
@@ -145,6 +147,16 @@ public class WebScreen implements Screen {
     }
 
     @Override
+    public void setApplicationId(String appId) {
+        this.applicationId = appId;
+    }
+
+    @Override
+    public String getApplicationId() {
+        return applicationId;
+    }
+
+    @Override
     public void setup(PGraphics p) {
         log("setup() called - PGraphics size: " + p.width + "x" + p.height);
 
@@ -171,10 +183,13 @@ public class WebScreen implements Screen {
         // MCEF環境（Forge）ではカスタムスキームで直接読み込み
         // スタンドアロン環境ではabout:blankで初期化してからloadContent()で読み込む
         // （JCEFのOSR再描画問題を回避するため）
-        ChromiumSurface surface = kernel.getChromiumService().createTab(contentWidth, contentHeight, url);
+        ChromiumSurface surface = kernel.getChromiumService().createTab(contentWidth, contentHeight, url, applicationId);
         initialized = true;
 
         if (surface != null) {
+            // 自分専用のサーフェスIDを保存（他アプリとの競合を防ぐ）
+            mySurfaceId = surface.getSurfaceId();
+            log("Created surface with ID: " + mySurfaceId);
             final ChromiumSurface surfaceRef = surface;
             final String targetUrl = url;
 
@@ -330,11 +345,12 @@ public class WebScreen implements Screen {
     }
 
     /**
-     * アクティブなサーフェスを取得する（ChromiumBrowserScreenと同じ方法）。
+     * 自分専用のサーフェスを取得する。
+     * グローバルなactiveSurfaceIdではなく、このWebScreenが作成したサーフェスを返す。
      */
-    private Optional<ChromiumSurface> getActiveSurface() {
-        if (kernel != null && kernel.getChromiumService() != null) {
-            return kernel.getChromiumService().getActiveSurface();
+    private Optional<ChromiumSurface> getMySurface() {
+        if (kernel != null && kernel.getChromiumService() != null && mySurfaceId != null) {
+            return kernel.getChromiumService().findSurface(mySurfaceId);
         }
         return Optional.empty();
     }
@@ -354,8 +370,8 @@ public class WebScreen implements Screen {
         int appBg = theme.colorBackground();
         g.background((appBg >> 16) & 0xFF, (appBg >> 8) & 0xFF, appBg & 0xFF);
 
-        // Chromiumサーフェスを描画（ChromiumBrowserScreenと同じ方法）
-        Optional<ChromiumSurface> activeSurfaceOpt = getActiveSurface();
+        // Chromiumサーフェスを描画（自分専用のサーフェスを使用）
+        Optional<ChromiumSurface> activeSurfaceOpt = getMySurface();
         if (activeSurfaceOpt.isPresent()) {
             PImage frame = activeSurfaceOpt.get().acquireFrame();
 
@@ -405,31 +421,31 @@ public class WebScreen implements Screen {
     @Override
     public void mousePressed(PGraphics g, int mouseX, int mouseY) {
         if (!initialized) return;
-        getActiveSurface().ifPresent(s -> s.sendMousePressed(mouseX, mouseY, 1));
+        getMySurface().ifPresent(s -> s.sendMousePressed(mouseX, mouseY, 1));
     }
 
     @Override
     public void mouseReleased(PGraphics g, int mouseX, int mouseY) {
         if (!initialized) return;
-        getActiveSurface().ifPresent(s -> s.sendMouseReleased(mouseX, mouseY, 1));
+        getMySurface().ifPresent(s -> s.sendMouseReleased(mouseX, mouseY, 1));
     }
 
     @Override
     public void mouseMoved(PGraphics g, int mouseX, int mouseY) {
         if (!initialized) return;
-        getActiveSurface().ifPresent(s -> s.sendMouseMoved(mouseX, mouseY));
+        getMySurface().ifPresent(s -> s.sendMouseMoved(mouseX, mouseY));
     }
 
     @Override
     public void mouseDragged(PGraphics g, int mouseX, int mouseY) {
         if (!initialized) return;
-        getActiveSurface().ifPresent(s -> s.sendMouseDragged(mouseX, mouseY, 1));
+        getMySurface().ifPresent(s -> s.sendMouseDragged(mouseX, mouseY, 1));
     }
 
     @Override
     public void mouseWheel(PGraphics g, int x, int y, float delta) {
         if (!initialized) return;
-        getActiveSurface().ifPresent(s -> s.sendMouseWheel(x, y, delta * 10));
+        getMySurface().ifPresent(s -> s.sendMouseWheel(x, y, delta * 10));
     }
 
     @Override
@@ -443,7 +459,7 @@ public class WebScreen implements Screen {
         boolean ctrlPressed = kernel.isCtrlPressed();
         boolean altPressed = kernel.isAltPressed();
         boolean metaPressed = kernel.isMetaPressed();
-        getActiveSurface().ifPresent(s -> {
+        getMySurface().ifPresent(s -> {
             log("keyPressed: sending to surface");
             s.sendKeyPressed(keyCode, key, shiftPressed, ctrlPressed, altPressed, metaPressed);
         });
@@ -456,14 +472,14 @@ public class WebScreen implements Screen {
         boolean ctrlPressed = kernel.isCtrlPressed();
         boolean altPressed = kernel.isAltPressed();
         boolean metaPressed = kernel.isMetaPressed();
-        getActiveSurface().ifPresent(s -> s.sendKeyReleased(keyCode, key, shiftPressed, ctrlPressed, altPressed, metaPressed));
+        getMySurface().ifPresent(s -> s.sendKeyReleased(keyCode, key, shiftPressed, ctrlPressed, altPressed, metaPressed));
     }
 
     @Override
     public void cleanup(PGraphics p) {
         log("cleanup() called");
 
-        getActiveSurface().ifPresent(surface -> {
+        getMySurface().ifPresent(surface -> {
             if (kernel != null && kernel.getChromiumService() != null) {
                 kernel.getChromiumService().closeTab(surface.getSurfaceId());
             }
@@ -477,7 +493,7 @@ public class WebScreen implements Screen {
         if (!initialized) {
             return "WebApp";
         }
-        return getActiveSurface()
+        return getMySurface()
                 .map(ChromiumSurface::getTitle)
                 .filter(title -> title != null && !title.isEmpty())
                 .orElse("WebApp");
@@ -488,7 +504,7 @@ public class WebScreen implements Screen {
         // MCEF環境（Forge）ではJSコンソールが読み取れずテキストフォーカス検出が動作しないため、
         // 常にtrueを返す（スペースキーをMinecraftに渡さない）
         // スタンドアロン環境ではテキスト入力フィールドにフォーカスがある場合のみtrueを返す
-        return getActiveSurface()
+        return getMySurface()
                 .map(surface -> surface.isMCEF() || surface.hasTextInputFocus())
                 .orElse(false);
     }
@@ -498,7 +514,7 @@ public class WebScreen implements Screen {
         if (!initialized) {
             return null;
         }
-        return getActiveSurface()
+        return getMySurface()
                 .map(ChromiumTextInput::new)
                 .orElse(null);
     }
@@ -526,7 +542,7 @@ public class WebScreen implements Screen {
      * @return 現在のURL、サーフェスがない場合はnull
      */
     public String getCurrentUrl() {
-        return getActiveSurface().map(ChromiumSurface::getCurrentUrl).orElse(null);
+        return getMySurface().map(ChromiumSurface::getCurrentUrl).orElse(null);
     }
 
     /**
@@ -535,14 +551,14 @@ public class WebScreen implements Screen {
      * @param url ナビゲート先URL
      */
     public void loadUrl(String url) {
-        getActiveSurface().ifPresent(s -> s.loadUrl(url));
+        getMySurface().ifPresent(s -> s.loadUrl(url));
     }
 
     /**
      * ページを再読み込みする。
      */
     public void reload() {
-        getActiveSurface().ifPresent(ChromiumSurface::reload);
+        getMySurface().ifPresent(ChromiumSurface::reload);
     }
 
     /**
@@ -551,7 +567,7 @@ public class WebScreen implements Screen {
      * @param script 実行するJavaScriptコード
      */
     public void executeScript(String script) {
-        getActiveSurface().ifPresent(s -> s.executeScript(script));
+        getMySurface().ifPresent(s -> s.executeScript(script));
     }
 
     /**

@@ -18,6 +18,7 @@ import jp.moyashi.phoneos.core.dashboard.DashboardWidgetType;
 import jp.moyashi.phoneos.core.dashboard.IDashboardWidget;
 import jp.moyashi.phoneos.core.dashboard.widgets.ClockWidget;
 import jp.moyashi.phoneos.core.dashboard.widgets.SearchWidget;
+import jp.moyashi.phoneos.core.service.LoggerContext;
 import processing.core.PApplet;
 import processing.core.PGraphics;
 
@@ -363,7 +364,7 @@ public class HomeScreen implements Screen, GestureListener, SensorEventListener 
      * @param mouseY The y-coordinate of the mouse press
      */
     public void mousePressed(PGraphics g, int mouseX, int mouseY) {
-        System.out.println("HomeScreen: Touch at (" + mouseX + ", " + mouseY + ")");
+        LoggerContext.info("HomeScreen", "mousePressed at (" + mouseX + ", " + mouseY + ")");
 
         touchStartTime = System.currentTimeMillis();
         longPressTriggered = false;
@@ -391,12 +392,14 @@ public class HomeScreen implements Screen, GestureListener, SensorEventListener 
                 startDragging(clickedShortcut, mouseX, mouseY);
             } else {
                 // Normal mode - launch app with animation
+                IApplication app = clickedShortcut.getApplication();
+                LoggerContext.info("HomeScreen", "[mousePressed] Launching app via mousePressed path: " + app.getName() + " (baseId: " + app.getApplicationId() + ")");
                 int gridWidth = GRID_COLS * (ICON_SIZE + ICON_SPACING) - ICON_SPACING;
                 int startX = (400 - gridWidth) / 2;
                 int startY = 80;
                 float iconX = startX + clickedShortcut.getGridX() * (ICON_SIZE + ICON_SPACING) + ICON_SIZE / 2;
                 float iconY = startY + clickedShortcut.getGridY() * (ICON_SIZE + ICON_SPACING + 20) + ICON_SIZE / 2;
-                launchApplicationWithAnimation(clickedShortcut.getApplication(), iconX, iconY, ICON_SIZE);
+                launchApplicationWithAnimation(app, iconX, iconY, ICON_SIZE);
             }
         } else {
             // Empty area - could be page swipe or long press for edit mode
@@ -2125,8 +2128,9 @@ public class HomeScreen implements Screen, GestureListener, SensorEventListener 
 
         if (kernel != null && kernel.getScreenManager() != null && kernel.getServiceManager() != null) {
             try {
-                // ServiceManager経由でアプリを起動（既存インスタンスをE利用またE新規作EEEEE
-                Screen appScreen = kernel.getServiceManager().launchApp(app.getApplicationId());
+                // 解決済みappIdを使用してServiceManager経由でアプリを起動
+                String appId = kernel.getAppLoader().getResolvedAppId(app);
+                Screen appScreen = kernel.getServiceManager().launchApp(appId);
                 if (appScreen != null) {
                     kernel.getScreenManager().pushScreen(appScreen);
                 } else {
@@ -2143,13 +2147,15 @@ public class HomeScreen implements Screen, GestureListener, SensorEventListener 
      * アニメーション付きでアプリケーションを起動すめE
      */
     private void launchApplicationWithAnimation(IApplication app, float iconX, float iconY, float iconSize) {
-        System.out.println("HomeScreen: Launching app with animation: " + app.getName());
-        System.out.println("HomeScreen: Icon position: (" + iconX + ", " + iconY + "), size: " + iconSize);
+        LoggerContext.info("HomeScreen", "Launching app with animation: " + app.getName());
 
         if (kernel != null && kernel.getScreenManager() != null && kernel.getServiceManager() != null) {
             try {
-                // ServiceManager経由でアプリを起動（既存インスタンスをE利用またE新規作EEEEE
-                Screen appScreen = kernel.getServiceManager().launchApp(app.getApplicationId());
+                // 解決済みappIdを使用してServiceManager経由でアプリを起動
+                String appId = kernel.getAppLoader().getResolvedAppId(app);
+                LoggerContext.info("HomeScreen", "Resolved appId: " + appId);
+                Screen appScreen = kernel.getServiceManager().launchApp(appId);
+                LoggerContext.info("HomeScreen", "ServiceManager returned screen: " + (appScreen != null ? appScreen.getClass().getSimpleName() : "null"));
                 if (appScreen == null) {
                     System.err.println("HomeScreen: ServiceManager returned null screen for " + app.getName());
                     return;
@@ -2348,13 +2354,14 @@ public class HomeScreen implements Screen, GestureListener, SensorEventListener 
     
     @Override
     public boolean onGesture(GestureEvent event) {
-        // パフォーマンス改喁E DRAG_MOVEイベントE非常に頻繁なのでログを抑制
+        // パフォーマンス改善: DRAG_MOVEイベントは非常に頻繁なのでログを抑制
         if (event.getType() != GestureType.DRAG_MOVE) {
-            System.out.println("HomeScreen: Received gesture: " + event);
+            LoggerContext.info("HomeScreen", "onGesture: " + event.getType());
         }
-        
+
         switch (event.getType()) {
             case TAP:
+                LoggerContext.info("HomeScreen", "TAP event received at (" + event.getCurrentX() + ", " + event.getCurrentY() + ")");
                 return handleTap(event.getCurrentX(), event.getCurrentY());
                 
             case LONG_PRESS:
@@ -2443,7 +2450,7 @@ public class HomeScreen implements Screen, GestureListener, SensorEventListener 
      * @return 処理EEた場合rue
      */
     private boolean handleTap(int x, int y) {
-        System.out.println("HomeScreen: Handling tap at (" + x + ", " + y + ")");
+        LoggerContext.info("HomeScreen", "handleTap at (" + x + ", " + y + ")");
 
         // ダッシュボードページ（ページ0）の場合、ウィジェットのタップ処理
         if (currentPageIndex == 0) {
@@ -2573,7 +2580,7 @@ public class HomeScreen implements Screen, GestureListener, SensorEventListener 
             // タチEEEされたアプリケーションを取征E
             IApplication tappedApp = appLibraryPage.getApplicationAtPosition(x, y, startY, itemHeight);
             if (tappedApp != null) {
-                System.out.println("HomeScreen: AppLibraryでアプリをタチEEE: " + tappedApp.getName());
+                LoggerContext.info("HomeScreen", "AppLibrary app tapped: " + tappedApp.getName());
                 // アイコン位置を計算）ppLibraryアイチEEE用EEEE
                 float iconX = 20 + 32; // ITEM_PADDING + ICON_SIZE/2
                 float iconY = startY + ((y - startY) / itemHeight) * itemHeight + itemHeight / 2;

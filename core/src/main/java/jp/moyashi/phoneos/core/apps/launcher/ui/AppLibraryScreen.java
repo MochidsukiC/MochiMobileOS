@@ -785,8 +785,9 @@ public class AppLibraryScreen implements Screen, GestureListener {
 
         if (kernel != null && kernel.getScreenManager() != null && kernel.getServiceManager() != null) {
             try {
-                // ServiceManager経由でアプリを起動（既存インスタンスを再利用または新規作成）
-                Screen appScreen = kernel.getServiceManager().launchApp(app.getApplicationId());
+                // 解決済みappIdを使用してServiceManager経由でアプリを起動
+                String appId = kernel.getAppLoader().getResolvedAppId(app);
+                Screen appScreen = kernel.getServiceManager().launchApp(appId);
                 if (appScreen != null) {
                     kernel.getScreenManager().pushScreen(appScreen);
                 } else {
@@ -812,8 +813,9 @@ public class AppLibraryScreen implements Screen, GestureListener {
 
         if (kernel != null && kernel.getScreenManager() != null && kernel.getServiceManager() != null) {
             try {
-                // ServiceManager経由でアプリを起動（既存インスタンスを再利用または新規作成）
-                Screen appScreen = kernel.getServiceManager().launchApp(app.getApplicationId());
+                // 解決済みappIdを使用してServiceManager経由でアプリを起動
+                String appId = kernel.getAppLoader().getResolvedAppId(app);
+                Screen appScreen = kernel.getServiceManager().launchApp(appId);
                 if (appScreen == null) {
                     System.err.println("AppLibraryScreen: ServiceManager returned null screen for " + app.getName());
                     return;

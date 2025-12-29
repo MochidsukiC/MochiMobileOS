@@ -4,6 +4,7 @@ import jp.moyashi.phoneos.core.Kernel;
 import org.cef.CefApp;
 import org.cef.CefClient;
 import org.cef.browser.CefBrowser;
+import org.cef.browser.CefRequestContext;
 
 /**
  * Chromium統合のプロバイダーインターフェース。
@@ -48,6 +49,31 @@ public interface ChromiumProvider {
      * @throws RuntimeException ブラウザ作成に失敗した場合
      */
     CefBrowser createBrowser(CefClient client, String url, boolean osrEnabled, boolean transparent);
+
+    /**
+     * CefBrowserを作成する（RequestContext指定あり）。
+     *
+     * @param client CefClientインスタンス
+     * @param url 初期URL
+     * @param osrEnabled オフスクリーンレンダリング有効化
+     * @param transparent 透過背景
+     * @param context RequestContext（nullの場合はデフォルト）
+     * @return 作成されたCefBrowserインスタンス
+     */
+    default CefBrowser createBrowser(CefClient client, String url, boolean osrEnabled, boolean transparent, CefRequestContext context) {
+        return createBrowser(client, url, osrEnabled, transparent);
+    }
+
+    /**
+     * 指定されたキャッシュパスでRequestContextを作成する。
+     *
+     * @param app CefAppインスタンス
+     * @param cachePath キャッシュディレクトリの絶対パス（nullの場合はインメモリまたはデフォルト）
+     * @return 作成されたCefRequestContext
+     */
+    default CefRequestContext createRequestContext(CefApp app, String cachePath) {
+        return null;
+    }
 
     /**
      * このプロバイダーが現在の環境で利用可能かを確認する。

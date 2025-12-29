@@ -106,6 +106,12 @@ public class NotificationManager implements GestureListener {
             isVisible = true;
             targetAnimationProgress = 1.0f;
             setDynamicPriority(10000); // ロック画面(8000)より高い優先度でControlCenter(15000)より低い
+
+            // LayerControllerにNOTIFICATIONレイヤーを追加
+            if (kernel != null && kernel.getLayerController() != null) {
+                kernel.getLayerController().activateNotificationLayer();
+            }
+
             System.out.println("NotificationManager: Showing notification center with " + notifications.size() + " notifications");
         }
     }
@@ -119,6 +125,12 @@ public class NotificationManager implements GestureListener {
             targetAnimationProgress = 0.0f;
             scrollOffset = 0; // スクロール位置をリセット
             setDynamicPriority(900); // 元の優先度に戻す
+
+            // LayerControllerからNOTIFICATIONレイヤーを削除
+            if (kernel != null && kernel.getLayerController() != null) {
+                kernel.getLayerController().removeLayer(Kernel.LayerType.NOTIFICATION);
+            }
+
             System.out.println("NotificationManager: Hiding notification center");
         }
     }

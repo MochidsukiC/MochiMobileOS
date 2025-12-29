@@ -230,6 +230,53 @@ public class StandaloneChromiumProvider implements ChromiumProvider {
         }
     }
 
+    private static class SafeRequestContextHandler extends org.cef.handler.CefRequestContextHandlerAdapter {
+        // Named class to avoid anonymous class proxy issues in JNI
+    }
+
+    @Override
+    public org.cef.browser.CefRequestContext createRequestContext(CefApp app, String cachePath) {
+        try {
+            System.out.println("[StandaloneChromiumProvider] RequestContext creation requested (cachePath=" + cachePath + ")");
+            
+            // NOTE: Currently disabled due to native crashes in JCEF 135 (invalid version -1).
+            // When re-enabling, ensure this runs on EDT and handler is properly proxied.
+            /*
+            final org.cef.browser.CefRequestContext[] result = new org.cef.browser.CefRequestContext[1];
+            javax.swing.SwingUtilities.invokeAndWait(() -> {
+                org.cef.handler.CefRequestContextHandler handler = new SafeRequestContextHandler();
+                result[0] = org.cef.browser.CefRequestContext.createContext(handler);
+            });
+            return result[0];
+            */
+            return null;
+        } catch (Exception e) {
+            System.err.println("[StandaloneChromiumProvider] Failed to create RequestContext: " + e.getMessage());
+            return null;
+        }
+    }
+
+    @Override
+    public org.cef.browser.CefBrowser createBrowser(org.cef.CefClient client, String url, boolean osrEnabled, boolean transparent, org.cef.browser.CefRequestContext context) {
+        try {
+            if (context == null) {
+                return createBrowser(client, url, osrEnabled, transparent);
+            }
+
+            // context付きのcreateBrowserを呼び出す
+            // JCEFの仕様により、コンテキストを使用する場合はEDTでの実行が推奨される
+            final org.cef.browser.CefBrowser[] result = new org.cef.browser.CefBrowser[1];
+            javax.swing.SwingUtilities.invokeAndWait(() -> {
+                result[0] = client.createBrowser(url, osrEnabled, transparent, context);
+            });
+            
+            return result[0];
+        } catch (Exception e) {
+            System.err.println("[StandaloneChromiumProvider] Failed to create browser with context: " + e.getMessage());
+            return createBrowser(client, url, osrEnabled, transparent);
+        }
+    }
+
     @Override
     public void shutdown(CefApp cefApp) {
         if (cefApp == null) {

@@ -26,7 +26,20 @@ public interface ChromiumService {
      * @param initialUrl  初期表示する URL（任意）
      * @return 作成されたサーフス
      */
-    ChromiumSurface createTab(int width, int height, String initialUrl);
+    default ChromiumSurface createTab(int width, int height, String initialUrl) {
+        return createTab(width, height, initialUrl, null);
+    }
+
+    /**
+     * 新しいタブ（サーフェス）を作成します（App ID指定あり）。
+     *
+     * @param width       初期幅
+     * @param height      初期高さ
+     * @param initialUrl  初期表示する URL（任意）
+     * @param appId       アプリケーションID（サンドボックス分離用）
+     * @return 作成されたサーフス
+     */
+    ChromiumSurface createTab(int width, int height, String initialUrl, String appId);
 
     /**
      * タブ（サーフェス）を破棄します。

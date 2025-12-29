@@ -38,6 +38,12 @@ public class ChromiumBrowserScreen implements Screen {
     private String lastMediaUrl = "";
     private boolean lastMediaPlaying = false;
 
+    private static final String BROWSER_APP_ID = "jp.moyashi.phoneos.core.apps.chromiumbrowser";
+
+    // ブラウザアプリが作成したタブ（サーフェスID）のリスト
+    private final java.util.List<String> myTabSurfaceIds = new java.util.ArrayList<>();
+    private String activeTabSurfaceId = null;  // 現在アクティブなタブ
+
     public ChromiumBrowserScreen(Kernel kernel) {
         this.kernel = kernel;
     }
@@ -52,14 +58,19 @@ public class ChromiumBrowserScreen implements Screen {
         log("setup() called - PGraphics size: " + p.width + "x" + p.height);
         initializeUI(p);
 
-        // Create initial tab if no tabs exist
+        // Create initial tab if no tabs exist for this browser instance
         if (kernel != null && kernel.getChromiumService() != null) {
-            log("ChromiumService available, checking surfaces...");
-            log("Current surfaces count: " + kernel.getChromiumService().getSurfaces().size());
-            if (kernel.getChromiumService().getSurfaces().isEmpty()) {
+            log("ChromiumService available, checking browser tabs...");
+            log("My tabs count: " + myTabSurfaceIds.size());
+            if (myTabSurfaceIds.isEmpty()) {
                 log("Creating initial tab with size: " + (p.width - 20) + "x" + (p.height - 120) + ", URL: " + initialUrl);
-                kernel.getChromiumService().createTab(p.width - 20, p.height - 120, initialUrl);
-                log("Tab created, surfaces count: " + kernel.getChromiumService().getSurfaces().size());
+                ChromiumSurface surface = kernel.getChromiumService().createTab(p.width - 20, p.height - 120, initialUrl, BROWSER_APP_ID);
+                if (surface != null) {
+                    String surfaceId = surface.getSurfaceId();
+                    myTabSurfaceIds.add(surfaceId);
+                    activeTabSurfaceId = surfaceId;
+                    log("Tab created with ID: " + surfaceId);
+                }
             }
         } else {
             log("WARNING: kernel or ChromiumService is null!");
@@ -312,8 +323,13 @@ public class ChromiumBrowserScreen implements Screen {
             log("newTabButton clicked!");
             if (kernel != null && kernel.getChromiumService() != null) {
                 log("Creating new tab...");
-                kernel.getChromiumService().createTab(p.width - 20, p.height - 120, "https://www.google.com");
-                log("New tab created");
+                ChromiumSurface newSurface = kernel.getChromiumService().createTab(p.width - 20, p.height - 120, "https://www.google.com", BROWSER_APP_ID);
+                if (newSurface != null) {
+                    String surfaceId = newSurface.getSurfaceId();
+                    myTabSurfaceIds.add(surfaceId);
+                    activeTabSurfaceId = surfaceId;
+                    log("New tab created with ID: " + surfaceId);
+                }
             } else {
                 log("Cannot create tab - kernel or service is null");
             }
@@ -609,8 +625,9 @@ public class ChromiumBrowserScreen implements Screen {
     }
 
     private Optional<ChromiumSurface> getActiveBrowserSurface() {
-        if (kernel != null && kernel.getChromiumService() != null) {
-            return kernel.getChromiumService().getActiveSurface();
+        if (kernel != null && kernel.getChromiumService() != null && activeTabSurfaceId != null) {
+            // 自分のタブリストからアクティブなタブを返す（他アプリのサーフェスと競合しない）
+            return kernel.getChromiumService().findSurface(activeTabSurfaceId);
         }
         return Optional.empty();
     }

@@ -11,44 +11,54 @@
       "pageType": "NORMAL",
       "shortcuts": [
         {
-          "applicationId": "jp.moyashi.phoneos.core.apps.settings",
+          "applicationId": "jp.houlab.mochidsuki.rein",
           "gridX": 0,
+          "gridY": 0
+        },
+        {
+          "applicationId": "jp.moyashi.phoneos.core.apps.settings",
+          "gridX": 1,
           "gridY": 0
         },
         {
           "applicationId": "jp.moyashi.phoneos.calculator",
-          "gridX": 1,
+          "gridX": 2,
           "gridY": 0
         },
         {
           "applicationId": "jp.moyashi.phoneos.core.apps.network",
-          "gridX": 2,
+          "gridX": 3,
           "gridY": 0
         },
         {
           "applicationId": "jp.moyashi.phoneos.core.apps.hardware_test",
-          "gridX": 3,
-          "gridY": 0
-        },
-        {
-          "applicationId": "jp.moyashi.phoneos.core.apps.voicememo.voicememoapp",
           "gridX": 0,
           "gridY": 1
         },
         {
-          "applicationId": "jp.moyashi.phoneos.core.apps.note.noteapp",
+          "applicationId": "jp.moyashi.phoneos.core.apps.voicememo.voicememoapp",
           "gridX": 1,
           "gridY": 1
         },
         {
-          "applicationId": "jp.moyashi.phoneos.core.apps.chromiumbrowser",
+          "applicationId": "jp.moyashi.phoneos.core.apps.note.noteapp",
           "gridX": 2,
           "gridY": 1
         },
         {
-          "applicationId": "jp.moyashi.phoneos.core.apps.samplewebapp",
+          "applicationId": "jp.moyashi.phoneos.core.apps.chromiumbrowser",
           "gridX": 3,
           "gridY": 1
+        },
+        {
+          "applicationId": "jp.moyashi.phoneos.core.apps.samplewebapp",
+          "gridX": 0,
+          "gridY": 2
+        },
+        {
+          "applicationId": "jp.moyashi.phoneos.core.apps.appstore",
+          "gridX": 1,
+          "gridY": 2
         }
       ]
     }

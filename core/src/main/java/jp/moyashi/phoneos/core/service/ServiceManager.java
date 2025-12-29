@@ -107,12 +107,13 @@ public class ServiceManager {
      * @return Screenインスタンス、起動失敗時はnull
      */
     public Screen launchApp(String appId) {
-        System.out.println("ServiceManager: Launching app: " + appId);
+        LoggerContext.info("ServiceManager", "Launching app: " + appId);
+        LoggerContext.info("ServiceManager", "Current processes keys: " + processes.keySet());
 
         // 既存インスタンスがあればそれを返す
         ProcessInfo existingInfo = processes.get(appId);
         if (existingInfo != null) {
-            System.out.println("ServiceManager: Reusing existing instance for " + appId);
+            LoggerContext.info("ServiceManager", "Reusing existing instance for " + appId);
             existingInfo.incrementLaunchCount();
             existingInfo.setForeground(true);
 
@@ -128,20 +129,24 @@ public class ServiceManager {
         }
 
         // 新規インスタンスを作成
+        LoggerContext.info("ServiceManager", "Creating new instance for: " + appId);
         try {
             AppLoader appLoader = kernel.getAppLoader();
             IApplication app = appLoader.findApplicationById(appId);
 
             if (app == null) {
-                System.err.println("ServiceManager: App not found: " + appId);
+                LoggerContext.error("ServiceManager", "App not found: " + appId);
                 return null;
             }
 
             Screen screen = app.getEntryScreen(kernel);
             if (screen == null) {
-                System.err.println("ServiceManager: Failed to create screen for " + appId);
+                LoggerContext.error("ServiceManager", "Failed to create screen for " + appId);
                 return null;
             }
+
+            // アプリケーションIDを設定
+            screen.setApplicationId(appId);
 
             // ProcessInfoを作成して登録
             ProcessInfo info = new ProcessInfo(appId, screen);
@@ -149,11 +154,11 @@ public class ServiceManager {
             info.incrementLaunchCount();
             processes.put(appId, info);
 
-            System.out.println("ServiceManager: Created new instance for " + appId);
+            LoggerContext.info("ServiceManager", "Created new instance for " + appId + ", total processes: " + processes.size());
             return screen;
 
         } catch (Exception e) {
-            System.err.println("ServiceManager: Failed to launch app " + appId + ": " + e.getMessage());
+            LoggerContext.error("ServiceManager", "Failed to launch app " + appId + ": " + e.getMessage());
             e.printStackTrace();
             return null;
         }
