@@ -823,7 +823,7 @@ public class AppLibraryScreen implements Screen, GestureListener {
                 System.out.println("AppLibraryScreen: Got app screen: " + appScreen.getScreenTitle());
                 
                 // Get app icon for animation
-                processing.core.PImage appIcon = app.getIcon();
+                processing.core.PImage appIcon = app.getIcon(kernel);
 
                 // If icon is null, create a white default icon
                 if (appIcon == null && kernel != null) {

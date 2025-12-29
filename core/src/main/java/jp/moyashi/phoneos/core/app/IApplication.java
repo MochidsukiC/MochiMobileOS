@@ -51,6 +51,22 @@ public interface IApplication {
         // デフォルトではnullを返し、システムが白いアイコンを生成
         return null;
     }
+
+    /**
+     * Gets the icon image for this application with access to Kernel services.
+     * This method allows applications to generate dynamic icons based on system state
+     * (e.g., themes).
+     *
+     * The default implementation delegates to the parameterless getIcon() method
+     * to ensure backward compatibility.
+     *
+     * @param kernel The OS kernel instance
+     * @return The PImage icon for this application, or null for default white icon
+     * @since 1.1
+     */
+    default PImage getIcon(Kernel kernel) {
+        return getIcon();
+    }
     
     /**
      * Gets the main entry screen for this application.

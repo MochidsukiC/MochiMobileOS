@@ -75,7 +75,68 @@ public class SettingsApp implements IApplication {
         return APP_DESCRIPTION;
     }
     
-    // getIcon()はデフォルト実装（null返却）を使用し、システムが白いアイコンを生成
+    /**
+     * このアプリケーションのアイコンを取得する。
+     * 動的に生成された歯車アイコンを返す。
+     * 
+     * @param kernel OSカーネルインスタンス
+     * @return アプリケーションアイコン
+     */
+    @Override
+    public PImage getIcon(Kernel kernel) {
+        int size = 64;
+        java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        java.awt.Graphics2D g = image.createGraphics();
+        
+        // アンチエイリアス有効化
+        g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // テーマカラーの取得
+        java.awt.Color backgroundColor = new java.awt.Color(100, 100, 100); // デフォルト: ダークグレー
+        java.awt.Color foregroundColor = java.awt.Color.WHITE;
+        
+        if (kernel != null && kernel.getThemeEngine() != null) {
+            int primary = kernel.getThemeEngine().colorPrimary();
+            int onPrimary = kernel.getThemeEngine().colorOnPrimary();
+            // AWT Colorに変換 (alphaは無視してRGBのみ使用)
+            backgroundColor = new java.awt.Color((primary >> 16) & 0xFF, (primary >> 8) & 0xFF, primary & 0xFF);
+            foregroundColor = new java.awt.Color((onPrimary >> 16) & 0xFF, (onPrimary >> 8) & 0xFF, onPrimary & 0xFF);
+        }
+
+        // 背景
+        g.setColor(backgroundColor);
+        g.fillRoundRect(0, 0, size, size, 16, 16);
+
+        // 歯車
+        g.setColor(foregroundColor);
+        int centerX = size / 2;
+        int centerY = size / 2;
+        int outerRadius = 20;
+        int innerRadius = 8;
+        int teeth = 8;
+        
+        // 歯を描画
+        for (int i = 0; i < teeth; i++) {
+            double angle = Math.PI * 2 * i / teeth;
+            
+            g.translate(centerX, centerY);
+            g.rotate(angle);
+            g.fillRect(outerRadius - 6, -5, 12, 10);
+            g.rotate(-angle);
+            g.translate(-centerX, -centerY);
+        }
+        
+        // 歯車本体
+        g.fillOval(centerX - outerRadius, centerY - outerRadius, outerRadius * 2, outerRadius * 2);
+        
+        // 中心穴 (背景色と同じ)
+        g.setColor(backgroundColor);
+        g.fillOval(centerX - innerRadius, centerY - innerRadius, innerRadius * 2, innerRadius * 2);
+
+        g.dispose();
+        
+        return new PImage(image);
+    }
     
     /**
      * このアプリケーションのエントリースクリーンを取得する。

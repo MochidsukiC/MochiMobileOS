@@ -1606,7 +1606,7 @@ public class HomeScreen implements Screen, GestureListener, SensorEventListener 
             return;
         }
 
-        processing.core.PImage icon = app.getIcon();
+        processing.core.PImage icon = app.getIcon(kernel);
 
         if (icon != null) {
             // SECURITY FIX: Force crop/resize any icon to 64x64 to prevent oversized icons from covering the screen

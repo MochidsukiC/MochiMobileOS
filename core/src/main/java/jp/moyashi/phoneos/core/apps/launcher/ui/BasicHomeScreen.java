@@ -348,7 +348,7 @@ public class BasicHomeScreen implements Screen {
                     return;
                 }
                 
-                processing.core.PImage appIcon = app.getIcon();
+                processing.core.PImage appIcon = app.getIcon(kernel);
 
                 if (appIcon == null && kernel != null) {
                     processing.core.PGraphics graphics = kernel.getGraphics();
