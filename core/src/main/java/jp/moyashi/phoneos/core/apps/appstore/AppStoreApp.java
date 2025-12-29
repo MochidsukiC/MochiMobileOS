@@ -123,21 +123,30 @@ public class AppStoreApp implements IApplication {
         java.awt.geom.RoundRectangle2D bag = new java.awt.geom.RoundRectangle2D.Float(bagX, bagY, bagWidth, bagHeight, 8, 8);
         g.fill(bag);
         
-        // バッグの中のシンボル（A字型のハイライト）
+        // バッグの中のシンボル（クローバー）
         g.setColor(themeColor);
-        java.awt.Polygon symbol = new java.awt.Polygon();
-        // Aの形
         int symCenterX = size / 2;
-        int symBaseY = bagY + 22;
-        symbol.addPoint(symCenterX, bagY + 8); // Top
-        symbol.addPoint(symCenterX - 8, symBaseY); // Bottom Left
-        symbol.addPoint(symCenterX + 8, symBaseY); // Bottom Right
+        int symCenterY = bagY + 16;
+        int leafSize = 10;
+        int leafOffset = 4;
         
-        // 三角形を描画
-        g.fillPolygon(symbol);
+        // 四つ葉のクローバー
+        // 上
+        g.fillOval(symCenterX - leafSize/2, symCenterY - leafOffset - leafSize, leafSize, leafSize);
+        // 下
+        g.fillOval(symCenterX - leafSize/2, symCenterY + leafOffset, leafSize, leafSize);
+        // 左
+        g.fillOval(symCenterX - leafOffset - leafSize, symCenterY - leafSize/2, leafSize, leafSize);
+        // 右
+        g.fillOval(symCenterX + leafOffset, symCenterY - leafSize/2, leafSize, leafSize);
         
-        // Aの横棒（白で抜くために少し工夫が必要だが、ここではシンプルに三角形だけで「矢印/再生」的な意味合いを持たせる）
+        // 中央の結合部
+        g.fillOval(symCenterX - 3, symCenterY - 3, 6, 6);
         
+        // 茎
+        g.setStroke(new java.awt.BasicStroke(2.5f, java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND));
+        g.drawArc(symCenterX - 4, symCenterY + 4, 8, 12, 0, 90);
+
         g.dispose();
         
         return new PImage(image);
