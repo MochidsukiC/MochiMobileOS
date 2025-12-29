@@ -30,58 +30,73 @@ public class ChromiumBrowserApp implements IApplication {
         java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_ARGB);
         java.awt.Graphics2D g = image.createGraphics();
         
-        // アンチエイリアスと高品質描画設定
         g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
         g.setRenderingHint(java.awt.RenderingHints.KEY_RENDERING, java.awt.RenderingHints.VALUE_RENDER_QUALITY);
 
-        // 背景: リッチなグラデーション (左上:水色 -> 右下:濃い青)
-        java.awt.Color colorTopLeft = new java.awt.Color(41, 182, 246); // Light Blue 400
-        java.awt.Color colorBottomRight = new java.awt.Color(2, 119, 189); // Light Blue 800
-        
-        // テーマが適用されていれば、プライマリカラーをベースにグラデーション生成
+        // テーマカラー取得
+        java.awt.Color themeColor = new java.awt.Color(33, 150, 243); // Blue
         if (kernel != null && kernel.getThemeEngine() != null) {
             int primary = kernel.getThemeEngine().colorPrimary();
-            java.awt.Color themeColor = new java.awt.Color((primary >> 16) & 0xFF, (primary >> 8) & 0xFF, primary & 0xFF);
-            colorTopLeft = themeColor;
-            colorBottomRight = themeColor.darker().darker();
+            themeColor = new java.awt.Color((primary >> 16) & 0xFF, (primary >> 8) & 0xFF, primary & 0xFF);
         }
 
-        java.awt.GradientPaint gradient = new java.awt.GradientPaint(
-            0, 0, colorTopLeft,
-            size, size, colorBottomRight
+        // 背景: 深みのあるダークブルーからテーマカラーへのグラデーション
+        // これにより、どんなテーマカラーでも「ブラウザらしさ（青）」と「テーマ色」が調和する
+        java.awt.Color deepSpace = new java.awt.Color(20, 30, 48);
+        java.awt.GradientPaint bgGradient = new java.awt.GradientPaint(
+            0, 0, deepSpace,
+            size, size, themeColor
         );
-        g.setPaint(gradient);
-        g.fillRoundRect(0, 0, size, size, 16, 16); // 少し角丸にする
-
-        // シンボル: 惑星と軌道
-        g.setColor(java.awt.Color.WHITE);
-        g.setStroke(new java.awt.BasicStroke(3.0f, java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND));
+        g.setPaint(bgGradient);
+        g.fillRoundRect(0, 0, size, size, 16, 16);
 
         int centerX = size / 2;
         int centerY = size / 2;
 
-        // メインの惑星
-        int planetSize = 24;
-        g.fillOval(centerX - planetSize/2, centerY - planetSize/2, planetSize, planetSize);
-        
-        // 軌道リング (傾いた楕円)
-        java.awt.geom.AffineTransform oldTransform = g.getTransform();
-        g.rotate(Math.toRadians(-30), centerX, centerY);
-        
-        // 外側のリング
-        g.setStroke(new java.awt.BasicStroke(3.5f));
-        g.drawOval(centerX - 24, centerY - 10, 48, 20);
-        
-        // リングの手前側を少し消して、惑星の後ろを通っているように見せる工夫（簡易的）
-        // 実際には惑星を再描画して隠す
-        g.setTransform(oldTransform);
-        
-        // 惑星を少し小さく再描画して、リングの一部を上書きする（立体感）
-        // ただしシンプルにするため、今回は「リングの中にある惑星」としてベタ塗り
-        g.fillOval(centerX - planetSize/2, centerY - planetSize/2, planetSize, planetSize);
+        // 地球儀/グリッド (薄く)
+        g.setColor(new java.awt.Color(255, 255, 255, 40));
+        g.setStroke(new java.awt.BasicStroke(1.5f));
+        g.drawOval(8, 8, size - 16, size - 16);
+        g.drawOval(centerX - 10, 8, 20, size - 16);
+        g.drawLine(8, centerY, size - 8, centerY);
 
-        // 小さな衛星（装飾）
-        g.fillOval(centerX + 16, centerY - 16, 6, 6);
+        // コンパスの針 (赤と白で視認性アップ)
+        java.awt.geom.Path2D needleRed = new java.awt.geom.Path2D.Double();
+        needleRed.moveTo(centerX, centerY - 20); // Top
+        needleRed.lineTo(centerX + 6, centerY);  // Right
+        needleRed.lineTo(centerX - 6, centerY);  // Left
+        needleRed.closePath();
+
+        java.awt.geom.Path2D needleWhite = new java.awt.geom.Path2D.Double();
+        needleWhite.moveTo(centerX, centerY + 20); // Bottom
+        needleWhite.lineTo(centerX + 6, centerY);  // Right
+        needleWhite.lineTo(centerX - 6, centerY);  // Left
+        needleWhite.closePath();
+
+        // 針の影
+        g.translate(2, 2);
+        g.setColor(new java.awt.Color(0, 0, 0, 80));
+        g.fill(needleRed);
+        g.fill(needleWhite);
+        g.translate(-2, -2);
+
+        // 針本体を描画 (45度傾ける)
+        java.awt.geom.AffineTransform old = g.getTransform();
+        g.rotate(Math.toRadians(45), centerX, centerY);
+        
+        g.setColor(new java.awt.Color(244, 67, 54)); // Red 500 (アクセント)
+        g.fill(needleRed);
+        
+        g.setColor(new java.awt.Color(240, 240, 240)); // White
+        g.fill(needleWhite);
+
+        // 中心ピン
+        g.setColor(new java.awt.Color(220, 220, 220));
+        g.fillOval(centerX - 3, centerY - 3, 6, 6);
+        g.setColor(deepSpace);
+        g.fillOval(centerX - 1, centerY - 1, 2, 2);
+
+        g.setTransform(old);
 
         g.dispose();
         
