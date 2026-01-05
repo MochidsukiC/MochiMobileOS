@@ -97,6 +97,18 @@
   - 設定画面「Dashboard」パネルでスロット毎のウィジェット選択UI
   - ウィジェット配置設定の永続化（`dashboard.slot_assignments`）
   - 開発ガイド: `EXTERNAL_APP_DEVELOPMENT_GUIDE.md` セクション8
+- **Choreographer システム（2026-01-06）**
+  - Android Choreographerスタイルの仮想V-Sync (60Hz) ベースフレーム制御を実装
+  - 新規パッケージ: `jp.moyashi.phoneos.core.time`
+  - `Time` - ナノ秒精度の時間管理、timeScale対応（スローモーション等）
+  - `Choreographer` - 4フェーズのフレームループ制御（Input → Animation → Traversal → Draw）
+  - `ScreenTickScheduler` - Screen別の可変ティックレート管理
+  - Catch-up処理: ホストFPS（Minecraft 20fps等）に関係なく、遅れたフレームを追いつき処理
+  - `Screen.getTargetTPS()` - アプリが要求するTPS（1〜60Hz）を指定可能
+  - `Screen.invalidate()` - 再描画リクエスト用メソッド
+  - `Kernel.requestRender()` - Dirty Flagベースの描画最適化
+  - 後方互換性: 既存のScreen.tick()はそのまま動作（デフォルト60Hz）
+  - 設計ドキュメント: `KERNEL_LOOP_ARCHITECTURE.md`
 
 ## 現在の仕様（抜粋）
 
@@ -343,38 +355,38 @@
   - MoyMoyアプリ向けAPI
   - 内部メッセージングシステム
 
-## �d�l�i�ǉ��E�X�V�j
+## dliǉEXVj
 
-- ���C�A�E�g�g�[�N���i�b��j
-  - spacing: PADDING=16, GAP=12, ITEM_HEIGHT=88�iControl Center �� App Library �ŋ��ʉ^�p�j
-  - grid: Control Center �� 3 �J�����A���E�p�f�B���O�ƃM���b�v���l���������z��
-  - App Library: LIST_START_Y=112, ITEM_PADDING=16, �s��=88�A�E�[�� 400-ITEM_PADDING ����ɐ���
+- CAEgg[Nibj
+  - spacing: PADDING=16, GAP=12, ITEM_HEIGHT=88iControl Center  App Library ŋʉ^pj
+  - grid: Control Center  3 JAEpfBOƃMbvlz
+  - App Library: LIST_START_Y=112, ITEM_PADDING=16, s=88AE[ 400-ITEM_PADDING ɐ
 
-- �g�O���iControl Center / ToggleItem�j
-  - �w�i=surface�{border�̃J�[�h�AON����accent�̒�A���t�@�d��
-  - ���x��=onSurface�A��������#999999�A�A�C�R����accent�^�C���{onPrimary�e�L�X�g
-  - �X�C�b�`=ON:accent / OFF:#B0B0B0�A�m�u=���i�A���t�@��enabled�ɉ����Ē����j
+- gOiControl Center / ToggleItemj
+  - wi=surface{border̃J[hAONaccent̒At@d
+  - x=onSurfaceA#999999AACRaccent^C{onPrimaryeLXg
+  - XCb`=ON:accent / OFF:#B0B0B0Amu=iAt@enabledɉĒj
 
-## ���i�X�V�j
+- iXVj
 
-- �ꕔ��ʂŕ��E������ 400x600 �O��̃n�[�h�R�[�h���c���i�����I�ɉσT�C�Y�֓��ꂪ�K�v�j
-- Reduce Motion/Low Power �̋����K�p�͖������i�`�掞�̕���� //TODO �Ƃ��Ė����j
+- ꕔʂŕE 400x600 Õn[hR[hciIɉσTCY֓ꂪKvj
+- Reduce Motion/Low Power ̋Kp͖i`掞̕ //TODO ƂĖj
 
-## TODO�i�X�V�j
+## TODOiXVj
 
-- Control Center �̑S�A�C�e���� IControlCenterItem �����Ńe�[�}������Ă��邩�I����
-- App Library �� hover/pressed �̃A���t�@�l���e�[�}�� Reduce Motion �ɘA���i//TODO�j
-- �ω�ʃT�C�Y�Ή��̂��߁A���� 400 �̃��e�����팸�i�����Ή��j
+- Control Center ̑SACe IControlCenterItem Ńe[}Ă邩I
+- App Library  hover/pressed ̃At@le[} Reduce Motion ɘAi//TODOj
+- ωʃTCYΉ̂߁A 400 ̃e팸iΉj
 
-### �ǉ�: �킹�n�p�l���̎��F�����P�i���C�g���[�h�j
-- �X�N�����i�Ö��j������: ControlCenter=110, NotificationCenter(PApplet)=110, (PGraphics)=100
-- �p�l���ʂ��킸���ɈÂ�: ThemeEngine.light.colorSurface=#FAFAFA�A��ɍ��̔����I�[�o�[���C�i~16?18�j
-- �ړI: ���w�Ƃ̍��𖾊m�����A����сEῂ����̒ጸ
+### ǉ: 킹npl̎FPiCg[hj
+- XNiÖj: ControlCenter=110, NotificationCenter(PApplet)=110, (PGraphics)=100
+- plʂ킸ɈÂ: ThemeEngine.light.colorSurface=#FAFAFAAɍ̔I[o[Ci~16?18j
+- ړI: wƂ̍𖾊mAсEῂ̒ጸ
 
-### �ǉ�: �e�[�}���[�h�̊g��
-- �V���[�h: orange / pink / qua ��ǉ��iLIGHT�n�̃o���A���g�j
-- ThemeEngine: Mode �ɗ񋓂�ǉ����A�e���[�h�� ackground/surface/onSurface/border �����₩�ȐF���ŏ㏑��
-- Settings > Appearance: Theme Mode �� 2�i�ڃ{�^���iOrange/Pink/Aqua�j��ǉ����Aui.theme.mode �ɕۑ�
+### ǉ: e[}[h̊g
+- V[h: orange / pink / qua ǉiLIGHTñoAgj
+- ThemeEngine: Mode ɗ񋓂ǉAe[h ackground/surface/onSurface/border ₩ȐFŏ㏑
+- Settings > Appearance: Theme Mode  2iڃ{^iOrange/Pink/AquajǉAui.theme.mode ɕۑ
 
 
 ## ύX(2025-11-08)
@@ -412,7 +424,7 @@
   - 目的: JavaFX削除後のコンパイルエラーを修正し、ビルドを成功させる
   - 修正されたファイル:
     - `core/src/main/java/jp/moyashi/phoneos/core/apps/launcher/ui/HomeScreen.java`
-      - 20箇所以上の文字化け（`チE��`, `琁E`, `宁E`, `E��`等）を修正
+      - 20箇所以上の文字化け（`チE`, `琁E`, `宁E`, `E`等）を修正
       - 改行が失われていた箇所を修正（1239, 1645行目等）
       - 文字列リテラルの文字化けを修正（2276, 2280, 2918, 2926行目）
       - 未定義メソッド`syncLivePageDragFromGesture()`をコメントアウト（251行目）
@@ -722,7 +734,7 @@
     - **LayerControllerのロガー修正**:
       - java.util.logging.LoggerをLoggerServiceに変更
       - すべてのログ出力を`logger.info("LayerController", message)`形式に統一
-  - 結果: **元の動作を復元。スペースキーによるホームボタン動作、ESCキー単押しでスリープトグル、ESCキー長押しでシャットダウンが正常に動作**
+  - 結果: **元の動作を復元。スペースキーによるホームボタン動作、ESCキー単押しでスリープトグル、ESCキー長押しでシャットダウンが正常に動作する**
 
 - **スリープから復帰時のロック画面表示修正**
   - 問題: PowerManager経由でwake()した場合、ロック画面が表示されない
@@ -850,7 +862,7 @@ MochiMobileOS上でProcessingスケッチ（.pde）をアプリケーション�
    - Chromiumコンテンツがアクティブな場合も`true`を返すように変更
    - これによりWebページ内でのスペースキー入力が正常に動作
 
-**結果**:
+**動作**:
 - ESCキー: 単押しでスリープトグル、長押し（2秒）でシャットダウン
 - スペースキー: テキスト入力フォーカスがない時はホームボタン、フォーカスがある時は通常の文字入力
 - スリープ解除時にロック画面が正常に表示される
@@ -1138,3 +1150,19 @@ MochiMobileOS上でProcessingスケッチ（.pde）をアプリケーション�
       - `http://3-sys-test/` → displayUrl=`httpm://3-sys-test/`、data: URLでロード
       - `httpm://3-sys-test/` → displayUrl=`httpm://3-sys-test/`、data: URLでロード
   - 結果: **動作確認済み** - URLバーに`httpm://3-sys-test/`が正しく表示される
+
+## 変更(2026-01-05)
+- **オーディオシステムアーキテクチャの刷新**
+  - 目的: MMOS（ストリーミング再生、Push型）とAdvancedVC 2.0（フレームポーリング、Poll型）のインピーダンスミスマッチを解消し、ブツ切れのない安定した音声送信を実現する。
+  - **ByteRingBufferの導入**:
+    - スレッドセーフなバイトリングバッファを実装 (`jp.moyashi.phoneos.forge.audio.ByteRingBuffer`)。
+    - Push/Poll間の速度差・サイズ差を吸収。
+  - **AVCAudioBridgeの改修**:
+    - `ConcurrentLinkedQueue` を廃止し、リングバッファ方式に変更。
+    - `pollSpeakerFrame` で常に5760バイト（60ms）の完全なフレームを返すように変更（データ不足時はnullを返し、AVC側で無音処理）。
+    - MMOSからのデータ供給タイミングとAVCのポーリングタイミングを分離。
+  - **ForgeSpeakerSocketの改修**:
+    - `playAudio` をノンブロッキング化（リングバッファへの書き込みのみ）。
+    - バックグラウンドワーカー (`workerThread`) を導入し、SourceDataLineへの書き込み（自分用再生）とAVC送信を並行して管理。
+    - 連続的なストリーミング再生時でもスレッドの再作成を行わず、スムーズな再生を実現。
+  - 結果: **BUILD SUCCESSFUL** - 警告のみでエラーなし。ストリーミング再生の安定性が大幅に向上する見込み。

@@ -22,6 +22,9 @@ import jp.moyashi.phoneos.core.input.GestureEvent;
 import jp.moyashi.phoneos.core.input.GestureType;
 import jp.moyashi.phoneos.core.input.InputManager;
 import jp.moyashi.phoneos.core.render.RenderPipeline;
+import jp.moyashi.phoneos.core.time.Choreographer;
+import jp.moyashi.phoneos.core.time.ScreenTickScheduler;
+import jp.moyashi.phoneos.core.time.Time;
 import jp.moyashi.phoneos.core.apps.launcher.LauncherApp;
 import jp.moyashi.phoneos.core.apps.settings.SettingsApp;
 import jp.moyashi.phoneos.core.apps.calculator.CalculatorApp;
@@ -109,6 +112,12 @@ public class Kernel implements GestureListener {
     /** 描画パイプライン管理システム（Phase 1リファクタリング） */
     private RenderPipeline renderPipeline;
 
+    /** Choreographer - 仮想V-Sync (60Hz) ベースのフレーム制御 */
+    private Choreographer choreographer;
+
+    /** スクリーンティックスケジューラー - 可変ティックレート管理 */
+    private ScreenTickScheduler tickScheduler;
+
     /** サービスコンテナブートストラップ（Phase 2リファクタリング） */
     private CoreServiceBootstrap serviceBootstrap;
 
@@ -174,6 +183,9 @@ public class Kernel implements GestureListener {
 
     /** ハードウェアバイパスAPI - スピーカーソケット */
     private jp.moyashi.phoneos.core.service.hardware.SpeakerSocket speakerSocket;
+
+    /** ハードウェアバイパスAPI - オーディオデバイス設定ソケット */
+    private jp.moyashi.phoneos.core.service.hardware.AudioDeviceSocket audioDeviceSocket;
 
     /** ハードウェアバイパスAPI - IC通信ソケット */
     private jp.moyashi.phoneos.core.service.hardware.ICSocket icSocket;
@@ -290,8 +302,23 @@ public class Kernel implements GestureListener {
     /**
      * フレーム更新処理を実行（独立API）。
      * 各サブモジュールが適切なタイミングでこのメソッドを呼び出す。
+     * Choreographerに委譲し、仮想V-Sync (60Hz) ベースのフレーム処理を行う。
      */
     public void update() {
+        if (choreographer != null) {
+            // Choreographerによるフレーム処理（Catch-up対応）
+            choreographer.doFrame();
+        } else {
+            // Choreographerが初期化されていない場合のフォールバック
+            legacyUpdate();
+        }
+    }
+
+    /**
+     * 従来のフレーム更新処理（後方互換性用）。
+     * Choreographerが初期化されていない場合に使用。
+     */
+    private void legacyUpdate() {
         frameCount++;
         long startNs = System.nanoTime();
 
@@ -347,6 +374,121 @@ public class Kernel implements GestureListener {
                     totalDurationNs / 1_000_000.0,
                     chromiumDurationNs / 1_000_000.0));
         }
+    }
+
+    /**
+     * スケジューラーを使用してスクリーンをtickする。
+     * Choreographerのフレームコールバックから呼び出される。
+     * 各Screenが要求するTPSに基づいて間引き実行を行う。
+     */
+    private void tickScreensWithScheduler() {
+        if (screenManager == null) return;
+
+        if (tickScheduler != null) {
+            // 可変ティックレート: 各Screenの要求TPSに応じて間引き
+            for (Screen screen : screenManager.getAllScreens()) {
+                if (tickScheduler.shouldTick(screen)) {
+                    try {
+                        screen.tick();
+                    } catch (Exception e) {
+                        if (logger != null) {
+                            logger.error("Kernel", "Screen tick error: " + e.getMessage(), e);
+                        }
+                    }
+                }
+            }
+        } else {
+            // フォールバック: 従来通り全スクリーンをtick
+            screenManager.tick();
+        }
+    }
+
+    /**
+     * 描画処理を実行する。
+     * Choreographerのフレームコールバックから呼び出される。
+     */
+    private void performRender() {
+        synchronized (renderLock) {
+            if (graphics == null) {
+                return;
+            }
+
+            // RenderPipelineに描画処理を委譲
+            if (renderPipeline != null) {
+                renderPipeline.render(graphics, screenManager, themeEngine, isSleeping);
+                pixelsCache = renderPipeline.getPixelsCache();
+                pixelsCacheDirty = false;
+                // frameCountはChoreographerから取得可能だが、RenderPipeline内部のカウントも維持
+            }
+
+            // 追加の描画処理
+            graphics.beginDraw();
+
+            // 日本語フォントを適用
+            if (japaneseFont != null) {
+                graphics.textFont(japaneseFont);
+            }
+
+            // 通知センターの描画
+            if (notificationManager != null) {
+                try {
+                    notificationManager.draw(graphics);
+                } catch (Exception e) {
+                    System.err.println("Kernel: NotificationManager描画エラー: " + e.getMessage());
+                }
+            }
+
+            // コントロールセンターの描画
+            if (controlCenterManager != null) {
+                try {
+                    controlCenterManager.draw(graphics);
+                } catch (Exception e) {
+                    System.err.println("Kernel: ControlCenterManager描画エラー: " + e.getMessage());
+                }
+            }
+
+            // ポップアップの描画
+            if (popupManager != null) {
+                try {
+                    popupManager.draw(graphics);
+                } catch (Exception e) {
+                    System.err.println("Kernel: PopupManager描画エラー: " + e.getMessage());
+                }
+            }
+
+            graphics.endDraw();
+            pixelsCacheDirty = true;
+        }
+    }
+
+    /**
+     * 再描画をリクエストする。
+     * 画面状態が変化した時に呼び出す。
+     * Screen.invalidate()から間接的に呼び出される。
+     */
+    public void requestRender() {
+        if (choreographer != null) {
+            choreographer.requestRender();
+        }
+    }
+
+    /**
+     * Timeインスタンスを取得する。
+     * アニメーションや時間ベースの処理に使用。
+     *
+     * @return Timeインスタンス、Choreographer未初期化の場合はnull
+     */
+    public Time getTime() {
+        return choreographer != null ? choreographer.getTime() : null;
+    }
+
+    /**
+     * Choreographerインスタンスを取得する。
+     *
+     * @return Choreographerインスタンス、未初期化の場合はnull
+     */
+    public Choreographer getChoreographer() {
+        return choreographer;
     }
 
     /**
@@ -1086,12 +1228,98 @@ public class Kernel implements GestureListener {
     }
 
     /**
+     * Choreographerとその関連コンポーネントを初期化する。
+     */
+    private void initializeChoreographer() {
+        // Choreographerの作成
+        choreographer = new Choreographer();
+
+        // ScreenTickSchedulerの作成
+        tickScheduler = new ScreenTickScheduler(choreographer.getTime());
+
+        // FrameCallbackの設定
+        choreographer.setFrameCallback(new Choreographer.FrameCallback() {
+            @Override
+            public void doInputPhase() {
+                // 入力フェーズ: InputManagerの更新
+                if (inputManager != null) {
+                    inputManager.update();
+                } else {
+                    // フォールバック: ESCキー長押し検出
+                    if (escKeyPressed) {
+                        long elapsedTime = System.currentTimeMillis() - escKeyPressTime;
+                        if (elapsedTime >= LONG_PRESS_DURATION) {
+                            System.out.println("Kernel: ESCキー長押し検出 - スリープモード起動");
+                            sleep();
+                            escKeyPressed = false;
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public void doAnimationPhase(long vsyncNanos) {
+                // アニメーションフェーズ: 将来拡張用
+                // ScreenTransitionのアニメーション更新などをここで行う
+            }
+
+            @Override
+            public void doTraversalPhase() {
+                // ロジックフェーズ: サービスとスクリーンの更新
+                frameCount++;
+
+                // ServiceManagerのバックグラウンドサービス処理
+                if (serviceManager != null) {
+                    serviceManager.tickBackground();
+                }
+
+                // SensorManagerの更新
+                if (sensorManager != null) {
+                    ((jp.moyashi.phoneos.core.service.sensor.SensorManagerImpl) sensorManager).update();
+                }
+
+                // BatteryMonitorの定期チェック（1秒ごと）
+                long currentTime = System.currentTimeMillis();
+                if (batteryMonitor != null && currentTime - lastBatteryCheckTime >= BATTERY_CHECK_INTERVAL) {
+                    batteryMonitor.checkBatteryLevel();
+                    lastBatteryCheckTime = currentTime;
+                }
+
+                // ChromiumServiceの更新
+                if (chromiumService != null) {
+                    chromiumService.update();
+                }
+
+                // スクリーンのtick（可変レート対応）
+                tickScreensWithScheduler();
+            }
+
+            @Override
+            public void doDrawPhase() {
+                // 描画フェーズ
+                performRender();
+            }
+        });
+
+        // 初期状態で描画を要求
+        choreographer.requestRender();
+
+        System.out.println("  -> Choreographer: 60Hz仮想V-Sync有効");
+        System.out.println("  -> ScreenTickScheduler: 可変ティックレート有効");
+    }
+
+    /**
      * OSカーネルとすべてのサービスを初期化する（内部メソッド）。
      * PGraphics統一アーキテクチャ対応版。
      */
     private void setup() {
         System.out.println("Kernel: OSサービスを初期化中...");
         System.out.println("Kernel: フレームレートを60FPSに設定");
+
+        // Choreographerの初期化（仮想V-Sync 60Hzベースのフレーム制御）
+        System.out.println("=== Choreographer初期化開始 ===");
+        initializeChoreographer();
+        System.out.println("✅ Choreographer初期化完了");
 
         // Phase 4リファクタリング: イベントバスの初期化
         System.out.println("=== Phase 4: イベントバスシステム初期化開始 ===");
@@ -1192,6 +1420,11 @@ public class Kernel implements GestureListener {
                 System.out.println("  -> LoggerService: DIコンテナから取得失敗、直接作成");
                 logger = new LoggerService(vfs);
                 logger.setLogLevel(jp.moyashi.phoneos.core.service.LoggerService.LogLevel.DEBUG);
+            }
+
+            // ChoreographerにLoggerを設定
+            if (choreographer != null && logger != null) {
+                choreographer.setLogger(logger);
             }
 
             // SystemClock取得
@@ -1329,6 +1562,11 @@ public class Kernel implements GestureListener {
             speakerSocket = serviceBootstrap.tryGetService(jp.moyashi.phoneos.core.service.hardware.SpeakerSocket.class);
             if (speakerSocket != null) {
                 System.out.println("  -> SpeakerSocket: DIコンテナから取得成功");
+            }
+
+            audioDeviceSocket = serviceBootstrap.tryGetService(jp.moyashi.phoneos.core.service.hardware.AudioDeviceSocket.class);
+            if (audioDeviceSocket != null) {
+                System.out.println("  -> AudioDeviceSocket: DIコンテナから取得成功");
             }
 
             icSocket = serviceBootstrap.tryGetService(jp.moyashi.phoneos.core.service.hardware.ICSocket.class);
@@ -1626,6 +1864,10 @@ public class Kernel implements GestureListener {
         if (speakerSocket == null) {
             speakerSocket = new jp.moyashi.phoneos.core.service.hardware.DefaultSpeakerSocket();
             System.out.println("     -> SpeakerSocket: 直接初期化（フォールバック）");
+        }
+        if (audioDeviceSocket == null) {
+            audioDeviceSocket = new jp.moyashi.phoneos.core.service.hardware.DefaultAudioDeviceSocket();
+            System.out.println("     -> AudioDeviceSocket: 直接初期化（フォールバック）");
         }
         if (icSocket == null) {
             icSocket = new jp.moyashi.phoneos.core.service.hardware.DefaultICSocket();
@@ -2296,6 +2538,15 @@ public class Kernel implements GestureListener {
     }
 
     /**
+     * オーディオデバイスソケットのインスタンスを取得する。
+     *
+     * @return オーディオデバイスソケット
+     */
+    public jp.moyashi.phoneos.core.service.hardware.AudioDeviceSocket getAudioDeviceSocket() {
+        return audioDeviceSocket;
+    }
+
+    /**
      * IC通信ソケットのインスタンスを取得する。
      *
      * @return IC通信ソケット
@@ -2497,6 +2748,15 @@ public class Kernel implements GestureListener {
      */
     public void setSpeakerSocket(jp.moyashi.phoneos.core.service.hardware.SpeakerSocket socket) {
         this.speakerSocket = socket;
+    }
+
+    /**
+     * オーディオデバイスソケットを設定する（forge-mod用）。
+     *
+     * @param socket オーディオデバイスソケット
+     */
+    public void setAudioDeviceSocket(jp.moyashi.phoneos.core.service.hardware.AudioDeviceSocket socket) {
+        this.audioDeviceSocket = socket;
     }
 
     /**

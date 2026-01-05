@@ -415,4 +415,35 @@ public interface Screen {
     default String getApplicationId() {
         return null;
     }
+
+    /**
+     * このスクリーンが要求するティックレート (TPS) を取得する。
+     * デフォルトは60 (60Hz = 毎フレーム実行)。
+     * 低頻度更新のウィジェットは低い値を返すことで省電力化できる。
+     *
+     * 例:
+     * - ゲーム: 60 (毎フレーム)
+     * - 時計ウィジェット: 1 (1秒に1回)
+     * - 静的な設定画面: 10 (6フレームに1回)
+     *
+     * @return 要求するTPS (1〜60)
+     */
+    default int getTargetTPS() {
+        return 60; // デフォルト: 毎フレーム実行
+    }
+
+    /**
+     * 画面状態が変化したことを通知する。
+     * Choreographerに再描画をリクエストする。
+     *
+     * このメソッドは画面内容が変化した時に呼び出すことで、
+     * 静止時の描画をスキップして省電力化できる。
+     *
+     * デフォルト実装は何もしない (後方互換性のため)。
+     * Choreographer統合後は、Kernelを通じてrequestRender()を呼び出す。
+     */
+    default void invalidate() {
+        // デフォルト実装: 何もしない
+        // Choreographer統合後、オーバーライドしてKernel.requestRender()を呼び出す
+    }
 }

@@ -361,6 +361,9 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
      * 全てのスクリーン（バックグラウンドも含む）のtick()を呼び出す。
      * このメソッドは毎フレーム実行され、バックグラウンドタスク（通知フェッチなど）の処理継続を保証する。
      * tick()はスリープ中でも動作し、重要なバックグラウンド処理を継続する。
+     *
+     * 注: Choreographer統合後は、この直接呼び出しは後方互換性のために残される。
+     * 新しいコードは ScreenTickScheduler を通じて可変レートでtickされる。
      */
     public void tick() {
         // スタック内の全スクリーンのtick()を呼び出し（バックグラウンドも含む）
@@ -371,6 +374,16 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
                 logError("Error in tick() for screen " + screen.getScreenTitle() + ": " + e.getMessage(), e);
             }
         }
+    }
+
+    /**
+     * スタック内の全スクリーンを取得する。
+     * Choreographerの可変ティックレート処理で使用。
+     *
+     * @return スクリーンのリスト (変更不可)
+     */
+    public java.util.List<Screen> getAllScreens() {
+        return java.util.Collections.unmodifiableList(new java.util.ArrayList<>(screenStack));
     }
 
     /**
