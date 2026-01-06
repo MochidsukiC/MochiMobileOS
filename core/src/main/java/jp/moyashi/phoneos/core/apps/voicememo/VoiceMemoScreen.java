@@ -4,6 +4,7 @@ import jp.moyashi.phoneos.core.Kernel;
 import jp.moyashi.phoneos.core.service.VFS;
 import jp.moyashi.phoneos.core.service.hardware.MicrophoneSocket;
 import jp.moyashi.phoneos.core.service.hardware.SpeakerSocket;
+import jp.moyashi.phoneos.core.time.Time;
 import jp.moyashi.phoneos.core.ui.Screen;
 import jp.moyashi.phoneos.core.ui.components.Button;
 import jp.moyashi.phoneos.core.ui.components.Checkbox;
@@ -12,6 +13,7 @@ import jp.moyashi.phoneos.core.ui.components.ProgressBar;
 import processing.core.PApplet;
 import processing.core.PGraphics;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -34,11 +36,18 @@ public class VoiceMemoScreen implements Screen {
     private float currentInputLevel = 0.0f; // 現在の入力レベル (0.0 - 1.0)
     private int totalChunksReceived = 0;    // 受信したチャンク数
     private float recordingSampleRate = 48000.0f; // 録音時のサンプリングレート
+    private long lastRecordingUpdateTime = 0; // 最後に録音データを取得した時刻
+    private static final long RECORDING_UPDATE_INTERVAL_MS = 20; // 録音データ取得間隔（ms）
 
     // チャンネル選択状態
     private boolean enableMicChannel = true;      // チャンネル1: マイク入力
     private boolean enableVoicechatChannel = true; // チャンネル2: VC音声
     private boolean enableEnvironmentChannel = false; // チャンネル3: 環境音（未実装のためデフォルトOFF）
+
+    // チャンネル別蓄積バッファ（リングバッファ方式で同期）
+    private ByteArrayOutputStream micAccumBuffer = new ByteArrayOutputStream();
+    private ByteArrayOutputStream vcAccumBuffer = new ByteArrayOutputStream();
+    private ByteArrayOutputStream envAccumBuffer = new ByteArrayOutputStream();
 
     // 再生状態
     private boolean isPlaying = false;
@@ -46,8 +55,10 @@ public class VoiceMemoScreen implements Screen {
     private float currentOutputLevel = 0.0f; // 現在の出力レベル (0.0 - 1.0)
     private byte[] playingAudioData = null;  // 再生中の音声データ
     private int playingChunkIndex = 0;        // 現在の再生チャンクインデックス
-    private long playingStartTime = 0;        // 再生開始時刻
-    private static final int PLAYBACK_CHUNK_SIZE = 2048; // チャンクサイズ（約21ms @ 48kHz）
+    private long playingStartTime = 0;        // 再生開始時刻（フォールバック用）
+    private long playingStartFrame = 0;       // 再生開始フレーム（Choreographer連携用）
+    private static final int PLAYBACK_CHUNK_SIZE = 1920; // チャンクサイズ（20ms @ 48kHz 16-bit mono）
+    private static final int BYTES_PER_FRAME = 1600;     // 60fps @ 48kHz 16-bit mono = 96000 bytes/sec / 60
 
     // メモ一覧
     private List<VoiceMemo> memos = new ArrayList<>();
@@ -289,6 +300,27 @@ public class VoiceMemoScreen implements Screen {
     }
 
     @Override
+    public void tick() {
+        // 録音中の処理
+        // 注: マイクはサンプリングレートに応じた間隔でデータを生成するため、
+        // Choreographerの有無に関わらずポーリング間隔チェックを維持
+        if (isRecording) {
+            long currentTime = System.currentTimeMillis();
+            if (currentTime - lastRecordingUpdateTime >= RECORDING_UPDATE_INTERVAL_MS) {
+                updateRecording();
+                lastRecordingUpdateTime = currentTime;
+            }
+        }
+
+            // 再生中の処理（ストリーミング）
+        // 注: スピーカーの再生は実時間ベースで進むため、常に時間ベースの計算を使用
+        // Choreographerの恩恵は安定した呼び出しタイミングのみ
+        if (isPlaying) {
+            streamAudioPlayback();
+        }
+    }
+
+    @Override
     public void draw(PGraphics g) {
         // 背景
         g.background(30, 30, 40);
@@ -321,14 +353,137 @@ public class VoiceMemoScreen implements Screen {
             statusLabel.draw(g);
         }
 
-        // 録音中のアニメーション
-        if (isRecording) {
-            updateRecording();
+        // 再生中のレベルメーター更新
+        if (isPlaying) {
+            updatePlaybackLevelMeter();
+        }
+    }
+    
+    // 再生位置（バイト単位）
+    private int playingByteOffset = 0;
+    // これまでにスピーカーに送信したバイト数
+    private int bytesSentToSpeaker = 0;
+
+    /**
+     * 音声再生をストリーミングで行う。
+     * バッファ枯渇を防ぎつつ、スピーカーのバッファ溢れも防ぐようにデータを供給する。
+     */
+    private void streamAudioPlayback() {
+        if (playingAudioData == null) return;
+
+        // 1. 消費されたバイト数を推定 (48kHz 16bit mono = 96 bytes/ms)
+        long elapsedMs = System.currentTimeMillis() - playingStartTime;
+        int estimatedConsumedBytes = (int) (elapsedMs * 96);
+        
+        // 2. 現在スピーカーバッファにあると推定される量
+        int bufferedBytes = bytesSentToSpeaker - estimatedConsumedBytes;
+        
+        // 3. バッファ目標量 (約0.5秒分 = 48000 bytes)
+        int targetBufferBytes = 48000;
+        
+        // 4. データが必要なら供給
+        if (bufferedBytes < targetBufferBytes) {
+            int bytesNeeded = targetBufferBytes - bufferedBytes;
+            int remainingData = playingAudioData.length - playingByteOffset;
+            
+            // 一度に送る最大サイズ制限（スパイク防止）
+            int bytesToSend = Math.min(bytesNeeded, 4096 * 4); 
+            bytesToSend = Math.min(bytesToSend, remainingData);
+            
+            if (bytesToSend > 0) {
+                byte[] chunk = new byte[bytesToSend];
+                System.arraycopy(playingAudioData, playingByteOffset, chunk, 0, bytesToSend);
+                speaker.playAudio(chunk);
+                
+                playingByteOffset += bytesToSend;
+                bytesSentToSpeaker += bytesToSend;
+                
+                // デバッグログ（稀に出力）
+                if (playingByteOffset % (96000 * 5) < bytesToSend) {
+                    log("Streaming: sent " + bytesToSend + " bytes, offset=" + playingByteOffset + "/" + playingAudioData.length);
+                }
+            }
+        }
+        
+        // 5. 再生完了判定
+        // 全データを送信済みで、かつ推定消費量がデータ長を超えたら終了
+        if (playingByteOffset >= playingAudioData.length && estimatedConsumedBytes >= playingAudioData.length) {
+            stopPlayback();
+        }
+    }
+
+    /**
+     * フレームベースの音声再生ストリーミング（Choreographer連携版）。
+     * Timeクラスを使用して正確なフレーム数から消費バイト数を計算する。
+     *
+     * @param time Timeインスタンス
+     */
+    private void streamAudioPlaybackWithTime(Time time) {
+        if (playingAudioData == null) return;
+
+        // フレームベースで消費バイト数を計算
+        // 60fps @ 48kHz 16-bit mono = 1600 bytes/frame
+        long framesSinceStart = time.getTotalFrameCount() - playingStartFrame;
+        int estimatedConsumedBytes = (int) (framesSinceStart * BYTES_PER_FRAME);
+
+        // バッファ残量を計算
+        int bufferedBytes = bytesSentToSpeaker - estimatedConsumedBytes;
+
+        // ターゲットバッファ量（約0.5秒分 = 48000 bytes）
+        int targetBufferBytes = 48000;
+
+        // バッファが不足していれば供給
+        if (bufferedBytes < targetBufferBytes) {
+            int bytesNeeded = targetBufferBytes - bufferedBytes;
+            int remainingData = playingAudioData.length - playingByteOffset;
+
+            // 一度に送る最大サイズ制限（スパイク防止）
+            int bytesToSend = Math.min(bytesNeeded, 16384);
+            bytesToSend = Math.min(bytesToSend, remainingData);
+
+            if (bytesToSend > 0) {
+                byte[] chunk = new byte[bytesToSend];
+                System.arraycopy(playingAudioData, playingByteOffset, chunk, 0, bytesToSend);
+                speaker.playAudio(chunk);
+
+                playingByteOffset += bytesToSend;
+                bytesSentToSpeaker += bytesToSend;
+
+                // デバッグログ（約5秒ごと = 300フレーム）
+                if (framesSinceStart % 300 == 0 && framesSinceStart > 0) {
+                    log(String.format("Streaming (frame-based): sent %d bytes, offset=%d/%d, frames=%d",
+                            bytesToSend, playingByteOffset, playingAudioData.length, framesSinceStart));
+                }
+            }
         }
 
-        // 再生中の処理
-        if (isPlaying) {
-            updatePlayback();
+        // 再生完了判定
+        if (playingByteOffset >= playingAudioData.length &&
+            estimatedConsumedBytes >= playingAudioData.length) {
+            stopPlayback();
+        }
+    }
+
+    private void updatePlaybackLevelMeter() {
+        if (!isPlaying || playingAudioData == null) {
+            return;
+        }
+
+        // 経過時間から現在の再生位置を計算
+        long elapsedMs = System.currentTimeMillis() - playingStartTime;
+        int estimatedBytePosition = (int) (elapsedMs * 96);
+
+        // 現在位置のチャンクの音量レベルを計算
+        if (estimatedBytePosition < playingAudioData.length) {
+            int chunkStart = estimatedBytePosition;
+            int chunkEnd = Math.min(chunkStart + PLAYBACK_CHUNK_SIZE, playingAudioData.length);
+            int chunkSize = chunkEnd - chunkStart;
+
+            if (chunkSize > 0) {
+                byte[] chunk = new byte[chunkSize];
+                System.arraycopy(playingAudioData, chunkStart, chunk, 0, chunkSize);
+                currentOutputLevel = calculateAudioLevel(chunk);
+            }
         }
     }
 
@@ -645,7 +800,14 @@ public class VoiceMemoScreen implements Screen {
         microphone.setEnabled(true);
         isRecording = true;
         recordingBuffer.clear();
+
+        // チャンネル別蓄積バッファをクリア
+        micAccumBuffer.reset();
+        vcAccumBuffer.reset();
+        envAccumBuffer.reset();
+
         recordingStartTime = System.currentTimeMillis();
+        lastRecordingUpdateTime = recordingStartTime; // 録音更新タイマーを初期化
         currentInputLevel = 0.0f;
         totalChunksReceived = 0;
         recordingSampleRate = microphone.getSampleRate();
@@ -673,46 +835,118 @@ public class VoiceMemoScreen implements Screen {
     }
 
     private void updateRecording() {
-        // 有効なチャンネルのみからデータを取得（データの重複消費を防ぐ）
-        byte[] micData = enableMicChannel ? microphone.getMicrophoneAudio() : null;       // チャンネル1
-        byte[] vcData = enableVoicechatChannel ? microphone.getVoicechatAudio() : null;   // チャンネル2
-        byte[] envData = enableEnvironmentChannel ? microphone.getEnvironmentAudio() : null; // チャンネル3
+        // 各チャンネルからデータを取得
+        byte[] micData = enableMicChannel ? microphone.getMicrophoneAudio() : null;
+        byte[] vcData = enableVoicechatChannel ? microphone.getVoicechatAudio() : null;
+        byte[] envData = enableEnvironmentChannel ? microphone.getEnvironmentAudio() : null;
 
-        // デバッグログ
-        if (totalChunksReceived % 50 == 0) { // 50回に1回ログ出力
-            log(String.format("Channel data - Mic: %s, VC: %s, Env: %s (Enabled: Mic=%b, VC=%b, Env=%b)",
-                micData != null ? micData.length + "B" : "null",
-                vcData != null ? vcData.length + "B" : "null",
-                envData != null ? envData.length + "B" : "null",
-                enableMicChannel, enableVoicechatChannel, enableEnvironmentChannel));
+        // データがある場合のみバッファに追加（無音挿入は行わない）
+        if (enableMicChannel && micData != null && micData.length > 0) {
+            micAccumBuffer.write(micData, 0, micData.length);
         }
 
-        // OS側でミキシング（有効なチャンネルのみ）
-        byte[] mixedData = mixAudioChannels(micData, vcData, envData);
+        if (enableVoicechatChannel && vcData != null && vcData.length > 0) {
+            vcAccumBuffer.write(vcData, 0, vcData.length);
+        }
+
+        if (enableEnvironmentChannel && envData != null && envData.length > 0) {
+            envAccumBuffer.write(envData, 0, envData.length);
+        }
+
+        // 有効なチャンネルの蓄積量から最小サイズを計算
+        int minSize = Integer.MAX_VALUE;
+        int enabledChannelCount = 0;
+
+        if (enableMicChannel && micAccumBuffer.size() > 0) {
+            minSize = Math.min(minSize, micAccumBuffer.size());
+            enabledChannelCount++;
+        }
+        if (enableVoicechatChannel && vcAccumBuffer.size() > 0) {
+            minSize = Math.min(minSize, vcAccumBuffer.size());
+            enabledChannelCount++;
+        }
+        if (enableEnvironmentChannel && envAccumBuffer.size() > 0) {
+            minSize = Math.min(minSize, envAccumBuffer.size());
+            enabledChannelCount++;
+        }
+
+        // チャンネルがない場合
+        if (enabledChannelCount == 0 || minSize == Integer.MAX_VALUE) {
+            currentInputLevel *= 0.8f;
+            return;
+        }
+
+        // 最小チャンクサイズ: 20ms @ 48kHz 16-bit mono = 1920 bytes
+        int minChunkSize = 1920;
+        if (minSize < minChunkSize) {
+            // まだ十分なデータがない
+            return;
+        }
+
+        // デバッグログ（250回に1回 = 約5秒ごと @ 20ms間隔）
+        if (totalChunksReceived % 250 == 0) {
+            log(String.format("Buffer sizes - Mic: %d, VC: %d, Env: %d, extracting: %d bytes",
+                micAccumBuffer.size(), vcAccumBuffer.size(), envAccumBuffer.size(), minSize));
+        }
+
+        // 各バッファから同じ長さのデータを取り出し
+        byte[] micChunk = enableMicChannel ? extractFromBuffer(micAccumBuffer, minSize) : null;
+        byte[] vcChunk = enableVoicechatChannel ? extractFromBuffer(vcAccumBuffer, minSize) : null;
+        byte[] envChunk = enableEnvironmentChannel ? extractFromBuffer(envAccumBuffer, minSize) : null;
+
+        // 同じ長さのチャンネルをミキシング
+        byte[] mixedData = mixEqualLengthChannels(micChunk, vcChunk, envChunk);
 
         if (mixedData != null && mixedData.length > 0) {
             recordingBuffer.add(mixedData);
             totalChunksReceived++;
-
-            // 音声レベルを計算（16-bit PCM）
             currentInputLevel = calculateAudioLevel(mixedData);
         } else {
-            // データがない場合はレベルを徐々に下げる
             currentInputLevel *= 0.8f;
         }
     }
 
     /**
-     * 複数の音声チャンネルをミキシングする。
-     * OS側でのミキシング処理。
-     * チェックボックスで選択されたチャンネルのみをミックスする。
+     * 蓄積バッファから指定されたバイト数を取り出す。
+     * 取り出し後、残りのデータはバッファに保持される。
+     *
+     * @param buffer 蓄積バッファ
+     * @param length 取り出すバイト数
+     * @return 取り出したデータ、またはnull
      */
-    private byte[] mixAudioChannels(byte[] channel1, byte[] channel2, byte[] channel3) {
-        // 有効なチャンネルのみを追加
+    private byte[] extractFromBuffer(ByteArrayOutputStream buffer, int length) {
+        if (buffer.size() < length) {
+            return null;
+        }
+
+        byte[] data = buffer.toByteArray();
+        byte[] extracted = new byte[length];
+        System.arraycopy(data, 0, extracted, 0, length);
+
+        // 残りのデータをバッファに戻す
+        buffer.reset();
+        if (data.length > length) {
+            buffer.write(data, length, data.length - length);
+        }
+
+        return extracted;
+    }
+
+    /**
+     * 同じ長さの音声チャンネルをミキシングする。
+     * リングバッファ方式により、すべてのチャンネルが同じ長さであることが保証される。
+     *
+     * @param mic マイクチャンネルのデータ
+     * @param vc ボイスチャットチャンネルのデータ
+     * @param env 環境音チャンネルのデータ
+     * @return ミキシングされたデータ
+     */
+    private byte[] mixEqualLengthChannels(byte[] mic, byte[] vc, byte[] env) {
+        // 有効なチャンネルを収集
         List<byte[]> channels = new ArrayList<>();
-        if (enableMicChannel && channel1 != null && channel1.length > 0) channels.add(channel1);
-        if (enableVoicechatChannel && channel2 != null && channel2.length > 0) channels.add(channel2);
-        if (enableEnvironmentChannel && channel3 != null && channel3.length > 0) channels.add(channel3);
+        if (enableMicChannel && mic != null) channels.add(mic);
+        if (enableVoicechatChannel && vc != null) channels.add(vc);
+        if (enableEnvironmentChannel && env != null) channels.add(env);
 
         if (channels.isEmpty()) {
             return null;
@@ -722,17 +956,16 @@ public class VoiceMemoScreen implements Screen {
             return channels.get(0);
         }
 
-        // 最も長いチャンネルの長さに合わせる
-        int maxLength = channels.stream().mapToInt(arr -> arr.length).max().orElse(0);
-        byte[] mixed = new byte[maxLength];
+        // 全て同じ長さのはず
+        int length = channels.get(0).length;
+        byte[] mixed = new byte[length];
 
-        for (int i = 0; i < maxLength; i += 2) {
+        for (int i = 0; i < length; i += 2) {
             int mixedSample = 0;
 
-            for (byte[] channel : channels) {
-                if (i + 1 < channel.length) {
-                    // 16-bit PCMとして読み取り
-                    short sample = (short) ((channel[i + 1] << 8) | (channel[i] & 0xFF));
+            for (byte[] ch : channels) {
+                if (i + 1 < ch.length) {
+                    short sample = (short) ((ch[i + 1] << 8) | (ch[i] & 0xFF));
                     mixedSample += sample;
                 }
             }
@@ -852,10 +1085,23 @@ public class VoiceMemoScreen implements Screen {
         isPlaying = true;
         playingIndex = index;
         playingAudioData = audioData;
-        playingChunkIndex = 0;
-        playingStartTime = System.currentTimeMillis();
+        playingByteOffset = 0;
+        bytesSentToSpeaker = 0;
         currentOutputLevel = 0.0f;
-        speaker.playAudio(audioData);
+
+        // 開始時刻/フレームを記録
+        // playingStartTimeは常に設定（updatePlaybackLevelMeter()で使用）
+        playingStartTime = System.currentTimeMillis();
+
+        Time time = kernel.getTime();
+        if (time != null) {
+            playingStartFrame = time.getTotalFrameCount();
+            log("Playback started at frame " + playingStartFrame);
+        }
+
+        // 初回バッファ充填
+        streamAudioPlayback();
+        
         showStatus("Playing: " + memo.getName());
 
         log("Playing memo: " + memo.getFilename() + " (" + audioData.length + " bytes)");
@@ -869,7 +1115,8 @@ public class VoiceMemoScreen implements Screen {
         isPlaying = false;
         playingIndex = -1;
         playingAudioData = null;
-        playingChunkIndex = 0;
+        playingByteOffset = 0;
+        bytesSentToSpeaker = 0;
         currentOutputLevel = 0.0f;
         speaker.stopAudio();
         showStatus("Playback stopped");
@@ -877,32 +1124,7 @@ public class VoiceMemoScreen implements Screen {
         log("Playback stopped");
     }
 
-    private void updatePlayback() {
-        if (!isPlaying || playingAudioData == null) {
-            return;
-        }
 
-        // 経過時間から現在の再生位置を計算
-        // 48kHz, 16-bit, mono = 96000 bytes/sec
-        long elapsedMs = System.currentTimeMillis() - playingStartTime;
-        int estimatedBytePosition = (int) (elapsedMs * 96); // 96 bytes/ms
-
-        // 現在位置のチャンクの音量レベルを計算
-        if (estimatedBytePosition < playingAudioData.length) {
-            int chunkStart = estimatedBytePosition;
-            int chunkEnd = Math.min(chunkStart + PLAYBACK_CHUNK_SIZE, playingAudioData.length);
-            int chunkSize = chunkEnd - chunkStart;
-
-            if (chunkSize > 0) {
-                byte[] chunk = new byte[chunkSize];
-                System.arraycopy(playingAudioData, chunkStart, chunk, 0, chunkSize);
-                currentOutputLevel = calculateAudioLevel(chunk);
-            }
-        } else {
-            // 再生完了
-            stopPlayback();
-        }
-    }
 
     private void deleteMemo(int index) {
         if (index < 0 || index >= memos.size()) {
