@@ -411,8 +411,38 @@ public class GestureManager {
 
     public boolean isPressed() { return isPressed; }
     public boolean isDragging() { return isDragging; }
+    public boolean isLongPressDetected() { return longPressDetected; }
     public int getStartX() { return startX; }
     public int getStartY() { return startY; }
     public int getCurrentX() { return currentX; }
     public int getCurrentY() { return currentY; }
+
+    /**
+     * 現在のジェスチャーを強制的にキャンセルする。
+     * 画面外にドラッグされた場合などに呼び出される。
+     * ドラッグ中の場合はDRAG_ENDイベントを発火し、状態をリセットする。
+     */
+    public void cancelGesture() {
+        if (!isPressed) {
+            return;
+        }
+
+        debug("Gesture cancelled (out of bounds or forced)");
+
+        if (isDragging) {
+            // ドラッグ中の場合はDRAG_ENDを発火
+            GestureEvent dragEndEvent = new GestureEvent(
+                GestureType.DRAG_END, startX, startY, currentX, currentY,
+                startTime, System.currentTimeMillis()
+            );
+            dispatchGestureEvent(dragEndEvent);
+        }
+
+        // 状態リセット
+        isPressed = false;
+        isDragging = false;
+        longPressDetected = false;
+        lastDispatchedX = currentX;
+        lastDispatchedY = currentY;
+    }
 }

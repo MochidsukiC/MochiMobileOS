@@ -162,6 +162,18 @@ public class InputManager {
         ScreenManager screenManager = kernel.getScreenManager();
         GestureManager gestureManager = kernel.getGestureManager();
 
+        // 画面外チェック: ドラッグが画面外に出た場合はジェスチャーをキャンセル
+        if (gestureManager != null && gestureManager.isPressed()) {
+            if (x < 0 || x >= kernel.width || y < 0 || y >= kernel.height) {
+                if (logger != null) {
+                    logger.debug("InputManager", "Drag went out of bounds (" + x + ", " + y + "), cancelling gesture");
+                }
+                gestureManager.cancelGesture();
+                isSystemGestureSession = false;
+                return;
+            }
+        }
+
         // ジェスチャーマネージャーに通知
         if (gestureManager != null) {
             gestureManager.handleMouseDragged(x, y);

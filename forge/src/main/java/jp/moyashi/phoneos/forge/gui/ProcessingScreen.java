@@ -624,6 +624,8 @@ public class ProcessingScreen extends Screen {
     /**
      * マウスリリース処理。
      * 座標を記録し、ポーリングスレッドで処理する（ゼロ遅延）。
+     * 注: 画面外でリリースされた場合もジェスチャーを正しく終了するため、
+     * 座標をクランプしてイベントを送信する。
      */
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
@@ -631,23 +633,25 @@ public class ProcessingScreen extends Screen {
             return super.mouseReleased(mouseX, mouseY, button);
         }
 
-        // スマートフォン画面内のリリースかチェック（スケール後のサイズを使用）
-        if (mouseX >= offsetX && mouseX <= offsetX + scaledWidth &&
-            mouseY >= offsetY && mouseY <= offsetY + scaledHeight) {
+        try {
+            // Minecraft座標をMochiMobileOS座標に変換（スケールを考慮）
+            // 画面外の場合はクランプして、ジェスチャーが正しく終了するようにする
+            int mobileX = (int) ((mouseX - offsetX) / scale);
+            int mobileY = (int) ((mouseY - offsetY) / scale);
 
-            try {
-                // Minecraft座標をMochiMobileOS座標に変換（スケールを考慮）
-                int mobileX = (int) ((mouseX - offsetX) / scale);
-                int mobileY = (int) ((mouseY - offsetY) / scale);
+            // 座標をクランプ（0 ～ PHONE_WIDTH/HEIGHT-1 の範囲内に収める）
+            mobileX = Math.max(0, Math.min(mobileX, PHONE_WIDTH - 1));
+            mobileY = Math.max(0, Math.min(mobileY, PHONE_HEIGHT - 1));
 
-                // キューに追加（render()で処理）
-                mouseEventQueue.offer(new MouseEvent(mobileX, mobileY, MouseEventType.RELEASED));
+            LOGGER.debug("[ProcessingScreen] mouseReleased at clamped (" + mobileX + ", " + mobileY + ")");
 
-                return true;
+            // キューに追加（render()で処理）
+            mouseEventQueue.offer(new MouseEvent(mobileX, mobileY, MouseEventType.RELEASED));
 
-            } catch (Exception e) {
-                System.err.println("[ProcessingScreen] Mouse release error: " + e.getMessage());
-            }
+            return true;
+
+        } catch (Exception e) {
+            System.err.println("[ProcessingScreen] Mouse release error: " + e.getMessage());
         }
 
         return super.mouseReleased(mouseX, mouseY, button);
@@ -656,6 +660,8 @@ public class ProcessingScreen extends Screen {
     /**
      * マウスドラッグ処理（スワイプ操作）。
      * 座標を記録し、ポーリングスレッドで処理する（ゼロ遅延、キューなし）。
+     * 注: 画面外にドラッグされた場合も座標を送信し、InputManager側で
+     * ジェスチャーキャンセル処理を行う。
      */
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
@@ -663,23 +669,19 @@ public class ProcessingScreen extends Screen {
             return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
         }
 
-        // スマートフォン画面内のドラッグかチェック（スケール後のサイズを使用）
-        if (mouseX >= offsetX && mouseX <= offsetX + scaledWidth &&
-            mouseY >= offsetY && mouseY <= offsetY + scaledHeight) {
+        try {
+            // Minecraft座標をMochiMobileOS座標に変換（スケールを考慮）
+            // 画面外の座標もそのまま送信（InputManager側で境界チェックを行う）
+            int mobileX = (int) ((mouseX - offsetX) / scale);
+            int mobileY = (int) ((mouseY - offsetY) / scale);
 
-            try {
-                // Minecraft座標をMochiMobileOS座標に変換（スケールを考慮）
-                int mobileX = (int) ((mouseX - offsetX) / scale);
-                int mobileY = (int) ((mouseY - offsetY) / scale);
+            // キューに追加（render()で処理）
+            mouseEventQueue.offer(new MouseEvent(mobileX, mobileY, MouseEventType.DRAGGED));
 
-                // キューに追加（render()で処理）
-                mouseEventQueue.offer(new MouseEvent(mobileX, mobileY, MouseEventType.DRAGGED));
+            return true;
 
-                return true;
-
-            } catch (Exception e) {
-                System.err.println("[ProcessingScreen] Mouse drag error: " + e.getMessage());
-            }
+        } catch (Exception e) {
+            System.err.println("[ProcessingScreen] Mouse drag error: " + e.getMessage());
         }
 
         return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
