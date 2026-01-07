@@ -2025,7 +2025,15 @@ public class Kernel implements GestureListener {
         System.out.println("✅ ScreenManagerのPApplet設定完了");
         
         // ロック状態に基づいて初期画面を決定
-        if (lockManager.isLocked()) {
+        boolean setupCompleted = settingsManager != null && settingsManager.getBooleanSetting("system.setup_completed", false);
+        
+        if (!setupCompleted) {
+            System.out.println("▶️ 初回起動を検出 - セットアッププロセスを開始します...");
+            jp.moyashi.phoneos.core.apps.setup.SetupApp setupApp = new jp.moyashi.phoneos.core.apps.setup.SetupApp();
+            Screen setupScreen = setupApp.getEntryScreen(this);
+            screenManager.pushScreen(setupScreen);
+            System.out.println("✅ Setup ScreenをScreenManagerにプッシュ済み");
+        } else if (lockManager.isLocked()) {
             System.out.println("▶️ OSがロック状態 - ロック画面を初期画面として開始中...");
             jp.moyashi.phoneos.core.ui.lock.LockScreen lockScreen =
                 new jp.moyashi.phoneos.core.ui.lock.LockScreen(this);

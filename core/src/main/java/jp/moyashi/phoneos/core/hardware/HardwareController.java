@@ -45,6 +45,9 @@ public class HardwareController {
     /** スピーカーソケット */
     private SpeakerSocket speakerSocket;
 
+    /** オーディオデバイス設定ソケット */
+    private AudioDeviceSocket audioDeviceSocket;
+
     /** ICカード通信ソケット */
     private ICSocket icSocket;
 
@@ -82,6 +85,7 @@ public class HardwareController {
         cameraSocket = new DefaultCameraSocket();
         microphoneSocket = new DefaultMicrophoneSocket();
         speakerSocket = new DefaultSpeakerSocket();
+        audioDeviceSocket = new DefaultAudioDeviceSocket();
         icSocket = new DefaultICSocket();
         simInfo = new DefaultSIMInfo();
         batteryInfo = new DefaultBatteryInfo();
@@ -222,6 +226,26 @@ public class HardwareController {
     public void setSpeakerSocket(SpeakerSocket socket) {
         this.speakerSocket = socket;
         logger.info("SpeakerSocket updated: " +
+                   (socket != null ? socket.getClass().getSimpleName() : "null"));
+    }
+
+    /**
+     * オーディオデバイス設定ソケットを取得する。
+     *
+     * @return オーディオデバイス設定ソケット
+     */
+    public AudioDeviceSocket getAudioDeviceSocket() {
+        return audioDeviceSocket;
+    }
+
+    /**
+     * オーディオデバイス設定ソケットを設定する（プラットフォーム固有実装用）。
+     *
+     * @param socket オーディオデバイス設定ソケット
+     */
+    public void setAudioDeviceSocket(AudioDeviceSocket socket) {
+        this.audioDeviceSocket = socket;
+        logger.info("AudioDeviceSocket updated: " +
                    (socket != null ? socket.getClass().getSimpleName() : "null"));
     }
 

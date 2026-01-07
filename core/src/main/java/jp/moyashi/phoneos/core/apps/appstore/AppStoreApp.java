@@ -24,8 +24,8 @@ public class AppStoreApp implements IApplication {
     /** アプリケーションメタデータ */
     private static final String APP_ID = "jp.moyashi.phoneos.core.apps.appstore";
     private static final String APP_NAME = "App Store";
-    private static final String APP_VERSION = "1.0.0";
-    private static final String APP_DESCRIPTION = "Install and manage MOD applications";
+    private static final String APP_VERSION = "1.1.0";
+    private static final String APP_DESCRIPTION = "Download and manage MochiMobileOS applications";
 
     /** 初期化状態 */
     private boolean isInitialized = false;

@@ -195,17 +195,35 @@ public class SmartphoneBackgroundService {
             kernel.setCameraSocket(new jp.moyashi.phoneos.forge.hardware.ForgeCameraSocket());
             LOGGER.info("[SmartphoneBackgroundService] - CameraSocket set");
 
-            kernel.setMicrophoneSocket(new jp.moyashi.phoneos.forge.hardware.ForgeMicrophoneSocket());
+            var forgeMicrophoneSocket = new jp.moyashi.phoneos.forge.hardware.ForgeMicrophoneSocket();
+            kernel.setMicrophoneSocket(forgeMicrophoneSocket);
             LOGGER.info("[SmartphoneBackgroundService] - MicrophoneSocket set");
 
-            // SpeakerSocket: SVCが利用可能な場合のみForgeSpeakerSocketを使用
-            if (jp.moyashi.phoneos.forge.hardware.SVCDetector.isSVCAvailable()) {
-                kernel.setSpeakerSocket(new jp.moyashi.phoneos.forge.hardware.ForgeSpeakerSocket());
-                LOGGER.info("[SmartphoneBackgroundService] - ForgeSpeakerSocket set (SVC available)");
-            } else {
-                kernel.setSpeakerSocket(new jp.moyashi.phoneos.core.service.hardware.DefaultSpeakerSocket());
-                LOGGER.info("[SmartphoneBackgroundService] - DefaultSpeakerSocket set (SVC not available)");
-            }
+            // SpeakerSocket: ForgeSpeakerSocketを使用
+            var forgeSpeakerSocket = new jp.moyashi.phoneos.forge.hardware.ForgeSpeakerSocket();
+            kernel.setSpeakerSocket(forgeSpeakerSocket);
+            LOGGER.info("[SmartphoneBackgroundService] - ForgeSpeakerSocket set");
+
+            // AudioDeviceSocket: オーディオデバイス選択機能
+            var audioDeviceSocket = new jp.moyashi.phoneos.forge.hardware.ForgeAudioDeviceSocket();
+            kernel.setAudioDeviceSocket(audioDeviceSocket);
+            LOGGER.info("[SmartphoneBackgroundService] - ForgeAudioDeviceSocket set");
+
+            // デバイス選択変更時のリスナーを設定
+            audioDeviceSocket.setOnMicrophoneChangeListener(() -> {
+                var mixerInfo = audioDeviceSocket.getSelectedMicrophoneMixerInfo();
+                forgeMicrophoneSocket.setSelectedMixer(mixerInfo);
+                LOGGER.info("[SmartphoneBackgroundService] Microphone device changed");
+            });
+            audioDeviceSocket.setOnSpeakerChangeListener(() -> {
+                var mixerInfo = audioDeviceSocket.getSelectedSpeakerMixerInfo();
+                forgeSpeakerSocket.setSelectedMixer(mixerInfo);
+                LOGGER.info("[SmartphoneBackgroundService] Speaker device changed");
+            });
+
+            // 初期デバイス設定を適用
+            forgeMicrophoneSocket.setSelectedMixer(audioDeviceSocket.getSelectedMicrophoneMixerInfo());
+            forgeSpeakerSocket.setSelectedMixer(audioDeviceSocket.getSelectedSpeakerMixerInfo());
 
             kernel.setICSocket(new jp.moyashi.phoneos.forge.hardware.ForgeICSocket());
             LOGGER.info("[SmartphoneBackgroundService] - ICSocket set");

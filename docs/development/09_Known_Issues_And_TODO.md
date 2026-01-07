@@ -251,3 +251,17 @@
   - 各APIの詳細なコード例とstandalone/forge環境での動作の違いを説明
   - `HardwareTestApp`への参照とデバッグガイドへのリンクを追加
   - 外部開発者がハードウェアAPIを利用可能であることを明確化
+
+- **AdvancedVC 2.0 オーディオブリッジ連携** (✅ 実装完了 2025-12-30):
+  - **目的**: MochiMobileOSのマイク環境音トラックをAdvancedVC 2.0に送信し、AVCの最終出力をスピーカー環境音として受信可能にする
+  - **実装ファイル**:
+    - `forge/src/main/java/jp/moyashi/phoneos/forge/hardware/AVCDetector.java`: AVC MOD検出ユーティリティ
+    - `forge/src/main/java/jp/moyashi/phoneos/forge/audio/AVCAudioBridge.java`: オーディオブリッジ（リフレクション使用）
+    - `forge/src/main/java/jp/moyashi/phoneos/forge/hardware/ForgeMicrophoneSocket.java`: AVCブリッジ統合
+  - **API接続**:
+    - マイク環境音 → AVC `AudioInputProvider` (出力API)
+    - AVC `AudioOutputListener` (入力API) → スピーカー環境音
+  - **動作条件**: AdvancedVC 2.0 (modId: `advancedvc2_0`) がインストールされている場合のみ有効
+  - **ソフトディペンド設定**:
+    - `mods.toml`: `mandatory=false`, `ordering="AFTER"`, `side="CLIENT"`
+    - リフレクションを使用するためコンパイル時依存は不要

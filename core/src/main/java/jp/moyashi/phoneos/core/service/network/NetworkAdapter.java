@@ -247,6 +247,30 @@ public class NetworkAdapter {
     }
 
     /**
+     * URLに対してHTTPリクエストを送信し、バイト配列として取得する。
+     *
+     * @param url リクエストURL
+     * @return HTTPレスポンスのFuture（ボディはbyte[]）
+     * @throws NetworkException ネットワークエラー時
+     */
+    public CompletableFuture<NetworkByteResponse> requestBytes(String url) throws NetworkException {
+        if (url == null || url.isEmpty()) {
+            throw new NetworkException("URL cannot be null or empty",
+                    NetworkException.ErrorType.PROTOCOL_ERROR);
+        }
+
+        // 通常URLのみサポート（現在はIPvMでのバイナリ取得は考慮しない）
+        log("Routing to RealAdapter (Bytes): " + url);
+        return realAdapter.httpRequestBytes(url)
+                .thenApply(response -> new NetworkByteResponse(
+                        response.getStatusCode(),
+                        response.getContentType(),
+                        response.getBody(),
+                        NetworkResponse.Source.REAL
+                ));
+    }
+
+    /**
      * アダプターを閉じる。
      */
     public void close() {
@@ -312,6 +336,43 @@ public class NetworkAdapter {
 
         public boolean isFromRealNetwork() {
             return source == Source.REAL;
+        }
+    }
+
+    /**
+     * バイト配列版のHTTPレスポンスクラス。
+     */
+    public static class NetworkByteResponse {
+        private final int statusCode;
+        private final String contentType;
+        private final byte[] body;
+        private final NetworkResponse.Source source;
+
+        public NetworkByteResponse(int statusCode, String contentType, byte[] body, NetworkResponse.Source source) {
+            this.statusCode = statusCode;
+            this.contentType = contentType;
+            this.body = body;
+            this.source = source;
+        }
+
+        public int getStatusCode() {
+            return statusCode;
+        }
+
+        public String getContentType() {
+            return contentType;
+        }
+
+        public byte[] getBody() {
+            return body;
+        }
+
+        public NetworkResponse.Source getSource() {
+            return source;
+        }
+
+        public boolean isSuccess() {
+            return statusCode >= 200 && statusCode < 300;
         }
     }
 }

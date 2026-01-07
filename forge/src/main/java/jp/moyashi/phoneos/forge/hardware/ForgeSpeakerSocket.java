@@ -1,67 +1,75 @@
 package jp.moyashi.phoneos.forge.hardware;
 
 import com.mojang.logging.LogUtils;
-import de.maxhenkel.voicechat.api.Position;
-import de.maxhenkel.voicechat.api.VoicechatClientApi;
-import de.maxhenkel.voicechat.api.audiochannel.ClientLocationalAudioChannel;
-import de.maxhenkel.voicechat.api.audiochannel.ClientStaticAudioChannel;
 import jp.moyashi.phoneos.core.service.hardware.SpeakerSocket;
-import jp.moyashi.phoneos.forge.voicechat.MochiVoicechatPlugin;
-import net.minecraft.client.Minecraft;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.phys.Vec3;
+import jp.moyashi.phoneos.forge.audio.AVCAudioBridge;
+import jp.moyashi.phoneos.forge.audio.ByteRingBuffer;
 import org.slf4j.Logger;
 
-import java.util.UUID;
+import javax.sound.sampled.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Forge環境用のスピーカーソケット実装。
- * Simple Voice Chat (SVC) MODがインストールされている場合のみ有効になる。
- * SVCのAudioChannelを使用して音声を再生する。
+ * AdvancedVC 2.0 (AVC) MODがインストールされている場合のみ有効になる。
+ * Java標準AudioAPIで自分用の音声を再生し、AVCで他プレイヤーに配信する。
  *
- * 音量レベルに応じた動作:
- * - OFF: 音声再生なし
- * - LOW: 自分だけに聞こえる（StaticAudioChannel）
- * - MEDIUM: 自分 + 周囲に聞こえる（StaticAudioChannel + LocationalAudioChannel 16ブロック）
- * - HIGH: 自分 + 遠くまで聞こえる（StaticAudioChannel + LocationalAudioChannel 48ブロック）
+ * 設計変更:
+ * - PlayAudioはノンブロッキングでリングバッファに書き込むのみ。
+ * - バックグラウンドスレッドがSourceDataLineへの書き込みを担当。
+ * - AVCへの送信もバッファリング経由で行う。
  */
 public class ForgeSpeakerSocket implements SpeakerSocket {
     private static final Logger LOGGER = LogUtils.getLogger();
-    private VolumeLevel volumeLevel;
-    private final boolean svcAvailable;
-    private ClientStaticAudioChannel selfChannel;      // 自分用チャンネル（常に使用）
-    private ClientLocationalAudioChannel publicChannel; // 他プレイヤー用チャンネル（MEDIUM以上）
-    private Thread playbackThread;
-    private volatile boolean isPlaying = false;
+    private static final int SAMPLE_RATE = 48000;
+    private static final int SAMPLE_SIZE_BITS = 16;
+    private static final int CHANNELS = 1;
+
+    private volatile VolumeLevel volumeLevel = VolumeLevel.MEDIUM;
+    private final boolean avcAvailable;
+    
+    // 自分用再生バッファ（約1秒分）
+    private final ByteRingBuffer playbackBuffer = new ByteRingBuffer(48000 * 2);
+    
+    // 再生ワーカー制御
+    private final Thread workerThread;
+    private final AtomicBoolean running = new AtomicBoolean(true);
+    private volatile long lastAudioSubmitTime = 0; // 最終音声送信時刻
+    
+    private AVCAudioBridge avcBridge;
+    private SourceDataLine speakerLine;
+    private Mixer.Info selectedMixerInfo = null;
 
     public ForgeSpeakerSocket() {
-        this.volumeLevel = VolumeLevel.MEDIUM;
-        this.svcAvailable = SVCDetector.isSVCAvailable();
+        this.avcAvailable = AVCDetector.isAVCAvailable();
 
-        if (svcAvailable) {
-            LOGGER.info("[ForgeSpeakerSocket] Initialized with SVC support");
+        if (avcAvailable) {
+            this.avcBridge = AVCAudioBridge.getInstance();
+            LOGGER.info("[ForgeSpeakerSocket] Initialized with AVC support");
         } else {
-            LOGGER.info("[ForgeSpeakerSocket] Initialized without SVC (speaker unavailable)");
+            LOGGER.info("[ForgeSpeakerSocket] Initialized without AVC");
         }
+
+        // 再生ワーカースレッドの開始
+        this.workerThread = new Thread(this::playbackLoop, "MochiOS-SpeakerWorker");
+        this.workerThread.setDaemon(true);
+        this.workerThread.start();
+    }
+
+    public void setSelectedMixer(Mixer.Info mixerInfo) {
+        this.selectedMixerInfo = mixerInfo;
+        // ミキサー変更時はラインを再構築する必要があるため、一度閉じる
+        closeSpeakerLine();
     }
 
     @Override
     public boolean isAvailable() {
-        // SVCが導入されている場合のみ利用可能
-        return svcAvailable;
+        return true;
     }
 
     @Override
     public void setVolumeLevel(VolumeLevel level) {
-        if (!svcAvailable) {
-            LOGGER.warn("[ForgeSpeakerSocket] Cannot set volume - SVC not installed");
-            return;
-        }
-
         this.volumeLevel = level;
-        LOGGER.info("[ForgeSpeakerSocket] Volume level set to " + level.name());
-
-        // TODO: SVCの音量設定を変更するAPIを呼び出す
     }
 
     @Override
@@ -71,253 +79,146 @@ public class ForgeSpeakerSocket implements SpeakerSocket {
 
     @Override
     public void playAudio(byte[] audioData) {
-        LOGGER.info("[ForgeSpeakerSocket] playAudio() called - svcAvailable: " + svcAvailable + ", volumeLevel: " + volumeLevel + ", dataLength: " + (audioData != null ? audioData.length : 0));
+        if (audioData == null || audioData.length == 0) return;
 
-        if (!svcAvailable) {
-            LOGGER.warn("[ForgeSpeakerSocket] Cannot play audio - SVC not installed");
-            return;
+        // 1. 自分用再生バッファに追加
+        if (volumeLevel != VolumeLevel.OFF) {
+            playbackBuffer.write(audioData, 0, audioData.length);
         }
 
-        if (volumeLevel == VolumeLevel.OFF) {
-            LOGGER.info("[ForgeSpeakerSocket] Volume is OFF, skipping playback");
-            return;
+        // 2. AVC用バッファに追加 (MEDIUM/HIGHのみ)
+        if (avcAvailable && (volumeLevel == VolumeLevel.MEDIUM || volumeLevel == VolumeLevel.HIGH)) {
+            lastAudioSubmitTime = System.currentTimeMillis();
+            
+            // AVCブリッジの初期化チェック
+            if (!avcBridge.isInitialized()) {
+                avcBridge.tryInitialize();
+            }
+            if (avcBridge.isInitialized() && !avcBridge.isEnabled()) {
+                avcBridge.setEnabled(true);
+            }
+            
+            avcBridge.submitSpeakerAudio(audioData);
         }
-
-        if (audioData == null || audioData.length == 0) {
-            LOGGER.warn("[ForgeSpeakerSocket] Cannot play audio - no data provided");
-            return;
-        }
-
-        // 既に再生中の場合は停止
-        if (isPlaying) {
-            LOGGER.info("[ForgeSpeakerSocket] Stopping previous playback...");
-            stopAudio();
-        }
-
-        LOGGER.info("[ForgeSpeakerSocket] Starting audio playback - volume level: " + volumeLevel + ", data: " + audioData.length + " bytes");
-
-        // byte[]をshort[]に変換（16-bit PCM）
-        short[] samples = convertBytesToShorts(audioData);
-        LOGGER.info("[ForgeSpeakerSocket] Converted to " + samples.length + " samples");
-
-        // 再生スレッドを開始
-        isPlaying = true;
-        playbackThread = new Thread(() -> playAudioStream(samples), "MochiOS-Speaker");
-        playbackThread.setDaemon(true);
-        playbackThread.start();
-        LOGGER.info("[ForgeSpeakerSocket] Playback thread started");
     }
 
     @Override
     public void stopAudio() {
-        if (!svcAvailable) {
-            return;
+        // バッファをクリアして再生を即時停止
+        playbackBuffer.clear();
+        if (speakerLine != null) {
+            speakerLine.flush();
         }
-
-        isPlaying = false;
-
-        // 再生スレッドの終了を待つ
-        if (playbackThread != null && playbackThread.isAlive()) {
+        
+        // AVC送信も即時停止
+        if (avcAvailable && avcBridge != null && avcBridge.isEnabled()) {
+            avcBridge.setEnabled(false);
+            LOGGER.info("[ForgeSpeakerSocket] AVC bridge disabled via stopAudio()");
+        }
+    }
+    
+    /**
+     * バックグラウンドで音声再生を行うループ
+     */
+    private void playbackLoop() {
+        byte[] buffer = new byte[1024]; // 読み出し用テンポラリバッファ
+        
+        while (running.get()) {
             try {
-                playbackThread.join(1000);
-            } catch (InterruptedException e) {
-                LOGGER.warn("[ForgeSpeakerSocket] Interrupted while stopping playback", e);
+                // AVC送信の自動停止監視（500ms以上データ供給がなければ無効化）
+                if (avcAvailable && avcBridge != null && avcBridge.isEnabled()) {
+                    long idleTime = System.currentTimeMillis() - lastAudioSubmitTime;
+                    if (idleTime > 500) {
+                        avcBridge.setEnabled(false);
+                        LOGGER.info("[ForgeSpeakerSocket] AVC bridge disabled due to inactivity (>500ms)");
+                    }
+                }
+
+                // バッファにデータがない場合は少し待機
+                if (playbackBuffer.available() == 0) {
+                    Thread.sleep(5);
+                    continue;
+                }
+
+                // スピーカーラインの準備
+                if (speakerLine == null || !speakerLine.isOpen()) {
+                    if (!openSpeakerLine()) {
+                        // 開けない場合はデータを捨てて待機
+                        playbackBuffer.clear();
+                        Thread.sleep(1000);
+                        continue;
+                    }
+                }
+
+                // バッファから読み出して再生
+                int read = playbackBuffer.read(buffer, 0, buffer.length);
+                if (read > 0) {
+                    // 音量がOFFになった場合のガード（バッファには残っている可能性がある）
+                    if (volumeLevel != VolumeLevel.OFF) {
+                        speakerLine.write(buffer, 0, read);
+                    }
+                }
+                
+            } catch (Exception e) {
+                LOGGER.error("[ForgeSpeakerSocket] Error in playback loop", e);
+                try {
+                    Thread.sleep(1000); // エラー時は少し待機
+                } catch (InterruptedException ignored) {}
             }
         }
-
-        // チャンネルをクリーンアップ
-        cleanupChannels();
-
-        LOGGER.info("[ForgeSpeakerSocket] Stopped audio");
+        
+        closeSpeakerLine();
     }
 
-    /**
-     * 音声ストリームを再生する（別スレッドで実行）。
-     */
-    private void playAudioStream(short[] samples) {
-        LOGGER.info("[ForgeSpeakerSocket] playAudioStream() started - samples: " + samples.length);
-
+    private boolean openSpeakerLine() {
         try {
-            VoicechatClientApi clientApi = MochiVoicechatPlugin.getClientApi();
-            LOGGER.info("[ForgeSpeakerSocket] VoicechatClientApi: " + (clientApi != null ? "available" : "null"));
+            AudioFormat format = new AudioFormat(SAMPLE_RATE, SAMPLE_SIZE_BITS, CHANNELS, true, false);
+            DataLine.Info info = new DataLine.Info(SourceDataLine.class, format);
 
-            if (clientApi == null) {
-                LOGGER.error("[ForgeSpeakerSocket] VoicechatClientApi not available");
-                return;
-            }
-
-            // チャンネルを作成
-            LOGGER.info("[ForgeSpeakerSocket] Creating audio channels...");
-            createChannels(clientApi);
-
-            if (selfChannel == null) {
-                LOGGER.error("[ForgeSpeakerSocket] Failed to create self audio channel");
-                return;
-            }
-
-            LOGGER.info("[ForgeSpeakerSocket] Audio channels created successfully - selfChannel: " + (selfChannel != null) + ", publicChannel: " + (publicChannel != null));
-
-            // Simple Voice Chatの推奨チャンクサイズ（20ms @ 48kHz）
-            // SVCはリアルタイムストリーミング用に設計されているため、小さいチャンクが必要
-            int chunkSize = 960; // 48000 * 0.02 = 960 samples (20ms)
-            int offset = 0;
-            int chunkCount = 0;
-
-            LOGGER.info("[ForgeSpeakerSocket] Starting playback loop - total samples: " + samples.length + ", chunk size: " + chunkSize);
-
-            while (isPlaying && offset < samples.length) {
-                long chunkStartTime = System.nanoTime();
-
-                int remaining = samples.length - offset;
-                int currentChunkSize = Math.min(chunkSize, remaining);
-
-                // チャンクを切り出す
-                short[] chunk = new short[currentChunkSize];
-                System.arraycopy(samples, offset, chunk, 0, currentChunkSize);
-
-                // 自分用チャンネルで再生
-                selfChannel.play(chunk);
-                chunkCount++;
-
-                // MEDIUM以上の場合は他プレイヤーにも送信
-                if (publicChannel != null && (volumeLevel == VolumeLevel.MEDIUM || volumeLevel == VolumeLevel.HIGH)) {
-                    // 位置更新は50チャンクに1回（1秒ごと）
-                    if (chunkCount % 50 == 1) {
-                        updatePublicChannelLocation();
+            if (selectedMixerInfo != null) {
+                try {
+                    Mixer mixer = AudioSystem.getMixer(selectedMixerInfo);
+                    if (mixer.isLineSupported(info)) {
+                        speakerLine = (SourceDataLine) mixer.getLine(info);
+                        speakerLine.open(format);
+                        speakerLine.start();
+                        return true;
                     }
-                    publicChannel.play(chunk);
-                }
-
-                offset += currentChunkSize;
-
-                // 最初のチャンクだけログ出力
-                if (chunkCount == 1) {
-                    LOGGER.info("[ForgeSpeakerSocket] First chunk played successfully - chunk size: " + currentChunkSize);
-                }
-
-                // 正確な20msウェイト（ナノ秒精度）
-                // チャンクの処理時間を差し引いて、正確に20ms間隔を維持
-                long chunkEndTime = System.nanoTime();
-                long elapsedNanos = chunkEndTime - chunkStartTime;
-                long targetNanos = 20_000_000L; // 20ms in nanoseconds
-                long sleepNanos = targetNanos - elapsedNanos;
-
-                if (sleepNanos > 0) {
-                    long sleepMillis = sleepNanos / 1_000_000;
-                    int sleepNanosRemainder = (int) (sleepNanos % 1_000_000);
-
-                    if (sleepMillis > 0) {
-                        Thread.sleep(sleepMillis, sleepNanosRemainder);
-                    } else {
-                        // 1ms未満の場合はビジーウェイト
-                        long targetTime = System.nanoTime() + sleepNanos;
-                        while (System.nanoTime() < targetTime) {
-                            // ビジーウェイト
-                        }
-                    }
+                } catch (Exception e) {
+                    LOGGER.warn("[ForgeSpeakerSocket] Selected mixer failed, fallback to default", e);
                 }
             }
 
-            LOGGER.info("[ForgeSpeakerSocket] Playback loop finished - total chunks played: " + chunkCount);
+            if (!AudioSystem.isLineSupported(info)) {
+                return false;
+            }
 
-        } catch (Exception e) {
-            LOGGER.error("[ForgeSpeakerSocket] Error during audio playback", e);
+            speakerLine = (SourceDataLine) AudioSystem.getLine(info);
+            speakerLine.open(format);
+            speakerLine.start();
+            return true;
+
+        } catch (LineUnavailableException e) {
+            LOGGER.error("[ForgeSpeakerSocket] Failed to open speaker line", e);
+            return false;
+        }
+    }
+
+    private void closeSpeakerLine() {
+        if (speakerLine != null) {
+            speakerLine.stop();
+            speakerLine.close();
+            speakerLine = null;
+        }
+    }
+    
+    // アプリケーション終了時などに呼び出す（必要であれば）
+    public void shutdown() {
+        running.set(false);
+        try {
+            workerThread.join(1000);
+        } catch (InterruptedException e) {
             e.printStackTrace();
-        } finally {
-            LOGGER.info("[ForgeSpeakerSocket] Cleaning up channels...");
-            cleanupChannels();
-            isPlaying = false;
-        }
-    }
-
-    /**
-     * オーディオチャンネルを作成する。
-     */
-    private void createChannels(VoicechatClientApi clientApi) {
-        UUID channelId = UUID.randomUUID();
-
-        // 自分用チャンネル（静的）
-        selfChannel = clientApi.createStaticAudioChannel(channelId);
-        LOGGER.info("[ForgeSpeakerSocket] Created self audio channel");
-
-        // MEDIUM以上の場合は他プレイヤー用チャンネルも作成
-        if (volumeLevel == VolumeLevel.MEDIUM || volumeLevel == VolumeLevel.HIGH) {
-            Player player = Minecraft.getInstance().player;
-            if (player != null) {
-                Vec3 pos = player.position();
-                Position position = new SimplePosition(pos.x, pos.y, pos.z);
-
-                publicChannel = clientApi.createLocationalAudioChannel(UUID.randomUUID(), position);
-
-                // 音量レベルに応じて範囲を設定
-                float distance = volumeLevel == VolumeLevel.HIGH ? 48.0f : 16.0f;
-                publicChannel.setDistance(distance);
-
-                LOGGER.info("[ForgeSpeakerSocket] Created public audio channel (distance: " + distance + ")");
-            }
-        }
-    }
-
-    /**
-     * 他プレイヤー用チャンネルの位置を更新する。
-     */
-    private void updatePublicChannelLocation() {
-        if (publicChannel == null) {
-            return;
-        }
-
-        Player player = Minecraft.getInstance().player;
-        if (player != null) {
-            Vec3 pos = player.position();
-            publicChannel.setLocation(new SimplePosition(pos.x, pos.y, pos.z));
-        }
-    }
-
-    /**
-     * チャンネルをクリーンアップする。
-     */
-    private void cleanupChannels() {
-        selfChannel = null;
-        publicChannel = null;
-    }
-
-    /**
-     * byte配列をshort配列に変換する（16-bit PCM、リトルエンディアン）。
-     */
-    private short[] convertBytesToShorts(byte[] bytes) {
-        short[] shorts = new short[bytes.length / 2];
-        for (int i = 0; i < shorts.length; i++) {
-            int offset = i * 2;
-            shorts[i] = (short) ((bytes[offset + 1] << 8) | (bytes[offset] & 0xFF));
-        }
-        return shorts;
-    }
-
-    /**
-     * 簡易Position実装。
-     */
-    private static class SimplePosition implements Position {
-        private final double x, y, z;
-
-        public SimplePosition(double x, double y, double z) {
-            this.x = x;
-            this.y = y;
-            this.z = z;
-        }
-
-        @Override
-        public double getX() {
-            return x;
-        }
-
-        @Override
-        public double getY() {
-            return y;
-        }
-
-        @Override
-        public double getZ() {
-            return z;
         }
     }
 }

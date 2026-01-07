@@ -5,8 +5,11 @@ import processing.core.PApplet;
 import processing.core.PFont;
 import processing.core.PImage;
 
+import javax.imageio.ImageIO;
 import java.awt.Font;
 import java.awt.GraphicsEnvironment;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
@@ -25,7 +28,7 @@ import java.util.logging.Logger;
  * - 日本語フォントの特別処理
  *
  * @since 2025-12-02
- * @version 1.0
+ * @version 1.1 (Classpath resource support)
  */
 public class ResourceManager {
 
@@ -349,10 +352,49 @@ public class ResourceManager {
         }
 
         try {
+            // 1. Processing標準のloadImageを試す
             PImage image = applet.loadImage(imagePath);
-            imageCache.put(imagePath, image);
-            logger.info("Loaded image: " + imagePath);
-            return image;
+            
+            // 2. 失敗した場合はクラスパスからの読み込みを試みる
+            if (image == null || image.width <= 0) {
+                if (loggerService != null) {
+                    loggerService.debug("ResourceManager", "applet.loadImage failed for " + imagePath + ", trying classpath fallback");
+                }
+                
+                String resourcePath = imagePath.startsWith("/") ? imagePath : "/" + imagePath;
+                try (InputStream is = getClass().getResourceAsStream(resourcePath)) {
+                    if (is != null) {
+                        BufferedImage bimg = ImageIO.read(is);
+                        if (bimg != null) {
+                            image = new PImage(bimg);
+                            if (loggerService != null) {
+                                loggerService.info("ResourceManager", "Successfully loaded image from classpath: " + resourcePath);
+                            }
+                        }
+                    } else {
+                        // context class loaderも試す
+                        try (InputStream isContext = Thread.currentThread().getContextClassLoader().getResourceAsStream(resourcePath.substring(1))) {
+                            if (isContext != null) {
+                                BufferedImage bimg = ImageIO.read(isContext);
+                                if (bimg != null) {
+                                    image = new PImage(bimg);
+                                    if (loggerService != null) {
+                                        loggerService.info("ResourceManager", "Successfully loaded image from context classloader: " + resourcePath);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (image != null && image.width > 0) {
+                imageCache.put(imagePath, image);
+                return image;
+            } else {
+                logger.warning("Failed to load image from all sources: " + imagePath);
+                return null;
+            }
         } catch (Exception e) {
             logger.warning("Failed to load image: " + imagePath + " - " + e.getMessage());
             return null;

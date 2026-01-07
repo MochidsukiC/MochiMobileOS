@@ -325,9 +325,16 @@ public class AppLoader {
         String resolvedId = resolveAppId(application);
 
         // 既に登録済みかチェック（解決済みIDで検索）
-        if (findApplicationById(resolvedId) != null) {
-            System.out.println("AppLoader: Application " + application.getName() + " already registered");
-            return false;
+        IApplication existingApp = findApplicationById(resolvedId);
+        if (existingApp != null) {
+            System.out.println("AppLoader: Application " + application.getName() + " (ID: " + resolvedId + ") already registered. Overwriting...");
+            loadedApps.remove(existingApp);
+            
+            // MODアプリリストからも削除（もしあれば）
+            if (installedModApps.contains(existingApp)) {
+                installedModApps.remove(existingApp);
+                installedModApps.add(application);
+            }
         }
 
         loadedApps.add(application);

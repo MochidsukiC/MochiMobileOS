@@ -4,29 +4,50 @@ import com.mojang.logging.LogUtils;
 import org.slf4j.Logger;
 
 import javax.sound.sampled.*;
-import java.util.LinkedList;
-import java.util.Queue;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.io.ByteArrayOutputStream;
 
 /**
  * Java標準APIを使用してマイクから音声を録音するクラス。
- * Simple Voice Chatの設定を流用し、同じマイクデバイスを使用する。
+ * 選択されたマイクデバイス、またはシステムデフォルトを使用する。
+ * ByteArrayOutputStreamを使用して連続バッファで安定した録音を実現。
  */
 public class JavaMicrophoneRecorder {
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static final int SAMPLE_RATE = 48000; // SVCと同じ
     private static final int SAMPLE_SIZE_BITS = 16;
     private static final int CHANNELS = 1; // モノラル
-    private static final int BUFFER_SIZE = 1024; // 約21ms
+    // 10msのチャンク時間（細かく読み取って連続バッファに追加）
+    private static final int CHUNK_DURATION_MS = 10;
+    // TargetDataLineの内部バッファサイズ（50ms分 - アンダーラン防止用）
+    private static final int LINE_BUFFER_MS = 50;
 
     private TargetDataLine microphone;
     private Thread recordingThread;
     private volatile boolean recording = false;
     private AudioFormat currentFormat = null;
+    // 実際のサンプリングレートに基づいて計算されるバッファサイズ
+    private int dynamicBufferSize = 480; // デフォルト: 48kHz * 10ms
 
-    private final Queue<byte[]> audioBuffer = new LinkedList<>();
-    private final ReadWriteLock lock = new ReentrantReadWriteLock();
+    // 選択されたマイクデバイス（nullの場合はシステムデフォルト）
+    private Mixer.Info selectedMixerInfo = null;
+
+    // 連続バッファ（ByteArrayOutputStream）
+    private ByteArrayOutputStream audioBuffer = new ByteArrayOutputStream();
+    private final Object bufferLock = new Object();
+
+    // デバッグ用: 書き込み・読み込み追跡
+    private long totalBytesWritten = 0;
+    private long totalBytesRead = 0;
+
+    /**
+     * 使用するマイクデバイスを設定する。
+     *
+     * @param mixerInfo Mixer.Info、nullの場合はシステムデフォルト
+     */
+    public void setSelectedMixer(Mixer.Info mixerInfo) {
+        this.selectedMixerInfo = mixerInfo;
+        LOGGER.info("[JavaMicrophoneRecorder] Selected mixer: {}",
+            mixerInfo != null ? mixerInfo.getName() : "System Default");
+    }
 
     /**
      * 録音を開始する。
@@ -38,41 +59,32 @@ public class JavaMicrophoneRecorder {
         }
 
         try {
-            // SVCの設定からマイクデバイスを取得
-            // 注: SVCDeviceManagerは現在正しく動作していないため、nullを渡してシステムデフォルトを使用
-            Mixer.Info mixerInfo = null; // SVCDeviceManager.getMicrophoneDevice();
-            Mixer mixer = null; // mixerInfo != null ? AudioSystem.getMixer(mixerInfo) : null;
+            // 利用可能なミキサーからマイクを探す
+            TargetDataLine foundLine = findWorkingMicrophone();
 
-            // サポートされているフォーマットを検出（システムデフォルトマイクを使用）
-            AudioFormat format = findSupportedFormat(mixer);
-
-            if (format == null) {
-                LOGGER.error("[JavaMicrophoneRecorder] No supported audio format found");
+            if (foundLine == null) {
+                LOGGER.error("[JavaMicrophoneRecorder] No working microphone found");
                 return;
             }
 
-            LOGGER.info("[JavaMicrophoneRecorder] Using audio format: " + format);
-
-            // 現在のフォーマットを保存
-            currentFormat = format;
-
-            // マイクを開く
-            DataLine.Info info = new DataLine.Info(TargetDataLine.class, format);
-
-            if (mixer != null) {
-                microphone = (TargetDataLine) mixer.getLine(info);
-            } else {
-                LOGGER.warn("[JavaMicrophoneRecorder] No SVC device found, using default");
-                microphone = AudioSystem.getTargetDataLine(format);
-            }
-
-            // バッファサイズをデフォルトにして、shared modeで開く
-            // 大きすぎるバッファはマイクを占有してDiscordなどと競合する
-            // スレッド優先度をMAXにすることでデータ欠落を防ぐ
-            microphone.open(format);
+            microphone = foundLine;
             microphone.start();
 
+            // 実際のサンプリングレートに基づいてバッファサイズを計算
+            // 20ms @ sampleRate, 16-bit mono = sampleRate * 0.020 samples
+            int sampleRate = (int) currentFormat.getSampleRate();
+            dynamicBufferSize = (sampleRate * CHUNK_DURATION_MS) / 1000;
+            LOGGER.info("[JavaMicrophoneRecorder] Dynamic buffer size: {} samples ({} bytes) for {}Hz",
+                dynamicBufferSize, dynamicBufferSize * 2, sampleRate);
+
             recording = true;
+
+            // バッファとカウンタをクリア
+            synchronized (bufferLock) {
+                audioBuffer.reset();
+                totalBytesWritten = 0;
+                totalBytesRead = 0;
+            }
 
             // 録音スレッドを開始
             recordingThread = new Thread(this::recordingLoop, "MochiMobileOS-MicRecorder");
@@ -81,67 +93,125 @@ public class JavaMicrophoneRecorder {
             recordingThread.setPriority(Thread.MAX_PRIORITY);
             recordingThread.start();
 
-            LOGGER.info("[JavaMicrophoneRecorder] Started recording");
+            LOGGER.info("[JavaMicrophoneRecorder] Started recording with format: " + currentFormat);
 
-        } catch (LineUnavailableException e) {
+        } catch (Exception e) {
             LOGGER.error("[JavaMicrophoneRecorder] Failed to start recording", e);
             recording = false;
         }
     }
 
     /**
-     * システムがサポートしているオーディオフォーマットを検出する。
+     * 選択されたマイク、またはシステムデフォルトからマイクラインを見つける。
      */
-    private AudioFormat findSupportedFormat(Mixer mixer) {
+    private TargetDataLine findWorkingMicrophone() {
         // 試すフォーマットのリスト（優先順位順）
         AudioFormat[] formats = {
-            // 48kHz, 16-bit, mono (SVCと同じ)
             new AudioFormat(48000, 16, 1, true, false),
-            // 44.1kHz, 16-bit, mono
             new AudioFormat(44100, 16, 1, true, false),
-            // 16kHz, 16-bit, mono
             new AudioFormat(16000, 16, 1, true, false),
-            // 8kHz, 16-bit, mono
-            new AudioFormat(8000, 16, 1, true, false),
-            // 48kHz, 16-bit, mono, big-endian
-            new AudioFormat(48000, 16, 1, true, true),
-            // 44.1kHz, 16-bit, mono, big-endian
-            new AudioFormat(44100, 16, 1, true, true),
         };
 
-        // まず指定されたMixerで試す（実際にLineを取得してみる）
-        if (mixer != null) {
+        // 選択されたミキサーがある場合、それを優先して試す
+        if (selectedMixerInfo != null) {
+            LOGGER.info("[JavaMicrophoneRecorder] Trying selected microphone: {}", selectedMixerInfo.getName());
+            Mixer mixer = AudioSystem.getMixer(selectedMixerInfo);
             for (AudioFormat format : formats) {
-                DataLine.Info info = new DataLine.Info(TargetDataLine.class, format);
                 try {
-                    // isLineSupportedではなく、実際にLineを取得してみる
-                    TargetDataLine testLine = (TargetDataLine) mixer.getLine(info);
-                    testLine.close(); // すぐに閉じる
-                    LOGGER.info("[JavaMicrophoneRecorder] Found supported format on SVC mixer: " + format);
-                    return format;
-                } catch (LineUnavailableException e) {
-                    LOGGER.debug("[JavaMicrophoneRecorder] Format not available on SVC mixer: " + format + " - " + e.getMessage());
+                    DataLine.Info lineInfo = new DataLine.Info(TargetDataLine.class, format);
+                    if (mixer.isLineSupported(lineInfo)) {
+                        TargetDataLine line = (TargetDataLine) mixer.getLine(lineInfo);
+                        // バッファサイズを指定してオープン（500ms分）
+                        int bufferSize = (int) (format.getSampleRate() * format.getFrameSize() * LINE_BUFFER_MS / 1000);
+                        line.open(format, bufferSize);
+                        currentFormat = format;
+                        LOGGER.info("[JavaMicrophoneRecorder] Successfully opened selected microphone: {} with format: {}, buffer: {} bytes",
+                            selectedMixerInfo.getName(), format, bufferSize);
+                        return line;
+                    }
                 } catch (Exception e) {
-                    LOGGER.debug("[JavaMicrophoneRecorder] Format not supported on SVC mixer: " + format + " - " + e.getMessage());
+                    LOGGER.debug("[JavaMicrophoneRecorder] Selected mixer failed with format {}: {}",
+                        format, e.getMessage());
                 }
             }
-            LOGGER.warn("[JavaMicrophoneRecorder] SVC mixer does not support any input format, trying system default");
+            LOGGER.warn("[JavaMicrophoneRecorder] Selected microphone failed, falling back to system default");
         }
 
-        // Mixerでサポートされていない場合、システムデフォルトを試す
+        // システムデフォルトマイクを試す
+        LOGGER.info("[JavaMicrophoneRecorder] Trying system default microphone...");
         for (AudioFormat format : formats) {
-            DataLine.Info info = new DataLine.Info(TargetDataLine.class, format);
             try {
-                if (AudioSystem.isLineSupported(info)) {
-                    LOGGER.info("[JavaMicrophoneRecorder] Found supported format on system default: " + format);
-                    return format;
+                DataLine.Info lineInfo = new DataLine.Info(TargetDataLine.class, format);
+                if (AudioSystem.isLineSupported(lineInfo)) {
+                    TargetDataLine line = AudioSystem.getTargetDataLine(format);
+                    // バッファサイズを指定してオープン（500ms分）
+                    int bufferSize = (int) (format.getSampleRate() * format.getFrameSize() * LINE_BUFFER_MS / 1000);
+                    line.open(format, bufferSize);
+                    currentFormat = format;
+                    LOGGER.info("[JavaMicrophoneRecorder] Successfully opened system default microphone with format: {}, buffer: {} bytes", format, bufferSize);
+                    return line;
                 }
+            } catch (LineUnavailableException e) {
+                LOGGER.debug("[JavaMicrophoneRecorder] System default failed with format " + format + ": " + e.getMessage());
             } catch (Exception e) {
-                LOGGER.debug("[JavaMicrophoneRecorder] Format not supported on system default: " + format);
+                LOGGER.debug("[JavaMicrophoneRecorder] Error with system default: " + e.getMessage());
             }
         }
 
-        LOGGER.error("[JavaMicrophoneRecorder] No supported audio format found on any device");
+        // Primary Sound Capture Driverを探す
+        LOGGER.info("[JavaMicrophoneRecorder] System default failed, trying Primary Sound Capture Driver...");
+        Mixer.Info[] mixerInfos = AudioSystem.getMixerInfo();
+
+        for (Mixer.Info mixerInfo : mixerInfos) {
+            String name = mixerInfo.getName();
+            if (name.contains("Primary Sound Capture Driver") || name.contains("既定のオーディオ")) {
+                Mixer mixer = AudioSystem.getMixer(mixerInfo);
+                for (AudioFormat format : formats) {
+                    try {
+                        DataLine.Info lineInfo = new DataLine.Info(TargetDataLine.class, format);
+                        if (mixer.isLineSupported(lineInfo)) {
+                            TargetDataLine line = (TargetDataLine) mixer.getLine(lineInfo);
+                            int bufferSize = (int) (format.getSampleRate() * format.getFrameSize() * LINE_BUFFER_MS / 1000);
+                            line.open(format, bufferSize);
+                            currentFormat = format;
+                            LOGGER.info("[JavaMicrophoneRecorder] Successfully opened: {} with format: {}, buffer: {} bytes", name, format, bufferSize);
+                            return line;
+                        }
+                    } catch (Exception e) {
+                        LOGGER.debug("[JavaMicrophoneRecorder] " + name + " failed: " + e.getMessage());
+                    }
+                }
+            }
+        }
+
+        // フォールバック: 全ミキサーを試す
+        LOGGER.info("[JavaMicrophoneRecorder] Trying all available mixers...");
+        for (Mixer.Info mixerInfo : mixerInfos) {
+            Mixer mixer = AudioSystem.getMixer(mixerInfo);
+            Line.Info[] targetLineInfos = mixer.getTargetLineInfo();
+            if (targetLineInfos.length == 0) {
+                continue;
+            }
+
+            for (AudioFormat format : formats) {
+                DataLine.Info lineInfo = new DataLine.Info(TargetDataLine.class, format);
+                try {
+                    if (mixer.isLineSupported(lineInfo)) {
+                        TargetDataLine line = (TargetDataLine) mixer.getLine(lineInfo);
+                        int bufferSize = (int) (format.getSampleRate() * format.getFrameSize() * LINE_BUFFER_MS / 1000);
+                        line.open(format, bufferSize);
+                        currentFormat = format;
+                        LOGGER.info("[JavaMicrophoneRecorder] Successfully opened: {} with format: {}, buffer: {} bytes",
+                            mixerInfo.getName(), format, bufferSize);
+                        return line;
+                    }
+                } catch (Exception e) {
+                    LOGGER.debug("[JavaMicrophoneRecorder] " + mixerInfo.getName() + " failed: " + e.getMessage());
+                }
+            }
+        }
+
+        LOGGER.error("[JavaMicrophoneRecorder] No working microphone found");
         return null;
     }
 
@@ -176,13 +246,29 @@ public class JavaMicrophoneRecorder {
 
     /**
      * 録音ループ（別スレッドで実行）
+     * 連続的にマイクからデータを読み取り、ByteArrayOutputStreamに蓄積。
      */
     private void recordingLoop() {
-        byte[] buffer = new byte[BUFFER_SIZE * 2]; // 16-bit = 2 bytes per sample
+        byte[] buffer = new byte[dynamicBufferSize * 2]; // 16-bit = 2 bytes per sample
+        long lastLogTime = System.currentTimeMillis();
+        int totalBytesInSecond = 0;
+        int readCountInSecond = 0;
 
         while (recording) {
             try {
                 int bytesRead = microphone.read(buffer, 0, buffer.length);
+
+                // デバッグ: 1秒ごとに統計を出力
+                totalBytesInSecond += bytesRead;
+                readCountInSecond++;
+                long now = System.currentTimeMillis();
+                if (now - lastLogTime >= 1000) {
+                    LOGGER.info("[JavaMicrophoneRecorder] Stats: {} bytes in {} reads over {}ms (expected ~96000 bytes)",
+                        totalBytesInSecond, readCountInSecond, now - lastLogTime);
+                    totalBytesInSecond = 0;
+                    readCountInSecond = 0;
+                    lastLogTime = now;
+                }
 
                 if (bytesRead > 0) {
                     // SVCの音量設定を適用
@@ -206,18 +292,21 @@ public class JavaMicrophoneRecorder {
                         audioData[i + 1] = (byte) ((sample >> 8) & 0xFF);
                     }
 
-                    // バッファに追加
-                    lock.writeLock().lock();
-                    try {
-                        audioBuffer.offer(audioData);
+                    // 連続バッファに追加
+                    synchronized (bufferLock) {
+                        audioBuffer.write(audioData, 0, audioData.length);
+                        totalBytesWritten += audioData.length;
 
-                        // バッファサイズを制限（最大1000パケット = 約20秒）
-                        // ボイスメモ録音で長時間録音する可能性があるため、大きめに設定
-                        while (audioBuffer.size() > 1000) {
-                            audioBuffer.poll();
+                        // バッファサイズを制限（最大30秒分 @ 48kHz = 約2.88MB）
+                        // 超過した場合は古いデータを破棄
+                        int maxSize = 48000 * 2 * 30; // 30秒分
+                        if (audioBuffer.size() > maxSize) {
+                            byte[] current = audioBuffer.toByteArray();
+                            audioBuffer.reset();
+                            // 後半のデータのみ保持
+                            int keepSize = maxSize / 2;
+                            audioBuffer.write(current, current.length - keepSize, keepSize);
                         }
-                    } finally {
-                        lock.writeLock().unlock();
                     }
                 }
 
@@ -231,57 +320,36 @@ public class JavaMicrophoneRecorder {
 
     /**
      * バッファから音声データを取得する。
+     * 互換性のために残していますが、pollAllAudioData()の使用を推奨。
      *
      * @return 音声データ、バッファが空の場合はnull
      */
     public byte[] pollAudioData() {
-        lock.writeLock().lock();
-        try {
-            return audioBuffer.poll();
-        } finally {
-            lock.writeLock().unlock();
-        }
+        return pollAllAudioData();
     }
 
     /**
-     * バッファ内の全音声データを取得して連結する。
-     * データ欠落を防ぐため、ボイスメモ録音などで使用する。
+     * バッファ内の全音声データを取得してバッファをクリアする。
+     * 連続バッファなのでデータ欠落なし。
      *
-     * @return 連結された音声データ、バッファが空の場合はnull
+     * @return 蓄積された音声データ、バッファが空の場合はnull
      */
     public byte[] pollAllAudioData() {
-        lock.writeLock().lock();
-        try {
-            if (audioBuffer.isEmpty()) {
+        synchronized (bufferLock) {
+            if (audioBuffer.size() == 0) {
+                LOGGER.debug("[JavaMicrophoneRecorder] pollAllAudioData: buffer empty");
                 return null;
             }
 
-            java.util.ArrayList<byte[]> chunks = new java.util.ArrayList<>();
-            int totalSize = 0;
+            byte[] result = audioBuffer.toByteArray();
+            audioBuffer.reset();
+            totalBytesRead += result.length;
 
-            while (!audioBuffer.isEmpty()) {
-                byte[] chunk = audioBuffer.poll();
-                if (chunk != null) {
-                    chunks.add(chunk);
-                    totalSize += chunk.length;
-                }
-            }
-
-            if (chunks.isEmpty()) {
-                return null;
-            }
-
-            // 全チャンクを連結
-            byte[] result = new byte[totalSize];
-            int offset = 0;
-            for (byte[] chunk : chunks) {
-                System.arraycopy(chunk, 0, result, offset, chunk.length);
-                offset += chunk.length;
-            }
-
+            // 書き込みと読み込みの差分をチェック
+            long diff = totalBytesWritten - totalBytesRead;
+            LOGGER.info("[JavaMicrophoneRecorder] poll: {} bytes (written: {}, read: {}, diff: {})",
+                result.length, totalBytesWritten, totalBytesRead, diff);
             return result;
-        } finally {
-            lock.writeLock().unlock();
         }
     }
 
@@ -293,14 +361,11 @@ public class JavaMicrophoneRecorder {
     }
 
     /**
-     * バッファ内の音声データ数を取得する。
+     * バッファ内の音声データのバイト数を取得する。
      */
     public int getBufferSize() {
-        lock.readLock().lock();
-        try {
+        synchronized (bufferLock) {
             return audioBuffer.size();
-        } finally {
-            lock.readLock().unlock();
         }
     }
 

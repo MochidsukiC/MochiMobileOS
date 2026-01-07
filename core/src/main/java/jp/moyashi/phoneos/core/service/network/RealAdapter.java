@@ -153,6 +153,45 @@ public class RealAdapter {
     }
 
     /**
+     * HTTPリクエストを送信する（非同期、バイト配列として取得）。
+     *
+     * @param url リクエストURL
+     * @return HTTPレスポンスのFuture（ボディはbyte[]）
+     */
+    public CompletableFuture<RealByteHttpResponse> httpRequestBytes(String url) {
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .timeout(DEFAULT_TIMEOUT)
+                    .header("User-Agent", "MochiMobileOS/1.0")
+                    .GET()
+                    .build();
+
+            log("Sending HTTP request (Bytes): GET " + url);
+
+            return httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofByteArray())
+                    .thenApply(response -> {
+                        String responseContentType = response.headers()
+                                .firstValue("Content-Type")
+                                .orElse("application/octet-stream");
+                        return new RealByteHttpResponse(
+                                response.statusCode(),
+                                responseContentType,
+                                response.body()
+                        );
+                    })
+                    .exceptionally(e -> {
+                        logError("HTTP request (Bytes) failed: " + e.getMessage());
+                        return RealByteHttpResponse.error(e.getMessage());
+                    });
+
+        } catch (Exception e) {
+            logError("Failed to create HTTP request (Bytes): " + e.getMessage());
+            return CompletableFuture.completedFuture(RealByteHttpResponse.error(e.getMessage()));
+        }
+    }
+
+    /**
      * 同期HTTPリクエストを送信する。
      *
      * @param url リクエストURL
@@ -255,6 +294,57 @@ public class RealAdapter {
 
         public static RealHttpResponse error(String message) {
             return new RealHttpResponse(message);
+        }
+    }
+
+    /**
+     * 実インターネットHTTPレスポンス（バイト配列版）を表すクラス。
+     */
+    public static class RealByteHttpResponse {
+        private final int statusCode;
+        private final String contentType;
+        private final byte[] body;
+        private final boolean success;
+        private final String errorMessage;
+
+        public RealByteHttpResponse(int statusCode, String contentType, byte[] body) {
+            this.statusCode = statusCode;
+            this.contentType = contentType;
+            this.body = body;
+            this.success = statusCode >= 200 && statusCode < 300;
+            this.errorMessage = null;
+        }
+
+        private RealByteHttpResponse(String errorMessage) {
+            this.statusCode = 0;
+            this.contentType = null;
+            this.body = null;
+            this.success = false;
+            this.errorMessage = errorMessage;
+        }
+
+        public int getStatusCode() {
+            return statusCode;
+        }
+
+        public String getContentType() {
+            return contentType;
+        }
+
+        public byte[] getBody() {
+            return body;
+        }
+
+        public boolean isSuccess() {
+            return success;
+        }
+
+        public String getErrorMessage() {
+            return errorMessage;
+        }
+
+        public static RealByteHttpResponse error(String message) {
+            return new RealByteHttpResponse(message);
         }
     }
 }

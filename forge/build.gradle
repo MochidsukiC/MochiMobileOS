@@ -103,6 +103,15 @@ dependencies {
     // Simple Voice Chat API - for audio recording integration
     compileOnly 'de.maxhenkel.voicechat:voicechat-api:2.6.0'
 
+    // AdvancedVC 2.0 API - for audio bridge integration (optional soft dependency)
+    // AVCAudioBridgeはリフレクションでAVCのAPIにアクセスするため、コンパイル時依存は不要
+    // AVCがインストールされている場合のみ、実行時にオーディオブリッジが有効になる
+
+    // JNA (Java Native Access) - for WASAPI Process-Specific Audio Capture
+    // Windows APIを呼び出してjcef_helperプロセスの音声をキャプチャする
+    implementation 'net.java.dev.jna:jna:5.14.0'
+    implementation 'net.java.dev.jna:jna-platform:5.14.0'
+
     // Test dependencies
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.1'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'

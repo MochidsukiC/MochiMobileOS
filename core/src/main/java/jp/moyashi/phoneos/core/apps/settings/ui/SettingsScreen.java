@@ -98,6 +98,20 @@ public class SettingsScreen implements Screen {
     private jp.moyashi.phoneos.core.ui.components.Switch switchVibration;
     private jp.moyashi.phoneos.core.ui.components.Button btnRingtone;
 
+    // Audio Device Selection: オーディオデバイス選択
+    private jp.moyashi.phoneos.core.ui.components.Label labelAudioDeviceSection;
+    private jp.moyashi.phoneos.core.ui.components.Button btnSelectMicrophone;
+    private jp.moyashi.phoneos.core.ui.components.Button btnSelectSpeaker;
+    private jp.moyashi.phoneos.core.ui.components.Button btnRefreshAudioDevices;
+    private jp.moyashi.phoneos.core.ui.components.Label labelCurrentMicrophone;
+    private jp.moyashi.phoneos.core.ui.components.Label labelCurrentSpeaker;
+    private boolean showMicrophoneList = false;
+    private boolean showSpeakerList = false;
+    private java.util.List<jp.moyashi.phoneos.core.service.hardware.AudioDeviceSocket.AudioDevice> microphoneDevices = new java.util.ArrayList<>();
+    private java.util.List<jp.moyashi.phoneos.core.service.hardware.AudioDeviceSocket.AudioDevice> speakerDevices = new java.util.ArrayList<>();
+    private java.util.List<jp.moyashi.phoneos.core.ui.components.Button> microphoneListButtons = new java.util.ArrayList<>();
+    private java.util.List<jp.moyashi.phoneos.core.ui.components.Button> speakerListButtons = new java.util.ArrayList<>();
+
     // Notifications: 通知パネル
     private boolean showNotificationsPanel = false;
     private jp.moyashi.phoneos.core.ui.components.Panel notificationsPanel;
@@ -380,6 +394,58 @@ public class SettingsScreen implements Screen {
         // Sound & Vibration panel: delegate to components
         if (showSoundVibrationPanel) {
             ensureSoundVibrationComponents();
+
+            // オーディオデバイスリストが表示されている場合、リストボタンへのクリックを処理
+            int px = ITEM_PADDING;
+
+            if (showMicrophoneList && btnSelectMicrophone != null) {
+                int listX = px + 16 + 5;
+                int listY = (int) btnSelectMicrophone.getY() + 40 + 5;
+
+                // リスト外をクリックした場合はリストを閉じる
+                int listWidth = 300;
+                int listHeight = microphoneListButtons.size() * 35;
+                if (mouseX < listX || mouseX > listX + listWidth ||
+                    mouseY < listY || mouseY > listY + listHeight) {
+                    showMicrophoneList = false;
+                    return;
+                }
+
+                // ボタンのローカル座標に変換してクリックをチェック
+                int localX = mouseX - listX;
+                int localY = mouseY - listY;
+                for (var btn : microphoneListButtons) {
+                    if (btn.onMousePressed(localX, localY)) {
+                        return;
+                    }
+                }
+                return;
+            }
+
+            if (showSpeakerList && btnSelectSpeaker != null) {
+                int listX = px + 16 + 5;
+                int listY = (int) btnSelectSpeaker.getY() + 40 + 5;
+
+                // リスト外をクリックした場合はリストを閉じる
+                int listWidth = 300;
+                int listHeight = speakerListButtons.size() * 35;
+                if (mouseX < listX || mouseX > listX + listWidth ||
+                    mouseY < listY || mouseY > listY + listHeight) {
+                    showSpeakerList = false;
+                    return;
+                }
+
+                // ボタンのローカル座標に変換してクリックをチェック
+                int localX = mouseX - listX;
+                int localY = mouseY - listY;
+                for (var btn : speakerListButtons) {
+                    if (btn.onMousePressed(localX, localY)) {
+                        return;
+                    }
+                }
+                return;
+            }
+
             if (soundVibrationPanel != null && soundVibrationPanel.onMousePressed(mouseX, mouseY)) {
                 return;
             }
@@ -534,6 +600,29 @@ public class SettingsScreen implements Screen {
         if (showSoundVibrationPanel && soundVibrationPanel != null) {
             System.out.println("  Forwarding to soundVibrationPanel");
             soundVibrationPanel.onMouseReleased(mouseX, mouseY);
+
+            // オーディオデバイスリストボタンへのmouseReleasedを転送
+            int px = ITEM_PADDING;
+
+            if (showMicrophoneList && btnSelectMicrophone != null) {
+                int listX = px + 16 + 5;
+                int listY = (int) btnSelectMicrophone.getY() + 40 + 5;
+                int localX = mouseX - listX;
+                int localY = mouseY - listY;
+                for (var btn : microphoneListButtons) {
+                    btn.onMouseReleased(localX, localY);
+                }
+            }
+
+            if (showSpeakerList && btnSelectSpeaker != null) {
+                int listX = px + 16 + 5;
+                int listY = (int) btnSelectSpeaker.getY() + 40 + 5;
+                int localX = mouseX - listX;
+                int localY = mouseY - listY;
+                for (var btn : speakerListButtons) {
+                    btn.onMouseReleased(localX, localY);
+                }
+            }
         }
         if (showStoragePanel && storagePanel != null) {
             System.out.println("  Forwarding to storagePanel");
@@ -1495,7 +1584,61 @@ public class SettingsScreen implements Screen {
         btnRingtone = new jp.moyashi.phoneos.core.ui.components.Button(px + 16, y, pw - 32, 40, "Ringtone (Coming Soon)");
         btnRingtone.setOnClickListener(() -> {
             System.out.println("SettingsScreen: Ringtone selection clicked (coming soon)");
-            // 将来的に着信音選択画面を表示
+        });
+        y += 60;
+
+        // ========== オーディオデバイス選択セクション ==========
+        labelAudioDeviceSection = new jp.moyashi.phoneos.core.ui.components.Label(px + 16, y, pw - 32, 20, "Audio Devices");
+        labelAudioDeviceSection.setTextSize(14);
+        labelAudioDeviceSection.setTextColor(0xFF888888);
+        y += 30;
+
+        // 現在のマイクラベル
+        String currentMicName = getCurrentMicrophoneName();
+        labelCurrentMicrophone = new jp.moyashi.phoneos.core.ui.components.Label(px + 16, y, pw - 32, 16, "Mic: " + currentMicName);
+        labelCurrentMicrophone.setTextSize(11);
+        labelCurrentMicrophone.setTextColor(0xFFAAAAAA);
+        y += 20;
+
+        // マイク選択ボタン
+        btnSelectMicrophone = new jp.moyashi.phoneos.core.ui.components.Button(px + 16, y, pw - 32, 36, "Select Microphone");
+        btnSelectMicrophone.setOnClickListener(() -> {
+            showMicrophoneList = !showMicrophoneList;
+            showSpeakerList = false;
+            if (showMicrophoneList) {
+                refreshAudioDeviceLists();
+            }
+        });
+        y += 46;
+
+        // 現在のスピーカーラベル
+        String currentSpkName = getCurrentSpeakerName();
+        labelCurrentSpeaker = new jp.moyashi.phoneos.core.ui.components.Label(px + 16, y, pw - 32, 16, "Speaker: " + currentSpkName);
+        labelCurrentSpeaker.setTextSize(11);
+        labelCurrentSpeaker.setTextColor(0xFFAAAAAA);
+        y += 20;
+
+        // スピーカー選択ボタン
+        btnSelectSpeaker = new jp.moyashi.phoneos.core.ui.components.Button(px + 16, y, pw - 32, 36, "Select Speaker");
+        btnSelectSpeaker.setOnClickListener(() -> {
+            showSpeakerList = !showSpeakerList;
+            showMicrophoneList = false;
+            if (showSpeakerList) {
+                refreshAudioDeviceLists();
+            }
+        });
+        y += 46;
+
+        // デバイス更新ボタン
+        btnRefreshAudioDevices = new jp.moyashi.phoneos.core.ui.components.Button(px + 16, y, pw - 32, 36, "Refresh Devices");
+        btnRefreshAudioDevices.setOnClickListener(() -> {
+            var audioSocket = kernel != null ? kernel.getAudioDeviceSocket() : null;
+            if (audioSocket != null) {
+                audioSocket.refreshDevices();
+                refreshAudioDeviceLists();
+                labelCurrentMicrophone.setText("Mic: " + getCurrentMicrophoneName());
+                labelCurrentSpeaker.setText("Speaker: " + getCurrentSpeakerName());
+            }
         });
 
         // パネルに全てのコンポーネントを追加
@@ -1504,6 +1647,120 @@ public class SettingsScreen implements Screen {
         soundVibrationPanel.addChild(switchTouchSound);
         soundVibrationPanel.addChild(switchVibration);
         soundVibrationPanel.addChild(btnRingtone);
+        soundVibrationPanel.addChild(labelAudioDeviceSection);
+        soundVibrationPanel.addChild(labelCurrentMicrophone);
+        soundVibrationPanel.addChild(btnSelectMicrophone);
+        soundVibrationPanel.addChild(labelCurrentSpeaker);
+        soundVibrationPanel.addChild(btnSelectSpeaker);
+        soundVibrationPanel.addChild(btnRefreshAudioDevices);
+    }
+
+    /**
+     * 現在選択されているマイク名を取得する
+     */
+    private String getCurrentMicrophoneName() {
+        var audioSocket = kernel != null ? kernel.getAudioDeviceSocket() : null;
+        if (audioSocket == null) return "Not Available";
+
+        String selectedId = audioSocket.getSelectedMicrophoneId();
+        if (jp.moyashi.phoneos.core.service.hardware.AudioDeviceSocket.DEVICE_ID_SYSTEM_DEFAULT.equals(selectedId)) {
+            return "System Default";
+        }
+
+        for (var device : audioSocket.getAvailableMicrophones()) {
+            if (device.getId().equals(selectedId)) {
+                return device.getName();
+            }
+        }
+        return "Unknown";
+    }
+
+    /**
+     * 現在選択されているスピーカー名を取得する
+     */
+    private String getCurrentSpeakerName() {
+        var audioSocket = kernel != null ? kernel.getAudioDeviceSocket() : null;
+        if (audioSocket == null) return "Not Available";
+
+        String selectedId = audioSocket.getSelectedSpeakerId();
+        if (jp.moyashi.phoneos.core.service.hardware.AudioDeviceSocket.DEVICE_ID_SYSTEM_DEFAULT.equals(selectedId)) {
+            return "System Default";
+        }
+
+        for (var device : audioSocket.getAvailableSpeakers()) {
+            if (device.getId().equals(selectedId)) {
+                return device.getName();
+            }
+        }
+        return "Unknown";
+    }
+
+    /**
+     * オーディオデバイスリストを更新する
+     */
+    private void refreshAudioDeviceLists() {
+        var audioSocket = kernel != null ? kernel.getAudioDeviceSocket() : null;
+        if (audioSocket == null) return;
+
+        microphoneDevices.clear();
+        microphoneDevices.addAll(audioSocket.getAvailableMicrophones());
+
+        speakerDevices.clear();
+        speakerDevices.addAll(audioSocket.getAvailableSpeakers());
+
+        // マイクリストボタンを作成
+        microphoneListButtons.clear();
+        int buttonY = 0;
+        for (int i = 0; i < microphoneDevices.size(); i++) {
+            var device = microphoneDevices.get(i);
+            var btn = new jp.moyashi.phoneos.core.ui.components.Button(0, buttonY, 300, 30, device.getName());
+            final String deviceId = device.getId();
+            btn.setOnClickListener(() -> {
+                selectMicrophone(deviceId);
+            });
+            microphoneListButtons.add(btn);
+            buttonY += 35;
+        }
+
+        // スピーカーリストボタンを作成
+        speakerListButtons.clear();
+        buttonY = 0;
+        for (int i = 0; i < speakerDevices.size(); i++) {
+            var device = speakerDevices.get(i);
+            var btn = new jp.moyashi.phoneos.core.ui.components.Button(0, buttonY, 300, 30, device.getName());
+            final String deviceId = device.getId();
+            btn.setOnClickListener(() -> {
+                selectSpeaker(deviceId);
+            });
+            speakerListButtons.add(btn);
+            buttonY += 35;
+        }
+    }
+
+    /**
+     * マイクを選択する
+     */
+    private void selectMicrophone(String deviceId) {
+        var audioSocket = kernel != null ? kernel.getAudioDeviceSocket() : null;
+        if (audioSocket != null) {
+            audioSocket.setSelectedMicrophone(deviceId);
+            labelCurrentMicrophone.setText("Mic: " + getCurrentMicrophoneName());
+            showMicrophoneList = false;
+            System.out.println("SettingsScreen: Selected microphone: " + deviceId);
+        }
+    }
+
+    /**
+     * スピーカーを選択する
+     */
+    private void selectSpeaker(String deviceId) {
+        var audioSocket = kernel != null ? kernel.getAudioDeviceSocket() : null;
+        if (audioSocket != null) {
+            audioSocket.setSelectedSpeaker(deviceId);
+            labelCurrentSpeaker.setText("Speaker: " + getCurrentSpeakerName());
+            showSpeakerList = false;
+            System.out.println("SettingsScreen: Selected speaker: " + deviceId);
+        }
     }
 
     /**
@@ -1540,6 +1797,58 @@ public class SettingsScreen implements Screen {
         if (switchTouchSound != null) switchTouchSound.draw(g);
         if (switchVibration != null) switchVibration.draw(g);
         if (btnRingtone != null) btnRingtone.draw(g);
+
+        // オーディオデバイス選択コンポーネントを描画
+        if (labelAudioDeviceSection != null) labelAudioDeviceSection.draw(g);
+        if (labelCurrentMicrophone != null) labelCurrentMicrophone.draw(g);
+        if (btnSelectMicrophone != null) btnSelectMicrophone.draw(g);
+        if (labelCurrentSpeaker != null) labelCurrentSpeaker.draw(g);
+        if (btnSelectSpeaker != null) btnSelectSpeaker.draw(g);
+        if (btnRefreshAudioDevices != null) btnRefreshAudioDevices.draw(g);
+
+        // マイクリストを描画
+        if (showMicrophoneList && btnSelectMicrophone != null) {
+            int listX = px + 16;
+            int listY = (int) btnSelectMicrophone.getY() + 40;
+            int listWidth = 360;
+            int listHeight = microphoneListButtons.size() * 35 + 10;
+
+            // リスト背景
+            g.fill(50, 50, 60);
+            g.stroke(100, 100, 120);
+            g.strokeWeight(1);
+            g.rect(listX, listY, listWidth, listHeight, 5);
+
+            // リストアイテム
+            g.pushMatrix();
+            g.translate(listX + 5, listY + 5);
+            for (var btn : microphoneListButtons) {
+                btn.draw(g);
+            }
+            g.popMatrix();
+        }
+
+        // スピーカーリストを描画
+        if (showSpeakerList && btnSelectSpeaker != null) {
+            int listX = px + 16;
+            int listY = (int) btnSelectSpeaker.getY() + 40;
+            int listWidth = 360;
+            int listHeight = speakerListButtons.size() * 35 + 10;
+
+            // リスト背景
+            g.fill(50, 50, 60);
+            g.stroke(100, 100, 120);
+            g.strokeWeight(1);
+            g.rect(listX, listY, listWidth, listHeight, 5);
+
+            // リストアイテム
+            g.pushMatrix();
+            g.translate(listX + 5, listY + 5);
+            for (var btn : speakerListButtons) {
+                btn.draw(g);
+            }
+            g.popMatrix();
+        }
     }
 
     /**

@@ -1166,3 +1166,36 @@ MochiMobileOS上でProcessingスケッチ（.pde）をアプリケーション�
     - バックグラウンドワーカー (`workerThread`) を導入し、SourceDataLineへの書き込み（自分用再生）とAVC送信を並行して管理。
     - 連続的なストリーミング再生時でもスレッドの再作成を行わず、スムーズな再生を実現。
   - 結果: **BUILD SUCCESSFUL** - 警告のみでエラーなし。ストリーミング再生の安定性が大幅に向上する見込み。
+
+## 変更(2026-01-06)
+- **初回セットアップフローの実装**
+  - 目的: OS初回起動時にインストール画面と初期設定ウィザードを表示する。
+  - **仕様**:
+    - SettingsManagerに `system.setup_completed` フラグを追加（デフォルト: false）。
+    - Kernel初期化時にフラグを確認し、未完了の場合は SetupApp を起動。
+    - セットアップ完了時にフラグを true に更新し、ホーム画面へ遷移。
+  - **実装クラス**:
+    - `jp.moyashi.phoneos.core.apps.setup.SetupApp`: セットアップ用アプリ（ランチャー非表示）。
+    - `jp.moyashi.phoneos.core.apps.setup.InstallationScreen`: インストール進行状況（プログレスバー）を表示する画面。
+    - `jp.moyashi.phoneos.core.apps.setup.SetupWizardScreen`: 言語設定等のウィザード画面（現在はモック実装）。
+  - **リソースと機能拡張**:
+    - `ResourceManager.loadImage()` を拡張し、クラスパス（JAR内リソース）からの読み込みフォールバックを実装。
+    - `InstallationScreen` にカスタムロゴ（`setup_logo.png`）の表示機能を追加。
+  - **Kernel変更**:
+    - `setup()` メソッド内で `lockManager.isLocked()` チェックの前に `system.setup_completed` を確認するように変更。
+- **初回セットアップフローのバグ修正**
+  - **NullPointerException修正**: `InstallationScreen` 及び `SetupWizardScreen` において、`ScreenManager` の取得方法を `kernel.getService(ScreenManager.class)` から `kernel.getScreenManager()` に変更（DIコンテナ未登録時のフォールバック）。
+  - **コンパイルエラー修正**: `SetupWizardScreen` において、存在しない `setScreen()` メソッドの使用を `clearAllScreens()` と `pushScreen()` の組み合わせに修正。
+- **初回セットアップフローのバグ修正 (InstallationScreen)**
+  - **画面遷移ループの防止**: `InstallationScreen` に `isFinished` フラグを追加。進行度が100%に達して画面遷移した後、再度 `pushScreen` が呼ばれないように修正。
+- **初回セットアップフローのUI刷新 (InstallationScreen / SetupWizardScreen)**
+  - **"Nebula & Glass" テーマの導入**: 深い宇宙のようなグラデーション背景と浮遊するパーティクルによる没入感のあるデザイン。
+  - **アニメーション強化**: ロゴの呼吸効果、プログレスバーの発光表現、コンテンツのフェードイン/スライドイン、ボタンのブリージングアニメーションを実装。
+  - **パーティクルシステム**: 視覚的な豊かさを与える軽量なパーティクルエフェクトを追加。
+  - **ガラスモーフィズム**: セットアップウィザードのカードに半透明のガラス風デザインを採用。
+- **InstallationScreenのUI調整**
+  - **ロゴ描画修正**: 正方形に強制されていたロゴ描画を、元画像のアスペクト比を維持するように修正（長辺基準でリサイズ）。
+  - **アニメーション調整**: ロゴとボタンのブリージング（呼吸）アニメーションを削除し、静的で重厚感のあるスタイルに変更。
+- **セットアップ画面の描画座標修正 (InstallationScreen / SetupWizardScreen)**
+  - **PGraphics依存のサイズ管理**: `kernel.width/height` の代わりに `PGraphics.width/height` を使用するように修正。これにより、Forge環境等のオフスクリーンレンダリング時でも正しいサイズとアスペクト比で描画されるようになった。
+  - **状態同期**: `draw` メソッド内で画面サイズを更新し、パーティクルやUIレイアウトが常に最新の描画領域に適合するように調整。

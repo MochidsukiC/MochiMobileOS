@@ -1,44 +1,50 @@
 package jp.moyashi.phoneos.core.apps.appstore.ui;
 
+import com.google.gson.Gson;
 import jp.moyashi.phoneos.core.Kernel;
+import jp.moyashi.phoneos.core.apps.appstore.model.AppStorePackage;
+import jp.moyashi.phoneos.core.apps.appstore.model.AppStoreRepository;
 import jp.moyashi.phoneos.core.ui.Screen;
-import jp.moyashi.phoneos.core.app.IApplication;
 import jp.moyashi.phoneos.core.service.AppLoader;
+import jp.moyashi.phoneos.core.service.network.NetworkAdapter;
 import processing.core.PConstants;
 import processing.core.PGraphics;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * AppStoreのメイン画面。
- * 利用可能なMODアプリケーションの一覧表示とインストール機能を提供する。
+ * 利用可能な外部リポジトリのアプリケーション一覧表示とインストール機能を提供する。
  *
  * @author jp.moyashi
- * @version 1.0
+ * @version 1.1
  * @since 1.0
  */
 public class AppStoreScreen implements Screen {
 
-    /** OSカーネルへの参照 */
     private final Kernel kernel;
+    private final Gson gson = new Gson();
 
-    /** スクロール位置 */
+    /** リポジトリURL */
+    private static final String REPO_URL = "https://mochidsukic.github.io/MochiMobileOS-AppStore/repository.json";
+    private static final String REPO_BASE_URL = "https://mochidsukic.github.io/MochiMobileOS-AppStore/";
+
+    /** 状態管理 */
+    private AppStoreRepository repository;
+    private boolean isLoading = false;
+    private String errorMessage = null;
+    private String statusMessage = null;
+
+    /** スクロール管理 */
     private float scrollY = 0;
-
-    /** 最大スクロール位置 */
     private float maxScrollY = 0;
-
-    /** タッチ開始位置 */
     private float touchStartY = 0;
-
-    /** スクロール開始位置 */
     private float scrollStartY = 0;
-
-    /** ドラッグ中かどうか */
     private boolean isDragging = false;
 
-    /** UI色定数 */
+    /** UI定数 */
     private static final int COLOR_BG = 0xFFF5F5F5;
     private static final int COLOR_HEADER = 0xFF007AFF;
     private static final int COLOR_WHITE = 0xFFFFFFFF;
@@ -46,197 +52,270 @@ public class AppStoreScreen implements Screen {
     private static final int COLOR_TEXT_SUB = 0xFF8E8E93;
     private static final int COLOR_BUTTON_INSTALL = 0xFF34C759;
     private static final int COLOR_BUTTON_INSTALLED = 0xFF8E8E93;
+    private static final int COLOR_BUTTON_DOWNLOADING = 0xFF007AFF;
     private static final int COLOR_DIVIDER = 0xFFE5E5EA;
 
-    /** レイアウト定数 */
     private static final int HEADER_HEIGHT = 60;
-    private static final int ITEM_HEIGHT = 80;
+    private static final int ITEM_HEIGHT = 100;
     private static final int MARGIN = 16;
-    private static final int BUTTON_WIDTH = 80;
+    private static final int BUTTON_WIDTH = 90;
     private static final int BUTTON_HEIGHT = 32;
 
-    /**
-     * AppStoreScreenを作成する。
-     *
-     * @param kernel OSカーネルインスタンス
-     */
+    /** ダウンロード中のアプリID */
+    private final List<String> downloadingAppIds = new ArrayList<>();
+
     public AppStoreScreen(Kernel kernel) {
         this.kernel = kernel;
-        System.out.println("AppStoreScreen: Created");
     }
 
     @Override
     public void setup(PGraphics g) {
-        System.out.println("AppStoreScreen: Setup");
+        fetchRepository();
     }
 
-    @Override
-    public void onForeground() {
-        System.out.println("AppStoreScreen: onForeground");
-    }
+    /**
+     * リポジトリ情報を取得する。
+     */
+    private void fetchRepository() {
+        if (isLoading) return;
+        
+        isLoading = true;
+        errorMessage = null;
+        statusMessage = "Fetching repository...";
 
-    @Override
-    public void onBackground() {
-        System.out.println("AppStoreScreen: onBackground");
-    }
+        try {
+            kernel.getNetworkAdapter().request(REPO_URL, "GET")
+                .thenAccept(response -> {
+                    if (response.isSuccess()) {
+                        repository = gson.fromJson(response.getBody(), AppStoreRepository.class);
+                        
+                        // Modアプリを追加
+                        List<jp.moyashi.phoneos.core.app.IApplication> modApps = new ArrayList<>();
+                        modApps.addAll(kernel.getAppLoader().getAvailableModApps());
+                        modApps.addAll(kernel.getAppLoader().getInstalledModApps());
+                        
+                        if (!modApps.isEmpty()) {
+                            if (repository.apps == null) {
+                                repository.apps = new ArrayList<>();
+                            }
+                            
+                            // 既に追加済みのIDを管理して重複を防ぐ（念のため）
+                            List<String> addedIds = new ArrayList<>();
+                            
+                            for (jp.moyashi.phoneos.core.app.IApplication modApp : modApps) {
+                                String appId = modApp.getApplicationId();
+                                if (addedIds.contains(appId)) continue;
+                                
+                                AppStorePackage pkg = new AppStorePackage();
+                                pkg.id = appId;
+                                pkg.name = modApp.getName();
+                                pkg.version = modApp.getVersion();
+                                pkg.author = "Mod System";
+                                pkg.description = modApp.getDescription();
+                                pkg.download_url = "local:mod:" + appId;
+                                pkg.file_size = 0; // ローカルなのでサイズ不明/0
+                                
+                                // リストの先頭に追加
+                                repository.apps.add(0, pkg);
+                                addedIds.add(appId);
+                            }
+                        }
 
-    @Override
-    public void cleanup(PGraphics g) {
-        System.out.println("AppStoreScreen: Cleanup");
+                        statusMessage = null;
+                    } else {
+                        errorMessage = "Failed to fetch repository: " + response.getStatusCode();
+                    }
+                    isLoading = false;
+                })
+                .exceptionally(e -> {
+                    errorMessage = "Network error: " + e.getMessage();
+                    isLoading = false;
+                    return null;
+                });
+        } catch (Exception e) {
+            errorMessage = "Internal error: " + e.getMessage();
+            isLoading = false;
+        }
     }
 
     @Override
     public void draw(PGraphics g) {
-        // 背景
         g.background(COLOR_BG);
-
-        // ヘッダー描画
         drawHeader(g);
 
-        // アプリリスト描画
-        drawAppList(g);
+        if (isLoading && repository == null) {
+            drawLoading(g);
+        } else if (errorMessage != null && repository == null) {
+            drawError(g);
+        } else if (repository != null) {
+            drawAppList(g);
+        }
+
+        // ステータスメッセージがあれば表示
+        if (statusMessage != null) {
+            drawStatusBar(g, statusMessage, COLOR_BUTTON_DOWNLOADING);
+        }
     }
 
-    /**
-     * ヘッダーを描画する。
-     */
     private void drawHeader(PGraphics g) {
-        // ヘッダー背景
         g.noStroke();
         g.fill(COLOR_HEADER);
         g.rect(0, 0, g.width, HEADER_HEIGHT);
 
-        // タイトル
         g.fill(COLOR_WHITE);
         g.textAlign(PConstants.CENTER, PConstants.CENTER);
         g.textSize(20);
-        g.text("App Store", g.width / 2, HEADER_HEIGHT / 2);
+        g.text("MochiOS App Store", g.width / 2, HEADER_HEIGHT / 2);
+        
+        // リロードボタン
+        g.textSize(12);
+        g.textAlign(PConstants.RIGHT, PConstants.CENTER);
+        g.text("Reload", g.width - MARGIN, HEADER_HEIGHT / 2);
     }
 
-    /**
-     * アプリリストを描画する。
-     */
-    private void drawAppList(PGraphics g) {
-        AppLoader appLoader = kernel.getAppLoader();
-        List<IApplication> availableApps = appLoader.getAvailableModApps();
-        List<IApplication> installedApps = appLoader.getInstalledModApps();
+    private void drawLoading(PGraphics g) {
+        g.fill(COLOR_TEXT_SUB);
+        g.textAlign(PConstants.CENTER, PConstants.CENTER);
+        g.textSize(16);
+        g.text("Loading repository...", g.width / 2, g.height / 2);
+    }
 
-        // 利用可能なアプリがない場合
-        if (availableApps.isEmpty() && installedApps.isEmpty()) {
+    private void drawError(PGraphics g) {
+        g.fill(0xFFFF3B30);
+        g.textAlign(PConstants.CENTER, PConstants.CENTER);
+        g.textSize(16);
+        g.text("Error", g.width / 2, g.height / 2 - 20);
+        g.fill(COLOR_TEXT_SUB);
+        g.textSize(12);
+        g.text(errorMessage, g.width / 2, g.height / 2 + 10);
+        
+        // 再試行ボタン
+        g.fill(COLOR_HEADER);
+        g.rect(g.width / 2 - 50, g.height / 2 + 40, 100, 30, 8);
+        g.fill(COLOR_WHITE);
+        g.text("Retry", g.width / 2, g.height / 2 + 55);
+    }
+
+    private void drawAppList(PGraphics g) {
+        List<AppStorePackage> apps = repository.apps;
+        if (apps == null || apps.isEmpty()) {
             g.fill(COLOR_TEXT_SUB);
             g.textAlign(PConstants.CENTER, PConstants.CENTER);
-            g.textSize(16);
-            g.text("No MOD apps available", g.width / 2, g.height / 2);
-            g.textSize(12);
-            g.text("Install MODs that provide apps", g.width / 2, g.height / 2 + 25);
+            g.text("No apps available", g.width / 2, g.height / 2);
             return;
         }
 
-        // 全アプリのリストを作成（利用可能 + インストール済み）
-        List<AppInfo> allApps = new ArrayList<>();
+        int totalHeight = apps.size() * ITEM_HEIGHT;
+        maxScrollY = Math.max(0, totalHeight - (g.height - HEADER_HEIGHT));
 
-        for (IApplication app : installedApps) {
-            allApps.add(new AppInfo(app, true));
-        }
-
-        for (IApplication app : availableApps) {
-            allApps.add(new AppInfo(app, false));
-        }
-
-        // 最大スクロール計算
-        int totalHeight = allApps.size() * ITEM_HEIGHT;
-        int visibleHeight = g.height - HEADER_HEIGHT;
-        maxScrollY = Math.max(0, totalHeight - visibleHeight);
-
-        // クリッピング設定
-        g.clip(0, HEADER_HEIGHT, g.width, visibleHeight);
-
-        // 各アプリを描画
+        g.clip(0, HEADER_HEIGHT, g.width, g.height - HEADER_HEIGHT);
+        
         int y = HEADER_HEIGHT - (int) scrollY;
-        for (int i = 0; i < allApps.size(); i++) {
-            AppInfo appInfo = allApps.get(i);
-
-            // 画面内にある場合のみ描画
+        for (int i = 0; i < apps.size(); i++) {
             if (y + ITEM_HEIGHT > HEADER_HEIGHT && y < g.height) {
-                drawAppItem(g, appInfo, y, i);
+                drawAppItem(g, apps.get(i), y);
             }
-
             y += ITEM_HEIGHT;
         }
-
+        
         g.noClip();
     }
 
-    /**
-     * アプリアイテムを描画する。
-     */
-    private void drawAppItem(PGraphics g, AppInfo appInfo, int y, int index) {
-        IApplication app = appInfo.app;
-        boolean isInstalled = appInfo.isInstalled;
-
+    private void drawAppItem(PGraphics g, AppStorePackage pkg, int y) {
         // 背景
         g.noStroke();
         g.fill(COLOR_WHITE);
         g.rect(0, y, g.width, ITEM_HEIGHT - 1);
-
-        // 区切り線
         g.stroke(COLOR_DIVIDER);
         g.line(MARGIN, y + ITEM_HEIGHT - 1, g.width - MARGIN, y + ITEM_HEIGHT - 1);
 
-        // アイコン（プレースホルダー）
-        int iconSize = 50;
+        // アイコン
+        int iconSize = 64;
         int iconX = MARGIN;
         int iconY = y + (ITEM_HEIGHT - iconSize) / 2;
         g.noStroke();
         g.fill(0xFFE0E0E0);
-        g.rect(iconX, iconY, iconSize, iconSize, 10);
-
-        // アイコン文字
+        g.rect(iconX, iconY, iconSize, iconSize, 12);
+        
         g.fill(COLOR_TEXT_SUB);
         g.textAlign(PConstants.CENTER, PConstants.CENTER);
-        g.textSize(20);
-        String initial = app.getName().substring(0, 1).toUpperCase();
-        g.text(initial, iconX + iconSize / 2, iconY + iconSize / 2);
+        g.textSize(24);
+        g.text(pkg.name.substring(0, 1).toUpperCase(), iconX + iconSize/2, iconY + iconSize/2);
 
-        // アプリ名
-        g.fill(COLOR_TEXT);
+        // テキスト情報
         g.textAlign(PConstants.LEFT, PConstants.TOP);
+        g.fill(COLOR_TEXT);
         g.textSize(16);
-        g.text(app.getName(), iconX + iconSize + 12, y + 15);
-
-        // バージョンと説明
+        g.text(pkg.name, iconX + iconSize + 12, y + 15);
+        
         g.fill(COLOR_TEXT_SUB);
         g.textSize(12);
-        g.text("v" + app.getVersion(), iconX + iconSize + 12, y + 35);
-
-        // 説明（短縮）
-        String desc = app.getDescription();
-        if (desc.length() > 30) {
-            desc = desc.substring(0, 27) + "...";
-        }
-        g.text(desc, iconX + iconSize + 12, y + 52);
+        g.text("v" + pkg.version + " • " + pkg.author, iconX + iconSize + 12, y + 38);
+        
+        String desc = pkg.description;
+        if (desc != null && desc.length() > 40) desc = desc.substring(0, 37) + "...";
+        g.text(desc, iconX + iconSize + 12, y + 55);
+        
+        g.textSize(10);
+        g.text(String.format("%.1f KB", pkg.file_size / 1024.0), iconX + iconSize + 12, y + 75);
 
         // インストールボタン
         int btnX = g.width - MARGIN - BUTTON_WIDTH;
         int btnY = y + (ITEM_HEIGHT - BUTTON_HEIGHT) / 2;
+        
+        // インストール済み判定の強化
+        boolean isInstalled = kernel.getAppLoader().findApplicationById(pkg.id) != null;
+        if (!isInstalled) {
+            // IDが完全一致しない場合でも、小文字一致や前方一致でチェック
+            String targetId = pkg.id.toLowerCase();
+            List<jp.moyashi.phoneos.core.app.IApplication> loadedApps = kernel.getAppLoader().getLoadedApps();
+            
+            // デバッグログ: 比較対象の全IDを出力（最初の1回だけ、または特定のタイミングで）
+            // System.out.println("AppStoreScreen: Checking installation for " + pkg.id);
+            
+            for (jp.moyashi.phoneos.core.app.IApplication app : loadedApps) {
+                String appId = app.getApplicationId().toLowerCase();
+                // System.out.println("  - Loaded App ID: " + appId + " (" + app.getName() + ")");
+                
+                if (appId.equals(targetId) || appId.startsWith(targetId + ".") || appId.contains(targetId)) {
+                    isInstalled = true;
+                    // System.out.println("    -> MATCH FOUND!");
+                    break;
+                }
+            }
+        }
+        
+        boolean isDownloading = downloadingAppIds.contains(pkg.id);
 
-        if (isInstalled) {
-            // インストール済み
+        if (isDownloading) {
+            g.fill(COLOR_BUTTON_DOWNLOADING);
+            g.rect(btnX, btnY, BUTTON_WIDTH, BUTTON_HEIGHT, 16);
+            g.fill(COLOR_WHITE);
+            g.textAlign(PConstants.CENTER, PConstants.CENTER);
+            g.text("Wait...", btnX + BUTTON_WIDTH / 2, btnY + BUTTON_HEIGHT / 2);
+        } else if (isInstalled) {
             g.fill(COLOR_BUTTON_INSTALLED);
             g.rect(btnX, btnY, BUTTON_WIDTH, BUTTON_HEIGHT, 16);
             g.fill(COLOR_WHITE);
             g.textAlign(PConstants.CENTER, PConstants.CENTER);
-            g.textSize(12);
             g.text("Installed", btnX + BUTTON_WIDTH / 2, btnY + BUTTON_HEIGHT / 2);
         } else {
-            // インストール可能
             g.fill(COLOR_BUTTON_INSTALL);
             g.rect(btnX, btnY, BUTTON_WIDTH, BUTTON_HEIGHT, 16);
             g.fill(COLOR_WHITE);
             g.textAlign(PConstants.CENTER, PConstants.CENTER);
-            g.textSize(12);
-            g.text("Install", btnX + BUTTON_WIDTH / 2, btnY + BUTTON_HEIGHT / 2);
+            g.text("GET", btnX + BUTTON_WIDTH / 2, btnY + BUTTON_HEIGHT / 2);
         }
+    }
+
+    private void drawStatusBar(PGraphics g, String message, int color) {
+        g.noStroke();
+        g.fill(color);
+        g.rect(0, g.height - 30, g.width, 30);
+        g.fill(255);
+        g.textAlign(PConstants.CENTER, PConstants.CENTER);
+        g.textSize(12);
+        g.text(message, g.width / 2, g.height - 15);
     }
 
     @Override
@@ -245,90 +324,171 @@ public class AppStoreScreen implements Screen {
         scrollStartY = scrollY;
         isDragging = false;
 
-        // ヘッダー外のタップのみ処理
-        if (mouseY > HEADER_HEIGHT) {
-            // インストールボタンのタップ判定
-            AppLoader appLoader = kernel.getAppLoader();
-            List<IApplication> availableApps = appLoader.getAvailableModApps();
+        if (mouseY < HEADER_HEIGHT) {
+            if (mouseX > g.width - 80) {
+                fetchRepository();
+            }
+            return;
+        }
 
+        if (errorMessage != null && repository == null) {
+            if (mouseY > g.height / 2 + 40 && mouseY < g.height / 2 + 70 &&
+                mouseX > g.width / 2 - 50 && mouseX < g.width / 2 + 50) {
+                fetchRepository();
+            }
+            return;
+        }
+
+        if (repository != null) {
+            List<AppStorePackage> apps = repository.apps;
             int y = HEADER_HEIGHT - (int) scrollY;
-            for (int i = 0; i < availableApps.size(); i++) {
+            for (AppStorePackage pkg : apps) {
                 int btnX = g.width - MARGIN - BUTTON_WIDTH;
                 int btnY = y + (ITEM_HEIGHT - BUTTON_HEIGHT) / 2;
 
                 if (mouseX >= btnX && mouseX <= btnX + BUTTON_WIDTH &&
                     mouseY >= btnY && mouseY <= btnY + BUTTON_HEIGHT) {
-
-                    // インストール実行
-                    IApplication app = availableApps.get(i);
-                    installApp(app);
+                    
+                    boolean isInstalled = kernel.getAppLoader().findApplicationById(pkg.id) != null;
+                    if (!isInstalled && !downloadingAppIds.contains(pkg.id)) {
+                        downloadAndInstallApp(pkg);
+                    }
                     return;
                 }
-
                 y += ITEM_HEIGHT;
             }
         }
     }
 
-    /**
-     * マウスドラッグ処理。
-     */
+    @Override
     public void mouseDragged(PGraphics g, int mouseX, int mouseY) {
-        if (mouseY > HEADER_HEIGHT) {
-            float delta = touchStartY - mouseY;
-            if (Math.abs(delta) > 5) {
-                isDragging = true;
-            }
-
-            if (isDragging) {
-                scrollY = scrollStartY + delta;
-                // スクロール範囲制限
-                scrollY = Math.max(0, Math.min(scrollY, maxScrollY));
-            }
+        float delta = touchStartY - mouseY;
+        if (Math.abs(delta) > 5) isDragging = true;
+        
+        if (isDragging) {
+            scrollY = scrollStartY + delta;
+            scrollY = Math.max(0, Math.min(scrollY, maxScrollY));
         }
     }
 
     /**
-     * アプリをインストールする。
+     * アプリをダウンロードしてインストールする。
      */
-    private void installApp(IApplication app) {
-        System.out.println("AppStoreScreen: Installing app: " + app.getName());
+    private void downloadAndInstallApp(AppStorePackage pkg) {
+        // Modアプリのインストール処理
+        if (pkg.download_url != null && pkg.download_url.startsWith("local:mod:")) {
+            String appId = pkg.download_url.substring("local:mod:".length());
+            statusMessage = "Installing Mod: " + pkg.name + "...";
+            
+            try {
+                boolean success = kernel.getAppLoader().installModApp(appId, kernel);
+                if (success) {
+                    statusMessage = pkg.name + " installed!";
+                    // UI更新のために少し待ってからメッセージを消す
+                    CompletableFuture.runAsync(() -> {
+                        try { Thread.sleep(3000); } catch (InterruptedException ignored) {}
+                        if (statusMessage != null && statusMessage.contains("installed")) {
+                            statusMessage = null;
+                        }
+                    });
+                    
+                    if (kernel.getNotificationManager() != null) {
+                        kernel.getNotificationManager().addNotification(
+                            "App Store",
+                            "Mod Installed",
+                            pkg.name + " has been enabled successfully.",
+                            1
+                        );
+                    }
+                } else {
+                    errorMessage = "Failed to install Mod app.";
+                }
+            } catch (Exception e) {
+                errorMessage = "Error installing Mod: " + e.getMessage();
+            }
+            return;
+        }
 
-        AppLoader appLoader = kernel.getAppLoader();
-        boolean success = appLoader.installModApp(app.getApplicationId(), kernel);
+        downloadingAppIds.add(pkg.id);
+        statusMessage = "Downloading " + pkg.name + "...";
+        
+        String url = pkg.download_url;
+        if (!url.startsWith("http")) {
+            url = REPO_BASE_URL + url;
+        }
 
-        if (success) {
-            System.out.println("AppStoreScreen: Successfully installed: " + app.getName());
+        try {
+            kernel.getNetworkAdapter().requestBytes(url)
+                .thenAccept(response -> {
+                    if (response.isSuccess()) {
+                        byte[] data = response.getBody();
+                        installJar(pkg, data);
+                    } else {
+                        errorMessage = "Download failed: " + response.getStatusCode();
+                        downloadingAppIds.remove(pkg.id);
+                        statusMessage = null;
+                    }
+                })
+                .exceptionally(e -> {
+                    errorMessage = "Download error: " + e.getMessage();
+                    downloadingAppIds.remove(pkg.id);
+                    statusMessage = null;
+                    return null;
+                });
+        } catch (Exception e) {
+            errorMessage = "Download error: " + e.getMessage();
+            downloadingAppIds.remove(pkg.id);
+            statusMessage = null;
+        }
+    }
 
-            // 通知を表示（NotificationManagerが利用可能な場合）
+    /**
+     * JARデータをVFSに保存し、インストールを完了する。
+     */
+    private void installJar(AppStorePackage pkg, byte[] data) {
+        try {
+            statusMessage = "Installing " + pkg.name + "...";
+            
+            // VFSに保存
+            String fileName = pkg.id + ".jar";
+            String vfsPath = "apps/" + fileName;
+            
+            // AppLoaderのrefreshを実行するために一度書き込む
+            kernel.getVFS().writeBinaryFile(vfsPath, data);
+            
+            // AppLoaderをリフレッシュ
+            kernel.getAppLoader().refreshApps();
+            
+            statusMessage = pkg.name + " installed!";
+            downloadingAppIds.remove(pkg.id);
+            
+            // 3秒後にステータスメッセージを消す
+            CompletableFuture.runAsync(() -> {
+                try { Thread.sleep(3000); } catch (InterruptedException ignored) {}
+                if (statusMessage != null && statusMessage.contains("installed")) {
+                    statusMessage = null;
+                }
+            });
+
+            // 通知を表示
             if (kernel.getNotificationManager() != null) {
                 kernel.getNotificationManager().addNotification(
                     "App Store",
                     "Installed",
-                    app.getName() + " has been installed successfully.",
+                    pkg.name + " has been installed successfully.",
                     1
                 );
             }
-        } else {
-            System.err.println("AppStoreScreen: Failed to install: " + app.getName());
+            
+        } catch (Exception e) {
+            errorMessage = "Installation failed: " + e.getMessage();
+            downloadingAppIds.remove(pkg.id);
+            statusMessage = null;
         }
     }
 
     @Override
     public String getScreenTitle() {
         return "App Store";
-    }
-
-    /**
-     * アプリ情報を保持する内部クラス。
-     */
-    private static class AppInfo {
-        final IApplication app;
-        final boolean isInstalled;
-
-        AppInfo(IApplication app, boolean isInstalled) {
-            this.app = app;
-            this.isInstalled = isInstalled;
-        }
     }
 }

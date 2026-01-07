@@ -38,3 +38,20 @@ mandatory=true
 versionRange="[1.20.1,1.21)"
 ordering="NONE"
 side="BOTH"
+
+# Simple Voice Chat - optional dependency for microphone/speaker functionality
+[[dependencies.mochimobileos]]
+modId="voicechat"
+mandatory=false
+versionRange="[2.0.0,)"
+ordering="AFTER"
+side="CLIENT"
+
+# AdvancedVC 2.0 - optional dependency for advanced audio bridge
+# マイク環境音トラック → AVC出力API、スピーカー環境音トラック ← AVC入力API
+[[dependencies.mochimobileos]]
+modId="advancedvc2_0"
+mandatory=false
+versionRange="[1.0-SNAPSHOT,)"
+ordering="AFTER"
+side="CLIENT"
