@@ -120,48 +120,22 @@ public class ResourceManager {
      * @return 読み込まれたPFont、失敗時はnull
      */
     public PFont loadJapaneseFont() {
-        try {
+        if (loggerService != null) {
+            loggerService.debug("ResourceManager", "リソースからNoto Sans JP TTFファイルを読み込み中...");
+        }
+
+        InputStream fontStream = findFontResource(JAPANESE_FONT_PATH, "フォント");
+
+        if (fontStream == null) {
             if (loggerService != null) {
-                loggerService.debug("ResourceManager", "リソースからNoto Sans JP TTFファイルを読み込み中...");
+                loggerService.error("ResourceManager", "フォントファイルが見つかりません: " + JAPANESE_FONT_PATH);
             }
+            return createSystemJapaneseFont();
+        }
 
-            InputStream fontStream = null;
-
-            // 1. このクラスのClassLoaderから試す
-            fontStream = getClass().getResourceAsStream(JAPANESE_FONT_PATH);
-            if (fontStream != null && loggerService != null) {
-                loggerService.debug("ResourceManager", "ResourceManagerクラスのクラスローダーからフォントを読み込みました");
-            }
-
-            // 2. コンテキストClassLoaderから試す
-            if (fontStream == null) {
-                ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-                if (contextClassLoader != null) {
-                    fontStream = contextClassLoader.getResourceAsStream(JAPANESE_FONT_PATH.substring(1));
-                    if (fontStream != null && loggerService != null) {
-                        loggerService.debug("ResourceManager", "コンテキストクラスローダーからフォントを読み込みました");
-                    }
-                }
-            }
-
-            // 3. システムClassLoaderから試す
-            if (fontStream == null) {
-                fontStream = ClassLoader.getSystemResourceAsStream(JAPANESE_FONT_PATH.substring(1));
-                if (fontStream != null && loggerService != null) {
-                    loggerService.debug("ResourceManager", "システムクラスローダーからフォントを読み込みました");
-                }
-            }
-
-            if (fontStream == null) {
-                if (loggerService != null) {
-                    loggerService.error("ResourceManager", "フォントファイルが見つかりません: " + JAPANESE_FONT_PATH);
-                }
-                return createSystemJapaneseFont();
-            }
-
-            // InputStreamからフォントを作成
+        // try-with-resourcesで確実にInputStreamをclose
+        try (fontStream) {
             Font awtFont = Font.createFont(Font.TRUETYPE_FONT, fontStream);
-            fontStream.close();
 
             // システムにフォントを登録
             GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
@@ -178,7 +152,6 @@ public class ResourceManager {
                 logger.warning("PApplet not set, cannot create PFont");
                 return null;
             }
-
         } catch (Exception e) {
             if (loggerService != null) {
                 loggerService.error("ResourceManager", "日本語フォントの読み込みエラー: " + e.getMessage());
@@ -189,54 +162,64 @@ public class ResourceManager {
     }
 
     /**
+     * 複数のClassLoaderを試してフォントリソースを取得する。
+     *
+     * @param resourcePath リソースパス
+     * @param fontType フォントタイプ（ログ用）
+     * @return InputStream、見つからない場合はnull
+     */
+    private InputStream findFontResource(String resourcePath, String fontType) {
+        InputStream fontStream = null;
+
+        // 1. このクラスのClassLoaderから試す
+        fontStream = getClass().getResourceAsStream(resourcePath);
+        if (fontStream != null && loggerService != null) {
+            loggerService.debug("ResourceManager", "ResourceManagerクラスのクラスローダーから" + fontType + "を読み込みました");
+            return fontStream;
+        }
+
+        // 2. コンテキストClassLoaderから試す
+        ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+        if (contextClassLoader != null) {
+            fontStream = contextClassLoader.getResourceAsStream(resourcePath.substring(1));
+            if (fontStream != null && loggerService != null) {
+                loggerService.debug("ResourceManager", "コンテキストクラスローダーから" + fontType + "を読み込みました");
+                return fontStream;
+            }
+        }
+
+        // 3. システムClassLoaderから試す
+        fontStream = ClassLoader.getSystemResourceAsStream(resourcePath.substring(1));
+        if (fontStream != null && loggerService != null) {
+            loggerService.debug("ResourceManager", "システムクラスローダーから" + fontType + "を読み込みました");
+        }
+
+        return fontStream;
+    }
+
+    /**
      * 絵文字フォントを読み込む。
      * 複数のClassLoaderを試してリソースを読み込む（Forge環境対応）。
      *
      * @return 読み込まれたPFont、失敗時はnull
      */
     public PFont loadEmojiFont() {
-        try {
+        if (loggerService != null) {
+            loggerService.debug("ResourceManager", "リソースからNoto Emoji TTFファイルを読み込み中...");
+        }
+
+        InputStream fontStream = findFontResource(EMOJI_FONT_PATH, "絵文字フォント");
+
+        if (fontStream == null) {
             if (loggerService != null) {
-                loggerService.debug("ResourceManager", "リソースからNoto Emoji TTFファイルを読み込み中...");
+                loggerService.warn("ResourceManager", "絵文字フォントファイルが見つかりません: " + EMOJI_FONT_PATH);
             }
+            return null;
+        }
 
-            InputStream fontStream = null;
-
-            // 1. このクラスのClassLoaderから試す
-            fontStream = getClass().getResourceAsStream(EMOJI_FONT_PATH);
-            if (fontStream != null && loggerService != null) {
-                loggerService.debug("ResourceManager", "ResourceManagerクラスのクラスローダーから絵文字フォントを読み込みました");
-            }
-
-            // 2. コンテキストClassLoaderから試す
-            if (fontStream == null) {
-                ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-                if (contextClassLoader != null) {
-                    fontStream = contextClassLoader.getResourceAsStream(EMOJI_FONT_PATH.substring(1));
-                    if (fontStream != null && loggerService != null) {
-                        loggerService.debug("ResourceManager", "コンテキストクラスローダーから絵文字フォントを読み込みました");
-                    }
-                }
-            }
-
-            // 3. システムClassLoaderから試す
-            if (fontStream == null) {
-                fontStream = ClassLoader.getSystemResourceAsStream(EMOJI_FONT_PATH.substring(1));
-                if (fontStream != null && loggerService != null) {
-                    loggerService.debug("ResourceManager", "システムクラスローダーから絵文字フォントを読み込みました");
-                }
-            }
-
-            if (fontStream == null) {
-                if (loggerService != null) {
-                    loggerService.warn("ResourceManager", "絵文字フォントファイルが見つかりません: " + EMOJI_FONT_PATH);
-                }
-                return null;
-            }
-
-            // InputStreamからフォントを作成
+        // try-with-resourcesで確実にInputStreamをclose
+        try (fontStream) {
             Font awtFont = Font.createFont(Font.TRUETYPE_FONT, fontStream);
-            fontStream.close();
 
             // システムにフォントを登録
             GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
@@ -253,7 +236,6 @@ public class ResourceManager {
                 logger.warning("PApplet not set, cannot create emoji PFont");
                 return null;
             }
-
         } catch (Exception e) {
             if (loggerService != null) {
                 loggerService.error("ResourceManager", "絵文字フォントの読み込みエラー: " + e.getMessage());

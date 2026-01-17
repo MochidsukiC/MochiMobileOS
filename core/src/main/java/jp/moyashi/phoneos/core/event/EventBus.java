@@ -37,9 +37,6 @@ public class EventBus {
     /** イベント実行用のExecutor */
     private final ExecutorService executor;
 
-    /** 同期イベント実行用のExecutor */
-    private final ExecutorService syncExecutor;
-
     /** イベント履歴 */
     private final Queue<Event> eventHistory;
 
@@ -60,11 +57,6 @@ public class EventBus {
         this.globalListeners = new CopyOnWriteArrayList<>();
         this.executor = Executors.newCachedThreadPool(r -> {
             Thread t = new Thread(r, "EventBus-Async");
-            t.setDaemon(true);
-            return t;
-        });
-        this.syncExecutor = Executors.newSingleThreadExecutor(r -> {
-            Thread t = new Thread(r, "EventBus-Sync");
             t.setDaemon(true);
             return t;
         });
@@ -344,17 +336,12 @@ public class EventBus {
     public void shutdown() {
         enabled = false;
         executor.shutdown();
-        syncExecutor.shutdown();
         try {
             if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
                 executor.shutdownNow();
             }
-            if (!syncExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
-                syncExecutor.shutdownNow();
-            }
         } catch (InterruptedException e) {
             executor.shutdownNow();
-            syncExecutor.shutdownNow();
             Thread.currentThread().interrupt();
         }
     }

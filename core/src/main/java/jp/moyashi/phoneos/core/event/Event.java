@@ -1,7 +1,7 @@
 package jp.moyashi.phoneos.core.event;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * イベントバスシステムの基底イベントクラス。
@@ -43,7 +43,7 @@ public abstract class Event {
         this.type = type;
         this.source = source;
         this.timestamp = System.currentTimeMillis();
-        this.data = new HashMap<>();
+        this.data = new ConcurrentHashMap<>();
     }
 
     /**

@@ -158,28 +158,25 @@ public class LoggerService {
     }
 
     /**
-     *         E
+     * ログを出力する。
      *
-     * @param level      
-     * @param tag     
-     * @param message     E    
+     * @param level ログレベル
+     * @param tag タグ
+     * @param message メッセージ
      */
     private void log(LogLevel level, String tag, String message) {
-        //         E
-        /*
+        // ログレベル判定（パフォーマンス最適化）
         if (level.ordinal() < currentLogLevel.ordinal()) {
             return;
         }
 
-         */
-
-        //           E
+        // タイムスタンプ生成
         String timestamp = dateFormat.format(new Date());
 
-        //          E
+        // ログエントリ作成
         String logEntry = "[" + timestamp + "] " + level.getPrefix() + " [" + tag + "] " + message;
 
-        //           
+        // バッファに追加
         synchronized (logBuffer) {
             logBuffer.add(logEntry);
             if (logBuffer.size() > MAX_BUFFER_SIZE) {
@@ -187,11 +184,13 @@ public class LoggerService {
             }
         }
 
-        // VFS     
+        // VFSに書き込み
         writeToFile(logEntry);
 
-        // System.out   E           E   E E
-        System.out.println(logEntry);
+        // コンソールにも出力（WARNとERRORのみ）
+        if (level.ordinal() >= LogLevel.WARN.ordinal()) {
+            System.out.println(logEntry);
+        }
     }
 
     /**
