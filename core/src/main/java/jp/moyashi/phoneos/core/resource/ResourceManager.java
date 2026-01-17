@@ -11,8 +11,8 @@ import java.awt.GraphicsEnvironment;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
 /**
@@ -40,11 +40,11 @@ public class ResourceManager {
     /** PAppletインスタンス（Processing用） */
     private PApplet applet;
 
-    /** フォントキャッシュ */
-    private final Map<String, PFont> fontCache = new HashMap<>();
+    /** フォントキャッシュ（スレッドセーフ） */
+    private final Map<String, PFont> fontCache = new ConcurrentHashMap<>();
 
-    /** 画像キャッシュ */
-    private final Map<String, PImage> imageCache = new HashMap<>();
+    /** 画像キャッシュ（スレッドセーフ） */
+    private final Map<String, PImage> imageCache = new ConcurrentHashMap<>();
 
     /** デフォルトフォント */
     private PFont defaultFont;

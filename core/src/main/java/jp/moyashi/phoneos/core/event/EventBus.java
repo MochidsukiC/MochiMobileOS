@@ -37,6 +37,9 @@ public class EventBus {
     /** イベント実行用のExecutor */
     private final ExecutorService executor;
 
+    /** 遅延イベント実行用のScheduledExecutor */
+    private final ScheduledExecutorService scheduler;
+
     /** イベント履歴 */
     private final Queue<Event> eventHistory;
 
@@ -57,6 +60,11 @@ public class EventBus {
         this.globalListeners = new CopyOnWriteArrayList<>();
         this.executor = Executors.newCachedThreadPool(r -> {
             Thread t = new Thread(r, "EventBus-Async");
+            t.setDaemon(true);
+            return t;
+        });
+        this.scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "EventBus-Scheduler");
             t.setDaemon(true);
             return t;
         });
@@ -238,16 +246,7 @@ public class EventBus {
      * @return 遅延実行のFuture
      */
     public ScheduledFuture<?> postDelayed(Event event, long delay, TimeUnit unit) {
-        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
-            Thread t = new Thread(r, "EventBus-Delayed");
-            t.setDaemon(true);
-            return t;
-        });
-
-        return scheduler.schedule(() -> {
-            post(event);
-            scheduler.shutdown();
-        }, delay, unit);
+        return scheduler.schedule(() -> post(event), delay, unit);
     }
 
     /**
@@ -336,12 +335,17 @@ public class EventBus {
     public void shutdown() {
         enabled = false;
         executor.shutdown();
+        scheduler.shutdown();
         try {
             if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
                 executor.shutdownNow();
             }
+            if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+                scheduler.shutdownNow();
+            }
         } catch (InterruptedException e) {
             executor.shutdownNow();
+            scheduler.shutdownNow();
             Thread.currentThread().interrupt();
         }
     }

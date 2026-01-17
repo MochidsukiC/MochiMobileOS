@@ -231,14 +231,37 @@ public class VFS {
     
     /**
      * VFS内の相対パスを実際のファイルシステムパスに変換する。
-     * 
+     * パストラバーサル攻撃を防止するため、解決後のパスがVFSルート内にあることを検証する。
+     *
      * @param vfsPath VFS内の相対パス
      * @return 実際のファイルシステムパス
+     * @throws SecurityException パスがVFSルート外を指す場合
      */
     private Path resolveVFSPath(String vfsPath) {
-        // パスの正規化（先頭の/を除去など）
+        // null/空パスのチェック
+        if (vfsPath == null || vfsPath.isEmpty()) {
+            return rootPath;
+        }
+
+        // パスの正規化（先頭の/を除去）
         String normalizedPath = vfsPath.startsWith("/") ? vfsPath.substring(1) : vfsPath;
-        return rootPath.resolve(normalizedPath);
+
+        // Windows絶対パス/UNCパスの検出
+        if (normalizedPath.matches("^[A-Za-z]:.*") || normalizedPath.startsWith("\\\\")) {
+            throw new SecurityException("VFS: 絶対パス/UNCパスは許可されていません: " + vfsPath);
+        }
+
+        // パスを解決して正規化
+        Path resolved = rootPath.resolve(normalizedPath).normalize();
+        Path absoluteRoot = rootPath.toAbsolutePath().normalize();
+        Path absoluteResolved = resolved.toAbsolutePath().normalize();
+
+        // 解決後のパスがVFSルート内にあることを検証（パストラバーサル防止）
+        if (!absoluteResolved.startsWith(absoluteRoot)) {
+            throw new SecurityException("VFS: パストラバーサルは許可されていません: " + vfsPath);
+        }
+
+        return resolved;
     }
     
     /**
