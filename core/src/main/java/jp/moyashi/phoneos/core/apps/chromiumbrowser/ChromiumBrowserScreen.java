@@ -12,6 +12,8 @@ import jp.moyashi.phoneos.core.ui.Screen;
 import jp.moyashi.phoneos.core.ui.components.Button;
 import jp.moyashi.phoneos.core.ui.components.TextField;
 import jp.moyashi.phoneos.core.ui.components.TextInputProtocol;
+import jp.moyashi.phoneos.core.ui.LoadingOverlay;
+import jp.moyashi.phoneos.core.app.IApplication;
 import processing.core.PApplet;
 import processing.core.PGraphics;
 import processing.core.PImage;
@@ -39,6 +41,11 @@ public class ChromiumBrowserScreen implements Screen {
     private boolean lastMediaPlaying = false;
 
     private static final String BROWSER_APP_ID = "jp.moyashi.phoneos.core.apps.chromiumbrowser";
+
+    // キャッシュされたアプリアイコン（ローディング画面用）
+    private PImage cachedAppIcon = null;
+    // タブごとのロード完了状態
+    private final java.util.Map<String, Boolean> tabLoadingComplete = new java.util.HashMap<>();
 
     // ブラウザアプリが作成したタブ（サーフェスID）のリスト
     private final java.util.List<String> myTabSurfaceIds = new java.util.ArrayList<>();
@@ -305,9 +312,18 @@ public class ChromiumBrowserScreen implements Screen {
         addressBar.setVisible(false);
 
         // Set click listeners
-        backButton.setOnClickListener(() -> getActiveBrowserSurface().ifPresent(ChromiumSurface::goBack));
-        forwardButton.setOnClickListener(() -> getActiveBrowserSurface().ifPresent(ChromiumSurface::goForward));
-        reloadButton.setOnClickListener(() -> getActiveBrowserSurface().ifPresent(ChromiumSurface::reload));
+        backButton.setOnClickListener(() -> getActiveBrowserSurface().ifPresent(s -> {
+            tabLoadingComplete.put(s.getSurfaceId(), false);  // ローディング状態をリセット
+            s.goBack();
+        }));
+        forwardButton.setOnClickListener(() -> getActiveBrowserSurface().ifPresent(s -> {
+            tabLoadingComplete.put(s.getSurfaceId(), false);  // ローディング状態をリセット
+            s.goForward();
+        }));
+        reloadButton.setOnClickListener(() -> getActiveBrowserSurface().ifPresent(s -> {
+            tabLoadingComplete.put(s.getSurfaceId(), false);  // ローディング状態をリセット
+            s.reload();
+        }));
         bookmarkButton.setOnClickListener(() -> {
              getActiveBrowserSurface().ifPresent(s -> {
                  var dm = kernel.getChromiumService().getBrowserDataManager();
@@ -420,18 +436,43 @@ public class ChromiumBrowserScreen implements Screen {
     private void drawContentArea(PGraphics g, jp.moyashi.phoneos.core.ui.theme.ThemeEngine theme) {
         Optional<ChromiumSurface> activeSurfaceOpt = getActiveBrowserSurface();
         if (activeSurfaceOpt.isPresent()) {
-            PImage frame = activeSurfaceOpt.get().acquireFrame();
-            if (frame != null) {
+            ChromiumSurface surface = activeSurfaceOpt.get();
+            String surfaceId = surface.getSurfaceId();
+            PImage frame = surface.acquireFrame();
+
+            // ロード完了判定: isLoading=false かつ 有効なフレームがある場合
+            Boolean isComplete = tabLoadingComplete.get(surfaceId);
+            if (isComplete == null || !isComplete) {
+                if (!surface.isLoading() && frame != null) {
+                    tabLoadingComplete.put(surfaceId, true);
+                    log("Tab " + surfaceId + " loading complete");
+                }
+            }
+
+            // ロード完了するまではローディング画面を表示
+            boolean loadingComplete = Boolean.TRUE.equals(tabLoadingComplete.get(surfaceId));
+            if (!loadingComplete) {
+                LoadingOverlay.draw(g, getAppIcon(), 10, 60, g.width - 20, g.height - 120);
+            } else {
                 g.image(frame, 10, 60);
             }
         } else {
-            g.fill(theme.colorSurface());
-            g.rect(10, 60, g.width - 20, g.height - 120, 8);
-            g.fill(theme.colorOnSurface());
-            g.textAlign(g.CENTER, g.CENTER);
-            g.textSize(20);
-            g.text("No Active Tab", g.width / 2, g.height / 2);
+            // タブがない場合もローディング画面（初回起動時）
+            LoadingOverlay.draw(g, getAppIcon(), 10, 60, g.width - 20, g.height - 120);
         }
+    }
+
+    /**
+     * アプリアイコンを取得する（キャッシュ付き）。
+     */
+    private PImage getAppIcon() {
+        if (cachedAppIcon == null && kernel != null && kernel.getAppLoader() != null) {
+            IApplication app = kernel.getAppLoader().findApplicationById(BROWSER_APP_ID);
+            if (app != null) {
+                cachedAppIcon = app.getIcon(kernel);
+            }
+        }
+        return cachedAppIcon;
     }
 
     private void drawBottomBar(PGraphics g, jp.moyashi.phoneos.core.ui.theme.ThemeEngine theme) {
@@ -580,7 +621,10 @@ public class ChromiumBrowserScreen implements Screen {
                 // Convert Intent URL to fallback URL if needed
                 url = convertIntentUrl(url);
                 final String finalUrl = url;
-                getActiveBrowserSurface().ifPresent(s -> s.loadUrl(finalUrl));
+                getActiveBrowserSurface().ifPresent(s -> {
+                    tabLoadingComplete.put(s.getSurfaceId(), false);  // ローディング状態をリセット
+                    s.loadUrl(finalUrl);
+                });
                 addressBar.setFocused(false);
                 addressBar.setVisible(false);
             } else {
@@ -640,10 +684,16 @@ public class ChromiumBrowserScreen implements Screen {
         return x >= 10 && x < g.width - 10 && y >= 60 && y < g.height - 60;
     }
 
+    /** 許可されるスキームのホワイトリスト（セキュリティ対策） */
+    private static final java.util.Set<String> ALLOWED_SCHEMES = java.util.Set.of(
+        "https", "http"
+    );
+
     /**
      * Android Intent URLを通常のURLに変換する。
      * Intent URL形式: intent://HOST/PATH#Intent;scheme=SCHEME;S.browser_fallback_url=URL;end;
      * フォールバックURLが存在すればそれを使用し、なければscheme+host+pathから構築する。
+     * セキュリティ対策: 許可されたスキーム(https/http)のみ受け付ける。
      *
      * @param url 変換対象のURL
      * @return 変換後のURL（Intent URLでなければそのまま返す）
@@ -654,7 +704,7 @@ public class ChromiumBrowserScreen implements Screen {
         }
 
         try {
-            // Extract browser_fallback_url parameter
+            // Extract browser_fallback_url parameter (優先して使用)
             String fallbackPrefix = "S.browser_fallback_url=";
             int fallbackStart = url.indexOf(fallbackPrefix);
             if (fallbackStart != -1) {
@@ -663,8 +713,13 @@ public class ChromiumBrowserScreen implements Screen {
                     String encodedFallbackUrl = url.substring(fallbackStart + fallbackPrefix.length(), fallbackEnd);
                     // URL decode
                     String fallbackUrl = java.net.URLDecoder.decode(encodedFallbackUrl, "UTF-8");
-                    System.out.println("ChromiumBrowserScreen: Converted Intent URL to fallback: " + fallbackUrl);
-                    return fallbackUrl;
+                    // フォールバックURLのスキームを検証
+                    if (isAllowedScheme(fallbackUrl)) {
+                        log("Converted Intent URL to fallback: " + sanitizeUrlForLog(fallbackUrl));
+                        return fallbackUrl;
+                    } else {
+                        log("Fallback URL has disallowed scheme, ignoring: " + sanitizeUrlForLog(fallbackUrl));
+                    }
                 }
             }
 
@@ -687,15 +742,38 @@ public class ChromiumBrowserScreen implements Screen {
                 }
             }
 
+            // スキームのホワイトリスト検証
+            if (!ALLOWED_SCHEMES.contains(scheme.toLowerCase())) {
+                log("Disallowed scheme in Intent URL: " + scheme + ", defaulting to https");
+                scheme = "https";
+            }
+
             String convertedUrl = scheme + "://" + hostAndPath;
-            System.out.println("ChromiumBrowserScreen: Converted Intent URL to: " + convertedUrl);
+            log("Converted Intent URL to: " + sanitizeUrlForLog(convertedUrl));
             return convertedUrl;
 
         } catch (Exception e) {
-            System.err.println("ChromiumBrowserScreen: Failed to convert Intent URL: " + e.getMessage());
-            e.printStackTrace();
+            log("Failed to convert Intent URL: " + e.getMessage());
             return url; // Return original URL if conversion fails
         }
+    }
+
+    /**
+     * URLのスキームが許可されたものかをチェックする。
+     */
+    private boolean isAllowedScheme(String url) {
+        if (url == null) return false;
+        String lowerUrl = url.toLowerCase();
+        return lowerUrl.startsWith("https://") || lowerUrl.startsWith("http://");
+    }
+
+    /**
+     * ログ出力用にURLをサニタイズする（センシティブなクエリパラメータをマスク）。
+     */
+    private String sanitizeUrlForLog(String url) {
+        if (url == null) return "null";
+        // センシティブなパラメータをマスク（token, key, auth, password, secret等）
+        return url.replaceAll("(?i)(token|key|auth|password|secret|api_key|apikey|access_token)=[^&;]*", "$1=***");
     }
 
     /**

@@ -34,11 +34,25 @@ public class InputManager {
     /** ロガーサービス */
     private LoggerService logger;
 
-    /** システムジェスチャー領域の比率（画面下部10%） */
+    /** システムジェスチャー領域の比率（画面下部からの領域） */
     private static final float SYSTEM_GESTURE_ZONE_RATIO = 0.1f;
+
+    /** システムジェスチャーとして消費するための最小上方向移動距離 */
+    private static final int SYSTEM_GESTURE_MIN_SWIPE_DISTANCE = 30;
 
     /** 現在のタッチセッションがシステムジェスチャー領域から開始されたか */
     private boolean isSystemGestureSession = false;
+
+    /** システムジェスチャーが実際に消費されたか（上方向スワイプが検出された） */
+    private boolean systemGestureConsumed = false;
+
+    /** システムジェスチャー用の開始座標 */
+    private int systemGestureStartX = 0;
+    private int systemGestureStartY = 0;
+
+    /** 現在のマウス座標（マウスホイールイベント用） */
+    private int currentMouseX = 0;
+    private int currentMouseY = 0;
 
     /**
      * InputManagerを初期化する。
@@ -61,6 +75,10 @@ public class InputManager {
      * @param button マウスボタン（1=左, 2=中, 3=右）
      */
     public void handleMousePressed(int x, int y, int button) {
+        // マウス座標を更新
+        currentMouseX = x;
+        currentMouseY = y;
+
         // スリープ中は処理をスキップ
         if (kernel.isSleeping()) {
             return;
@@ -74,9 +92,12 @@ public class InputManager {
         int screenHeight = kernel.height;
         float gestureZoneY = screenHeight * (1.0f - SYSTEM_GESTURE_ZONE_RATIO);
         isSystemGestureSession = (y >= gestureZoneY);
+        systemGestureConsumed = false; // リセット
+        systemGestureStartX = x;
+        systemGestureStartY = y;
 
         if (isSystemGestureSession && logger != null) {
-            logger.debug("InputManager", "System gesture session started at y=" + y + " (zone starts at " + gestureZoneY + ")");
+            logger.debug("InputManager", "System gesture zone touch at y=" + y + " (zone starts at " + gestureZoneY + ")");
         }
 
         // ポップアップが処理した場合は終了
@@ -89,10 +110,8 @@ public class InputManager {
             gestureManager.handleMousePressed(x, y);
         }
 
-        // システムジェスチャーセッション中はScreenにイベントを転送しない
-        if (isSystemGestureSession) {
-            return;
-        }
+        // システムジェスチャー領域からのタッチでも、アプリにイベントを転送する
+        // （実際にシステムジェスチャーとして消費されるかはドラッグ/リリース時に判定）
 
         // レイヤー優先度チェック: トップレイヤーがアプリ/ホーム以外の場合はScreenに転送しない
         if (!shouldForwardToScreen()) {
@@ -127,11 +146,16 @@ public class InputManager {
             gestureManager.handleMouseReleased(x, y);
         }
 
-        // システムジェスチャーセッション中はScreenにイベントを転送しない
-        boolean wasSystemGesture = isSystemGestureSession;
+        // システムジェスチャーが実際に消費された場合のみブロック
+        // タップ（上方向スワイプなし）の場合はアプリに転送する
+        boolean wasSystemGestureConsumed = systemGestureConsumed;
         isSystemGestureSession = false; // セッション終了
+        systemGestureConsumed = false; // リセット
 
-        if (wasSystemGesture) {
+        if (wasSystemGestureConsumed) {
+            if (logger != null) {
+                logger.debug("InputManager", "System gesture completed, not forwarding to app");
+            }
             return;
         }
 
@@ -154,6 +178,10 @@ public class InputManager {
      * @param button マウスボタン
      */
     public void handleMouseDragged(int x, int y, int button) {
+        // マウス座標を更新
+        currentMouseX = x;
+        currentMouseY = y;
+
         // スリープ中は処理をスキップ
         if (kernel.isSleeping()) {
             return;
@@ -179,8 +207,20 @@ public class InputManager {
             gestureManager.handleMouseDragged(x, y);
         }
 
-        // システムジェスチャーセッション中、またはジェスチャードラッグ中はScreenにイベントを転送しない
-        if (isSystemGestureSession) {
+        // システムジェスチャー領域から開始された場合、上方向への移動をチェック
+        if (isSystemGestureSession && !systemGestureConsumed) {
+            int deltaY = systemGestureStartY - y; // 上方向が正
+            if (deltaY >= SYSTEM_GESTURE_MIN_SWIPE_DISTANCE) {
+                // 上方向に十分移動した→システムジェスチャーとして消費
+                systemGestureConsumed = true;
+                if (logger != null) {
+                    logger.debug("InputManager", "System gesture consumed: upward swipe detected (deltaY=" + deltaY + ")");
+                }
+            }
+        }
+
+        // システムジェスチャーとして消費された場合はScreenにイベントを転送しない
+        if (systemGestureConsumed) {
             return;
         }
 
@@ -207,6 +247,10 @@ public class InputManager {
      * @param y Y座標
      */
     public void handleMouseMoved(int x, int y) {
+        // マウス座標を更新
+        currentMouseX = x;
+        currentMouseY = y;
+
         // スリープ中は処理をスキップ
         if (kernel.isSleeping()) {
             return;
@@ -229,7 +273,7 @@ public class InputManager {
 
     /**
      * マウスホイールイベントを処理する。
-     * 現在のマウス座標はKernelが管理すると仮定。
+     * 追跡されたマウス座標を使用してスクロール対象を正しく判定。
      *
      * @param delta ホイール回転量（正=上、負=下）
      */
@@ -241,10 +285,9 @@ public class InputManager {
 
         ScreenManager screenManager = kernel.getScreenManager();
 
-        // スクリーンマネージャーに委譲
-        // TODO: 現在のマウス座標を取得する必要がある。現在は0, 0で仮実装
+        // スクリーンマネージャーに委譲（追跡されたマウス座標を使用）
         if (screenManager != null) {
-            screenManager.mouseWheel(0, 0, delta);
+            screenManager.mouseWheel(currentMouseX, currentMouseY, delta);
         }
     }
 

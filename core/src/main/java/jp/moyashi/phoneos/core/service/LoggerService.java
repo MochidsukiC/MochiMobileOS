@@ -1,8 +1,8 @@
 package jp.moyashi.phoneos.core.service;
 
-import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -32,8 +32,8 @@ public class LoggerService {
     /**     E              */
     private static final int MAX_BUFFER_SIZE = 100;
 
-    /**              E*/
-    private final SimpleDateFormat dateFormat;
+    /** 日時フォーマッタ（スレッドセーフ）*/
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("MM/dd HH:mm:ss.SSS");
 
     /**       */
     public enum LogLevel {
@@ -69,7 +69,6 @@ public class LoggerService {
     public LoggerService(VFS vfs) {
         this.vfs = vfs;
         this.logBuffer = new ArrayList<>();
-        this.dateFormat = new SimpleDateFormat("MM/dd HH:mm:ss.SSS");
 
         //    E         E
         initializeLogDirectory();
@@ -170,8 +169,8 @@ public class LoggerService {
             return;
         }
 
-        // タイムスタンプ生成
-        String timestamp = dateFormat.format(new Date());
+        // タイムスタンプ生成（スレッドセーフ）
+        String timestamp = LocalDateTime.now().format(DATE_FORMATTER);
 
         // ログエントリ作成
         String logEntry = "[" + timestamp + "] " + level.getPrefix() + " [" + tag + "] " + message;
@@ -238,7 +237,7 @@ public class LoggerService {
                 existingArchive = "";
             }
 
-            String archiveHeader = "\n\n=== Archived at " + dateFormat.format(new Date()) + " ===\n\n";
+            String archiveHeader = "\n\n=== Archived at " + LocalDateTime.now().format(DATE_FORMATTER) + " ===\n\n";
             vfs.writeFile(ARCHIVE_LOG_FILE, existingArchive + archiveHeader + log);
         } catch (Exception e) {
             System.err.println("Failed to archive log: " + e.getMessage());
