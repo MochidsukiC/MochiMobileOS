@@ -1,9 +1,9 @@
 package jp.moyashi.phoneos.core.service.network;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
 /**
@@ -37,11 +37,11 @@ public class VirtualRouter {
         void send(VirtualPacket packet);
     }
 
-    // システムアドレスごとのパケットハンドラー
-    private final Map<String, PacketHandler> systemHandlers = new HashMap<>();
+    // システムアドレスごとのパケットハンドラー（スレッドセーフ）
+    private final Map<String, PacketHandler> systemHandlers = new ConcurrentHashMap<>();
 
-    // パケットタイプごとのパケットハンドラー
-    private final Map<VirtualPacket.PacketType, List<PacketHandler>> typeHandlers = new HashMap<>();
+    // パケットタイプごとのパケットハンドラー（スレッドセーフ）
+    private final Map<VirtualPacket.PacketType, List<PacketHandler>> typeHandlers = new ConcurrentHashMap<>();
 
     // 外部送信ハンドラー（Forge側から設定される）
     private ExternalSendHandler externalSendHandler = null;
@@ -163,7 +163,7 @@ public class VirtualRouter {
         if (type == null || handler == null) {
             throw new IllegalArgumentException("Type and handler cannot be null");
         }
-        typeHandlers.computeIfAbsent(type, k -> new ArrayList<>()).add(handler);
+        typeHandlers.computeIfAbsent(type, k -> new CopyOnWriteArrayList<>()).add(handler);
     }
 
     /**

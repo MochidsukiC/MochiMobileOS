@@ -12,6 +12,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,6 +22,9 @@ import java.util.List;
  * ポーリング（doMessageLoopWork）を提供する。
  */
 public class DefaultChromiumService implements ChromiumService {
+
+    /** サーフェスID生成用のカウンター（衝突防止） */
+    private static final AtomicLong surfaceIdCounter = new AtomicLong(0);
 
     private final ChromiumProvider provider;
     private final Map<String, DefaultChromiumSurface> surfaces = new ConcurrentHashMap<>();
@@ -62,7 +66,7 @@ public class DefaultChromiumService implements ChromiumService {
                     kernel.getLogger().error("ChromiumService", "Failed to pump CEF loop", t);
                 }
             }
-        }, 0, 1, TimeUnit.MILLISECONDS);
+        }, 0, 8, TimeUnit.MILLISECONDS); // 8ms間隔（約120Hz）でCPU負荷を軽減
     }
 
     @Override
@@ -79,7 +83,7 @@ public class DefaultChromiumService implements ChromiumService {
             throw new IllegalStateException("ChromiumManager is not initialized");
         }
 
-        String surfaceId = "browser_tab_" + System.currentTimeMillis();
+        String surfaceId = "browser_tab_" + surfaceIdCounter.incrementAndGet();
         log("Creating surface with ID: " + surfaceId);
 
         try {
@@ -369,6 +373,11 @@ public class DefaultChromiumService implements ChromiumService {
         }
 
         @Override
+        public boolean isLoading() {
+            return browser.isLoading();
+        }
+
+        @Override
         public boolean isMCEF() {
             return browser.isMCEF();
         }
@@ -414,8 +423,8 @@ public class DefaultChromiumService implements ChromiumService {
         public Thread newThread(Runnable runnable) {
             Thread thread = new Thread(runnable, "chromium-pump");
             thread.setDaemon(true);
-            // スレッド優先度を最高に設定（CPU/GPU使用率を最大化）
-            thread.setPriority(Thread.MAX_PRIORITY);
+            // 通常優先度に設定（CPU starvation防止）
+            thread.setPriority(Thread.NORM_PRIORITY);
             return thread;
         }
     }

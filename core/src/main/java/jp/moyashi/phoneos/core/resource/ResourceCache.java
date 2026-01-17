@@ -481,6 +481,10 @@ public class ResourceCache {
             if (cache.get() == null) {
                 currentCacheSize.addAndGet(-cache.getSize());
                 statistics.evict();
+                // accessOrderからも削除（LRU順序マップの肥大化防止）
+                synchronized (accessOrder) {
+                    accessOrder.remove(entry.getKey());
+                }
                 return true;
             }
             return false;
@@ -492,6 +496,10 @@ public class ResourceCache {
             if (cache.get() == null) {
                 currentCacheSize.addAndGet(-cache.getSize());
                 statistics.evict();
+                // accessOrderからも削除（LRU順序マップの肥大化防止）
+                synchronized (accessOrder) {
+                    accessOrder.remove(entry.getKey());
+                }
                 return true;
             }
             return false;

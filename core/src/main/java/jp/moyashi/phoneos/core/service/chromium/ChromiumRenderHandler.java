@@ -324,4 +324,44 @@ public class ChromiumRenderHandler extends CefRenderHandlerAdapter {
     public void removeOnPaintListener(Consumer<CefPaintEvent> listener) {
         // 空実装：現在はリスナー登録機能を使用していない
     }
+
+    /**
+     * リソースを解放する。
+     * GPUテクスチャがある場合は解放する。
+     *
+     * @param g PGraphicsコンテキスト（OpenGLテクスチャ解放用）
+     */
+    public void dispose(PGraphics g) {
+        if (glTextureId != -1 && g instanceof PGraphicsOpenGL) {
+            try {
+                PGraphicsOpenGL pg = (PGraphicsOpenGL) g;
+                PGL pgl = pg.beginPGL();
+                try {
+                    IntBuffer texID = IntBuffer.allocate(1);
+                    texID.put(0, glTextureId);
+                    pgl.deleteTextures(1, texID);
+                    log("GPU texture released: " + glTextureId);
+                } finally {
+                    pg.endPGL();
+                }
+            } catch (Exception e) {
+                logError("Failed to release GPU texture: " + e.getMessage());
+            }
+            glTextureId = -1;
+            gpuUploadInitialized = false;
+        }
+
+        synchronized (imageLock) {
+            image = null;
+        }
+    }
+
+    /**
+     * GPUテクスチャが割り当てられているかを確認する。
+     *
+     * @return GPUテクスチャが割り当てられている場合true
+     */
+    public boolean hasGPUTexture() {
+        return glTextureId != -1;
+    }
 }
