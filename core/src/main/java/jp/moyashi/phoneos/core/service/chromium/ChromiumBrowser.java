@@ -1732,6 +1732,11 @@ public class ChromiumBrowser {
                     String encodedFallbackUrl = url.substring(fallbackStart + fallbackPrefix.length(), fallbackEnd);
                     // URL decode
                     String fallbackUrl = java.net.URLDecoder.decode(encodedFallbackUrl, "UTF-8");
+                    // セキュリティ: fallback URLのスキームをhttp/httpsに限定
+                    if (!isAllowedScheme(fallbackUrl)) {
+                        logError("Blocked Intent URL with non-HTTP fallback scheme: " + fallbackUrl);
+                        return url; // 危険なスキームはブロック
+                    }
                     log("Converted Intent URL to fallback: " + fallbackUrl);
                     return fallbackUrl;
                 }
@@ -1752,7 +1757,14 @@ public class ChromiumBrowser {
             if (schemeStart != -1) {
                 int schemeEnd = url.indexOf(";", schemeStart);
                 if (schemeEnd != -1) {
-                    scheme = url.substring(schemeStart + schemePrefix.length(), schemeEnd);
+                    String extractedScheme = url.substring(schemeStart + schemePrefix.length(), schemeEnd);
+                    // セキュリティ: スキームをhttp/httpsに限定
+                    if ("http".equalsIgnoreCase(extractedScheme) || "https".equalsIgnoreCase(extractedScheme)) {
+                        scheme = extractedScheme.toLowerCase();
+                    } else {
+                        logError("Blocked Intent URL with non-HTTP scheme: " + extractedScheme);
+                        return url; // 危険なスキームはブロック
+                    }
                 }
             }
 
@@ -1764,6 +1776,21 @@ public class ChromiumBrowser {
             logError("Failed to convert Intent URL: " + e.getMessage());
             return url; // Return original URL if conversion fails
         }
+    }
+
+    /**
+     * URLのスキームが許可されたスキーム（http/https）かどうかを判定する。
+     * セキュリティ対策として、file:やjavascript:等の危険なスキームをブロックする。
+     *
+     * @param url 判定対象のURL
+     * @return 許可されたスキームの場合true
+     */
+    private boolean isAllowedScheme(String url) {
+        if (url == null || url.isEmpty()) {
+            return false;
+        }
+        String lowerUrl = url.toLowerCase();
+        return lowerUrl.startsWith("http://") || lowerUrl.startsWith("https://");
     }
 
     private java.lang.reflect.Field getFieldRecursive(Class<?> clazz, String fieldName) {

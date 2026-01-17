@@ -343,8 +343,8 @@ public class Kernel implements GestureListener {
             serviceManager.tickBackground();
         }
 
-        // SensorManagerの更新処理
-        if (sensorManager != null) {
+        // SensorManagerの更新処理（instanceofで安全にキャスト）
+        if (sensorManager instanceof jp.moyashi.phoneos.core.service.sensor.SensorManagerImpl) {
             ((jp.moyashi.phoneos.core.service.sensor.SensorManagerImpl) sensorManager).update();
         }
 
@@ -1273,8 +1273,8 @@ public class Kernel implements GestureListener {
                     serviceManager.tickBackground();
                 }
 
-                // SensorManagerの更新
-                if (sensorManager != null) {
+                // SensorManagerの更新（instanceofで安全にキャスト）
+                if (sensorManager instanceof jp.moyashi.phoneos.core.service.sensor.SensorManagerImpl) {
                     ((jp.moyashi.phoneos.core.service.sensor.SensorManagerImpl) sensorManager).update();
                 }
 

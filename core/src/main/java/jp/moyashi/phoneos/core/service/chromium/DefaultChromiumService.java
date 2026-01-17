@@ -28,7 +28,8 @@ public class DefaultChromiumService implements ChromiumService {
 
     private final ChromiumProvider provider;
     private final Map<String, DefaultChromiumSurface> surfaces = new ConcurrentHashMap<>();
-    private String activeSurfaceId;
+    /** アクティブなサーフェスID（スレッド間可視性のためvolatile） */
+    private volatile String activeSurfaceId;
 
     private Kernel kernel;
     private ChromiumManager manager;
@@ -58,8 +59,13 @@ public class DefaultChromiumService implements ChromiumService {
 
                 // 全てのサーフェスの入力イベントを処理
                 // これによりdraw()がブロックされなくなる
-                for (DefaultChromiumSurface surface : surfaces.values()) {
-                    surface.getBrowser().flushInputEvents();
+                // スナップショットを取ることでcloseTab/shutdownとの競合を回避
+                DefaultChromiumSurface[] snapshot = surfaces.values().toArray(new DefaultChromiumSurface[0]);
+                for (DefaultChromiumSurface surface : snapshot) {
+                    // dispose()されていないかチェック
+                    if (surfaces.containsValue(surface)) {
+                        surface.getBrowser().flushInputEvents();
+                    }
                 }
             } catch (Throwable t) {
                 if (kernel != null && kernel.getLogger() != null) {
