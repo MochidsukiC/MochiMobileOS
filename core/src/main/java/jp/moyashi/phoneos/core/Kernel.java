@@ -2227,7 +2227,9 @@ public class Kernel implements GestureListener {
                 if (parentApplet != null) {
                     parentApplet.exit();
                 }
-                System.exit(0);
+                // Note: System.exit(0)は使用しない
+                // Forge環境ではMinecraftプロセス全体を終了させてしまうため、
+                // parentApplet.exit()に終了処理を委譲する
             } catch (InterruptedException e) {
                 System.err.println("Kernel: Shutdown interrupted: " + e.getMessage());
             }

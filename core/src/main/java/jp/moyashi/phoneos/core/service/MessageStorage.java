@@ -3,9 +3,13 @@ package jp.moyashi.phoneos.core.service;
 import jp.moyashi.phoneos.core.service.network.IPvMAddress;
 
 import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.FileWriter;
+import java.io.BufferedWriter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -146,19 +150,17 @@ public class MessageStorage {
      * @param message メッセージ
      */
     public void saveMessage(Message message) {
-        String messagesFile = vfs.getRootPath().resolve("messages/inbox.csv").toString();
+        Path messagesPath = Paths.get(vfs.getRootPath().resolve("messages/inbox.csv").toString());
 
         try {
-            // ファイルが存在しない場合は作成
-            java.io.File file = new java.io.File(messagesFile);
-            if (!file.exists()) {
-                file.getParentFile().mkdirs();
-                file.createNewFile();
-            }
+            // ファイルが存在しない場合は親ディレクトリを作成
+            Files.createDirectories(messagesPath.getParent());
 
-            // 追記モードで書き込み
-            try (FileWriter writer = new FileWriter(messagesFile, true)) {
-                writer.write(message.toCsvLine() + "\n");
+            // 追記モードでUTF-8で書き込み
+            try (BufferedWriter writer = Files.newBufferedWriter(messagesPath, StandardCharsets.UTF_8,
+                    StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
+                writer.write(message.toCsvLine());
+                writer.newLine();
             }
 
             System.out.println("[MessageStorage] Message saved: " + message.getId());
@@ -174,7 +176,7 @@ public class MessageStorage {
      * @return メッセージリスト（新しい順）
      */
     public List<Message> getAllMessages() {
-        String messagesFile = vfs.getRootPath().resolve("messages/inbox.csv").toString();
+        Path messagesPath = Paths.get(vfs.getRootPath().resolve("messages/inbox.csv").toString());
         List<Message> messages = new ArrayList<>();
 
         try {
@@ -182,7 +184,8 @@ public class MessageStorage {
                 return messages;
             }
 
-            try (BufferedReader reader = new BufferedReader(new FileReader(messagesFile))) {
+            // UTF-8で読み込み
+            try (BufferedReader reader = Files.newBufferedReader(messagesPath, StandardCharsets.UTF_8)) {
                 String line;
                 while ((line = reader.readLine()) != null) {
                     if (line.trim().isEmpty()) continue;
@@ -244,15 +247,18 @@ public class MessageStorage {
      * @param messages メッセージリスト
      */
     private void saveAllMessages(List<Message> messages) {
-        String messagesFile = vfs.getRootPath().resolve("messages/inbox.csv").toString();
+        Path messagesPath = Paths.get(vfs.getRootPath().resolve("messages/inbox.csv").toString());
 
         try {
             // 逆順に戻す（ファイルは古い順）
             Collections.reverse(messages);
 
-            try (FileWriter writer = new FileWriter(messagesFile, false)) {
+            // UTF-8で上書き書き込み
+            try (BufferedWriter writer = Files.newBufferedWriter(messagesPath, StandardCharsets.UTF_8,
+                    StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
                 for (Message message : messages) {
-                    writer.write(message.toCsvLine() + "\n");
+                    writer.write(message.toCsvLine());
+                    writer.newLine();
                 }
             }
 
