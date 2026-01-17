@@ -254,9 +254,24 @@ public class HttpmSchemeHandler extends CefResourceHandlerAdapter {
      * エラーページHTMLを生成する。
      */
     private String generateErrorPage(String title, String message) {
-        return "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>" + title +
+        String safeTitle = escapeHtml(title);
+        String safeMessage = escapeHtml(message);
+        return "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>" + safeTitle +
                "</title><style>body{font-family:sans-serif;text-align:center;padding:50px;}h1{color:#e74c3c;}</style></head>" +
-               "<body><h1>" + title + "</h1><p>" + message + "</p></body></html>";
+               "<body><h1>" + safeTitle + "</h1><p>" + safeMessage + "</p></body></html>";
+    }
+
+    /**
+     * HTMLエスケープを行う（XSS対策）。
+     */
+    private String escapeHtml(String input) {
+        if (input == null) return "";
+        return input
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("\"", "&quot;")
+            .replace("'", "&#39;");
     }
 
     /**

@@ -321,7 +321,10 @@ public class VirtualNetworkResourceHandler extends CefResourceHandlerAdapter {
      * エラーページHTMLを生成する。
      */
     private String generateErrorPage(String title, String message) {
-        return "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>" + title +
+        String safeTitle = escapeHtml(title);
+        String safeMessage = escapeHtml(message);
+        String safeUrl = escapeHtml(originalUrl);
+        return "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>" + safeTitle +
                "</title><style>" +
                "body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;" +
                "text-align:center;padding:50px;background:#1a1a2e;color:#fff;margin:0;}" +
@@ -329,8 +332,21 @@ public class VirtualNetworkResourceHandler extends CefResourceHandlerAdapter {
                "p{color:#aaa;font-size:1.1em;}" +
                ".url{font-size:0.9em;color:#666;word-break:break-all;}" +
                "</style></head>" +
-               "<body><h1>" + title + "</h1><p>" + message + "</p>" +
-               "<p class='url'>URL: " + originalUrl + "</p></body></html>";
+               "<body><h1>" + safeTitle + "</h1><p>" + safeMessage + "</p>" +
+               "<p class='url'>URL: " + safeUrl + "</p></body></html>";
+    }
+
+    /**
+     * HTMLエスケープを行う（XSS対策）。
+     */
+    private String escapeHtml(String input) {
+        if (input == null) return "";
+        return input
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("\"", "&quot;")
+            .replace("'", "&#39;");
     }
 
     /**

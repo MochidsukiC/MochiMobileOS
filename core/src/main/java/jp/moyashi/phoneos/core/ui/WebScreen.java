@@ -6,6 +6,7 @@ import jp.moyashi.phoneos.core.service.chromium.ChromiumTextInput;
 import jp.moyashi.phoneos.core.ui.components.TextInputProtocol;
 import jp.moyashi.phoneos.core.ui.theme.ThemeContext;
 import jp.moyashi.phoneos.core.ui.theme.ThemeEngine;
+import jp.moyashi.phoneos.core.app.IApplication;
 import processing.core.PGraphics;
 import processing.core.PImage;
 
@@ -48,6 +49,8 @@ public class WebScreen implements Screen {
     private int contentHeight;
     private boolean initialized = false;
     private String mySurfaceId = null;  // 自分専用のサーフェスID
+    private PImage cachedAppIcon = null;  // ローディング画面用アプリアイコン
+    private boolean loadingComplete = false;  // ロード完了フラグ（一度完了したらtrue）
 
     /**
      * WebScreenを構築する（内部用）。
@@ -328,11 +331,16 @@ public class WebScreen implements Screen {
             while ((bytesRead = inputStream.read(chunk)) != -1) {
                 buffer.write(chunk, 0, bytesRead);
             }
-            inputStream.close();
             return buffer.toString("UTF-8");
         } catch (java.io.IOException e) {
             logError("Error reading resource: " + e.getMessage());
             return null;
+        } finally {
+            // 確実にInputStreamをクローズ（リソースリーク防止）
+            try {
+                inputStream.close();
+            } catch (java.io.IOException ignored) {
+            }
         }
     }
 
@@ -373,7 +381,8 @@ public class WebScreen implements Screen {
         // Chromiumサーフェスを描画（自分専用のサーフェスを使用）
         Optional<ChromiumSurface> activeSurfaceOpt = getMySurface();
         if (activeSurfaceOpt.isPresent()) {
-            PImage frame = activeSurfaceOpt.get().acquireFrame();
+            ChromiumSurface surface = activeSurfaceOpt.get();
+            PImage frame = surface.acquireFrame();
 
             // デバッグログ: 1秒ごとにフレーム状態を出力
             long now = System.currentTimeMillis();
@@ -391,13 +400,22 @@ public class WebScreen implements Screen {
                     }
                     log("draw() #" + drawCount + ": frame=" + frame.width + "x" + frame.height +
                         ", whitePixels=" + whiteCount + "/" + sampleSize +
-                        " (" + (whiteCount * 100 / sampleSize) + "%)");
+                        " (" + (whiteCount * 100 / sampleSize) + "%), isLoading=" + surface.isLoading());
                 } else {
-                    log("draw() #" + drawCount + ": frame=null");
+                    log("draw() #" + drawCount + ": frame=null, isLoading=" + surface.isLoading());
                 }
             }
 
-            if (frame != null) {
+            // ロード完了判定: isLoading=false かつ 有効なフレームがある場合
+            if (!loadingComplete && !surface.isLoading() && frame != null) {
+                loadingComplete = true;
+                log("Loading complete - hiding loading screen");
+            }
+
+            // ロード完了するまではローディング画面を表示
+            if (!loadingComplete) {
+                LoadingOverlay.draw(g, getAppIcon(), 0, 0, g.width, g.height);
+            } else {
                 g.image(frame, 0, 0);
             }
         } else {
@@ -408,13 +426,8 @@ public class WebScreen implements Screen {
                 log("draw() #" + drawCount + ": No active surface");
             }
 
-            // サーフェスがない場合のフォールバック表示
-            g.fill(theme.colorSurface());
-            g.rect(10, 10, g.width - 20, g.height - 20, 8);
-            g.fill(theme.colorOnSurface());
-            g.textAlign(g.CENTER, g.CENTER);
-            g.textSize(16);
-            g.text("Loading...", g.width / 2f, g.height / 2f);
+            // サーフェスがまだない場合もローディング画面を表示
+            LoadingOverlay.draw(g, getAppIcon(), 0, 0, g.width, g.height);
         }
     }
 
@@ -595,6 +608,21 @@ public class WebScreen implements Screen {
      */
     public ClassLoader getClassLoader() {
         return classLoader;
+    }
+
+    // ========== アイコン取得 ==========
+
+    /**
+     * アプリアイコンを取得する（キャッシュ付き）。
+     */
+    private PImage getAppIcon() {
+        if (cachedAppIcon == null && kernel != null && kernel.getAppLoader() != null && applicationId != null) {
+            IApplication app = kernel.getAppLoader().findApplicationById(applicationId);
+            if (app != null) {
+                cachedAppIcon = app.getIcon(kernel);
+            }
+        }
+        return cachedAppIcon;
     }
 
     // ========== ログ出力 ==========

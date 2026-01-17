@@ -2836,9 +2836,17 @@ public class Kernel implements GestureListener {
                 return null;
             }
 
-            // Java AWTフォントを作成
-            Font awtFont = Font.createFont(Font.TRUETYPE_FONT, fontStream);
-            fontStream.close();
+            // Java AWTフォントを作成（try-finallyでリソースリーク防止）
+            Font awtFont;
+            try {
+                awtFont = Font.createFont(Font.TRUETYPE_FONT, fontStream);
+            } finally {
+                // 確実にInputStreamをクローズ（リソースリーク防止）
+                try {
+                    fontStream.close();
+                } catch (java.io.IOException ignored) {
+                }
+            }
 
             if (logger != null) {
                 logger.debug("Kernel", "AWTフォントを作成しました: " + awtFont.getFontName());

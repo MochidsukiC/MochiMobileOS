@@ -117,7 +117,6 @@ public class AppAssetResourceHandler extends CefResourceHandlerAdapter {
             while ((bytesRead = inputStream.read(chunk)) != -1) {
                 buffer.write(chunk, 0, bytesRead);
             }
-            inputStream.close();
 
             responseData = buffer.toByteArray();
             mimeType = getMimeType(subPath);
@@ -131,6 +130,12 @@ public class AppAssetResourceHandler extends CefResourceHandlerAdapter {
                     .getBytes(StandardCharsets.UTF_8);
             mimeType = "text/html; charset=utf-8";
             statusCode = 500;
+        } finally {
+            // 確実にInputStreamをクローズ（リソースリーク防止）
+            try {
+                inputStream.close();
+            } catch (Exception ignored) {
+            }
         }
 
         callback.Continue();
@@ -250,20 +255,36 @@ public class AppAssetResourceHandler extends CefResourceHandlerAdapter {
      * エラーページHTMLを生成する。
      */
     private String generateErrorPage(String title, String message) {
+        String safeTitle = escapeHtml(title);
+        String safeMessage = escapeHtml(message);
+        String safePath = escapeHtml(path);
         return "<!DOCTYPE html>\n" +
                "<html><head>\n" +
                "<meta charset=\"UTF-8\">\n" +
-               "<title>" + title + "</title>\n" +
+               "<title>" + safeTitle + "</title>\n" +
                "<style>\n" +
                "body { font-family: sans-serif; text-align: center; padding: 50px; background: #1a1a1a; color: #fff; }\n" +
                "h1 { color: #e74c3c; }\n" +
                ".code { background: #2a2a2a; padding: 10px; border-radius: 5px; display: inline-block; }\n" +
                "</style>\n" +
                "</head><body>\n" +
-               "<h1>" + title + "</h1>\n" +
-               "<p>" + message + "</p>\n" +
-               "<p class=\"code\">Path: " + path + "</p>\n" +
+               "<h1>" + safeTitle + "</h1>\n" +
+               "<p>" + safeMessage + "</p>\n" +
+               "<p class=\"code\">Path: " + safePath + "</p>\n" +
                "</body></html>";
+    }
+
+    /**
+     * HTMLエスケープを行う（XSS対策）。
+     */
+    private String escapeHtml(String input) {
+        if (input == null) return "";
+        return input
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("\"", "&quot;")
+            .replace("'", "&#39;");
     }
 
     /**
