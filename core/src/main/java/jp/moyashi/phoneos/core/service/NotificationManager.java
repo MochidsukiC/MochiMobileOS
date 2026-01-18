@@ -367,19 +367,16 @@ public class NotificationManager implements GestureListener {
      * @return 最新通知のリスト
      */
     public List<INotification> getRecentNotifications(int count) {
-        if (notifications.isEmpty()) {
+        // スナップショットを取得（IndexOutOfBoundsException防止）
+        List<INotification> snapshot = new ArrayList<>(notifications);
+
+        if (snapshot.isEmpty()) {
             return new ArrayList<>();
         }
-        
-        // 最新の通知から順に取得
-        int size = Math.min(count, notifications.size());
-        List<INotification> recent = new ArrayList<>();
-        
-        for (int i = notifications.size() - 1; i >= notifications.size() - size; i--) {
-            recent.add(notifications.get(i));
-        }
-        
-        return recent;
+
+        // 最新の通知から順に取得（優先度順にソートされているので先頭から取得）
+        int size = Math.min(count, snapshot.size());
+        return new ArrayList<>(snapshot.subList(0, size));
     }
     
     /**
@@ -476,7 +473,10 @@ public class NotificationManager implements GestureListener {
         int available = panelHeight - (startY - panelY) - 30; // 下部のハンドル等の余白を考慮
         if (available < 0) available = 0;
 
-        if (notifications.isEmpty()) {
+        // スナップショットを取得（ConcurrentModificationException・IndexOutOfBoundsException防止）
+        List<INotification> snapshot = new ArrayList<>(notifications);
+
+        if (snapshot.isEmpty()) {
             int sec = theme != null ? theme.colorOnSurfaceSecondary() : 0xFFB4BAC3;
             g.fill((sec>>16)&0xFF, (sec>>8)&0xFF, sec&0xFF);
             g.textAlign(PApplet.CENTER, PApplet.CENTER);
@@ -485,15 +485,15 @@ public class NotificationManager implements GestureListener {
         } else {
             // 収容可能数を計算（はみ出し防止）
             int capacity = notificationHeight > 0 ? Math.max(0, available / notificationHeight) : 0;
-            int size = Math.min(Math.min(maxVisibleNotifications, capacity), notifications.size());
+            int size = Math.min(Math.min(maxVisibleNotifications, capacity), snapshot.size());
 
             // クリップ領域を設定
             try { g.clip(0, startY, panelWidth, Math.max(0, available)); } catch (Exception ignore) {}
 
             int currentY = startY;
-            for (int i = notifications.size() - size; i < notifications.size(); i++) {
-                if (i < 0) continue;
-                INotification notification = notifications.get(i);
+            // 高優先度の通知（先頭）から表示するようにインデックス0から開始
+            for (int i = 0; i < size; i++) {
+                INotification notification = snapshot.get(i);
                 try {
                     if (notification instanceof SimpleNotification) {
                         (notification).draw(g, margin, currentY, panelWidth - (margin * 2), notificationHeight - margin);
