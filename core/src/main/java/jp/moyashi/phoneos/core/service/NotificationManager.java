@@ -488,7 +488,7 @@ public class NotificationManager implements GestureListener {
             int size = Math.min(Math.min(maxVisibleNotifications, capacity), snapshot.size());
 
             // クリップ領域を設定
-            try { g.clip(0, startY, panelWidth, Math.max(0, available)); } catch (Exception ignore) {}
+            try { g.clip(0, startY, panelWidth, Math.max(0, available)); } catch (Exception e) { System.err.println("NotificationManager: Graphics clipping error: " + e.getMessage()); }
 
             int currentY = startY;
             // 高優先度の通知（先頭）から表示するようにインデックス0から開始
@@ -507,7 +507,7 @@ public class NotificationManager implements GestureListener {
             }
 
             // クリップ解除
-            try { g.noClip(); } catch (Exception ignore) {}
+            try { g.noClip(); } catch (Exception e) { System.err.println("NotificationManager: Graphics clipping error: " + e.getMessage()); }
         }
 
         // ハンドル描画
@@ -659,7 +659,7 @@ public class NotificationManager implements GestureListener {
         }
         
         // クリッピング（スクロール領域に限定）
-        try { p.clip((int)NOTIFICATION_MARGIN, (int)startY, (int)(screenWidth - 2*NOTIFICATION_MARGIN), (int)availableHeight); } catch (Exception ignore) {}
+        try { p.clip((int)NOTIFICATION_MARGIN, (int)startY, (int)(screenWidth - 2*NOTIFICATION_MARGIN), (int)availableHeight); } catch (Exception e) { System.err.println("NotificationManager: Graphics clipping error: " + e.getMessage()); }
         
         float currentY = startY - scrollOffset + NOTIFICATION_MARGIN;
         
@@ -686,7 +686,7 @@ public class NotificationManager implements GestureListener {
             currentY += NOTIFICATION_HEIGHT + NOTIFICATION_MARGIN;
         }
         
-        try { p.noClip(); } catch (Exception ignore) {}
+        try { p.noClip(); } catch (Exception e) { System.err.println("NotificationManager: Graphics clipping error: " + e.getMessage()); }
     }
     
     /**

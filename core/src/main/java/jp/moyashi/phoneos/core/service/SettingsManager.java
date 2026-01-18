@@ -5,10 +5,10 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
  * スマートフォンOS用の設定管理サービス。
@@ -35,7 +35,7 @@ public class SettingsManager {
         void onSettingChanged(String key, Object newValue);
     }
 
-    private final Set<SettingsListener> listeners = new HashSet<>();
+    private final Set<SettingsListener> listeners = new CopyOnWriteArraySet<>();
 
     /**
      * 新しいSettingsManagerインスタンスを構築する。
@@ -45,7 +45,7 @@ public class SettingsManager {
     public SettingsManager(VFS vfs) {
         this.vfs = vfs;
         this.gson = new GsonBuilder().setPrettyPrinting().create();
-        this.settings = new HashMap<>();
+        this.settings = new ConcurrentHashMap<>();
 
         // デフォルト設定を投入
         loadDefaultSettings();
@@ -124,7 +124,11 @@ public class SettingsManager {
     public void setSetting(String key, Object value) {
         settings.put(key, value);
         for (SettingsListener l : listeners) {
-            try { l.onSettingChanged(key, value); } catch (Exception ignored) {}
+            try {
+                l.onSettingChanged(key, value);
+            } catch (Exception e) {
+                System.err.println("SettingsManager: Error in listener for key '" + key + "': " + e.getMessage());
+            }
         }
         System.out.println("SettingsManager: Setting " + key + " = " + value);
     }
