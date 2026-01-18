@@ -5,8 +5,9 @@ import processing.core.PGraphics;
 import processing.core.PFont;
 import processing.core.PImage;
 import jp.moyashi.phoneos.core.Kernel;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 
 /**
  * シンプルな通知の実装クラス。
@@ -36,8 +37,8 @@ public class SimpleNotification implements INotification {
     /** Kernelへの参照 */
     private jp.moyashi.phoneos.core.Kernel kernel;
     
-    /** 時刻フォーマッター */
-    private static final SimpleDateFormat TIME_FORMAT = new SimpleDateFormat("HH:mm");
+    /** 時刻フォーマッター（スレッドセーフ） */
+    private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm").withZone(ZoneId.systemDefault());
     
     /** 削除ボタンのサイズ */
     private static final float DISMISS_BUTTON_SIZE = 24;
@@ -176,7 +177,7 @@ public class SimpleNotification implements INotification {
         g.fill((onSurfaceSec>>16)&0xFF, (onSurfaceSec>>8)&0xFF, onSurfaceSec&0xFF);
         g.textAlign(PApplet.LEFT, PApplet.TOP);
         g.textSize(10);
-        String timeStr = TIME_FORMAT.format(new Date(timestamp));
+        String timeStr = TIME_FORMAT.format(Instant.ofEpochMilli(timestamp));
         g.text(sender + " • " + timeStr, textX, y + 6);
 
         // タイトル
@@ -260,7 +261,7 @@ public class SimpleNotification implements INotification {
         p.fill(180, 180, 180);
         p.textAlign(PApplet.LEFT, PApplet.TOP);
         p.textSize(10);
-        String timeStr = TIME_FORMAT.format(new Date(timestamp));
+        String timeStr = TIME_FORMAT.format(Instant.ofEpochMilli(timestamp));
         p.text(sender + " • " + timeStr, textX, y + 6);
 
         // タイトル

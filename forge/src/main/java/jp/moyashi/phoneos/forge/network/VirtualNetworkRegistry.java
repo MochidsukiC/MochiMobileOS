@@ -3,8 +3,8 @@ package jp.moyashi.phoneos.forge.network;
 import jp.moyashi.phoneos.core.service.network.IPvMAddress;
 import jp.moyashi.phoneos.core.service.network.VirtualPacket;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 /**
@@ -24,11 +24,11 @@ public class VirtualNetworkRegistry {
         void handle(VirtualPacket packet);
     }
 
-    // サーバーID -> パケットハンドラー のマッピング
-    private static final Map<String, PacketHandler> serverHandlers = new HashMap<>();
+    // サーバーID -> パケットハンドラー のマッピング（スレッドセーフ）
+    private static final Map<String, PacketHandler> serverHandlers = new ConcurrentHashMap<>();
 
-    // サーバーID -> IPvMAddress のマッピング
-    private static final Map<String, IPvMAddress> serverAddresses = new HashMap<>();
+    // サーバーID -> IPvMAddress のマッピング（スレッドセーフ）
+    private static final Map<String, IPvMAddress> serverAddresses = new ConcurrentHashMap<>();
 
     // 次に割り当てるサーバーID（自動インクリメント）
     private static int nextServerId = 1;
