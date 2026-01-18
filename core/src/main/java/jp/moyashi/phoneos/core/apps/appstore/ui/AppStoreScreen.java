@@ -84,6 +84,13 @@ public class AppStoreScreen implements Screen {
         fetchRepository();
     }
 
+    @Override
+    public void cleanup(PGraphics g) {
+        if (scheduler != null && !scheduler.isShutdown()) {
+            scheduler.shutdownNow();
+        }
+    }
+
     /**
      * リポジトリ情報を取得する。
      */
@@ -100,6 +107,17 @@ public class AppStoreScreen implements Screen {
                     if (response.isSuccess()) {
                         repository = gson.fromJson(response.getBody(), AppStoreRepository.class);
                         
+                        // バリデーション: 不正なIDを持つアプリを除外
+                        if (repository.apps != null) {
+                            repository.apps.removeIf(app -> {
+                                if (app.id == null || !isValidAppId(app.id)) {
+                                    System.err.println("AppStoreScreen: Invalid app ID ignored: " + app.id);
+                                    return true;
+                                }
+                                return false;
+                            });
+                        }
+
                         // Modアプリを追加
                         List<jp.moyashi.phoneos.core.app.IApplication> modApps = new ArrayList<>();
                         modApps.addAll(kernel.getAppLoader().getAvailableModApps());
@@ -147,6 +165,14 @@ public class AppStoreScreen implements Screen {
             errorMessage = "Internal error: " + e.getMessage();
             isLoading = false;
         }
+    }
+
+    /**
+     * アプリIDの妥当性をチェックする（パストラバーサル対策）。
+     * 英数字、ドット、ハイフン、アンダースコアのみ許可。
+     */
+    private boolean isValidAppId(String appId) {
+        return appId != null && appId.matches("^[a-zA-Z0-9._-]+$") && !appId.contains("..");
     }
 
     @Override
@@ -388,6 +414,12 @@ public class AppStoreScreen implements Screen {
      * アプリをダウンロードしてインストールする。
      */
     private void downloadAndInstallApp(AppStorePackage pkg) {
+        // IDバリデーション
+        if (pkg.id == null || !isValidAppId(pkg.id)) {
+            errorMessage = "Invalid App ID detected.";
+            return;
+        }
+
         // Modアプリのインストール処理
         if (pkg.download_url != null && pkg.download_url.startsWith("local:mod:")) {
             String appId = pkg.download_url.substring("local:mod:".length());
