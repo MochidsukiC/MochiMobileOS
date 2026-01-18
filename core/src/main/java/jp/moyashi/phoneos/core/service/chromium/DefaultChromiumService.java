@@ -58,13 +58,13 @@ public class DefaultChromiumService implements ChromiumService {
                 manager.doMessageLoopWork();
 
                 // 全てのサーフェスの入力イベントを処理
-                // これによりdraw()がブロックされなくなる
-                // スナップショットを取ることでcloseTab/shutdownとの競合を回避
-                DefaultChromiumSurface[] snapshot = surfaces.values().toArray(new DefaultChromiumSurface[0]);
-                for (DefaultChromiumSurface surface : snapshot) {
-                    // dispose()されていないかチェック
-                    if (surfaces.containsValue(surface)) {
+                // ConcurrentHashMapのvalues()はスレッドセーフなので直接イテレート可能
+                // closeTab中にdispose済みサーフェスにアクセスしないよう例外をキャッチ
+                for (DefaultChromiumSurface surface : surfaces.values()) {
+                    try {
                         surface.getBrowser().flushInputEvents();
+                    } catch (Exception e) {
+                        // dispose済みサーフェスへのアクセスは無視
                     }
                 }
             } catch (Throwable t) {
@@ -72,7 +72,7 @@ public class DefaultChromiumService implements ChromiumService {
                     kernel.getLogger().error("ChromiumService", "Failed to pump CEF loop", t);
                 }
             }
-        }, 0, 8, TimeUnit.MILLISECONDS); // 8ms間隔（約120Hz）でCPU負荷を軽減
+        }, 0, 4, TimeUnit.MILLISECONDS); // 4ms間隔（250Hz）で動画再生に対応
     }
 
     @Override
