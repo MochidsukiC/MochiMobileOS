@@ -5,7 +5,11 @@ package jp.moyashi.phoneos.core.ui.theme;
  * Kernel初期化時にセットし、各コンポーネントが参照できるようにする。
  */
 public final class ThemeContext {
-    private static ThemeEngine theme;
+    /**
+     * テーマエンジンインスタンス。
+     * 複数スレッド間での可視性を保証するためvolatileを使用。
+     */
+    private static volatile ThemeEngine theme;
 
     private ThemeContext() {}
 

@@ -554,10 +554,32 @@ public class FileSystemManager {
 
     /**
      * ストレージ情報を取得する。
+     * クロスプラットフォーム対応: Windowsでも正しくルートディレクトリを検出。
      */
     public StorageInfo getStorageInfo() {
         try {
-            FileStore store = Files.getFileStore(Paths.get("/"));
+            // VFSルートのFileStoreを取得（クロスプラットフォーム対応）
+            Path vfsRootPath = vfs != null ? vfs.getRootPath() : null;
+            FileStore store;
+
+            if (vfsRootPath != null) {
+                // VFSルートが存在する場合はそのFileStoreを使用
+                store = Files.getFileStore(vfsRootPath);
+            } else {
+                // フォールバック: システムのデフォルトルートを使用
+                // FileSystems.getDefault().getRootDirectories()でOS非依存にルートを取得
+                Path rootPath = null;
+                for (Path root : FileSystems.getDefault().getRootDirectories()) {
+                    rootPath = root;
+                    break; // 最初のルートを使用
+                }
+                if (rootPath == null) {
+                    logger.warning("No root directories found");
+                    return new StorageInfo(0, 0, 0);
+                }
+                store = Files.getFileStore(rootPath);
+            }
+
             long total = store.getTotalSpace();
             long available = store.getUsableSpace();
             long used = total - available;
