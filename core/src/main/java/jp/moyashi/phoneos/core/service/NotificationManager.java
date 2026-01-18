@@ -33,13 +33,13 @@ public class NotificationManager implements GestureListener {
     private final List<INotification> notifications;
     
     /** 現在の表示状態 */
-    private boolean isVisible;
+    private volatile boolean isVisible;
     
     /** アニメーション進行度（0.0 = 非表示, 1.0 = 完全表示） */
-    private float animationProgress;
+    private volatile float animationProgress;
     
     /** アニメーションの目標進行度 */
-    private float targetAnimationProgress;
+    private volatile float targetAnimationProgress;
     
     /** アニメーション速度 */
     private static final float ANIMATION_SPEED = 0.12f;
@@ -63,7 +63,7 @@ public class NotificationManager implements GestureListener {
     private static final int BACKGROUND_ALPHA = 230;
     
     /** スクロールオフセット */
-    private float scrollOffset = 0;
+    private volatile float scrollOffset = 0;
     
     /** 最大スクロール量 */
     private float maxScrollOffset = 0;
@@ -112,7 +112,9 @@ public class NotificationManager implements GestureListener {
                 kernel.getLayerController().activateNotificationLayer();
             }
 
-            System.out.println("NotificationManager: Showing notification center with " + notifications.size() + " notifications");
+            if (kernel != null && kernel.getLogger() != null) {
+                kernel.getLogger().info("NotificationManager", "Showing notification center with " + notifications.size() + " notifications");
+            }
         }
     }
     
@@ -131,7 +133,9 @@ public class NotificationManager implements GestureListener {
                 kernel.getLayerController().removeLayer(Kernel.LayerType.NOTIFICATION);
             }
 
-            System.out.println("NotificationManager: Hiding notification center");
+            if (kernel != null && kernel.getLogger() != null) {
+                kernel.getLogger().info("NotificationManager", "Hiding notification center");
+            }
         }
     }
     
@@ -181,7 +185,9 @@ public class NotificationManager implements GestureListener {
         notifications.add(notification);
         notifications.sort((n1, n2) -> Integer.compare(n2.getPriority(), n1.getPriority()));
 
-        System.out.println("NotificationManager: Added notification '" + title + "' from " + sender);
+        if (kernel != null && kernel.getLogger() != null) {
+            kernel.getLogger().info("NotificationManager", "Added notification '" + title + "' from " + sender);
+        }
         updateScrollLimits();
 
         // 消音モードでなければ通知音とチャット通知を実行

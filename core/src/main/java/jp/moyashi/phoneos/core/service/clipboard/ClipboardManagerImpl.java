@@ -10,7 +10,7 @@ import processing.core.PImage;
 public class ClipboardManagerImpl implements ClipboardManager {
 
     private final Kernel kernel;
-    private ClipboardProvider provider;
+    private volatile ClipboardProvider provider;
 
     /**
      * ClipboardManagerを作成する。

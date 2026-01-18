@@ -194,8 +194,6 @@ public class SensorManagerImpl implements SensorManager {
         availableSensors.add(battery);
         defaultSensors.put(Sensor.TYPE_BATTERY, battery);
 
-        System.out.println("SensorManager: Initialized " + availableSensors.size() + " default sensors");
-
         if (kernel.getLogger() != null) {
             kernel.getLogger().info("SensorManager", "デフォルトセンサーを初期化: " + availableSensors.size() + "個");
         }
@@ -224,12 +222,16 @@ public class SensorManagerImpl implements SensorManager {
     @Override
     public boolean registerListener(SensorEventListener listener, Sensor sensor, int samplingPeriodUs) {
         if (listener == null || sensor == null) {
-            System.err.println("SensorManager: Cannot register null listener or sensor");
+            if (kernel.getLogger() != null) {
+                kernel.getLogger().error("SensorManager", "Cannot register null listener or sensor");
+            }
             return false;
         }
 
         if (!availableSensors.contains(sensor)) {
-            System.err.println("SensorManager: Sensor not available: " + sensor.getName());
+            if (kernel.getLogger() != null) {
+                kernel.getLogger().warn("SensorManager", "Sensor not available: " + sensor.getName());
+            }
             return false;
         }
 
@@ -258,9 +260,6 @@ public class SensorManagerImpl implements SensorManager {
 
         enabledSensors.add(sensor);
 
-        System.out.println("SensorManager: Registered listener for " + sensor.getName() +
-                         " with sampling period " + actualSamplingPeriodUs + "us");
-
         if (kernel.getLogger() != null) {
             kernel.getLogger().info("SensorManager",
                     "センサーリスナー登録: " + sensor.getName() + ", " + actualSamplingPeriodUs + "us");
@@ -283,8 +282,6 @@ public class SensorManagerImpl implements SensorManager {
                 sensorListeners.remove(sensor);
                 enabledSensors.remove(sensor);
             }
-
-            System.out.println("SensorManager: Unregistered listener for " + sensor.getName());
 
             if (kernel.getLogger() != null) {
                 kernel.getLogger().info("SensorManager",
@@ -332,7 +329,6 @@ public class SensorManagerImpl implements SensorManager {
         }
 
         enabledSensors.add(sensor);
-        System.out.println("SensorManager: Enabled sensor: " + sensor.getName());
 
         if (kernel.getLogger() != null) {
             kernel.getLogger().info("SensorManager", "センサー有効化: " + sensor.getName());
@@ -348,7 +344,6 @@ public class SensorManagerImpl implements SensorManager {
         }
 
         enabledSensors.remove(sensor);
-        System.out.println("SensorManager: Disabled sensor: " + sensor.getName());
 
         if (kernel.getLogger() != null) {
             kernel.getLogger().info("SensorManager", "センサー無効化: " + sensor.getName());
