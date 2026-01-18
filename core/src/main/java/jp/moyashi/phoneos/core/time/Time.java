@@ -13,23 +13,23 @@ public class Time {
     /** 目標FPS */
     public static final int TARGET_FPS = 60;
 
-    /** 時間スケール係数 (1.0 = 通常速度, 0.5 = スローモーション) */
-    private float timeScale = 1.0f;
+    /** 時間スケール係数 (1.0 = 通常速度, 0.5 = スローモーション) - 複数スレッドからアクセスされる可能性があるためvolatile */
+    private volatile float timeScale = 1.0f;
 
     /** システム起動時のナノ秒タイムスタンプ */
     private final long systemStartNanos;
 
-    /** 前回のV-Sync時刻 (ナノ秒) */
-    private long lastVsyncNanos;
+    /** 前回のV-Sync時刻 (ナノ秒) - Choreographerと他のスレッド間で共有されるためvolatile */
+    private volatile long lastVsyncNanos;
 
-    /** 経過した仮想フレーム数 */
-    private long totalFrameCount;
+    /** 経過した仮想フレーム数 - 複数スレッドから参照されるためvolatile */
+    private volatile long totalFrameCount;
 
     /** 現在のV-Sync予定時刻 (アニメーション用) */
-    private long currentVsyncTargetNanos;
+    private volatile long currentVsyncTargetNanos;
 
-    /** 一時停止中かどうか */
-    private boolean paused = false;
+    /** 一時停止中かどうか - 複数スレッドからアクセスされるためvolatile */
+    private volatile boolean paused = false;
 
     /** 一時停止開始時のナノ秒タイムスタンプ */
     private long pauseStartNanos;

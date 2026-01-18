@@ -124,7 +124,7 @@ public class ControlCenterCardRegistry {
      * @param cardId カードID
      * @return カード、見つからない場合はnull
      */
-    public IControlCenterItem getCard(String cardId) {
+    public synchronized IControlCenterItem getCard(String cardId) {
         return registeredCards.get(cardId);
     }
 
@@ -133,7 +133,7 @@ public class ControlCenterCardRegistry {
      *
      * @return カードのリスト（読み取り専用）
      */
-    public List<IControlCenterItem> getAllCards() {
+    public synchronized List<IControlCenterItem> getAllCards() {
         return new ArrayList<>(registeredCards.values());
     }
 
@@ -143,7 +143,7 @@ public class ControlCenterCardRegistry {
      * @param section セクション
      * @return カードのリスト
      */
-    public List<IControlCenterItem> getCardsForSection(ControlCenterSection section) {
+    public synchronized List<IControlCenterItem> getCardsForSection(ControlCenterSection section) {
         return placements.values().stream()
                 .filter(p -> p.getSection() == section && p.isVisible())
                 .sorted(Comparator.comparingInt(CardPlacement::getOrder))
@@ -158,10 +158,10 @@ public class ControlCenterCardRegistry {
      *
      * @return カードのリスト
      */
-    public List<IControlCenterItem> getAllVisibleCards() {
+    public synchronized List<IControlCenterItem> getAllVisibleCards() {
         return Arrays.stream(ControlCenterSection.values())
                 .sorted(Comparator.comparingInt(ControlCenterSection::getDefaultOrder))
-                .flatMap(section -> getCardsForSection(section).stream())
+                .flatMap(section -> getCardsForSectionInternal(section).stream())
                 .collect(Collectors.toList());
     }
 
@@ -170,7 +170,7 @@ public class ControlCenterCardRegistry {
      *
      * @return 配置情報のリスト
      */
-    public List<CardPlacement> getAllPlacements() {
+    public synchronized List<CardPlacement> getAllPlacements() {
         return new ArrayList<>(placements.values());
     }
 
@@ -180,8 +180,22 @@ public class ControlCenterCardRegistry {
      * @param cardId カードID
      * @return 配置情報、見つからない場合はnull
      */
-    public CardPlacement getPlacement(String cardId) {
+    public synchronized CardPlacement getPlacement(String cardId) {
         return placements.get(cardId);
+    }
+
+    /**
+     * 指定セクションの表示対象カードを順序どおりに取得する（内部用、同期なし）。
+     * getAllVisibleCards()内から呼び出される（既にsynchronizedブロック内）。
+     */
+    private List<IControlCenterItem> getCardsForSectionInternal(ControlCenterSection section) {
+        return placements.values().stream()
+                .filter(p -> p.getSection() == section && p.isVisible())
+                .sorted(Comparator.comparingInt(CardPlacement::getOrder))
+                .map(p -> registeredCards.get(p.getCardId()))
+                .filter(Objects::nonNull)
+                .filter(IControlCenterItem::isVisible)
+                .collect(Collectors.toList());
     }
 
     // === 配置変更 ===

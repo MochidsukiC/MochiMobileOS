@@ -132,7 +132,7 @@ public class DashboardWidgetRegistry {
      * @param widgetId ウィジェットID
      * @return ウィジェット、見つからない場合はnull
      */
-    public IDashboardWidget getWidget(String widgetId) {
+    public synchronized IDashboardWidget getWidget(String widgetId) {
         return registeredWidgets.get(widgetId);
     }
 
@@ -141,7 +141,7 @@ public class DashboardWidgetRegistry {
      *
      * @return ウィジェットのリスト
      */
-    public List<IDashboardWidget> getAllWidgets() {
+    public synchronized List<IDashboardWidget> getAllWidgets() {
         return new ArrayList<>(registeredWidgets.values());
     }
 
@@ -151,7 +151,7 @@ public class DashboardWidgetRegistry {
      * @param size サイズ
      * @return ウィジェットのリスト
      */
-    public List<IDashboardWidget> getWidgetsBySize(DashboardWidgetSize size) {
+    public synchronized List<IDashboardWidget> getWidgetsBySize(DashboardWidgetSize size) {
         return registeredWidgets.values().stream()
                 .filter(w -> w.getSize() == size)
                 .collect(Collectors.toList());
@@ -163,9 +163,18 @@ public class DashboardWidgetRegistry {
      * @param slot スロット
      * @return ウィジェットのリスト
      */
-    public List<IDashboardWidget> getAvailableWidgetsForSlot(DashboardSlot slot) {
+    public synchronized List<IDashboardWidget> getAvailableWidgetsForSlot(DashboardSlot slot) {
         DashboardWidgetSize requiredSize = slot.getRequiredSize();
-        return getWidgetsBySize(requiredSize);
+        return getWidgetsBySizeInternal(requiredSize);
+    }
+
+    /**
+     * 指定サイズのウィジェット一覧を取得する（内部用、同期なし）。
+     */
+    private List<IDashboardWidget> getWidgetsBySizeInternal(DashboardWidgetSize size) {
+        return registeredWidgets.values().stream()
+                .filter(w -> w.getSize() == size)
+                .collect(Collectors.toList());
     }
 
     // === スロット割り当て ===
@@ -176,7 +185,7 @@ public class DashboardWidgetRegistry {
      * @param slot スロット
      * @return ウィジェット、割り当てがない場合はnull
      */
-    public IDashboardWidget getWidgetForSlot(DashboardSlot slot) {
+    public synchronized IDashboardWidget getWidgetForSlot(DashboardSlot slot) {
         String widgetId = slotAssignments.get(slot);
         if (widgetId == null) {
             return null;
@@ -242,7 +251,7 @@ public class DashboardWidgetRegistry {
      *
      * @return スロットとウィジェットIDのマップ
      */
-    public Map<DashboardSlot, String> getAllAssignments() {
+    public synchronized Map<DashboardSlot, String> getAllAssignments() {
         return new EnumMap<>(slotAssignments);
     }
 

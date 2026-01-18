@@ -370,11 +370,12 @@ public class HardwareController {
     /**
      * バッテリーレベルを取得する。
      *
-     * @return バッテリーレベル（0.0-1.0）
+     * @return バッテリーレベル（0.0-1.0の正規化された値）
      */
     public float getBatteryLevel() {
         if (batteryInfo != null) {
-            return batteryInfo.getBatteryLevel();
+            // BatteryInfo.getBatteryLevel()は0-100のintを返すため、0.0-1.0に正規化
+            return batteryInfo.getBatteryLevel() / 100.0f;
         }
         return 1.0f; // デフォルト値
     }

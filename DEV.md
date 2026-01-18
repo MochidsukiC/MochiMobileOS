@@ -109,6 +109,24 @@
   - `Kernel.requestRender()` - Dirty Flagベースの描画最適化
   - 後方互換性: 既存のScreen.tick()はそのまま動作（デフォルト60Hz）
   - 設計ドキュメント: `KERNEL_LOOP_ARCHITECTURE.md`
+- **サーバーアプリ動的ロード機能（2026-01-09）**
+  - 外部アプリ（VirtualHttpServer実装）を専用ディレクトリから動的にロード可能に
+  - 新規クラス: `jp.moyashi.phoneos.server.ServerAppLoader`
+    - スキャン対象ディレクトリ（優先順）:
+      1. `mmos_server_data/server_apps/` - サーバー専用アプリ
+      2. `mmos_server_data/apps/` - クライアント+サーバー統合アプリ（IApplication + VirtualHttpServer）
+    - ServiceLoader（SPI）を使用してVirtualHttpServer実装を検出
+    - 検出したサーバーをSystemServerRegistryに自動登録
+  - MMOSServer拡張:
+    - `setServerDataPath(Path)` - サーバーデータのベースパス設定
+    - `getServerDataPath()` - サーバーデータパス取得
+    - 初期化時にServerAppLoaderを呼び出し
+  - Forge統合: `MochiMobileOSMod.commonSetup()`でサーバーデータパスを設定
+  - サーバーアプリの作成方法:
+    - VirtualHttpServerインターフェースを実装
+    - `META-INF/services/jp.moyashi.phoneos.server.network.VirtualHttpServer`にクラス名を記載
+    - JARを`mmos_server_data/server_apps/`または`mmos_server_data/apps/`に配置
+  - **統合JAR対応**: 1つのJARにIApplication（クライアント）とVirtualHttpServer（サーバー）の両方を含めることが可能
 
 ## 現在の仕様（抜粋）
 
@@ -258,6 +276,214 @@
   - 原因: `readResponse` メソッドの実装不備。最後のデータチャンクを書き込んだ際、`bytesRead > 0` であっても `readPosition < length` が `false` となり、`false` を返却していた。
   - JCEF仕様: `readResponse` はデータが利用可能な場合（`bytesRead > 0`）、必ず `true` を返すべきである。`false` はエラーまたはEOF（`bytesRead == 0`）を示す。
   - 解決策: `readResponse` でデータを書き込んだ場合は常に `true` を返すように修正する。
+- ~~**システムジェスチャー領域が画面下部のUI操作を阻害**（2026-01-08修正済み）~~
+  - 症状: 画面下部（Y > gestureZoneY）に配置されたUIボタンが反応しない
+  - 原因: `InputManager`がシステムジェスチャー領域からのタッチを即座にブロックし、アプリにイベントを転送しなかった
+  - 解決策: 「上方向スワイプ」のみをシステムジェスチャーとして消費し、単なるタップはアプリに転送するように修正
+  - 修正ファイル: `core/src/main/java/jp/moyashi/phoneos/core/input/InputManager.java`
+
+## CodeXレビューログ
+
+### CodeXレビュー (2026-01-17) - Iteration 1
+- **レビューツール**: CodeX CLI (`codex exec --full-auto`)
+- **指摘件数**: 4件対応（重要な問題に絞って対応）
+- **対応内容**:
+  - `Event.java`: HashMap → ConcurrentHashMap（非同期イベント配信時のスレッドセーフ性改善）
+  - `EventBus.java`: 未使用のsyncExecutor削除（デッドコード除去、リソース節約）
+  - `ResourceManager.java`: try-with-resources使用でInputStream確実クローズ（リソースリーク修正）
+  - `LoggerService.java`: ログレベル判定復活、System.out出力をWARN/ERRORのみに（パフォーマンス改善）
+- **ビルド結果**: 成功
+- **コミット**: ce6272d
+
+### CodeXレビュー (2026-01-17) - Iteration 2
+- **レビューツール**: CodeX CLI (`codex exec --full-auto`)
+- **指摘件数**: 3件対応（高優先度問題に絞って対応）
+- **対応内容**:
+  - `EventBus.java`: postDelayed用の共有ScheduledExecutorService導入（リソースリーク修正）
+  - `ResourceManager.java`: fontCache/imageCache → ConcurrentHashMap（スレッドセーフ化）
+  - `VFS.java`: resolveVFSPathにパストラバーサル対策追加（セキュリティ修正）
+- **ビルド結果**: 成功
+- **コミット**: 2e7d77d
+### CodeXレビュー (2026-01-17) - Iteration 3
+- **レビューツール**: 手動（Iteration 2で検出された中優先度指摘を対応）
+- **指摘件数**: 4件対応
+- **対応内容**:
+  - `DefaultChromiumService.java`: ポンプ間隔1ms→8ms（CPU負荷軽減）、スレッド優先度NORM_PRIORITY（starvation防止）、surfaceId生成をAtomicLong化（衝突防止）
+  - `VirtualRouter.java`: HashMap/ArrayList → ConcurrentHashMap/CopyOnWriteArrayList（スレッドセーフ化）
+  - `ResourceCache.java`: removeInvalidEntriesでaccessOrderからも削除（LRU順序マップ肥大化防止）
+  - `ChromiumRenderHandler.java`: dispose()メソッド追加でGPUテクスチャ解放対応
+- **ビルド結果**: 成功
+- **コミット**: 4feac4e
+
+### CodeXレビュー (2026-01-17) - Iteration 4
+- **レビューツール**: CodeX CLI (`codex exec --full-auto`)
+- **指摘件数**: 6件対応（セキュリティ・リソースリーク）
+- **対応内容**:
+  - `HttpmSchemeHandler.java`: XSS脆弱性修正（generateErrorPageにHTMLエスケープ追加）
+  - `VirtualNetworkResourceHandler.java`: XSS脆弱性修正（generateErrorPage/generateNoServicePageにHTMLエスケープ追加）
+  - `AppAssetResourceHandler.java`: XSS脆弱性修正 + リソースリーク修正（finally blockでInputStream確実クローズ）
+  - `WebScreen.java`: リソースリーク修正（loadHtmlFromResourceにfinally block追加）
+  - `Kernel.java`: リソースリーク修正（loadJapaneseFontにtry-finally追加でfontStream確実クローズ）
+- **ビルド結果**: 成功
+- **コミット**: 29416f0
+
+### CodeXレビュー (2026-01-17) - Iteration 5
+- **レビューツール**: CodeX CLI (`codex exec --full-auto`)
+- **指摘件数**: 3件対応（高優先度のセキュリティ・スレッドセーフ・バグ）
+- **対応内容**:
+  - `ChromiumBrowser.java`: Intent URLスキームをhttp/httpsに限定（file:/javascript:等ブロック）
+  - `DefaultChromiumService.java`: activeSurfaceIdをvolatile化、ポンプループでスナップショット取得による競合回避
+  - `Kernel.java`: SensorManagerImpl直接キャストをinstanceofガード付きに変更（ClassCastException防止）
+- **ビルド結果**: 成功
+- **コミット**: f691301
+
+### CodeXレビュー (2026-01-17) - Iteration 6
+- **レビューツール**: CodeX CLI (`codex exec --full-auto`)
+- **指摘件数**: 3件対応（スレッドセーフ・セキュリティ・バグ）
+- **対応内容**:
+  - `LoggerService.java`: SimpleDateFormatをDateTimeFormatterに置換（スレッドセーフ化）
+  - `ChromiumBrowserScreen.java`: intent:// URLのスキームホワイトリスト追加（https/http限定）、センシティブなパラメータのログマスク追加
+  - `InputManager.java`: マウスホイールイベントで正しい座標を使用するよう修正（座標追跡フィールド追加）
+- **ビルド結果**: 成功
+- **コミット**: 8ab496a
+
+### CodeXレビュー (2026-01-17) - Iteration 7
+- **レビューツール**: CodeX CLI (`codex exec --full-auto`)
+- **指摘件数**: 2件対応（バグ/エンコーディング・安全性）
+- **対応内容**:
+  - `MessageStorage.java`: FileReader/FileWriterをUTF-8明示のFiles.newBufferedReader/Writerに変更（プラットフォーム依存のエンコーディング問題修正）
+  - `Kernel.java`: System.exit(0)を削除（Forge環境でMinecraftプロセス全体を終了させるリスク回避、parentApplet.exit()に委譲）
+- **未対応（設計変更が必要）**:
+  - LoggerService: 追記モード/非同期化（VFS設計変更が必要）
+  - FileSystemManager: 仮想パス判定の厳密化（大規模リファクタリングが必要）
+  - DefaultChromiumService: ポーリング間隔の動的制御（機能影響あり）
+  - System.out.println統一（影響範囲が広い）
+- **ビルド結果**: 成功
+- **コミット**: ad2a2e0
+
+### CodeXレビュー (2026-01-18) - Iteration 8
+- **レビューツール**: CodeX CLI (`codex exec --full-auto`)
+- **指摘件数**: 2件対応（スレッドセーフ・クロスプラットフォーム）
+- **対応内容**:
+  - `ThemeContext.java`: staticフィールド`theme`にvolatile追加（複数スレッド間での可視性を保証）
+  - `FileSystemManager.java`: getStorageInfo()をクロスプラットフォーム対応（Paths.get("/")をVFSルートとFileSystems.getDefault().getRootDirectories()に変更）
+- **未対応（設計変更が必要）**:
+  - AppStore: JAR署名/ハッシュ検証、https強制（サプライチェーンセキュリティ）
+  - AppAssetResourceHandler/AppSchemeManager: パストラバーサル対策（セキュリティ設計）
+  - AppLoader: URLClassLoaderの使い回し+close（リファクタリング必要）
+  - FileSystemManager: LRUキャッシュ実装刷新（Caffeine等導入検討）
+  - printStackTraceのLogger化（影響範囲が広い）
+- **ビルド結果**: 成功
+- **コミット**: 065a40f
+
+### CodeXレビュー (2026-01-18) - Iteration 9
+- **レビューツール**: CodeX CLI (`codex exec --full-auto`)
+- **指摘件数**: 4件対応（文字コード統一・NPE防止・スレッドセーフ・スレッドプール最適化）
+- **対応内容**:
+  - `VFS.java`: Files.readString/writeStringにUTF-8エンコーディングを明示的に指定（クロスプラットフォーム互換性）
+  - `FileSystemManager.java`: readFile戻り値がnullの場合のキャッシュ追加をスキップ（NPE防止）
+  - `AppStoreScreen.java`: downloadingAppIdsをCopyOnWriteArrayListに変更、Thread.sleepをScheduledExecutorServiceに置換（スレッドセーフ化・非ブロッキング化）
+  - `EventBus.java`: CachedThreadPoolを上限付きThreadPoolExecutorに変更（コア2/最大8スレッド、キュー100、CallerRunsPolicy）
+- **未対応（設計変更が必要）**:
+  - FileSystemManager: 仮想パス判定ロジック刷新（VFSパス規約の明示化）
+  - InputManager.update: デッドコード整理（長押し検出設計見直し）
+  - 既存の見送り項目継続（JAR署名検証、パストラバーサル、LRUキャッシュ等）
+- **ビルド結果**: 成功
+- **コミット**: 732c816
+
+### CodeXレビュー (2026-01-18) - Iteration 10
+- **レビューツール**: CodeX CLI (`codex exec --full-auto`)
+- **指摘件数**: 2件対応（スレッドプール最適化）
+- **対応内容**:
+  - `FileSystemManager.java`: newCachedThreadPoolを上限付きThreadPoolExecutorに変更（コア2/最大8/キュー50/CallerRunsPolicy）
+  - `ResourceCache.java`: loaderExecutorをnewCachedThreadPoolから上限付きThreadPoolExecutorに変更（コア2/最大6/キュー30/CallerRunsPolicy）
+- **未対応（設計変更が必要）**:
+  - 既存の見送り項目継続（JAR署名検証、パストラバーサル、LRUキャッシュ等）
+- **ビルド結果**: 成功
+- **コミット**: c7d962a
+
+### CodeXレビュー (2026-01-18) - Iteration 11
+- **レビューツール**: CodeX CLI (`codex exec --full-auto`)
+- **指摘件数**: 3件対応（スレッドセーフ・XSS対策）
+- **対応内容**:
+  - `VirtualAdapter.java`: socketフィールドにvolatile追加（複数スレッド間の可視性保証）
+  - `VirtualHttpResponse.java`: error()メソッドにHTMLエスケープ追加（XSS対策）
+  - `AppLoader.java`: hasScannedAppsをvolatile化、コレクションをCopyOnWriteArrayList/ConcurrentHashMapに変更（スレッドセーフ化）
+- **未対応（設計変更が必要）**:
+  - URLClassLoaderリーク（JAR単位のライフサイクル管理が必要）
+  - JAR署名検証（セキュリティ設計が必要）
+  - JSONパース刷新（Gsonへの移行）
+  - AppStoreScreenのScheduler停止（Screenライフサイクル設計が必要）
+  - NetworkAdapterホスト抽出厳格化（URIパース導入）
+- **ビルド結果**: 成功
+- **コミット**: 109d6ab
+
+### CodeXレビュー (2026-01-18) - Iteration 12
+- **レビューツール**: CodeX CLI (`codex exec --full-auto`)
+- **指摘件数**: 1件対応（NPEクラッシュ防止）
+- **対応内容**:
+  - `AppStoreScreen.java`: pkg.nameのnullチェック追加、フォールバック値として"Unknown"を使用（悪意あるリポジトリJSONによるクラッシュ防止）
+- **未対応（設計変更が必要）**:
+  - 危険権限の自動許可（PermissionManagerImpl - ダイアログ実装が必要）
+  - AppStore JARインストールに署名/ハッシュ検証・サイズ上限（セキュリティ設計が必要）
+  - AppAssetResourceHandler/AppSchemeManagerのパストラバーサル対策（「..」禁止等）
+  - RealAdapterバイナリ取得の応答サイズ上限
+  - 既存の見送り項目継続
+- **ビルド結果**: 成功
+- **コミット**: 98a412c
+
+### CodeXレビュー (2026-01-18) - Iteration 13
+- **レビューツール**: Gemini-CLI（CodeX使用制限のため代替）
+- **指摘件数**: 2件対応（スレッドセーフ・セキュリティ）
+- **対応内容**:
+  - `Choreographer.java`: renderDirtyフィールドにvolatile追加（複数スレッドからrequestRender()が呼ばれた際の可視性保証）
+  - `RealAdapter.java`: SSRF対策追加（プライベート/ローカルIPアドレスへのアクセスをブロック）
+    - ループバック (127.0.0.0/8, ::1)
+    - プライベートアドレス (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16)
+    - リンクローカル (169.254.0.0/16, fe80::/10)
+    - マルチキャスト・ワイルドカードアドレス
+    - IPv4マップIPv6アドレス対応
+- **未対応（設計変更が必要）**:
+  - 既存の見送り項目継続
+- **ビルド結果**: 成功
+- **コミット**: 8e2a86b
+
+### CodeXレビュー (2026-01-18) - Iteration 14
+- **レビューツール**: Gemini-CLI
+- **指摘件数**: 4件対応（スレッドセーフ）
+- **対応内容**:
+  - `MediaSessionManager.java`: activeSessionにvolatile追加（スレッド間可視性保証）
+  - `LockManager.java`: isLockedにvolatile追加（スレッド間可視性保証）
+  - `PowerManager.java`: 複数フィールドにvolatile追加
+    - currentState, sleepStartTime, lastActivityTime, autoSleepTimeout, autoSleepEnabled
+  - `ServiceManager.java`: launchAppをcomputeIfAbsentでスレッドセーフ化（check-then-act競合防止）
+- **確認済み（修正不要）**:
+  - ControlCenterManager: 主要フィールドには既にvolatile付与済み
+  - ScreenManager: unsetupScreens/setupCompletedScreensは既にConcurrentHashMap.newKeySet()使用
+- **未対応（設計変更が必要）**:
+  - PowerManager状態遷移の原子性（synchronizedブロック、AtomicReference導入）
+  - ProcessInfo統計更新の原子性（AtomicLong導入）
+  - RenderPipelineキャッシュ設計（ピクセルキャッシュのスレッドセーフ化）
+  - MediaSessionManager.createSessionの重複チェック（computeIfAbsent化）
+  - 既存の見送り項目継続
+- **ビルド結果**: 成功
+- **コミット**: e4d01d5
+
+### CodeXレビュー (2026-01-18) - Iteration 15
+- **レビューツール**: Gemini-CLI
+- **指摘件数**: 5件対応（バグ1件、スレッドセーフ4件）
+- **対応内容**:
+  - `HardwareController.java`: getBatteryLevel()のロジックバグ修正（0-100を0.0-1.0に正規化）
+  - `Time.java`: 複数フィールドにvolatile追加（timeScale, lastVsyncNanos, totalFrameCount, currentVsyncTargetNanos, paused）
+  - `ControlCenterCardRegistry.java`: 読み取りメソッドにsynchronized追加（getCard, getAllCards, getCardsForSection, getAllVisibleCards, getAllPlacements, getPlacement）
+  - `DashboardWidgetRegistry.java`: 読み取りメソッドにsynchronized追加（getWidget, getAllWidgets, getWidgetsBySize, getAvailableWidgetsForSlot, getWidgetForSlot, getAllAssignments）
+- **未対応（設計変更が必要）**:
+  - TabListScreen: Buttonインスタンス毎フレーム再生成（パフォーマンス）
+  - HomePage: shortcutsのスレッドセーフ化、nextPageIdのAtomicInteger化
+  - ClockWidget/SearchWidget: volatileフィールド追加
+  - 既存の見送り項目継続
+- **ビルド結果**: 成功
+- **コミット**: e34d4f9
 
 ## TODO
 
