@@ -20,8 +20,8 @@ public class Choreographer {
     /** ロガー */
     private LoggerService logger;
 
-    /** 描画が必要かどうか (Dirty Flag) */
-    private boolean renderDirty = true;
+    /** 描画が必要かどうか (Dirty Flag) - 複数スレッドからrequestRender()が呼ばれる可能性があるためvolatile */
+    private volatile boolean renderDirty = true;
 
     /** フレームコールバック */
     private FrameCallback frameCallback;

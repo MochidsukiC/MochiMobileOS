@@ -3,7 +3,9 @@ package jp.moyashi.phoneos.core.service.network;
 import jp.moyashi.phoneos.core.Kernel;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.URI;
+import java.net.UnknownHostException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -32,6 +34,12 @@ public class RealAdapter {
     private final Kernel kernel;
     private final HttpClient httpClient;
     private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(30);
+
+    /**
+     * プライベート/ローカルIPアドレスへのアクセスを禁止するかどうか。
+     * SSRF（Server-Side Request Forgery）攻撃を防止するために有効化推奨。
+     */
+    private static final boolean BLOCK_PRIVATE_IPS = true;
 
     /**
      * RealAdapterを構築する。
@@ -68,6 +76,95 @@ public class RealAdapter {
     }
 
     /**
+     * URLがプライベート/ローカルIPアドレスかどうかをチェックする。
+     * SSRF攻撃防止のため、プライベートネットワーク・ループバック・リンクローカルアドレスをブロック。
+     *
+     * @param url チェック対象のURL
+     * @return プライベートIPアドレスの場合true
+     */
+    private boolean isPrivateOrLocalAddress(String url) {
+        if (!BLOCK_PRIVATE_IPS) {
+            return false;
+        }
+
+        try {
+            URI uri = URI.create(url);
+            String host = uri.getHost();
+            if (host == null) {
+                return true; // ホストが取得できない場合は安全のためブロック
+            }
+
+            // localhostの文字列チェック
+            if (host.equalsIgnoreCase("localhost")) {
+                return true;
+            }
+
+            // IPアドレスを解決してチェック
+            InetAddress address = InetAddress.getByName(host);
+
+            // ループバックアドレス (127.0.0.0/8, ::1)
+            if (address.isLoopbackAddress()) {
+                return true;
+            }
+
+            // プライベートアドレス (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, fc00::/7)
+            if (address.isSiteLocalAddress()) {
+                return true;
+            }
+
+            // リンクローカルアドレス (169.254.0.0/16, fe80::/10)
+            if (address.isLinkLocalAddress()) {
+                return true;
+            }
+
+            // マルチキャストアドレス
+            if (address.isMulticastAddress()) {
+                return true;
+            }
+
+            // ワイルドカードアドレス (0.0.0.0, ::)
+            if (address.isAnyLocalAddress()) {
+                return true;
+            }
+
+            // IPv4マップされたIPv6アドレスの場合、埋め込みIPv4をチェック
+            byte[] addressBytes = address.getAddress();
+            if (addressBytes.length == 16) {
+                // ::ffff:x.x.x.x 形式のIPv4マップアドレス
+                boolean isV4Mapped = true;
+                for (int i = 0; i < 10; i++) {
+                    if (addressBytes[i] != 0) {
+                        isV4Mapped = false;
+                        break;
+                    }
+                }
+                if (isV4Mapped && addressBytes[10] == (byte) 0xff && addressBytes[11] == (byte) 0xff) {
+                    // 埋め込みIPv4を抽出してチェック
+                    int b1 = addressBytes[12] & 0xff;
+                    int b2 = addressBytes[13] & 0xff;
+                    // プライベートIPv4レンジをチェック
+                    if (b1 == 10 ||                                    // 10.0.0.0/8
+                        (b1 == 172 && (b2 >= 16 && b2 <= 31)) ||       // 172.16.0.0/12
+                        (b1 == 192 && b2 == 168) ||                    // 192.168.0.0/16
+                        b1 == 127 ||                                    // 127.0.0.0/8
+                        (b1 == 169 && b2 == 254)) {                    // 169.254.0.0/16
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+
+        } catch (UnknownHostException e) {
+            logError("Failed to resolve host for SSRF check: " + e.getMessage());
+            return true; // 解決できない場合は安全のためブロック
+        } catch (Exception e) {
+            logError("SSRF check failed: " + e.getMessage());
+            return true; // エラー時は安全のためブロック
+        }
+    }
+
+    /**
      * HTTPリクエストを送信する（非同期）。
      *
      * @param url リクエストURL
@@ -89,6 +186,13 @@ public class RealAdapter {
      */
     public CompletableFuture<RealHttpResponse> httpRequest(
             String url, String method, String contentType, String body) {
+
+        // SSRF対策: プライベート/ローカルIPアドレスへのアクセスをブロック
+        if (isPrivateOrLocalAddress(url)) {
+            logError("SSRF blocked: Access to private/local address denied: " + url);
+            return CompletableFuture.completedFuture(
+                    RealHttpResponse.error("Access to private/local network addresses is not allowed"));
+        }
 
         try {
             HttpRequest.Builder builder = HttpRequest.newBuilder()
@@ -159,6 +263,13 @@ public class RealAdapter {
      * @return HTTPレスポンスのFuture（ボディはbyte[]）
      */
     public CompletableFuture<RealByteHttpResponse> httpRequestBytes(String url) {
+        // SSRF対策: プライベート/ローカルIPアドレスへのアクセスをブロック
+        if (isPrivateOrLocalAddress(url)) {
+            logError("SSRF blocked: Access to private/local address denied: " + url);
+            return CompletableFuture.completedFuture(
+                    RealByteHttpResponse.error("Access to private/local network addresses is not allowed"));
+        }
+
         try {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(url))
@@ -200,6 +311,13 @@ public class RealAdapter {
      * @throws NetworkException ネットワークエラー時
      */
     public RealHttpResponse httpRequestSync(String url, String method) throws NetworkException {
+        // SSRF対策: プライベート/ローカルIPアドレスへのアクセスをブロック
+        if (isPrivateOrLocalAddress(url)) {
+            logError("SSRF blocked: Access to private/local address denied: " + url);
+            throw new NetworkException("Access to private/local network addresses is not allowed",
+                    NetworkException.ErrorType.INTERNAL_ERROR, null);
+        }
+
         try {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(url))
