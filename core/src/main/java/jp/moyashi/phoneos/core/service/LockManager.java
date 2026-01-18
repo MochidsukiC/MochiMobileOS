@@ -100,10 +100,9 @@ public class LockManager {
         List<Integer> savedPattern = getSavedPattern();
         boolean isMatch = inputPattern.equals(savedPattern);
         
+        // セキュリティ: 認証結果のみログ出力。パターン自体はログに残さない (CWE-532対策)
         System.out.println("LockManager: パターン認証結果 = " + (isMatch ? "成功" : "失敗"));
-        System.out.println("LockManager: 入力パターン = " + inputPattern);
-        System.out.println("LockManager: 正解パターン = " + savedPattern);
-        
+
         return isMatch;
     }
     

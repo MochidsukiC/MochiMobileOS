@@ -179,13 +179,21 @@ public class VirtualRouter {
      * @param packet パケット
      */
     private void handleAppInstallRequest(VirtualPacket packet) {
-        System.out.println("[VirtualRouter] Handling app install request from: " + packet.getSource());
+        IPvMAddress source = packet.getSource();
+
+        // 無限ループ防止: 送信元がシステムアドレスの場合は応答しない (CWE-400対策)
+        if (source == null || source.isSystem()) {
+            System.err.println("[VirtualRouter] Ignoring app install request from system/null address to prevent infinite loop");
+            return;
+        }
+
+        System.out.println("[VirtualRouter] Handling app install request from: " + source);
 
         // TODO: 実際のアプリケーションインストール処理を実装
         // 仮の応答を送信
         VirtualPacket response = VirtualPacket.builder()
                 .source(packet.getDestination())
-                .destination(packet.getSource())
+                .destination(source)
                 .type(VirtualPacket.PacketType.APP_INSTALL_RESPONSE)
                 .put("status", "success")
                 .put("message", "Application install request received")

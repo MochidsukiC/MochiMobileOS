@@ -1,6 +1,8 @@
 package jp.moyashi.phoneos.core.service;
 
 import jp.moyashi.phoneos.core.ui.Screen;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * アプリケーションプロセスの実行状態を保持するデータクラス。
@@ -28,16 +30,19 @@ public class ProcessInfo {
 
     private final String appId;
     private final Screen screen;
-    private Priority priority;
-    private boolean isForeground;
-    private boolean isBackgroundService;
+    /** 優先度 - UIスレッドとTickスレッド間で共有されるためvolatile */
+    private volatile Priority priority;
+    /** フォアグラウンド状態 - 複数スレッドから参照されるためvolatile */
+    private volatile boolean isForeground;
+    /** バックグラウンドサービスフラグ - 複数スレッドから参照されるためvolatile */
+    private volatile boolean isBackgroundService;
 
     // 統計情報
-    private long totalTickTime;      // 累積tick実行時間（ナノ秒）
-    private long totalDrawTime;      // 累積draw実行時間（ナノ秒）
-    private int launchCount;         // 起動回数
-    private long lastLaunchTime;     // 最終起動時刻（ミリ秒）
-    private int crashCount;          // クラッシュ回数
+    private final AtomicLong totalTickTime;      // 累積tick実行時間（ナノ秒）
+    private final AtomicLong totalDrawTime;      // 累積draw実行時間（ナノ秒）
+    private final AtomicInteger launchCount;         // 起動回数
+    private volatile long lastLaunchTime;     // 最終起動時刻（ミリ秒）
+    private final AtomicInteger crashCount;          // クラッシュ回数
 
     /**
      * ProcessInfoを作成する。
@@ -52,11 +57,11 @@ public class ProcessInfo {
         this.isForeground = false;
         this.isBackgroundService = false;
 
-        this.totalTickTime = 0;
-        this.totalDrawTime = 0;
-        this.launchCount = 0;
+        this.totalTickTime = new AtomicLong(0);
+        this.totalDrawTime = new AtomicLong(0);
+        this.launchCount = new AtomicInteger(0);
         this.lastLaunchTime = System.currentTimeMillis();
-        this.crashCount = 0;
+        this.crashCount = new AtomicInteger(0);
     }
 
     // ==================== Getters ====================
@@ -82,15 +87,15 @@ public class ProcessInfo {
     }
 
     public long getTotalTickTime() {
-        return totalTickTime;
+        return totalTickTime.get();
     }
 
     public long getTotalDrawTime() {
-        return totalDrawTime;
+        return totalDrawTime.get();
     }
 
     public int getLaunchCount() {
-        return launchCount;
+        return launchCount.get();
     }
 
     public long getLastLaunchTime() {
@@ -98,7 +103,7 @@ public class ProcessInfo {
     }
 
     public int getCrashCount() {
-        return crashCount;
+        return crashCount.get();
     }
 
     // ==================== Setters ====================
@@ -123,7 +128,7 @@ public class ProcessInfo {
      * @param nanos 実行時間（ナノ秒）
      */
     public void addTickTime(long nanos) {
-        this.totalTickTime += nanos;
+        this.totalTickTime.addAndGet(nanos);
     }
 
     /**
@@ -132,14 +137,14 @@ public class ProcessInfo {
      * @param nanos 実行時間（ナノ秒）
      */
     public void addDrawTime(long nanos) {
-        this.totalDrawTime += nanos;
+        this.totalDrawTime.addAndGet(nanos);
     }
 
     /**
      * 起動回数をインクリメントする。
      */
     public void incrementLaunchCount() {
-        this.launchCount++;
+        this.launchCount.incrementAndGet();
         this.lastLaunchTime = System.currentTimeMillis();
     }
 
@@ -147,7 +152,7 @@ public class ProcessInfo {
      * クラッシュ回数をインクリメントする。
      */
     public void incrementCrashCount() {
-        this.crashCount++;
+        this.crashCount.incrementAndGet();
     }
 
     // ==================== ユーティリティ ====================
@@ -178,8 +183,9 @@ public class ProcessInfo {
      * @return 平均tick時間
      */
     public double getAverageTickTimeMs() {
-        if (launchCount == 0) return 0.0;
-        return (totalTickTime / 1_000_000.0) / launchCount;
+        long count = launchCount.get();
+        if (count == 0) return 0.0;
+        return (totalTickTime.get() / 1_000_000.0) / count;
     }
 
     /**
@@ -188,8 +194,9 @@ public class ProcessInfo {
      * @return 平均draw時間
      */
     public double getAverageDrawTimeMs() {
-        if (launchCount == 0) return 0.0;
-        return (totalDrawTime / 1_000_000.0) / launchCount;
+        long count = launchCount.get();
+        if (count == 0) return 0.0;
+        return (totalDrawTime.get() / 1_000_000.0) / count;
     }
 
     @Override
@@ -197,6 +204,6 @@ public class ProcessInfo {
         return String.format("ProcessInfo{appId='%s', priority=%s, foreground=%s, backgroundService=%s, " +
                         "launchCount=%d, avgTickTime=%.2fms, avgDrawTime=%.2fms, crashCount=%d}",
                 appId, priority, isForeground, isBackgroundService,
-                launchCount, getAverageTickTimeMs(), getAverageDrawTimeMs(), crashCount);
+                launchCount.get(), getAverageTickTimeMs(), getAverageDrawTimeMs(), crashCount.get());
     }
 }

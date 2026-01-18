@@ -531,8 +531,9 @@ public class FileSystemManager {
             Iterator<Map.Entry<String, CachedFile>> it = fileCache.entrySet().iterator();
             if (it.hasNext()) {
                 Map.Entry<String, CachedFile> entry = it.next();
-                currentCacheSize.addAndGet(-entry.getValue().getSize());
-                it.remove();
+                long entrySize = entry.getValue().getSize();
+                it.remove(); // 先に削除を実行
+                currentCacheSize.addAndGet(-entrySize); // 削除成功後にサイズを減算
             }
         }
 

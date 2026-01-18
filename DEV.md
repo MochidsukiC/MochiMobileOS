@@ -485,6 +485,19 @@
 - **ビルド結果**: 成功
 - **コミット**: e34d4f9
 
+### CodeXレビュー (2026-01-18) - Iteration 16
+- **レビューツール**: Gemini-CLI
+- **指摘件数**: 4件対応（セキュリティ1件、DoS1件、バグ1件、スレッドセーフ1件）
+- **対応内容**:
+  - `LockManager.java`: checkPattern()のログからパターン情報を削除（CWE-532対策、平文パスワードログ出力防止）
+  - `VirtualRouter.java`: handleAppInstallRequest()で送信元がシステムアドレスの場合応答しない（CWE-400対策、無限再帰ループ防止）
+  - `FileSystemManager.java`: キャッシュ削除の順序修正（削除成功後にサイズ減算）
+  - `ProcessInfo.java`: priority, isForeground, isBackgroundServiceにvolatile追加
+- **未対応（設計変更が必要）**:
+  - 既存の見送り項目継続
+- **ビルド結果**: 成功
+- **コミット**: f903b4a
+
 ## TODO
 
 ### メディア再生管理システム（完了 2025-12-21）
