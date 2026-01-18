@@ -1,6 +1,7 @@
 package jp.moyashi.phoneos.core.service;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -113,7 +114,7 @@ public class VFS {
                 return null;
             }
             
-            String content = Files.readString(filePath);
+            String content = Files.readString(filePath, StandardCharsets.UTF_8);
             //System.out.println("VFS: ファイル読み込み成功: " + path + " (" + content.length() + "文字)");
             return content;
 
@@ -194,7 +195,7 @@ public class VFS {
             }
             
             // ファイルに書き込み（既存ファイルを上書き）
-            Files.writeString(filePath, data, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+            Files.writeString(filePath, data, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
             //System.out.println("VFS: ファイル書き込み成功: " + path + " (" + data.length() + "文字)");
             return true;
             

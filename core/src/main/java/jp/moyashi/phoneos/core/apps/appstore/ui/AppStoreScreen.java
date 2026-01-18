@@ -10,9 +10,13 @@ import jp.moyashi.phoneos.core.service.network.NetworkAdapter;
 import processing.core.PConstants;
 import processing.core.PGraphics;
 
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * AppStoreのメイン画面。
@@ -61,8 +65,15 @@ public class AppStoreScreen implements Screen {
     private static final int BUTTON_WIDTH = 90;
     private static final int BUTTON_HEIGHT = 32;
 
-    /** ダウンロード中のアプリID */
-    private final List<String> downloadingAppIds = new ArrayList<>();
+    /** ダウンロード中のアプリID（スレッドセーフ） */
+    private final List<String> downloadingAppIds = new CopyOnWriteArrayList<>();
+
+    /** 遅延タスク実行用スケジューラ */
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+        Thread t = new Thread(r, "AppStoreScreen-Scheduler");
+        t.setDaemon(true);
+        return t;
+    });
 
     public AppStoreScreen(Kernel kernel) {
         this.kernel = kernel;
@@ -384,13 +395,12 @@ public class AppStoreScreen implements Screen {
                 boolean success = kernel.getAppLoader().installModApp(appId, kernel);
                 if (success) {
                     statusMessage = pkg.name + " installed!";
-                    // UI更新のために少し待ってからメッセージを消す
-                    CompletableFuture.runAsync(() -> {
-                        try { Thread.sleep(3000); } catch (InterruptedException ignored) {}
+                    // UI更新のために3秒後にメッセージを消す（非ブロッキング）
+                    scheduler.schedule(() -> {
                         if (statusMessage != null && statusMessage.contains("installed")) {
                             statusMessage = null;
                         }
-                    });
+                    }, 3, TimeUnit.SECONDS);
                     
                     if (kernel.getNotificationManager() != null) {
                         kernel.getNotificationManager().addNotification(
@@ -461,14 +471,13 @@ public class AppStoreScreen implements Screen {
             
             statusMessage = pkg.name + " installed!";
             downloadingAppIds.remove(pkg.id);
-            
-            // 3秒後にステータスメッセージを消す
-            CompletableFuture.runAsync(() -> {
-                try { Thread.sleep(3000); } catch (InterruptedException ignored) {}
+
+            // 3秒後にステータスメッセージを消す（非ブロッキング）
+            scheduler.schedule(() -> {
                 if (statusMessage != null && statusMessage.contains("installed")) {
                     statusMessage = null;
                 }
-            });
+            }, 3, TimeUnit.SECONDS);
 
             // 通知を表示
             if (kernel.getNotificationManager() != null) {

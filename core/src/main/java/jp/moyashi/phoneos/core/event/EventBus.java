@@ -2,6 +2,7 @@ package jp.moyashi.phoneos.core.event;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 
@@ -46,6 +47,18 @@ public class EventBus {
     /** 履歴の最大サイズ */
     private static final int MAX_HISTORY_SIZE = 100;
 
+    /** 非同期実行スレッドプールのコアサイズ */
+    private static final int EXECUTOR_CORE_POOL_SIZE = 2;
+
+    /** 非同期実行スレッドプールの最大サイズ */
+    private static final int EXECUTOR_MAX_POOL_SIZE = 8;
+
+    /** スレッドのキープアライブ時間（秒） */
+    private static final long EXECUTOR_KEEP_ALIVE_SECONDS = 60L;
+
+    /** 作業キューの最大サイズ */
+    private static final int EXECUTOR_QUEUE_CAPACITY = 100;
+
     /** イベントバスが有効か */
     private volatile boolean enabled = true;
 
@@ -58,11 +71,21 @@ public class EventBus {
     private EventBus() {
         this.listeners = new ConcurrentHashMap<>();
         this.globalListeners = new CopyOnWriteArrayList<>();
-        this.executor = Executors.newCachedThreadPool(r -> {
-            Thread t = new Thread(r, "EventBus-Async");
-            t.setDaemon(true);
-            return t;
-        });
+        // 上限付きスレッドプール: 無制限増加を防止しバックプレッシャーを提供
+        AtomicInteger threadCounter = new AtomicInteger(0);
+        this.executor = new ThreadPoolExecutor(
+            EXECUTOR_CORE_POOL_SIZE,
+            EXECUTOR_MAX_POOL_SIZE,
+            EXECUTOR_KEEP_ALIVE_SECONDS,
+            TimeUnit.SECONDS,
+            new LinkedBlockingQueue<>(EXECUTOR_QUEUE_CAPACITY),
+            r -> {
+                Thread t = new Thread(r, "EventBus-Async-" + threadCounter.incrementAndGet());
+                t.setDaemon(true);
+                return t;
+            },
+            new ThreadPoolExecutor.CallerRunsPolicy() // 拒否時は呼び出し元スレッドで実行
+        );
         this.scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
             Thread t = new Thread(r, "EventBus-Scheduler");
             t.setDaemon(true);

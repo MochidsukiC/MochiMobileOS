@@ -169,8 +169,8 @@ public class FileSystemManager {
             content = Files.readString(Paths.get(path), StandardCharsets.UTF_8);
         }
 
-        // キャッシュに追加
-        if (cacheEnabled) {
+        // キャッシュに追加（contentがnullの場合はスキップ）
+        if (cacheEnabled && content != null) {
             addToCache(path, content);
         }
 
