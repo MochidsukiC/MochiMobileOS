@@ -3,11 +3,11 @@ package jp.moyashi.phoneos.core.service;
 import jp.moyashi.phoneos.core.app.IApplication;
 import jp.moyashi.phoneos.core.service.LoggerContext;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.io.File;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -35,19 +35,19 @@ public class AppLoader {
     /** アプリケーションファイルにアクセスするための仮想ファイルシステムインスタンス */
     private final VFS vfs;
     
-    /** 正常に読み込まれたアプリケーションのリスト */
+    /** 正常に読み込まれたアプリケーションのリスト（スレッドセーフ） */
     private final List<IApplication> loadedApps;
 
-    /** アプリケーションがスキャンされたかどうかを示すフラグ */
-    private boolean hasScannedApps;
+    /** アプリケーションがスキャンされたかどうかを示すフラグ（可視性保証のためvolatile化） */
+    private volatile boolean hasScannedApps;
 
-    /** 利用可能なMODアプリケーション候補のリスト（まだインストールされていない） */
+    /** 利用可能なMODアプリケーション候補のリスト（まだインストールされていない、スレッドセーフ） */
     private final List<IApplication> availableModApps;
 
-    /** インストール済みMODアプリケーションのリスト */
+    /** インストール済みMODアプリケーションのリスト（スレッドセーフ） */
     private final List<IApplication> installedModApps;
 
-    /** baseAppId -> resolvedAppIdのマッピング（永続化対応） */
+    /** baseAppId -> resolvedAppIdのマッピング（永続化対応、スレッドセーフ） */
     private final Map<String, String> appIdRegistry;
 
     /** 永続化ファイルパス */
@@ -60,11 +60,12 @@ public class AppLoader {
      */
     public AppLoader(VFS vfs) {
         this.vfs = vfs;
-        this.loadedApps = new ArrayList<>();
+        // スレッドセーフなコレクションを使用（UIスレッドとバックグラウンドスレッド間の競合防止）
+        this.loadedApps = new CopyOnWriteArrayList<>();
         this.hasScannedApps = false;
-        this.availableModApps = new ArrayList<>();
-        this.installedModApps = new ArrayList<>();
-        this.appIdRegistry = new HashMap<>();
+        this.availableModApps = new CopyOnWriteArrayList<>();
+        this.installedModApps = new CopyOnWriteArrayList<>();
+        this.appIdRegistry = new ConcurrentHashMap<>();
 
         // 永続化データを読み込み
         loadAppIdRegistry();

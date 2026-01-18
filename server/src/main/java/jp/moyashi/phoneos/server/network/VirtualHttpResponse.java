@@ -137,8 +137,23 @@ public class VirtualHttpResponse {
                 .statusText("Internal Server Error")
                 .mimeType("text/html")
                 .body("<!DOCTYPE html><html><head><title>500 Error</title></head>" +
-                      "<body><h1>500 Internal Server Error</h1><p>" + message + "</p></body></html>")
+                      "<body><h1>500 Internal Server Error</h1><p>" + escapeHtml(message) + "</p></body></html>")
                 .build();
+    }
+
+    /**
+     * HTML特殊文字をエスケープする（XSS対策）
+     */
+    private static String escapeHtml(String input) {
+        if (input == null) {
+            return "";
+        }
+        return input
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("\"", "&quot;")
+            .replace("'", "&#39;");
     }
 
     public static class Builder {

@@ -33,7 +33,8 @@ import java.util.function.Consumer;
 public class VirtualAdapter {
 
     private final Kernel kernel;
-    private VirtualSocket socket;
+    // 複数スレッドからのアクセスに対応するためvolatile化
+    private volatile VirtualSocket socket;
     private Consumer<VirtualPacket> internalPacketListener;
 
     /**
