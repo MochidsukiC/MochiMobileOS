@@ -251,13 +251,15 @@ public class AppStoreScreen implements Screen {
         g.fill(COLOR_TEXT_SUB);
         g.textAlign(PConstants.CENTER, PConstants.CENTER);
         g.textSize(24);
-        g.text(pkg.name.substring(0, 1).toUpperCase(), iconX + iconSize/2, iconY + iconSize/2);
+        // NPE防止: pkg.nameがnullまたは空の場合のフォールバック
+        String displayName = (pkg.name != null && !pkg.name.isEmpty()) ? pkg.name : "Unknown";
+        g.text(displayName.substring(0, 1).toUpperCase(), iconX + iconSize/2, iconY + iconSize/2);
 
         // テキスト情報
         g.textAlign(PConstants.LEFT, PConstants.TOP);
         g.fill(COLOR_TEXT);
         g.textSize(16);
-        g.text(pkg.name, iconX + iconSize + 12, y + 15);
+        g.text(displayName, iconX + iconSize + 12, y + 15);
         
         g.fill(COLOR_TEXT_SUB);
         g.textSize(12);
