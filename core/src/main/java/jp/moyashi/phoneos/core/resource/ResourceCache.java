@@ -144,11 +144,19 @@ public class ResourceCache {
             }
         };
 
-        this.loaderExecutor = Executors.newCachedThreadPool(r -> {
-            Thread t = new Thread(r, "ResourceLoader");
-            t.setDaemon(true);
-            return t;
-        });
+        // 上限付きスレッドプールを使用（unboundedなCachedThreadPoolはリソース枯渇のリスクあり）
+        this.loaderExecutor = new ThreadPoolExecutor(
+            2,  // コアスレッド数
+            6,  // 最大スレッド数
+            60L, TimeUnit.SECONDS,
+            new LinkedBlockingQueue<>(30),  // キューサイズ上限
+            r -> {
+                Thread t = new Thread(r, "ResourceLoader");
+                t.setDaemon(true);
+                return t;
+            },
+            new ThreadPoolExecutor.CallerRunsPolicy()  // キュー溢れ時は呼び出しスレッドで実行
+        );
 
         this.cleanupScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
             Thread t = new Thread(r, "CacheCleanup");

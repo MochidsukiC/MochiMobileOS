@@ -122,11 +122,19 @@ public class FileSystemManager {
             t.setDaemon(true);
             return t;
         });
-        this.asyncExecutor = Executors.newCachedThreadPool(r -> {
-            Thread t = new Thread(r, "FileSystemAsync");
-            t.setDaemon(true);
-            return t;
-        });
+        // 上限付きスレッドプールを使用（unboundedなCachedThreadPoolはリソース枯渇のリスクあり）
+        this.asyncExecutor = new ThreadPoolExecutor(
+            2,  // コアスレッド数
+            8,  // 最大スレッド数
+            60L, TimeUnit.SECONDS,
+            new LinkedBlockingQueue<>(50),  // キューサイズ上限
+            r -> {
+                Thread t = new Thread(r, "FileSystemAsync");
+                t.setDaemon(true);
+                return t;
+            },
+            new ThreadPoolExecutor.CallerRunsPolicy()  // キュー溢れ時は呼び出しスレッドで実行
+        );
 
         // VFSを取得
         if (kernel != null) {
