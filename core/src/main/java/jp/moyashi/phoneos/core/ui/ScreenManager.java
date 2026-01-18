@@ -96,8 +96,8 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
         screenStack = new Stack<>();
         screenTransition = new ScreenTransition();
         screenTransition.setAnimationCallback(this); // Set callback to handle animation completion
-        unsetupScreens = new java.util.HashSet<>();
-        setupCompletedScreens = new java.util.HashSet<>();
+        unsetupScreens = java.util.concurrent.ConcurrentHashMap.newKeySet();
+        setupCompletedScreens = java.util.concurrent.ConcurrentHashMap.newKeySet();
         log("Screen manager initialized with animation support");
     }
 
@@ -126,7 +126,9 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
                 log("Previous screen moved to background: " + previousScreen.getScreenTitle());
             }
 
-            screenStack.push(screen);
+            synchronized (screenStack) {
+                screenStack.push(screen);
+            }
             // setup()にPGraphicsを渡すため、currentPAppletが利用可能な場合のみ呼び出し
             // 既にセットアップ済みのスクリーンはスキップ（インスタンス再利用時）
             if (setupCompletedScreens.contains(screen)) {
@@ -185,7 +187,9 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
             }
 
             // スクリーンを即座にプッシュするが、アニメーション中は描画をブロック
-            screenStack.push(screen);
+            synchronized (screenStack) {
+                screenStack.push(screen);
+            }
 
             // 既にセットアップ済みのスクリーンはスキップ（インスタンス再利用時）
             if (setupCompletedScreens.contains(screen)) {
@@ -245,44 +249,47 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
      * @return ポップされたスクリーン、またはスタックが空の場合null
      */
     public Screen popScreen() {
-        if (!screenStack.isEmpty()) {
-            Screen poppedScreen = screenStack.pop();
-
-            // ServiceManagerで管理されるスクリーン（applicationIdが設定されている）は
-            // cleanup()を呼ばずに再利用可能な状態を維持する
-            String appId = poppedScreen.getApplicationId();
-            if (appId != null && !appId.isEmpty()) {
-                // アプリ画面: cleanup()を呼ばず、onBackground()のみ呼び出す
-                // （ServiceManagerがインスタンスを再利用するため）
-                log("Screen " + poppedScreen.getScreenTitle() + " is managed by ServiceManager (appId=" + appId + "), skipping cleanup()");
-            } else {
-                // 非アプリ画面: 通常通りcleanup()を呼び出す
-                if (currentPApplet != null) {
-                    poppedScreen.cleanup(currentPApplet);
-                }
-                // セットアップ完了リストからも削除（再度プッシュ時にsetup()が呼ばれるように）
-                setupCompletedScreens.remove(poppedScreen);
+        Screen poppedScreen;
+        synchronized (screenStack) {
+            if (screenStack.isEmpty()) {
+                return null;
             }
-            // 未セットアップリストからも削除
-            unsetupScreens.remove(poppedScreen);
-
-            // アプリケーション画面の場合はKernelレイヤースタックからAPPLICATIONレイヤーを削除
-            if (kernel != null && !isLauncherScreen(poppedScreen)) {
-                kernel.removeLayer(LayerType.APPLICATION);
-                log("Removed APPLICATION layer from Kernel stack for screen: " + poppedScreen.getScreenTitle());
-            }
-
-            // 新しいトップスクリーンをフォアグラウンドに復帰（OS側で強制的に制御）
-            Screen newTopScreen = getCurrentScreen();
-            if (newTopScreen != null) {
-                newTopScreen.onForeground();
-                log("New top screen moved to foreground: " + newTopScreen.getScreenTitle());
-            }
-
-            log("Popped screen - " + poppedScreen.getScreenTitle());
-            return poppedScreen;
+            poppedScreen = screenStack.pop();
         }
-        return null;
+
+        // ServiceManagerで管理されるスクリーン（applicationIdが設定されている）は
+        // cleanup()を呼ばずに再利用可能な状態を維持する
+        String appId = poppedScreen.getApplicationId();
+        if (appId != null && !appId.isEmpty()) {
+            // アプリ画面: cleanup()を呼ばず、onBackground()のみ呼び出す
+            // （ServiceManagerがインスタンスを再利用するため）
+            log("Screen " + poppedScreen.getScreenTitle() + " is managed by ServiceManager (appId=" + appId + "), skipping cleanup()");
+        } else {
+            // 非アプリ画面: 通常通りcleanup()を呼び出す
+            if (currentPApplet != null) {
+                poppedScreen.cleanup(currentPApplet);
+            }
+            // セットアップ完了リストからも削除（再度プッシュ時にsetup()が呼ばれるように）
+            setupCompletedScreens.remove(poppedScreen);
+        }
+        // 未セットアップリストからも削除
+        unsetupScreens.remove(poppedScreen);
+
+        // アプリケーション画面の場合はKernelレイヤースタックからAPPLICATIONレイヤーを削除
+        if (kernel != null && !isLauncherScreen(poppedScreen)) {
+            kernel.removeLayer(LayerType.APPLICATION);
+            log("Removed APPLICATION layer from Kernel stack for screen: " + poppedScreen.getScreenTitle());
+        }
+
+        // 新しいトップスクリーンをフォアグラウンドに復帰（OS側で強制的に制御）
+        Screen newTopScreen = getCurrentScreen();
+        if (newTopScreen != null) {
+            newTopScreen.onForeground();
+            log("New top screen moved to foreground: " + newTopScreen.getScreenTitle());
+        }
+
+        log("Popped screen - " + poppedScreen.getScreenTitle());
+        return poppedScreen;
     }
     
     /**
@@ -295,66 +302,70 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
      * @return ポップされたスクリーン、またはスタックが空の場合null
      */
     public Screen popScreenWithAnimation(float iconX, float iconY, float iconSize, PImage iconImage) {
-        if (!screenStack.isEmpty() && currentPApplet != null) {
-            // 現在のスクリーンをキャプチャ（現在の描画を使用）
-            PGraphics screenCapture = currentPApplet.createGraphics(currentPApplet.width, currentPApplet.height);
-            screenCapture.beginDraw();
-
-            // 現在のフレームバッファからコピー
-            screenCapture.image(currentPApplet.get(), 0, 0);
-
-            screenCapture.endDraw();
-
-            // スクリーンをポップ
-            Screen poppedScreen = screenStack.pop();
-
-            // ServiceManagerで管理されるスクリーン（applicationIdが設定されている）は
-            // cleanup()を呼ばずに再利用可能な状態を維持する
-            String appId = poppedScreen.getApplicationId();
-            if (appId != null && !appId.isEmpty()) {
-                // アプリ画面: cleanup()を呼ばず、インスタンスを再利用可能にする
-                log("Screen " + poppedScreen.getScreenTitle() + " is managed by ServiceManager (appId=" + appId + "), skipping cleanup() (animation)");
-            } else {
-                // 非アプリ画面: 通常通りcleanup()を呼び出す
-                if (currentPApplet != null) {
-                    poppedScreen.cleanup(currentPApplet);
-                }
-                // セットアップ完了リストからも削除（再度プッシュ時にsetup()が呼ばれるように）
-                setupCompletedScreens.remove(poppedScreen);
+        Screen poppedScreen;
+        synchronized (screenStack) {
+            if (screenStack.isEmpty() || currentPApplet == null) {
+                return null;
             }
-            // 未セットアップリストからも削除
-            unsetupScreens.remove(poppedScreen);
-
-            // 新しいトップスクリーンをフォアグラウンドに復帰（OS側で強制的に制御）
-            Screen newTopScreen = getCurrentScreen();
-            if (newTopScreen != null) {
-                newTopScreen.onForeground();
-                log("New top screen moved to foreground (animation): " + newTopScreen.getScreenTitle());
-            }
-
-            // アニメーションを開始（Reduce Motion対応の継続時間）
-            screenTransition.startZoomOut(iconX, iconY, iconSize, iconImage, screenCapture);
-            if (kernel != null && kernel.getSettingsManager() != null) {
-                long dur = jp.moyashi.phoneos.core.ui.effects.Motion.durationAdjusted(300, kernel.getSettingsManager());
-                screenTransition.setAnimationDurationMs(dur);
-            }
-
-            log("Popped screen with zoom-out animation - " + poppedScreen.getScreenTitle());
-            return poppedScreen;
+            poppedScreen = screenStack.pop();
         }
-        return null;
+
+        // 現在のスクリーンをキャプチャ（現在の描画を使用）
+        PGraphics screenCapture = currentPApplet.createGraphics(currentPApplet.width, currentPApplet.height);
+        screenCapture.beginDraw();
+
+        // 現在のフレームバッファからコピー
+        screenCapture.image(currentPApplet.get(), 0, 0);
+
+        screenCapture.endDraw();
+
+        // ServiceManagerで管理されるスクリーン（applicationIdが設定されている）は
+        // cleanup()を呼ばずに再利用可能な状態を維持する
+        String appId = poppedScreen.getApplicationId();
+        if (appId != null && !appId.isEmpty()) {
+            // アプリ画面: cleanup()を呼ばず、インスタンスを再利用可能にする
+            log("Screen " + poppedScreen.getScreenTitle() + " is managed by ServiceManager (appId=" + appId + "), skipping cleanup() (animation)");
+        } else {
+            // 非アプリ画面: 通常通りcleanup()を呼び出す
+            if (currentPApplet != null) {
+                poppedScreen.cleanup(currentPApplet);
+            }
+            // セットアップ完了リストからも削除（再度プッシュ時にsetup()が呼ばれるように）
+            setupCompletedScreens.remove(poppedScreen);
+        }
+        // 未セットアップリストからも削除
+        unsetupScreens.remove(poppedScreen);
+
+        // 新しいトップスクリーンをフォアグラウンドに復帰（OS側で強制的に制御）
+        Screen newTopScreen = getCurrentScreen();
+        if (newTopScreen != null) {
+            newTopScreen.onForeground();
+            log("New top screen moved to foreground (animation): " + newTopScreen.getScreenTitle());
+        }
+
+        // アニメーションを開始（Reduce Motion対応の継続時間）
+        screenTransition.startZoomOut(iconX, iconY, iconSize, iconImage, screenCapture);
+        if (kernel != null && kernel.getSettingsManager() != null) {
+            long dur = jp.moyashi.phoneos.core.ui.effects.Motion.durationAdjusted(300, kernel.getSettingsManager());
+            screenTransition.setAnimationDurationMs(dur);
+        }
+
+        log("Popped screen with zoom-out animation - " + poppedScreen.getScreenTitle());
+        return poppedScreen;
     }
     
     /**
      * スタックから除去することなく現在アクティブなスクリーンを取得する。
-     * 
+     *
      * @return 現在のスクリーン、またはスタックが空の場合null
      */
     public Screen getCurrentScreen() {
-        if (!screenStack.isEmpty()) {
-            return screenStack.peek();
+        synchronized (screenStack) {
+            if (!screenStack.isEmpty()) {
+                return screenStack.peek();
+            }
+            return null;
         }
-        return null;
     }
     
     /**
@@ -366,8 +377,15 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
      * 新しいコードは ScreenTickScheduler を通じて可変レートでtickされる。
      */
     public void tick() {
+        // スタックのスナップショットを取得してイテレート（ConcurrentModificationException防止）
+        // 別スレッドでpush/popが発生してもイテレーションに影響しない
+        java.util.List<Screen> snapshot;
+        synchronized (screenStack) {
+            snapshot = new java.util.ArrayList<>(screenStack);
+        }
+
         // スタック内の全スクリーンのtick()を呼び出し（バックグラウンドも含む）
-        for (Screen screen : screenStack) {
+        for (Screen screen : snapshot) {
             try {
                 screen.tick();
             } catch (Exception e) {
