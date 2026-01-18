@@ -281,6 +281,18 @@
   - 原因: `InputManager`がシステムジェスチャー領域からのタッチを即座にブロックし、アプリにイベントを転送しなかった
   - 解決策: 「上方向スワイプ」のみをシステムジェスチャーとして消費し、単なるタップはアプリに転送するように修正
   - 修正ファイル: `core/src/main/java/jp/moyashi/phoneos/core/input/InputManager.java`
+- **AppLoader.resolveAppId の競合状態**（2026-01-18発見）
+  - 症状: 複数のスレッドが同時に `resolveAppId` を呼び出した場合、アプリIDの重複登録や衝突が発生する可能性がある（check-then-act操作がアトミックでないため）。
+  - 対応方針: メソッドの同期化（synchronized）または `ConcurrentHashMap.computeIfAbsent` を使用してアトミック性を保証する必要がある。
+- **AppLoader.loadApplicationFromJar のリソースリークと非効率性**（2026-01-18発見）
+  - 症状: JARスキャン時にクラスごとに新しい `URLClassLoader` を作成しており、これらが閉じられていない。ファイルハンドルリーク（Windowsでのファイルロック問題）とメモリ浪費を引き起こす。
+  - 対応方針: JARファイルごとに単一の `URLClassLoader` を作成して再利用し、適切にライフサイクル管理（クローズ）を行う必要がある。
+- **Kernel.getPixels() のカプセル化違反**（2026-01-18発見）
+  - 症状: 描画バッファの内部配列（`pixelsCache`）を直接返しているため、呼び出し元が意図せずバッファを破壊したり、レンダリングスレッドと競合するリスクがある。
+  - 対応方針: 防御的コピー（`Arrays.copyOf`）を返すか、アクセスを厳密に制御する必要がある。
+- **Kernel.initializeForMinecraft の不安定なリフレクション**（2026-01-18発見）
+  - 症状: `processing.awt.PGraphicsJava2D` をクラス名文字列でロードしており、非AWT環境や難読化環境でクラッシュする（RuntimeException）可能性がある。
+  - 対応方針: 依存性注入やファクトリパターンを使用して、環境に応じたPGraphics実装を安全に提供する設計に変更すべき。
 
 ## CodeXレビューログ
 
@@ -511,6 +523,50 @@
   - 既存の見送り項目継続
 - **ビルド結果**: 成功
 - **コミット**: 372df3f
+
+### CodeXレビュー (2026-01-18) - Iteration 17-24（自動再帰レビュー）
+- **レビューツール**: Gemini-CLI (自動)
+- **指摘件数合計**: 約15件対応
+
+#### Iteration 17
+- `SimpleNotification.java`: SimpleDateFormat → DateTimeFormatter（スレッドセーフ化）
+- `VirtualNetworkRegistry.java`: HashMap → ConcurrentHashMap（スレッドセーフ化）
+- **コミット**: 9b2d791
+
+#### Iteration 18
+- `ScreenManager.java`: screenStackへのアクセスをsynchronizedで保護（ConcurrentModificationException防止）
+- **コミット**: 9fee6f3
+
+#### Iteration 19
+- `VFS.java`: worldIdにパストラバーサル対策（英数字・ハイフン・アンダースコアのみ許可）
+- `Kernel.java`: layerStackをCopyOnWriteArrayListに変更、isShuttingDownフラグ追加
+- **コミット**: 830ffdc
+
+#### Iteration 20
+- `VirtualRouter.java`: externalSendHandlerにvolatile追加
+- **コミット**: f3de492
+
+#### Iteration 21
+- `FileSystemManager.java`: handleWatchEventでディレクトリ削除通知を追加
+- `NotificationManager.java`: ドラッグスクロールのロジック修正（累積バグ解消）
+- **コミット**: c773da5
+
+#### Iteration 22
+- `NotificationManager.java`: draw()とgetRecentNotifications()でスナップショット使用（IndexOutOfBoundsException防止）、通知表示順序修正
+- **コミット**: 394daea
+
+#### Iteration 23
+- `SettingsManager.java`: リスナーエラーをログ出力
+- `NotificationManager.java`: グラフィッククリップエラーをログ出力
+- **コミット**: a4072b3
+
+#### Iteration 24
+- `AppStoreScreen.java`: cleanup()メソッド追加でScheduledExecutorServiceのリソースリーク修正
+- `AppStoreScreen.java`: isValidAppId()メソッド追加でアプリIDのパストラバーサル対策
+- **コミット**: 301e830
+
+- **最終結果**: 新規の重要指摘なし（レビュー完了）
+- **ビルド結果**: すべて成功
 
 ## TODO
 
