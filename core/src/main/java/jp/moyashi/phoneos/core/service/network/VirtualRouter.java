@@ -43,8 +43,8 @@ public class VirtualRouter {
     // パケットタイプごとのパケットハンドラー（スレッドセーフ）
     private final Map<VirtualPacket.PacketType, List<PacketHandler>> typeHandlers = new ConcurrentHashMap<>();
 
-    // 外部送信ハンドラー（Forge側から設定される）
-    private ExternalSendHandler externalSendHandler = null;
+    // 外部送信ハンドラー（Forge側から設定される、スレッドセーフのためvolatile）
+    private volatile ExternalSendHandler externalSendHandler = null;
 
     /**
      * VirtualRouterを構築します
