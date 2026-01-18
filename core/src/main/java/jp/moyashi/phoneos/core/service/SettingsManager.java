@@ -68,7 +68,8 @@ public class SettingsManager {
         settings.putIfAbsent("ui.theme.family", "white"); // new: white | orange | yellow | pink | green | black
 
         settings.putIfAbsent("ui.theme.seed_color", "#4A90E2");
-        settings.putIfAbsent("ui.theme.accent_color", null);
+        // ui.theme.accent_color はオプション（null許容）のため、デフォルト登録しない
+        // ConcurrentHashMapはnull値を許可しないため、未設定時はget()がnullを返す
         settings.putIfAbsent("ui.theme.use_dynamic_palette", true);
         settings.putIfAbsent("ui.theme.contrast", "normal"); // normal | high
         settings.putIfAbsent("ui.typography.base_size", 14);
