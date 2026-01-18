@@ -22,9 +22,9 @@ public class LockManager {
     
     /** 設定管理サービスへの参照 */
     private SettingsManager settingsManager;
-    
-    /** 現在のロック状態（true: ロック中, false: アンロック中） */
-    private boolean isLocked;
+
+    /** 現在のロック状態（true: ロック中, false: アンロック中） - 複数スレッドからアクセスされる可能性があるためvolatile */
+    private volatile boolean isLocked;
     
     /** 設定保存キー: ロック状態 */
     private static final String SETTING_LOCK_STATE = "system_lock_enabled";

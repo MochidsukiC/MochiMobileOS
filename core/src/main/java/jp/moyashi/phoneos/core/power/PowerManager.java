@@ -29,20 +29,20 @@ public class PowerManager {
     /** Kernelインスタンス（互換性のため） */
     private final Kernel kernel;
 
-    /** 現在のパワー状態 */
-    private PowerState currentState = PowerState.ACTIVE;
+    /** 現在のパワー状態 - 複数スレッドからアクセスされる可能性があるためvolatile */
+    private volatile PowerState currentState = PowerState.ACTIVE;
 
-    /** スリープ開始時刻 */
-    private long sleepStartTime = 0;
+    /** スリープ開始時刻 - 複数スレッドからアクセスされる可能性があるためvolatile */
+    private volatile long sleepStartTime = 0;
 
-    /** 最後のアクティビティ時刻 */
-    private long lastActivityTime = System.currentTimeMillis();
+    /** 最後のアクティビティ時刻 - 入力イベント処理と自動スリープ監視スレッド間で共有されるためvolatile */
+    private volatile long lastActivityTime = System.currentTimeMillis();
 
-    /** 自動スリープタイムアウト（ミリ秒） */
-    private long autoSleepTimeout = 60000; // 1分
+    /** 自動スリープタイムアウト（ミリ秒） - 設定変更スレッドから変更される可能性があるためvolatile */
+    private volatile long autoSleepTimeout = 60000; // 1分
 
-    /** 自動スリープが有効か */
-    private boolean autoSleepEnabled = false;
+    /** 自動スリープが有効か - 複数スレッドから参照されるためvolatile */
+    private volatile boolean autoSleepEnabled = false;
 
     /** パワーイベントリスナー */
     private final List<PowerStateListener> listeners = new CopyOnWriteArrayList<>();

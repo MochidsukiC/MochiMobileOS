@@ -102,6 +102,7 @@ public class ServiceManager {
     /**
      * アプリを起動する。
      * 既にインスタンスが存在する場合は再利用し、新規の場合はAppLoaderから取得して作成する。
+     * スレッドセーフ: ConcurrentHashMap.computeIfAbsentを使用して競合を防止。
      *
      * @param appId アプリID
      * @return Screenインスタンス、起動失敗時はnull
@@ -110,58 +111,73 @@ public class ServiceManager {
         LoggerContext.info("ServiceManager", "Launching app: " + appId);
         LoggerContext.info("ServiceManager", "Current processes keys: " + processes.keySet());
 
-        // 既存インスタンスがあればそれを返す
-        ProcessInfo existingInfo = processes.get(appId);
-        if (existingInfo != null) {
-            LoggerContext.info("ServiceManager", "Reusing existing instance for " + appId);
-            existingInfo.incrementLaunchCount();
-            existingInfo.setForeground(true);
+        // computeIfAbsentを使用してスレッドセーフにプロセスを取得または作成
+        // 注意: computeIfAbsentのラムダ内で例外が発生した場合はnullを返すため、
+        // その場合は既存プロセスなしかつ作成失敗を意味する
+        final boolean[] isNewInstance = {false};
+        ProcessInfo info;
 
-            // ライフサイクルイベント通知
-            try {
-                existingInfo.getScreen().onForeground();
-            } catch (Exception e) {
-                System.err.println("ServiceManager: Error calling onForeground for " + appId + ": " + e.getMessage());
-                existingInfo.incrementCrashCount();
-            }
-
-            return existingInfo.getScreen();
-        }
-
-        // 新規インスタンスを作成
-        LoggerContext.info("ServiceManager", "Creating new instance for: " + appId);
         try {
-            AppLoader appLoader = kernel.getAppLoader();
-            IApplication app = appLoader.findApplicationById(appId);
+            info = processes.computeIfAbsent(appId, id -> {
+                LoggerContext.info("ServiceManager", "Creating new instance for: " + id);
+                try {
+                    AppLoader appLoader = kernel.getAppLoader();
+                    IApplication app = appLoader.findApplicationById(id);
 
-            if (app == null) {
-                LoggerContext.error("ServiceManager", "App not found: " + appId);
-                return null;
-            }
+                    if (app == null) {
+                        LoggerContext.error("ServiceManager", "App not found: " + id);
+                        return null;
+                    }
 
-            Screen screen = app.getEntryScreen(kernel);
-            if (screen == null) {
-                LoggerContext.error("ServiceManager", "Failed to create screen for " + appId);
-                return null;
-            }
+                    Screen screen = app.getEntryScreen(kernel);
+                    if (screen == null) {
+                        LoggerContext.error("ServiceManager", "Failed to create screen for " + id);
+                        return null;
+                    }
 
-            // アプリケーションIDを設定
-            screen.setApplicationId(appId);
+                    // アプリケーションIDを設定
+                    screen.setApplicationId(id);
 
-            // ProcessInfoを作成して登録
-            ProcessInfo info = new ProcessInfo(appId, screen);
-            info.setForeground(true);
-            info.incrementLaunchCount();
-            processes.put(appId, info);
+                    // ProcessInfoを作成
+                    ProcessInfo newInfo = new ProcessInfo(id, screen);
+                    newInfo.setForeground(true);
+                    newInfo.incrementLaunchCount();
 
-            LoggerContext.info("ServiceManager", "Created new instance for " + appId + ", total processes: " + processes.size());
-            return screen;
+                    isNewInstance[0] = true;
+                    LoggerContext.info("ServiceManager", "Created new instance for " + id + ", total processes: " + (processes.size() + 1));
+                    return newInfo;
 
+                } catch (Exception e) {
+                    LoggerContext.error("ServiceManager", "Failed to launch app " + id + ": " + e.getMessage());
+                    e.printStackTrace();
+                    return null;
+                }
+            });
         } catch (Exception e) {
             LoggerContext.error("ServiceManager", "Failed to launch app " + appId + ": " + e.getMessage());
             e.printStackTrace();
             return null;
         }
+
+        if (info == null) {
+            return null;
+        }
+
+        // 既存インスタンスの場合はライフサイクルイベント通知
+        if (!isNewInstance[0]) {
+            LoggerContext.info("ServiceManager", "Reusing existing instance for " + appId);
+            info.incrementLaunchCount();
+            info.setForeground(true);
+
+            try {
+                info.getScreen().onForeground();
+            } catch (Exception e) {
+                System.err.println("ServiceManager: Error calling onForeground for " + appId + ": " + e.getMessage());
+                info.incrementCrashCount();
+            }
+        }
+
+        return info.getScreen();
     }
 
     // ==================== バックグラウンドサービス管理 ====================

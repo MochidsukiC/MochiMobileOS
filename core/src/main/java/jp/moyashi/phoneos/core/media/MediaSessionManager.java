@@ -26,8 +26,8 @@ public class MediaSessionManager {
     /** 登録されているセッションのリスト */
     private final List<MediaSession> sessions = new CopyOnWriteArrayList<>();
 
-    /** 現在アクティブなセッション */
-    private MediaSession activeSession = null;
+    /** 現在アクティブなセッション - 複数スレッドからアクセスされる可能性があるためvolatile */
+    private volatile MediaSession activeSession = null;
 
     /** オーディオフォーカス管理 */
     private final AudioFocusManager audioFocusManager;
