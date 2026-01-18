@@ -261,6 +261,10 @@ public class Kernel implements GestureListener {
     /** スリープ状態かどうか */
     private boolean isSleeping = false;
 
+    // シャットダウン中フラグ（レースコンディション防止）
+    /** シャットダウン処理中かどうか */
+    private volatile boolean isShuttingDown = false;
+
     // 修飾キー状態管理
     /** Shiftキーが押されているかどうか */
     private boolean shiftPressed = false;
@@ -285,8 +289,9 @@ public class Kernel implements GestureListener {
         LOCK_SCREEN     // ロック画面（例外、閉じられない）
     }
 
-    /** 現在開いているレイヤーのスタック（後から開いたものが末尾、つまり高い優先度） */
-    private List<LayerType> layerStack;
+    /** 現在開いているレイヤーのスタック（後から開いたものが末尾、つまり高い優先度）
+     *  スレッドセーフ: CopyOnWriteArrayListを使用 */
+    private java.util.concurrent.CopyOnWriteArrayList<LayerType> layerStack;
     private static final long INPUT_STAGE_DEBUG_THRESHOLD_NS = 1_000_000L;
     private static final long INPUT_STAGE_WARN_THRESHOLD_NS = 5_000_000L;
 
@@ -305,6 +310,11 @@ public class Kernel implements GestureListener {
      * Choreographerに委譲し、仮想V-Sync (60Hz) ベースのフレーム処理を行う。
      */
     public void update() {
+        // シャットダウン中は処理をスキップ（レースコンディション防止）
+        if (isShuttingDown) {
+            return;
+        }
+
         if (choreographer != null) {
             // Choreographerによるフレーム処理（Catch-up対応）
             choreographer.doFrame();
@@ -1388,7 +1398,7 @@ public class Kernel implements GestureListener {
 
         // 動的レイヤー管理システムを初期化（後方互換性のため残す）
         System.out.println("  -> 動的レイヤー管理システム作成中...");
-        layerStack = new ArrayList<>();
+        layerStack = new java.util.concurrent.CopyOnWriteArrayList<>();
         layerStack.add(LayerType.HOME_SCREEN); // 最初は常にホーム画面
 
         // 統一座標変換システムを初期化
@@ -2187,6 +2197,12 @@ public class Kernel implements GestureListener {
      * システムシャットダウン処理（独立API）。
      */
     public void shutdown() {
+        // 既にシャットダウン中の場合は重複処理を防止
+        if (isShuttingDown) {
+            System.out.println("Kernel: Shutdown already in progress, ignoring duplicate request");
+            return;
+        }
+        isShuttingDown = true;
         System.out.println("Kernel: System shutdown requested");
 
         // システムシャットダウンイベントを発行

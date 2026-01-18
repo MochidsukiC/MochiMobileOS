@@ -46,6 +46,11 @@ public class VFS {
         try {
             // ルートディレクトリパスを設定（ワールドID毎にサンドボックス化）
             if (worldId != null && !worldId.isEmpty()) {
+                // セキュリティ: worldIdのパストラバーサル対策
+                // 英数字、ハイフン、アンダースコアのみ許可
+                if (!worldId.matches("^[a-zA-Z0-9_-]+$")) {
+                    throw new IllegalArgumentException("Invalid worldId: contains unsafe characters. Only alphanumeric, hyphen and underscore allowed.");
+                }
                 // Forge環境: mochi_os_data/{worldId}/
                 this.rootPath = Paths.get("mochi_os_data", worldId);
             } else {
