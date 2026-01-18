@@ -506,6 +506,7 @@ public class FileSystemManager {
         } else if (kind == StandardWatchEventKinds.ENTRY_DELETE) {
             // 削除の場合、ファイルかディレクトリか判別できないので両方通知
             notifyFileDeleted(path);
+            notifyDirectoryDeleted(path);
         } else if (kind == StandardWatchEventKinds.ENTRY_MODIFY) {
             notifyFileModified(path);
         }

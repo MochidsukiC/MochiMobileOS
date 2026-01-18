@@ -64,7 +64,10 @@ public class NotificationManager implements GestureListener {
     
     /** スクロールオフセット */
     private volatile float scrollOffset = 0;
-    
+
+    /** ドラッグ開始時のスクロールオフセット（ドラッグスクロール用） */
+    private float dragStartScrollOffset = 0;
+
     /** 最大スクロール量 */
     private float maxScrollOffset = 0;
     
@@ -786,10 +789,15 @@ public class NotificationManager implements GestureListener {
                 scrollOffset = Math.max(0, scrollOffset - scrollAmount);
                 System.out.println("NotificationManager: Swipe down scroll, offset: " + scrollOffset);
                 return true;
+            } else if (event.getType() == GestureType.DRAG_START) {
+                // ドラッグ開始時に現在のスクロール位置を保存
+                dragStartScrollOffset = scrollOffset;
+                return true;
             } else if (event.getType() == GestureType.DRAG_MOVE) {
-                // ドラッグ中のスムーズなスクロール
+                // ドラッグ中のスムーズなスクロール（開始時のオフセットを基準に計算）
                 float deltaY = event.getCurrentY() - event.getStartY();
-                scrollOffset = Math.max(0, Math.min(scrollOffset - deltaY * 1.2f, maxScrollOffset));
+                // 上にドラッグ（deltaY < 0）すると下にスクロール（offset増加）
+                scrollOffset = Math.max(0, Math.min(dragStartScrollOffset - deltaY, maxScrollOffset));
                 System.out.println("NotificationManager: Drag scroll, offset: " + scrollOffset);
                 return true;
             }
