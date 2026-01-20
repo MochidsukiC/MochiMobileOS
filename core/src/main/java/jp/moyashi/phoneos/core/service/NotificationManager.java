@@ -89,6 +89,32 @@ public class NotificationManager implements GestureListener {
     /** 通知音サービス */
     private NotificationSoundService soundService;
 
+    // ==================== バナー通知関連 ====================
+
+    /** バナーに表示中の通知 */
+    private volatile INotification bannerNotification;
+
+    /** バナーのアニメーション進行度（0.0 = 非表示, 1.0 = 完全表示） */
+    private volatile float bannerAnimationProgress;
+
+    /** バナーの目標アニメーション進行度 */
+    private volatile float bannerTargetProgress;
+
+    /** バナーの表示開始時刻（ミリ秒） */
+    private volatile long bannerShowTime;
+
+    /** バナーの表示時間（ミリ秒） */
+    private static final long BANNER_DISPLAY_DURATION = 6000;
+
+    /** バナーのアニメーション速度（大きいほど速い） */
+    private static final float BANNER_ANIMATION_SPEED = 0.25f;
+
+    /** バナーの高さ */
+    private static final float BANNER_HEIGHT = 80;
+
+    /** バナーのマージン */
+    private static final float BANNER_MARGIN = 12;
+
     /**
      * NotificationManagerを作成する。
      */
@@ -97,6 +123,12 @@ public class NotificationManager implements GestureListener {
         this.isVisible = false;
         this.animationProgress = 0.0f;
         this.targetAnimationProgress = 0.0f;
+
+        // バナー通知の初期化
+        this.bannerNotification = null;
+        this.bannerAnimationProgress = 0.0f;
+        this.bannerTargetProgress = 0.0f;
+        this.bannerShowTime = 0;
 
         System.out.println("NotificationManager: Notification center service initialized");
     }
@@ -194,15 +226,59 @@ public class NotificationManager implements GestureListener {
         updateScrollLimits();
 
         // 消音モードでなければ通知音とチャット通知を実行
-        if (!isSilentMode()) {
+        boolean silentMode = isSilentMode();
+        boolean chatEnabled = isChatNotificationEnabled();
+        if (kernel != null && kernel.getLogger() != null) {
+            kernel.getLogger().info("NotificationManager", "silentMode=" + silentMode + ", chatEnabled=" + chatEnabled + ", chatSocket=" + chatSocket);
+        }
+        if (!silentMode) {
             playNotificationSound();
             // チャット通知が有効な場合のみ送信
-            if (isChatNotificationEnabled()) {
+            if (chatEnabled) {
                 sendChatNotification(sender, title, content);
             }
         }
 
+        // バナー通知を表示（通知センターが開いていない場合のみ）
+        if (!isVisible && isBannerNotificationEnabled()) {
+            showBanner(notification);
+        }
+
         return id;
+    }
+
+    /**
+     * バナー通知が有効かどうかを確認する。
+     *
+     * @return バナー通知が有効な場合true
+     */
+    private boolean isBannerNotificationEnabled() {
+        if (kernel == null || kernel.getSettingsManager() == null) {
+            return true; // デフォルトは有効
+        }
+        return kernel.getSettingsManager().getBooleanSetting("notification.banner_enabled", true);
+    }
+
+    /**
+     * バナー通知を表示する。
+     *
+     * @param notification 表示する通知
+     */
+    private void showBanner(INotification notification) {
+        this.bannerNotification = notification;
+        this.bannerTargetProgress = 1.0f;
+        this.bannerShowTime = System.currentTimeMillis();
+
+        if (kernel != null && kernel.getLogger() != null) {
+            kernel.getLogger().info("NotificationManager", "Showing banner notification: " + notification.getTitle());
+        }
+    }
+
+    /**
+     * バナー通知を非表示にする。
+     */
+    public void hideBanner() {
+        this.bannerTargetProgress = 0.0f;
     }
 
     /**
@@ -250,12 +326,27 @@ public class NotificationManager implements GestureListener {
      * @param content 内容
      */
     private void sendChatNotification(String sender, String title, String content) {
-        if (chatSocket != null && chatSocket.isAvailable()) {
-            try {
-                String message = "[" + sender + "] " + title + ": " + content;
-                chatSocket.sendMessage(message);
-            } catch (Exception e) {
-                System.err.println("NotificationManager: Error sending chat notification: " + e.getMessage());
+        if (chatSocket == null) {
+            if (kernel != null && kernel.getLogger() != null) {
+                kernel.getLogger().warn("NotificationManager", "chatSocket is null - notification not sent");
+            }
+            return;
+        }
+        if (!chatSocket.isAvailable()) {
+            if (kernel != null && kernel.getLogger() != null) {
+                kernel.getLogger().info("NotificationManager", "chatSocket.isAvailable() returned false");
+            }
+            return;
+        }
+        try {
+            String message = "[" + sender + "] " + title + ": " + content;
+            if (kernel != null && kernel.getLogger() != null) {
+                kernel.getLogger().info("NotificationManager", "Sending chat message: " + message);
+            }
+            chatSocket.sendMessage(message);
+        } catch (Exception e) {
+            if (kernel != null && kernel.getLogger() != null) {
+                kernel.getLogger().error("NotificationManager", "Error sending chat notification: " + e.getMessage());
             }
         }
     }
@@ -267,6 +358,10 @@ public class NotificationManager implements GestureListener {
      */
     public void setChatSocket(ChatSocket chatSocket) {
         this.chatSocket = chatSocket;
+        if (kernel != null && kernel.getLogger() != null) {
+            kernel.getLogger().info("NotificationManager", "setChatSocket called: " + chatSocket +
+                " (available=" + (chatSocket != null ? chatSocket.isAvailable() : "N/A") + ")");
+        }
     }
 
     /**
@@ -414,7 +509,13 @@ public class NotificationManager implements GestureListener {
         // アニメーション進行度を更新
         updateAnimation();
 
-        // 完全に非表示の場合は描画をスキップ
+        // バナー通知を更新・描画（通知センターが閉じている時のみ）
+        if (!isVisible) {
+            updateBannerAnimation();
+            drawBanner(g);
+        }
+
+        // 通知センターが完全に非表示の場合はパネル描画をスキップ
         if (animationProgress <= 0.01f) {
             return;
         }
@@ -724,15 +825,275 @@ public class NotificationManager implements GestureListener {
             animationProgress = targetAnimationProgress;
         }
     }
-    
+
+    // ==================== バナー通知の描画 ====================
+
+    /**
+     * バナーのアニメーション進行度を更新する。
+     */
+    private void updateBannerAnimation() {
+        // バナーが表示中で、表示時間が経過した場合は非表示にする
+        if (bannerNotification != null && bannerTargetProgress > 0.5f) {
+            long elapsed = System.currentTimeMillis() - bannerShowTime;
+            if (elapsed >= BANNER_DISPLAY_DURATION) {
+                hideBanner();
+            }
+        }
+
+        // Reduce Motion対応
+        boolean reduce = false;
+        if (kernel != null && kernel.getSettingsManager() != null) {
+            reduce = kernel.getSettingsManager().getBooleanSetting("ui.motion.reduce", false);
+        }
+        float speed = reduce ? (BANNER_ANIMATION_SPEED * 2.5f) : BANNER_ANIMATION_SPEED;
+
+        // アニメーション進行度を更新
+        if (Math.abs(bannerAnimationProgress - bannerTargetProgress) > 0.01f) {
+            bannerAnimationProgress += (bannerTargetProgress - bannerAnimationProgress) * speed;
+        } else {
+            bannerAnimationProgress = bannerTargetProgress;
+
+            // アニメーションが完了して非表示になった場合、通知をクリア
+            if (bannerAnimationProgress <= 0.01f) {
+                bannerNotification = null;
+            }
+        }
+    }
+
+    /**
+     * バナー通知を描画する。
+     *
+     * @param g Processing描画コンテキスト
+     */
+    private void drawBanner(PGraphics g) {
+        // バナーがない、または完全に非表示の場合はスキップ
+        if (bannerNotification == null || bannerAnimationProgress <= 0.01f) {
+            return;
+        }
+
+        // バナーの寸法と位置を計算
+        float bannerWidth = screenWidth - (BANNER_MARGIN * 2);
+        float bannerY = -BANNER_HEIGHT + (BANNER_HEIGHT + BANNER_MARGIN) * bannerAnimationProgress;
+
+        // 設定をバックアップ
+        int originalTextAlign = g.textAlign;
+        float originalTextSize = g.textSize;
+
+        // テーマを取得
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+
+        // 影を描画
+        jp.moyashi.phoneos.core.ui.effects.Elevation.drawRectShadow(
+                g, (int)BANNER_MARGIN, (int)bannerY, (int)bannerWidth, (int)BANNER_HEIGHT, 16, 4);
+
+        // 背景を描画
+        int panelBg = theme != null ? theme.colorSurface() : 0xFF282C34;
+        int r = (panelBg >> 16) & 0xFF;
+        int gr = (panelBg >> 8) & 0xFF;
+        int b = panelBg & 0xFF;
+        g.fill(r, gr, b, 240);
+        g.noStroke();
+        int radius = theme != null ? theme.radiusMd() : 12;
+        g.rect(BANNER_MARGIN, bannerY, bannerWidth, BANNER_HEIGHT, radius);
+
+        // 通知の内容を描画
+        drawBannerContent(g, BANNER_MARGIN, bannerY, bannerWidth, BANNER_HEIGHT);
+
+        // 設定を復元
+        g.textAlign(originalTextAlign, PApplet.BASELINE);
+        g.textSize(originalTextSize);
+    }
+
+    /**
+     * バナー通知の内容を描画する。
+     *
+     * @param g Processing描画コンテキスト
+     * @param x X座標
+     * @param y Y座標
+     * @param width 幅
+     * @param height 高さ
+     */
+    private void drawBannerContent(PGraphics g, float x, float y, float width, float height) {
+        if (bannerNotification == null) return;
+
+        var theme = jp.moyashi.phoneos.core.ui.theme.ThemeContext.getTheme();
+        int onSurface = theme != null ? theme.colorOnSurface() : 0xFFFFFFFF;
+        int onSurfaceSec = theme != null ? theme.colorOnSurfaceSecondary() : 0xFFB4BAC3;
+        int primary = theme != null ? theme.colorPrimary() : 0xFF4682B4;
+
+        // アイコン描画エリア
+        float iconSize = 40;
+        float iconMargin = 12;
+        float iconX = x + iconMargin;
+        float iconY = y + (height - iconSize) / 2;
+
+        // アイコンを描画（PImage対応）
+        PImage icon = bannerNotification.getIcon();
+        if (icon != null) {
+            g.image(icon, iconX, iconY, iconSize, iconSize);
+        } else {
+            // デフォルトアイコン（円と通知マーク）
+            g.fill((primary >> 16) & 0xFF, (primary >> 8) & 0xFF, primary & 0xFF, 180);
+            g.ellipse(iconX + iconSize / 2, iconY + iconSize / 2, iconSize, iconSize);
+
+            // ベルマーク
+            g.fill((onSurface >> 16) & 0xFF, (onSurface >> 8) & 0xFF, onSurface & 0xFF);
+            float cx = iconX + iconSize / 2;
+            float cy = iconY + iconSize / 2;
+            g.noStroke();
+            g.arc(cx, cy - 2, 16, 16, (float)Math.PI, (float)Math.PI * 2);
+            g.rect(cx - 8, cy - 2, 16, 8);
+            g.ellipse(cx, cy + 8, 6, 4);
+        }
+
+        // テキスト描画エリア
+        float textX = iconX + iconSize + iconMargin;
+        float textWidth = width - (textX - x) - iconMargin;
+
+        // 送信者名（アプリ名）
+        g.fill((onSurfaceSec >> 16) & 0xFF, (onSurfaceSec >> 8) & 0xFF, onSurfaceSec & 0xFF);
+        g.textAlign(PApplet.LEFT, PApplet.TOP);
+        g.textSize(11);
+        String sender = bannerNotification.getSender();
+        g.text(sender != null ? sender : "", textX, y + 10);
+
+        // タイトル
+        g.fill((onSurface >> 16) & 0xFF, (onSurface >> 8) & 0xFF, onSurface & 0xFF);
+        g.textSize(13);
+        String title = bannerNotification.getTitle();
+        String truncatedTitle = truncateBannerText(g, title, textWidth);
+        g.text(truncatedTitle, textX, y + 26);
+
+        // 内容（1行のみ）
+        g.fill((onSurfaceSec >> 16) & 0xFF, (onSurfaceSec >> 8) & 0xFF, onSurfaceSec & 0xFF);
+        g.textSize(11);
+        String content = bannerNotification.getContent();
+        String truncatedContent = truncateBannerText(g, content, textWidth);
+        g.text(truncatedContent, textX, y + 44);
+
+        // 閉じるヒント（小さいバー）
+        float handleWidth = 30;
+        float handleHeight = 3;
+        float handleX = x + (width - handleWidth) / 2;
+        float handleY = y + height - 8;
+        int border = theme != null ? theme.colorBorder() : 0xFFA0A5AF;
+        g.fill((border >> 16) & 0xFF, (border >> 8) & 0xFF, border & 0xFF, 150);
+        g.rect(handleX, handleY, handleWidth, handleHeight, 2);
+    }
+
+    /**
+     * バナー用にテキストを切り詰める。
+     *
+     * @param g PGraphicsコンテキスト
+     * @param text テキスト
+     * @param maxWidth 最大幅
+     * @return 切り詰められたテキスト
+     */
+    private String truncateBannerText(PGraphics g, String text, float maxWidth) {
+        if (text == null || text.isEmpty()) return "";
+
+        String suffix = "...";
+        if (g.textWidth(text) <= maxWidth) {
+            return text;
+        }
+
+        for (int i = text.length() - 1; i > 0; i--) {
+            String truncated = text.substring(0, i) + suffix;
+            if (g.textWidth(truncated) <= maxWidth) {
+                return truncated;
+            }
+        }
+        return suffix;
+    }
+
+    /**
+     * バナーが表示中かどうかを確認する。
+     *
+     * @return バナーが表示中の場合true
+     */
+    public boolean isBannerVisible() {
+        return bannerNotification != null && bannerAnimationProgress > 0.1f;
+    }
+
+    /**
+     * バナー通知のジェスチャーを処理する。
+     *
+     * @param event ジェスチャーイベント
+     * @return イベントを処理した場合true
+     */
+    private boolean handleBannerGesture(GestureEvent event) {
+        // バナーが表示されていない場合は処理しない
+        if (!isBannerVisible()) {
+            return false;
+        }
+
+        // バナーの位置を計算
+        float bannerWidth = screenWidth - (BANNER_MARGIN * 2);
+        float bannerY = -BANNER_HEIGHT + (BANNER_HEIGHT + BANNER_MARGIN) * bannerAnimationProgress;
+
+        // タップがバナー内かどうかを判定
+        boolean isInsideBanner = event.getCurrentX() >= BANNER_MARGIN &&
+                                 event.getCurrentX() <= BANNER_MARGIN + bannerWidth &&
+                                 event.getCurrentY() >= bannerY &&
+                                 event.getCurrentY() <= bannerY + BANNER_HEIGHT;
+
+        if (!isInsideBanner) {
+            return false;
+        }
+
+        // タップまたはスワイプアップでバナーを閉じる
+        if (event.getType() == GestureType.TAP || event.getType() == GestureType.LONG_PRESS) {
+            // タップで通知のクリックアクションを実行し、通知センターを開く
+            if (bannerNotification != null) {
+                // 通知を読み状態にする
+                bannerNotification.markAsRead();
+
+                // クリックアクションがあれば実行
+                Runnable clickAction = bannerNotification.getClickAction();
+                if (clickAction != null) {
+                    try {
+                        clickAction.run();
+                    } catch (Exception e) {
+                        System.err.println("NotificationManager: Error executing banner click action: " + e.getMessage());
+                    }
+                }
+            }
+
+            // バナーを閉じる
+            hideBanner();
+
+            if (kernel != null && kernel.getLogger() != null) {
+                kernel.getLogger().info("NotificationManager", "Banner tapped, hiding");
+            }
+            return true;
+        }
+
+        // 上スワイプでバナーを閉じる
+        if (event.getType() == GestureType.SWIPE_UP) {
+            hideBanner();
+            if (kernel != null && kernel.getLogger() != null) {
+                kernel.getLogger().info("NotificationManager", "Banner swiped up, hiding");
+            }
+            return true;
+        }
+
+        // バナー内の他のジェスチャーも消費
+        return true;
+    }
+
     /**
      * ジェスチャーイベントを処理する。
-     * 
+     *
      * @param event ジェスチャーイベント
      * @return イベントを処理した場合true
      */
     public boolean onGesture(GestureEvent event) {
-        // 非表示の場合は処理しない
+        // バナー通知のタップ処理
+        if (handleBannerGesture(event)) {
+            return true;
+        }
+
+        // 通知センターが非表示の場合は処理しない
         if (animationProgress <= 0.1f) {
             return false;
         }
@@ -929,15 +1290,26 @@ public class NotificationManager implements GestureListener {
     }
     
     /**
-     * 指定された座標が通知センターの範囲内かどうかを確認する。
+     * 指定された座標が通知センターまたはバナーの範囲内かどうかを確認する。
      *
      * @param x X座標
      * @param y Y座標
-     * @return 通知センターが表示中で範囲内の場合true
+     * @return 通知センターまたはバナーが表示中で範囲内の場合true
      */
     @Override
     public boolean isInBounds(int x, int y) {
-        // 非表示の場合は範囲外
+        // バナーが表示中の場合、バナー領域内かチェック
+        if (isBannerVisible()) {
+            float bannerWidth = screenWidth - (BANNER_MARGIN * 2);
+            float bannerY = -BANNER_HEIGHT + (BANNER_HEIGHT + BANNER_MARGIN) * bannerAnimationProgress;
+
+            if (x >= BANNER_MARGIN && x <= BANNER_MARGIN + bannerWidth &&
+                y >= bannerY && y <= bannerY + BANNER_HEIGHT) {
+                return true;
+            }
+        }
+
+        // 通知センターが非表示の場合は範囲外
         if (!this.isVisible || animationProgress <= 0.1f) {
             return false;
         }

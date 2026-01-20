@@ -209,7 +209,36 @@ public class VFS {
             return false;
         }
     }
-    
+
+    /**
+     * 仮想ファイルにデータを追記する。
+     * ファイルが存在しない場合は新規作成する。
+     *
+     * @param path 追記先ファイルのパス（VFS内の相対パス）
+     * @param data 追記するデータ
+     * @return 追記が成功した場合true、失敗した場合false
+     */
+    public boolean appendFile(String path, String data) {
+        try {
+            Path filePath = resolveVFSPath(path);
+
+            // 親ディレクトリが存在しない場合は作成
+            Path parentDir = filePath.getParent();
+            if (parentDir != null && !Files.exists(parentDir)) {
+                Files.createDirectories(parentDir);
+            }
+
+            // ファイルに追記（存在しない場合は作成）
+            Files.writeString(filePath, data, StandardCharsets.UTF_8,
+                StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+            return true;
+
+        } catch (IOException e) {
+            System.err.println("VFS: ファイル追記エラー [" + path + "]: " + e.getMessage());
+            return false;
+        }
+    }
+
     /**
      * 仮想ファイルを削除する。
      * 

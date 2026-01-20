@@ -111,7 +111,7 @@ public class PowerManager {
      *
      * @return スリープに成功した場合 true
      */
-    public boolean sleep() {
+    public synchronized boolean sleep() {
         if (currentState == PowerState.SLEEPING) {
             logger.fine("Already sleeping");
             return true;
@@ -138,10 +138,9 @@ public class PowerManager {
         sleepStartTime = System.currentTimeMillis();
         notifyStateChanged(PowerState.GOING_TO_SLEEP, currentState);
 
-        // FPS削減（省電力）
-        if (kernel != null) {
-            kernel.frameRate(SLEEP_FPS);
-        }
+        // 注意: FPS制限は行わない
+        // バックグラウンドサービスはスリープ中も通常通り動作させる
+        // 省電力効果は描画スキップで実現する（RenderPipelineでisSleepingをチェック）
 
         return true;
     }
@@ -149,7 +148,7 @@ public class PowerManager {
     /**
      * システムをウェイク状態にする。
      */
-    public void wake() {
+    public synchronized void wake() {
         if (currentState != PowerState.SLEEPING) {
             logger.fine("Not sleeping, cannot wake");
             return;
@@ -172,10 +171,7 @@ public class PowerManager {
         lastActivityTime = System.currentTimeMillis();
         notifyStateChanged(PowerState.WAKING_UP, currentState);
 
-        // FPS復元
-        if (kernel != null) {
-            kernel.frameRate(ACTIVE_FPS);
-        }
+        // 注意: FPS復元は不要（スリープ中もFPSを維持しているため）
 
         // リスナーに通知
         for (PowerStateListener listener : listeners) {
@@ -192,7 +188,7 @@ public class PowerManager {
      *
      * @param enabled 有効にする場合 true
      */
-    public void setPowerSavingMode(boolean enabled) {
+    public synchronized void setPowerSavingMode(boolean enabled) {
         if (enabled && currentState == PowerState.ACTIVE) {
             PowerState oldState = currentState;
             currentState = PowerState.POWER_SAVING;
@@ -291,7 +287,7 @@ public class PowerManager {
     /**
      * システムをシャットダウンする。
      */
-    public void shutdown() {
+    public synchronized void shutdown() {
         logger.info("Initiating system shutdown");
 
         PowerState oldState = currentState;

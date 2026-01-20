@@ -9,6 +9,7 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.event.level.LevelEvent;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import processing.core.PGraphics;
 import org.apache.logging.log4j.LogManager;
@@ -232,11 +233,12 @@ public class SmartphoneBackgroundService {
             LOGGER.info("[SmartphoneBackgroundService] - SIMInfo set");
 
             // ChatSocket: Minecraftチャットに通知を送信
-            jp.moyashi.phoneos.core.service.NotificationManager notificationManager =
-                kernel.getService(jp.moyashi.phoneos.core.service.NotificationManager.class);
+            jp.moyashi.phoneos.core.service.NotificationManager notificationManager = kernel.getNotificationManager();
             if (notificationManager != null) {
                 notificationManager.setChatSocket(new jp.moyashi.phoneos.forge.hardware.ForgeChatSocket());
                 LOGGER.info("[SmartphoneBackgroundService] - ForgeChatSocket set to NotificationManager");
+            } else {
+                LOGGER.warn("[SmartphoneBackgroundService] - NotificationManager is null, cannot set ForgeChatSocket");
             }
 
             LOGGER.info("[SmartphoneBackgroundService] All hardware APIs initialized with Forge implementations");
@@ -438,6 +440,40 @@ public class SmartphoneBackgroundService {
 
         } catch (Exception e) {
             LOGGER.error("[SmartphoneBackgroundService] Error during kernel shutdown", e);
+        }
+    }
+
+    /**
+     * クライアントティックイベント。
+     * GUIが開いていない時でもKernelのバックグラウンド処理を実行する。
+     */
+    @SubscribeEvent
+    public static void onClientTick(TickEvent.ClientTickEvent event) {
+        // END phaseでのみ処理（1 tickに1回だけ実行）
+        if (event.phase != TickEvent.Phase.END) {
+            return;
+        }
+
+        // Kernelが存在し、GUIが開いていない場合のみバックグラウンド更新
+        if (sharedKernel != null) {
+            Minecraft mc = Minecraft.getInstance();
+
+            // ProcessingScreen（スマートフォンGUI）が開いていない時のみバックグラウンド更新
+            // ProcessingScreenが開いている時はProcessingScreen内でkernel.update()が呼ばれる
+            boolean isPhoneScreenOpen = mc.screen != null &&
+                mc.screen.getClass().getName().contains("ProcessingScreen");
+
+            if (!isPhoneScreenOpen) {
+                try {
+                    // バックグラウンドでKernelを更新（描画なし）
+                    sharedKernel.update();
+                } catch (Exception e) {
+                    // エラーログは頻繁に出力しないように制限
+                    if (sharedKernel.frameCount % 600 == 0) {
+                        LOGGER.error("[SmartphoneBackgroundService] Background tick error: " + e.getMessage());
+                    }
+                }
+            }
         }
     }
 
