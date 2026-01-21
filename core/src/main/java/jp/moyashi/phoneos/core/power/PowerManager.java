@@ -47,9 +47,6 @@ public class PowerManager {
     /** パワーイベントリスナー */
     private final List<PowerStateListener> listeners = new CopyOnWriteArrayList<>();
 
-    /** スリープ時のFPS */
-    private static final int SLEEP_FPS = 5;
-
     /** アクティブ時のFPS */
     private static final int ACTIVE_FPS = 60;
 

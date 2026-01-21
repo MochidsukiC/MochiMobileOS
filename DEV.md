@@ -127,6 +127,45 @@
     - `META-INF/services/jp.moyashi.phoneos.server.network.VirtualHttpServer`にクラス名を記載
     - JARを`mmos_server_data/server_apps/`または`mmos_server_data/apps/`に配置
   - **統合JAR対応**: 1つのJARにIApplication（クライアント）とVirtualHttpServer（サーバー）の両方を含めることが可能
+- **System.out/err キャプチャ機能（2026-01-19）**
+  - MMOS内部（jp.moyashi.phoneos パッケージ）からのSystem.out/err出力をLoggerServiceにキャプチャ
+  - 新規クラス: `CapturingPrintStream` - PrintStreamを拡張したキャプチャ用ストリーム
+    - スタックトレースを検査してパッケージを判定（MMOS内部のみキャプチャ）
+    - ThreadLocalフラグで無限ループを防止
+    - 元のコンソール出力は維持（常に元のストリームにも出力）
+  - LoggerService拡張:
+    - `enableSystemStreamCapture()` - キャプチャを有効化
+    - `disableSystemStreamCapture()` - キャプチャを無効化（元のストリームに復元）
+    - `isStreamCaptureEnabled()` - キャプチャ状態の取得
+  - ログレベルマッピング: System.out → INFO [STDOUT]、System.err → ERROR [STDERR]
+  - Kernel初期化時に自動有効化
+- **バックグラウンドサービスAPI拡張（2026-01-19、2026-01-20更新）**
+  - 問題: `IApplication.getEntryScreen()` がUIスクリーンを返すが、バックグラウンドサービスには別のScreenインスタンスが必要
+  - 解決: IApplicationインターフェースに2つの新規メソッドを追加
+    - `hasBackgroundService()` - バックグラウンドサービスの有無を返す（デフォルト: false）
+    - `getBackgroundService(Kernel kernel)` - バックグラウンドサービス用Screenを返す（デフォルト: null）
+  - **アーキテクチャ改善（2026-01-20）**:
+    - 設計原則: IApplicationインスタンスはシングルトン、フォアグラウンドスクリーンとバックグラウンドサービススクリーンは完全分離
+    - **ProcessInfo拡張**:
+      - `IApplication application` フィールドを追加（シングルトンへの参照を保持）
+      - `Screen foregroundScreen` - フォアグラウンド用スクリーン（UI表示用）
+      - `Screen backgroundServiceScreen` - バックグラウンドサービス用スクリーン（バックグラウンド処理用）
+      - `getApplication()`, `getForegroundScreen()`, `getBackgroundServiceScreen()` メソッド追加
+      - 後方互換性: `getScreen()`, `setScreen()` は @Deprecated として維持
+    - **ServiceManager改善**:
+      - `launchApp()`: ProcessInfoからIApplicationインスタンスを取得し、`getEntryScreen()`でフォアグラウンドスクリーンを取得
+      - `initializeBackgroundService()`: IApplicationインスタンスを保持、`getBackgroundService()`でバックグラウンドサービススクリーンを取得
+      - `tick()`: foregroundScreenに対してtick()を呼び出す
+      - `tickBackground()`: backgroundServiceScreenに対してbackground()を呼び出す（フォアグラウンド状態に関係なく常に実行）
+      - `shutdown()`: 両方のスクリーンをクリーンアップ
+      - `setForeground()`: foregroundScreenに対してライフサイクルイベントを通知
+  - 外部アプリの対応方法:
+    - `hasBackgroundService()` をオーバーライドしてtrueを返す
+    - `getBackgroundService()` をオーバーライドして専用のバックグラウンドServiceScreenを返す
+  - 利点:
+    - UIスクリーン（LoginScreen等）とバックグラウンドサービス（REINBackgroundService等）を明確に分離
+    - バックグラウンドサービスはフォアグラウンド/バックグラウンド状態に関係なく常に動作
+    - IApplicationインスタンスからリソース（client、cacheManager等）を共有可能
 
 ## 現在の仕様（抜粋）
 
@@ -1508,3 +1547,7 @@ MochiMobileOS上でProcessingスケッチ（.pde）をアプリケーション�
 - **セットアップ画面の描画座標修正 (InstallationScreen / SetupWizardScreen)**
   - **PGraphics依存のサイズ管理**: `kernel.width/height` の代わりに `PGraphics.width/height` を使用するように修正。これにより、Forge環境等のオフスクリーンレンダリング時でも正しいサイズとアスペクト比で描画されるようになった。
   - **状態同期**: `draw` メソッド内で画面サイズを更新し、パーティクルやUIレイアウトが常に最新の描画領域に適合するように調整。
+
+## [2026-01-21] AI Review Loop 1
+- Status: Build Passed & Committed
+- Review Summary: PowerManagerから未使用定数SLEEP_FPSを削除（スリープ中FPS制限機能の削除に伴い不要となった）。対象ファイル（LoggerService, VFS, NotificationManager, PowerManager, SmartphoneBackgroundService）をレビューし、重大な品質問題は検出されず。
