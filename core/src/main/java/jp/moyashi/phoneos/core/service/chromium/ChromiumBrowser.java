@@ -383,16 +383,29 @@ public class ChromiumBrowser {
         // CefBrowserOsrにonPaintリスナーを登録
         // addOnPaintListener()はConsumer<CefPaintEvent>を受け取る
         // 注: CefBrowserOsrはpackage-privateなので、リフレクションでメソッドを呼び出す
+        log("Attempting to register onPaint listener...");
+        log("Browser class: " + browser.getClass().getName());
+        log("RenderHandler: " + (renderHandler != null ? renderHandler.getClass().getName() : "null"));
         try {
             // browserがaddOnPaintListener()メソッドを持っているか確認
             java.lang.reflect.Method addListenerMethod = browser.getClass().getMethod("addOnPaintListener", java.util.function.Consumer.class);
+            log("Found addOnPaintListener method: " + addListenerMethod);
 
             // モジュールアクセス制限を回避するためsetAccessible(true)を設定
             addListenerMethod.setAccessible(true);
 
+            // onPaintリスナー呼び出しカウント用
+            final long[] listenerCallCount = {0};
+
             // onPaintイベントリスナーを作成
             // paintEvent（CefPaintEvent）からデータを取得してrenderHandlerに渡す
             java.util.function.Consumer<Object> paintListener = paintEvent -> {
+                listenerCallCount[0]++;
+                // 最初の数回と、その後100回ごとにログ出力
+                if (listenerCallCount[0] <= 3 || listenerCallCount[0] % 100 == 0) {
+                    System.out.println("[ChromiumBrowser] onPaint listener called #" + listenerCallCount[0] +
+                        " - event class: " + (paintEvent != null ? paintEvent.getClass().getName() : "null"));
+                }
                 try {
                     // CefPaintEventからデータを取得（リフレクション使用）
                     Class<?> eventClass = paintEvent.getClass();
@@ -412,11 +425,18 @@ public class ChromiumBrowser {
 
             // addOnPaintListener()を呼び出す
             addListenerMethod.invoke(browser, paintListener);
-            log("Successfully registered onPaint listener via reflection");
+            log("✅ Successfully registered onPaint listener via reflection");
         } catch (NoSuchMethodException e) {
-            logError("addOnPaintListener() method not found on browser: " + browser.getClass().getName());
+            logError("❌ addOnPaintListener() method not found on browser: " + browser.getClass().getName());
+            // デバッグ: 利用可能なメソッドを列挙
+            log("Available methods on browser class:");
+            for (java.lang.reflect.Method m : browser.getClass().getMethods()) {
+                if (m.getName().contains("Paint") || m.getName().contains("Render") || m.getName().contains("Listener")) {
+                    log("  - " + m.getName() + "(" + java.util.Arrays.toString(m.getParameterTypes()) + ")");
+                }
+            }
         } catch (Exception e) {
-            logError("Failed to register onPaint listener: " + e.getMessage());
+            logError("❌ Failed to register onPaint listener: " + e.getMessage());
             e.printStackTrace(); // スタックトレースも出力
         }
 

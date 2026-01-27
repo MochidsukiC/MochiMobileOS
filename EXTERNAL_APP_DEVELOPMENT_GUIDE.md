@@ -1,6 +1,6 @@
 # MochiMobileOS 外部アプリケーション開発ガイド
 
-**最終更新日: 2025年12月23日**
+**最終更新日: 2026年1月21日**
 
 MochiMobileOS向けのアプリケーションを開発するための公式ガイドです。
 MochiMobileOSアプリはJavaで記述され、**Native UI (Processing)** または **Web技術 (HTML/CSS/JS)** を使用してUIを構築できます。
@@ -19,6 +19,8 @@ MochiMobileOSアプリはJavaで記述され、**Native UI (Processing)** また
 7. [コントロールセンターカード開発](#7-コントロールセンターカード開発)
 8. [ダッシュボードウィジェット開発](#8-ダッシュボードウィジェット開発)
 9. [Minecraft Forge MODとしての開発](#9-minecraft-forge-modとしての開発)
+10. [サーバーサイドアプリケーション開発](#10-サーバーサイドアプリケーション開発)
+11. [バックグラウンドサービス開発](#11-バックグラウンドサービス開発)
 
 ---
 
@@ -202,6 +204,8 @@ public class MyScreen implements Screen {
 | `getIcon()` | アプリアイコン (`PImage`)。null可。 |
 | `onInstall()` | アプリインストール時（初回ロード時）に呼ばれる。 |
 | `onDispose()` | アプリ終了時に呼ばれる（リソース解放用）。 |
+| `hasBackgroundService()` | バックグラウンドサービスを持つ場合trueを返す（デフォルト: false）。 |
+| `getBackgroundService(Kernel)` | バックグラウンドサービス用の `Screen` を返す（デフォルト: null）。 |
 
 ### Screen インターフェース
 
@@ -712,21 +716,696 @@ public class MyApp implements IApplication {
 ## 9. Minecraft Forge MODとしての開発
 
 MochiMobileOSアプリをForge MODの一部として配布することも可能です。
+InterModComms (IMC) を使用して、他のMODからアプリケーションを登録できます。
 
 ### セットアップ
 
 `build.gradle.kts` にForge関連の設定を追加し、MochiMobileOSのForgeモジュールに依存させます。
 
-### 登録イベント
+```kotlin
+dependencies {
+    // MochiMobileOS Core（コンパイル時のみ）
+    compileOnly("jp.moyashi.phoneos:core:1.0.0")
 
-`PhoneAppRegistryEvent` をリッスンしてアプリを登録します。
+    // Forge環境で実行時に利用可能
+    runtimeOnly(fg.deobf("jp.moyashi.phoneos:forge:1.0.0"))
+}
+```
+
+### アプリケーションの登録 (IMC方式)
+
+`InterModComms.sendTo()` を使用してアプリケーションを登録します。
+この方式はForge標準のMod間通信メカニズムを使用するため、安定して動作します。
 
 ```java
-@Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
+package com.example.mymod;
+
+import jp.moyashi.phoneos.core.app.IApplication;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.InterModComms;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+
+@Mod("mymod")
 public class MyMod {
-    @SubscribeEvent
-    public static void onAppRegistry(PhoneAppRegistryEvent event) {
-        event.registerApp(new MyApp());
+
+    public MyMod() {
+        // MODイベントバスにリスナーを登録
+        var modBus = net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext.get().getModEventBus();
+        modBus.addListener(this::onCommonSetup);
+    }
+
+    /**
+     * FMLCommonSetupEvent でアプリケーションを登録
+     */
+    private void onCommonSetup(FMLCommonSetupEvent event) {
+        event.enqueueWork(() -> {
+            // MochiMobileOSにアプリケーションを登録
+            InterModComms.sendTo(
+                "mochimobileos",           // 送信先MOD ID
+                "register_app",            // メソッド名
+                () -> new MyApp()          // IApplication インスタンスを返す Supplier
+            );
+
+            System.out.println("[MyMod] Registered MyApp with MochiMobileOS");
+        });
     }
 }
 ```
+
+### 複数アプリの登録
+
+1つのMODから複数のアプリケーションを登録できます。
+
+```java
+private void onCommonSetup(FMLCommonSetupEvent event) {
+    event.enqueueWork(() -> {
+        // アプリ1を登録
+        InterModComms.sendTo("mochimobileos", "register_app", () -> new MyApp1());
+
+        // アプリ2を登録
+        InterModComms.sendTo("mochimobileos", "register_app", () -> new MyApp2());
+
+        // アプリ3を登録
+        InterModComms.sendTo("mochimobileos", "register_app", () -> new MyApp3());
+    });
+}
+```
+
+### IMC登録の仕組み
+
+```
+FMLCommonSetupEvent (あなたのMOD)
+    ↓
+InterModComms.sendTo("mochimobileos", "register_app", ...)
+    ↓
+InterModProcessEvent (MochiMobileOS側)
+    ↓
+ModAppRegistry に登録
+    ↓
+AppStore / ホーム画面に表示
+```
+
+### 注意事項
+
+- `InterModComms.sendTo()` は必ず `event.enqueueWork()` 内で呼び出してください
+- Supplierを渡すため、アプリケーションのインスタンス化はMochiMobileOS側で行われます
+- アプリケーションIDが重複する場合、自動的にナンバリングされます（例: `myapp_2`）
+
+### 旧方式からの移行
+
+以前の `PhoneAppRegistryEvent` 方式は非推奨です。以下のように移行してください：
+
+```java
+// 旧方式（非推奨・動作しません）
+@SubscribeEvent
+public static void onAppRegistry(PhoneAppRegistryEvent event) {
+    event.registerApp(new MyApp());
+}
+
+// 新方式（IMC）
+private void onCommonSetup(FMLCommonSetupEvent event) {
+    event.enqueueWork(() -> {
+        InterModComms.sendTo("mochimobileos", "register_app", () -> new MyApp());
+    });
+}
+```
+
+---
+
+## 10. サーバーサイドアプリケーション開発
+
+MochiMobileOSはクライアント-サーバー分離アーキテクチャを採用しており、Forge環境ではサーバーサイドでHTTPライクなリクエストを処理するアプリケーションを開発できます。
+これにより、ゲーム内ブラウザ（Chromium）からアクセス可能な仮想Webサービスを提供できます。
+
+### 概要
+
+サーバーサイドアプリは `VirtualHttpServer` インターフェースを実装し、IPvMネットワーク経由でHTTPリクエストを処理します。
+
+```
+クライアント（ブラウザ）→ IPvMアドレス（例: http://3-sys-myapp/）
+    → NetworkHandler → MMOSServer → VirtualHttpServer.handleRequest()
+    → レスポンス返却
+```
+
+### VirtualHttpServer インターフェース
+
+```java
+package jp.moyashi.phoneos.server.network;
+
+public interface VirtualHttpServer {
+
+    /**
+     * サーバーの識別子を取得する。
+     * この値がIPvMアドレスの識別子部分になる。
+     * 例: "myapp" → 3-sys-myapp でアクセス可能
+     */
+    String getServerId();
+
+    /**
+     * HTTPリクエストを処理する。
+     */
+    VirtualHttpResponse handleRequest(VirtualHttpRequest request);
+
+    /**
+     * サーバーの説明を取得する（デバッグ用、オプション）。
+     */
+    default String getDescription() {
+        return "VirtualHttpServer: " + getServerId();
+    }
+}
+```
+
+### 基本実装例
+
+```java
+package com.example.myapp.server;
+
+import jp.moyashi.phoneos.server.network.VirtualHttpServer;
+import jp.moyashi.phoneos.server.network.VirtualHttpRequest;
+import jp.moyashi.phoneos.server.network.VirtualHttpResponse;
+
+public class MyAppServer implements VirtualHttpServer {
+
+    @Override
+    public String getServerId() {
+        return "myapp";  // http://3-sys-myapp/ でアクセス可能
+    }
+
+    @Override
+    public VirtualHttpResponse handleRequest(VirtualHttpRequest request) {
+        String path = request.getPath();
+        String method = request.getMethod();
+
+        // ルーティング
+        if (path.equals("/") || path.equals("/index.html")) {
+            return handleIndex();
+        } else if (path.equals("/api/data") && method.equals("GET")) {
+            return handleApiData(request);
+        } else if (path.equals("/api/submit") && method.equals("POST")) {
+            return handleApiSubmit(request);
+        }
+
+        return VirtualHttpResponse.notFound();
+    }
+
+    private VirtualHttpResponse handleIndex() {
+        String html = """
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>My App Server</title>
+            </head>
+            <body>
+                <h1>Welcome to My App!</h1>
+                <p>This is a virtual HTTP server running in Minecraft.</p>
+            </body>
+            </html>
+            """;
+        return VirtualHttpResponse.html(html);
+    }
+
+    private VirtualHttpResponse handleApiData(VirtualHttpRequest request) {
+        String json = "{\"status\": \"ok\", \"message\": \"Hello from server!\"}";
+        return VirtualHttpResponse.json(json);
+    }
+
+    private VirtualHttpResponse handleApiSubmit(VirtualHttpRequest request) {
+        String body = request.getBody();
+        // POSTデータを処理...
+        return VirtualHttpResponse.json("{\"received\": true}");
+    }
+
+    @Override
+    public String getDescription() {
+        return "My App Virtual HTTP Server";
+    }
+}
+```
+
+### VirtualHttpRequest API
+
+| メソッド | 説明 |
+|---------|------|
+| `getMethod()` | HTTPメソッド（GET, POST, PUT, DELETE等） |
+| `getPath()` | リクエストパス（例: `/api/users`） |
+| `getHeaders()` | 全ヘッダーのMap |
+| `getHeader(name)` | 特定のヘッダー値を取得 |
+| `getBody()` | リクエストボディ（POST/PUT時） |
+| `getSource()` | 送信元IPvMアドレス |
+| `getDestination()` | 送信先IPvMアドレス |
+
+### VirtualHttpResponse API
+
+| メソッド | 説明 |
+|---------|------|
+| `VirtualHttpResponse.ok(body)` | 200 OK レスポンス |
+| `VirtualHttpResponse.html(html)` | HTML レスポンス（Content-Type: text/html） |
+| `VirtualHttpResponse.json(json)` | JSON レスポンス（Content-Type: application/json） |
+| `VirtualHttpResponse.notFound()` | 404 Not Found レスポンス |
+| `VirtualHttpResponse.error(message)` | 500 Internal Server Error レスポンス |
+| `VirtualHttpResponse.builder()` | カスタムレスポンス用ビルダー |
+
+### デプロイ方法
+
+サーバーアプリをデプロイするには、以下の2つの方法があります。
+
+#### 方法1: JARファイルによる動的ロード（推奨）
+
+ServiceLoader（SPI）を使用して、JARファイルからサーバーアプリを動的にロードします。
+
+**1. META-INF/services ファイルの作成**
+
+`src/main/resources/META-INF/services/jp.moyashi.phoneos.server.network.VirtualHttpServer` ファイルを作成し、実装クラスのFQCNを記載します。
+
+```
+com.example.myapp.server.MyAppServer
+```
+
+**2. build.gradle.kts の設定**
+
+```kotlin
+plugins {
+    id("java")
+}
+
+dependencies {
+    // MochiMobileOS Server モジュール
+    compileOnly("jp.moyashi.phoneos:server:1.0.0")
+}
+
+tasks.jar {
+    // META-INF/services が含まれることを確認
+    from(sourceSets.main.get().resources)
+}
+```
+
+**3. JARの配置**
+
+ビルドしたJARを以下のいずれかのディレクトリに配置します。
+
+| ディレクトリ | 用途 |
+|-------------|------|
+| `mmos_server_data/server_apps/` | サーバー専用アプリ |
+| `mmos_server_data/apps/` | クライアント+サーバー統合アプリ |
+
+#### 統合JARの作成（IApplication + VirtualHttpServer）
+
+1つのJARにクライアントアプリ（`IApplication`）とサーバーアプリ（`VirtualHttpServer`）の両方を含めることができます。
+
+**プロジェクト構成例:**
+
+```
+my-app/
+├── src/main/java/
+│   └── com/example/myapp/
+│       ├── MyApp.java              # IApplication 実装
+│       ├── MyScreen.java           # クライアントUI
+│       └── server/
+│           └── MyAppServer.java    # VirtualHttpServer 実装
+└── src/main/resources/
+    └── META-INF/services/
+        ├── jp.moyashi.phoneos.core.app.IApplication
+        └── jp.moyashi.phoneos.server.network.VirtualHttpServer
+```
+
+**META-INF/services/jp.moyashi.phoneos.core.app.IApplication:**
+```
+com.example.myapp.MyApp
+```
+
+**META-INF/services/jp.moyashi.phoneos.server.network.VirtualHttpServer:**
+```
+com.example.myapp.server.MyAppServer
+```
+
+統合JARを `mmos_server_data/apps/` に配置すると、クライアント側では `IApplication` が、サーバー側では `VirtualHttpServer` が自動的に検出・登録されます。
+
+#### 方法2: Forge MOD からの直接登録
+
+Forge MODとして開発する場合、コードから直接サーバーを登録できます。
+
+```java
+import jp.moyashi.phoneos.server.MMOSServer;
+import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.minecraftforge.fml.common.Mod;
+
+@Mod("mymod")
+public class MyMod {
+
+    public MyMod() {
+        // サーバーサイド初期化
+        FMLLoader.getDist().ifServer(() -> {
+            // FMLCommonSetupEvent でサーバーを登録
+        });
+    }
+
+    @SubscribeEvent
+    public static void onCommonSetup(FMLCommonSetupEvent event) {
+        event.enqueueWork(() -> {
+            // システムサーバーとして登録（Type 3: 3-sys-xxx）
+            MMOSServer.registerSystemServer("myapp", new MyAppServer());
+
+            // または外部サーバーとして登録（Type 2: 2-xxx）
+            // MMOSServer.registerExternalServer("myapp", new MyAppServer());
+        });
+    }
+}
+```
+
+### IPvMアドレス体系
+
+| タイプ | 形式 | 用途 |
+|-------|------|------|
+| Type 3 | `3-sys-{serverId}` | システム/組み込みサーバー |
+| Type 2 | `2-{serverId}` | 外部MOD提供サーバー |
+
+例:
+- `http://3-sys-test/` - 組み込みテストサーバー
+- `http://3-sys-myapp/` - `registerSystemServer("myapp", ...)` で登録
+- `http://2-economy/` - `registerExternalServer("economy", ...)` で登録
+
+### 注意事項
+
+- サーバーアプリはForge環境の**サーバーサイド**でのみ実行されます
+- スタンドアロン環境ではサーバーアプリは動作しません
+- `mmos_server_data/` ディレクトリはゲームディレクトリ直下に作成されます
+- サーバーアプリのクラスローダーはアプリのライフサイクル中保持されます
+
+---
+
+## 11. バックグラウンドサービス開発
+
+アプリがフォアグラウンドにない時でも、定期的なデータ同期、通知の受信、ネットワーク監視などのバックグラウンド処理を行うためのサービスを開発できます。
+メッセージングアプリ、音楽プレーヤー、同期サービスなど、継続的なバックグラウンド処理が必要なアプリに最適です。
+
+### 概要
+
+バックグラウンドサービスは通常のUIスクリーン（`getEntryScreen()`で返すもの）とは**別のScreenインスタンス**として実装します。
+これにより、UIとバックグラウンド処理を明確に分離し、それぞれ独立したライフサイクルを持たせることができます。
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ IApplication                                                │
+├─────────────────────────────────────────────────────────────┤
+│ getEntryScreen()        → LoginScreen (UI画面)              │
+│ getBackgroundService()  → MyBackgroundService (BG処理)      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### バックグラウンドサービスの実装
+
+#### ステップ 1: バックグラウンドサービスScreenの作成
+
+`Screen` インターフェースを実装し、`background()` と `backgroundInit()` メソッドを重点的に実装します。
+
+```java
+package com.example.myapp;
+
+import jp.moyashi.phoneos.core.Kernel;
+import jp.moyashi.phoneos.core.ui.Screen;
+import processing.core.PGraphics;
+
+/**
+ * バックグラウンドで定期的な同期処理を行うサービス
+ */
+public class MyBackgroundService implements Screen {
+
+    private final Kernel kernel;
+    private long lastSyncTime = 0;
+    private static final long SYNC_INTERVAL_MS = 10000; // 10秒ごとに同期
+
+    public MyBackgroundService(Kernel kernel) {
+        this.kernel = kernel;
+    }
+
+    @Override
+    public void setup(PGraphics pg) {
+        // バックグラウンドサービスでは通常使用しない
+    }
+
+    @Override
+    public void backgroundInit() {
+        // バックグラウンドサービス初期化時に呼ばれる
+        // ServiceManagerによる自動起動時に実行される
+        System.out.println("[MyService] Background service initialized");
+
+        // 初期同期を実行
+        performSync();
+    }
+
+    @Override
+    public void background() {
+        // 定期的に呼び出されるバックグラウンド処理
+        // フレームレートに基づいて呼び出される（約10フレームに1回）
+
+        long now = System.currentTimeMillis();
+        if (now - lastSyncTime >= SYNC_INTERVAL_MS) {
+            lastSyncTime = now;
+            performSync();
+        }
+    }
+
+    @Override
+    public void tick() {
+        // フォアグラウンド時のtick処理
+        // バックグラウンドサービスでは通常使用しない
+    }
+
+    /**
+     * 同期処理を実行
+     */
+    private void performSync() {
+        System.out.println("[MyService] Performing background sync...");
+
+        // ネットワーク状態をチェック
+        var socket = kernel.getMobileDataSocket();
+        if (socket == null || !socket.isAvailable()) {
+            System.out.println("[MyService] Network unavailable, skipping sync");
+            return;
+        }
+
+        // 同期処理を実行（非同期）
+        // 例: サーバーから新着データを取得
+        fetchNewData()
+            .thenAccept(data -> {
+                if (data != null && !data.isEmpty()) {
+                    // 通知を表示
+                    showNotification(data);
+                }
+            })
+            .exceptionally(e -> {
+                System.err.println("[MyService] Sync failed: " + e.getMessage());
+                return null;
+            });
+    }
+
+    /**
+     * 新着データを通知として表示
+     */
+    private void showNotification(String data) {
+        var notificationManager = kernel.getNotificationManager();
+        if (notificationManager != null) {
+            notificationManager.addNotification(
+                "com.example.myapp",        // アプリID
+                "新着データ",                 // タイトル
+                data,                        // 内容
+                2                            // 優先度（1: 通常, 2: 高）
+            );
+        }
+    }
+
+    // その他のScreenメソッド（バックグラウンドサービスでは空実装）
+    @Override
+    public void draw(PGraphics pg) {
+        // バックグラウンドサービスでは使用しない
+    }
+
+    @Override
+    public void mousePressed(PGraphics pg, int x, int y) {}
+
+    @Override
+    public void mouseReleased(PGraphics pg, int x, int y) {}
+
+    @Override
+    public void cleanup(PGraphics pg) {
+        System.out.println("[MyService] Background service cleanup");
+    }
+
+    @Override
+    public String getScreenTitle() {
+        return "My Background Service";
+    }
+}
+```
+
+#### ステップ 2: IApplicationでバックグラウンドサービスを提供
+
+`hasBackgroundService()` と `getBackgroundService()` をオーバーライドします。
+
+```java
+package com.example.myapp;
+
+import jp.moyashi.phoneos.core.Kernel;
+import jp.moyashi.phoneos.core.app.IApplication;
+import jp.moyashi.phoneos.core.ui.Screen;
+import processing.core.PImage;
+
+public class MyApp implements IApplication {
+
+    private static final String APP_ID = "com.example.myapp";
+
+    private Kernel kernel;
+    private MyBackgroundService backgroundService;
+
+    @Override
+    public String getApplicationId() {
+        return APP_ID;
+    }
+
+    @Override
+    public String getName() {
+        return "My App";
+    }
+
+    @Override
+    public void onInitialize(Kernel kernel) {
+        this.kernel = kernel;
+
+        // バックグラウンドサービスとして登録（自動起動を有効化）
+        kernel.getServiceManager().registerBackgroundService(APP_ID);
+    }
+
+    @Override
+    public Screen getEntryScreen(Kernel kernel) {
+        // UI画面を返す（通常のアプリ起動時）
+        return new MyMainScreen(kernel);
+    }
+
+    @Override
+    public boolean hasBackgroundService() {
+        // バックグラウンドサービスを持つことを宣言
+        return true;
+    }
+
+    @Override
+    public Screen getBackgroundService(Kernel kernel) {
+        // バックグラウンドサービス用のScreenを返す
+        // シングルトンとして管理（複数インスタンスを防止）
+        if (backgroundService == null) {
+            backgroundService = new MyBackgroundService(kernel);
+        }
+        return backgroundService;
+    }
+
+    @Override
+    public PImage getIcon() {
+        return null;
+    }
+}
+```
+
+### Screen インターフェースのライフサイクルメソッド
+
+バックグラウンドサービスに関連する主要なメソッド:
+
+| メソッド | 呼び出しタイミング | 用途 |
+|---------|-------------------|------|
+| `backgroundInit()` | サービス初期化時（OS起動時に自動起動） | 初期設定、リソース準備 |
+| `background()` | 定期的（約10フレームに1回） | 定期同期、ネットワーク監視 |
+| `tick()` | フォアグラウンド時のみ | UI更新用（BGサービスでは不使用） |
+| `onForeground()` | フォアグラウンドに遷移時 | UI表示準備 |
+| `onBackground()` | バックグラウンドに遷移時 | リソース解放、状態保存 |
+| `cleanup()` | サービス終了時 | リソースクリーンアップ |
+
+### 自動起動の仕組み
+
+1. アプリが `registerBackgroundService(appId)` を呼び出すと、自動起動リストに登録される
+2. OS起動時に `ServiceManager.initialize()` が呼ばれる
+3. 自動起動リストのアプリに対して `getBackgroundService()` が呼ばれる
+4. 返されたScreenの `backgroundInit()` が呼ばれる
+5. 以降、定期的に `background()` が呼び出される
+
+### 優先度設定
+
+バックグラウンドサービスの実行優先度を設定できます。
+
+```java
+// アプリ初期化時
+kernel.getServiceManager().setPriority(APP_ID, ProcessInfo.Priority.BACKGROUND);
+```
+
+| 優先度 | 実行頻度 | 用途 |
+|--------|---------|------|
+| `HIGH` | 毎フレーム | リアルタイム処理（通常使用しない） |
+| `NORMAL` | 毎フレーム | 通常のアプリ |
+| `LOW` | 5フレームに1回 | バッテリーセーバー時 |
+| `BACKGROUND` | 10フレームに1回 | バックグラウンドサービス（デフォルト） |
+
+### 実装のベストプラクティス
+
+#### 1. UIスクリーンとの分離
+
+バックグラウンドサービスはUI処理を行わないため、`draw()` や入力イベントメソッドは空実装にします。
+UIとデータの共有が必要な場合は、共有データクラスやキャッシュマネージャーを介して行います。
+
+```java
+// 共有データの例
+public class MyDataCache {
+    private static final MyDataCache INSTANCE = new MyDataCache();
+    private List<Message> messages = new ArrayList<>();
+
+    public static MyDataCache getInstance() { return INSTANCE; }
+
+    public synchronized void addMessage(Message msg) {
+        messages.add(msg);
+    }
+
+    public synchronized List<Message> getMessages() {
+        return new ArrayList<>(messages);
+    }
+}
+```
+
+#### 2. ネットワーク状態のチェック
+
+バックグラウンドでネットワーク処理を行う前に、必ず接続状態を確認します。
+
+```java
+var socket = kernel.getMobileDataSocket();
+if (socket != null && socket.isAvailable()) {
+    // ネットワーク処理を実行
+}
+```
+
+#### 3. 非同期処理の使用
+
+バックグラウンド処理は他のアプリに影響を与えないよう、非同期で実行します。
+
+```java
+CompletableFuture.supplyAsync(() -> {
+    // 重い処理
+    return fetchData();
+}).thenAccept(result -> {
+    // 結果処理
+});
+```
+
+#### 4. 通知の適切な使用
+
+新着情報がある場合のみ通知を表示し、ユーザーに過度な通知を送らないようにします。
+
+```java
+// 新規メッセージがある場合のみ通知
+if (newMessages.size() > 0) {
+    notificationManager.addNotification(...);
+}
+```
+
+### 注意事項
+
+- バックグラウンドサービスはOS起動時に自動的に初期化されます
+- `getBackgroundService()` は `getEntryScreen()` とは別のScreenインスタンスを返す必要があります
+- バックグラウンドサービスのScreenで `draw()` を実装しても、描画は行われません
+- メモリ使用量に注意し、不要なリソースは適切に解放してください
+- バッテリー消費を抑えるため、処理間隔は適切に設定してください（推奨: 5秒以上）

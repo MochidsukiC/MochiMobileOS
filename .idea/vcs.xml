@@ -2,5 +2,7 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/app_store_workspace" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/core/java-cef" vcs="Git" />
   </component>
 </project>

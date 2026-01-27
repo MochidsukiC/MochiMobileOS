@@ -61,6 +61,25 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
     }
 
     /**
+     * スクリーンのフォアグラウンド状態をServiceManagerに通知する。
+     * アプリIDが設定されているスクリーンのみ通知する。
+     *
+     * @param screen 対象スクリーン
+     * @param isForeground フォアグラウンドの場合true
+     */
+    private void notifyServiceManagerForegroundState(Screen screen, boolean isForeground) {
+        if (screen == null || kernel == null || kernel.getServiceManager() == null) {
+            return;
+        }
+
+        String appId = screen.getApplicationId();
+        if (appId != null && !appId.isEmpty()) {
+            kernel.getServiceManager().setForeground(appId, isForeground);
+            log("ServiceManager notified: " + appId + " foreground=" + isForeground);
+        }
+    }
+
+    /**
      * エラーロガーヘルパーメソッド。
      *
      * @param message ログメッセージ
@@ -123,6 +142,7 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
             Screen previousScreen = getCurrentScreen();
             if (previousScreen != null) {
                 previousScreen.onBackground();
+                notifyServiceManagerForegroundState(previousScreen, false);
                 log("Previous screen moved to background: " + previousScreen.getScreenTitle());
             }
 
@@ -146,6 +166,7 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
             // 新しくプッシュされたスクリーンをフォアグラウンドに設定（OS側で強制的に制御）
             // スクリーンが再利用される場合（ServiceManager経由）でも、確実にフォアグラウンド状態にする
             screen.onForeground();
+            notifyServiceManagerForegroundState(screen, true);
             log("New screen moved to foreground: " + screen.getScreenTitle());
 
             // アプリケーション画面の場合はKernelレイヤースタックにAPPLICATIONレイヤーを追加
@@ -161,7 +182,7 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
             log("Pushed screen - " + screen.getScreenTitle());
         }
     }
-    
+
     /**
      * アニメーション付きでスクリーンをプッシュする（アイコンからの起動）。
      *
@@ -183,6 +204,7 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
             Screen previousScreen = getCurrentScreen();
             if (previousScreen != null) {
                 previousScreen.onBackground();
+                notifyServiceManagerForegroundState(previousScreen, false);
                 log("Previous screen moved to background (animation): " + previousScreen.getScreenTitle());
             }
 
@@ -212,6 +234,7 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
             // 新しくプッシュされたスクリーンをフォアグラウンドに設定（OS側で強制的に制御）
             // スクリーンが再利用される場合（ServiceManager経由）でも、確実にフォアグラウンド状態にする
             screen.onForeground();
+            notifyServiceManagerForegroundState(screen, true);
             log("New screen moved to foreground (animation): " + screen.getScreenTitle());
 
             // アプリケーション画面の場合はKernelレイヤースタックにAPPLICATIONレイヤーを追加
@@ -281,17 +304,21 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
             log("Removed APPLICATION layer from Kernel stack for screen: " + poppedScreen.getScreenTitle());
         }
 
+        // ポップされたスクリーンをバックグラウンドに設定
+        notifyServiceManagerForegroundState(poppedScreen, false);
+
         // 新しいトップスクリーンをフォアグラウンドに復帰（OS側で強制的に制御）
         Screen newTopScreen = getCurrentScreen();
         if (newTopScreen != null) {
             newTopScreen.onForeground();
+            notifyServiceManagerForegroundState(newTopScreen, true);
             log("New top screen moved to foreground: " + newTopScreen.getScreenTitle());
         }
 
         log("Popped screen - " + poppedScreen.getScreenTitle());
         return poppedScreen;
     }
-    
+
     /**
      * アニメーション付きでスクリーンをポップする（アイコンへの終了）。
      *
@@ -336,10 +363,14 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
         // 未セットアップリストからも削除
         unsetupScreens.remove(poppedScreen);
 
+        // ポップされたスクリーンをバックグラウンドに設定
+        notifyServiceManagerForegroundState(poppedScreen, false);
+
         // 新しいトップスクリーンをフォアグラウンドに復帰（OS側で強制的に制御）
         Screen newTopScreen = getCurrentScreen();
         if (newTopScreen != null) {
             newTopScreen.onForeground();
+            notifyServiceManagerForegroundState(newTopScreen, true);
             log("New top screen moved to foreground (animation): " + newTopScreen.getScreenTitle());
         }
 
@@ -855,6 +886,7 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
             // ★重要★ スクリーンをバックグラウンドに送る（OS側の強制制御）
             // これにより、WebViewのレンダリングパイプラインが停止し、GPU使用率が削減される
             poppedScreen.onBackground();
+            notifyServiceManagerForegroundState(poppedScreen, false);
             log("Screen moved to background during home navigation: " + poppedScreen.getScreenTitle());
 
             // APPLICATIONレイヤーを削除
@@ -875,6 +907,7 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
         Screen homeScreen = getCurrentScreen();
         if (homeScreen != null) {
             homeScreen.onForeground();
+            notifyServiceManagerForegroundState(homeScreen, true);
             log("Home screen moved to foreground: " + homeScreen.getScreenTitle());
         }
 

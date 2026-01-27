@@ -17,7 +17,7 @@ public class ClipboardService {
     private final boolean isHeadless;
 
     // Headless環境用の内部クリップボード
-    private String internalClipboardText = null;
+    private volatile String internalClipboardText = null;
 
     public ClipboardService() {
         // Headless環境かどうかを判定

@@ -140,4 +140,43 @@ public interface IApplication {
         System.out.println("Application " + getName() + " destroyed");
     }
 
+    /**
+     * Indicates whether this application has a background service.
+     * Background services run independently of the UI and continue processing
+     * even when the application is not in the foreground.
+     *
+     * Applications that need background processing (e.g., messaging apps,
+     * music players, sync services) should override this to return true
+     * and implement getBackgroundService().
+     *
+     * @return true if this application has a background service, false otherwise
+     * @since 1.2
+     */
+    default boolean hasBackgroundService() {
+        return false;
+    }
+
+    /**
+     * Gets the background service Screen for this application.
+     * This method is called by ServiceManager during system boot to initialize
+     * background services for applications that have enabled auto-start.
+     *
+     * The background service Screen is separate from the UI entry screen
+     * (returned by getEntryScreen). It handles background() method calls
+     * for periodic background processing.
+     *
+     * Applications should override this method if they need background processing
+     * capabilities. The returned Screen should:
+     * - Implement backgroundInit() for initialization
+     * - Implement background() for periodic background tasks
+     * - Implement tick() if needed for more frequent updates
+     *
+     * @param kernel The OS kernel instance providing access to system services
+     * @return The background service Screen instance, or null if no background service
+     * @since 1.2
+     */
+    default Screen getBackgroundService(Kernel kernel) {
+        return null;
+    }
+
 }

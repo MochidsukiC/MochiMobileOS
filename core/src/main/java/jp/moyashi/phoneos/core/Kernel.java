@@ -1432,6 +1432,11 @@ public class Kernel implements GestureListener {
                 logger.setLogLevel(jp.moyashi.phoneos.core.service.LoggerService.LogLevel.DEBUG);
             }
 
+            // System.out/errキャプチャを有効化
+            if (logger != null) {
+                logger.enableSystemStreamCapture();
+            }
+
             // ChoreographerにLoggerを設定
             if (choreographer != null && logger != null) {
                 choreographer.setLogger(logger);
@@ -1606,15 +1611,14 @@ public class Kernel implements GestureListener {
             logger = new LoggerService(vfs);
             logger.setLogLevel(jp.moyashi.phoneos.core.service.LoggerService.LogLevel.DEBUG);
             logger.info("Kernel", "=== MochiMobileOS カーネル初期化開始（フォールバック） ===");
+            // System.out/errキャプチャを有効化
+            logger.enableSystemStreamCapture();
         }
 
         // サービスマネージャーは直接作成（将来DI化予定）
+        // 注意: initialize()はAppLoaderの初期化後に呼び出す（バックグラウンドサービス初期化のため）
         System.out.println("  -> サービスマネージャー作成中...");
         serviceManager = new ServiceManager(this);
-        serviceManager.initialize();
-        if (logger != null) {
-            logger.info("Kernel", "サービスマネージャー初期化完了");
-        }
 
         // 日本語フォントの初期化（Phase 3: ResourceManager経由）
         logger.info("Kernel", "日本語フォントを初期化中...");
@@ -1670,6 +1674,9 @@ public class Kernel implements GestureListener {
         // アプリケーションをスキャンして読み込む
         System.out.println("  -> 外部アプリケーションをスキャン中...");
         appLoader.scanForApps();
+
+        // ServiceManagerの初期化はすべてのサービス（特にNetworkAdapter）の初期化後に行う
+        // → 後方（アプリ初期化完了後）で serviceManager.initialize() を呼び出す
 
         // LayoutManagerの初期化（DIで取得できなかった場合）
         if (layoutManager == null) {
@@ -2009,6 +2016,12 @@ public class Kernel implements GestureListener {
         chromiumBrowserApp.onInitialize(this);
         sampleWebApp.onInitialize(this);
         appStoreApp.onInitialize(this);
+
+        // ServiceManagerの初期化（バックグラウンドサービスの自動起動）
+        // 注意: すべてのサービス（AppLoader, NetworkAdapter等）の初期化後に呼び出す必要がある
+        System.out.println("  -> サービスマネージャー初期化中（バックグラウンドサービス起動）...");
+        serviceManager.initialize();
+        logger.info("Kernel", "サービスマネージャー初期化完了");
 
         // ScreenManagerの初期化（DIで取得できなかった場合）
         if (screenManager == null) {

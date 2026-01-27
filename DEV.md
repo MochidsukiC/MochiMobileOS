@@ -332,6 +332,12 @@
 - **Kernel.initializeForMinecraft の不安定なリフレクション**（2026-01-18発見）
   - 症状: `processing.awt.PGraphicsJava2D` をクラス名文字列でロードしており、非AWT環境や難読化環境でクラッシュする（RuntimeException）可能性がある。
   - 対応方針: 依存性注入やファクトリパターンを使用して、環境に応じたPGraphics実装を安全に提供する設計に変更すべき。
+- ~~**PhoneAppRegistryEvent による外部MODアプリ登録が動作しない**（2026-01-21修正済み）~~
+  - 症状: 外部MODが `@SubscribeEvent` で `PhoneAppRegistryEvent` を購読しても、イベントが届かずアプリが登録されない
+  - 原因: `FMLJavaModLoadingContext.get().getModEventBus()` はMochiMobileOS自身のMODバスのみを返すため、他のMODはそのバスに登録できない
+  - 解決策: InterModComms (IMC) 方式に移行。`InterModComms.sendTo("mochimobileos", "register_app", () -> app)` で登録可能に
+  - 修正ファイル: `forge/src/main/java/jp/moyashi/phoneos/forge/MochiMobileOSMod.java`
+  - 関連ドキュメント: `EXTERNAL_APP_DEVELOPMENT_GUIDE.md` セクション9も更新済み
 
 ## CodeXレビューログ
 

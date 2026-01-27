@@ -31,13 +31,13 @@ public class ControlCenterManager implements GestureListener {
     private final List<IControlCenterItem> items;
     
     /** 現在の表示状態 */
-    private boolean isVisible;
+    private volatile boolean isVisible;
     
     /** アニメーション進行度（0.0 = 非表示, 1.0 = 完全表示） */
-    private float animationProgress;
+    private volatile float animationProgress;
     
     /** アニメーションの目標進行度 */
-    private float targetAnimationProgress;
+    private volatile float targetAnimationProgress;
     
     /** アニメーション速度 */
     private static final float ANIMATION_SPEED = 0.12f;
@@ -94,7 +94,7 @@ public class ControlCenterManager implements GestureListener {
     private IControlCenterItem dragTargetItem = null;
     
     /** 動的優先度（表示状態に応じて変更される） */
-    private int dynamicPriority = 0;
+    private volatile int dynamicPriority = 0;
     
     /** ジェスチャーマネージャーへの参照（優先度変更時の再ソート用） */
     private jp.moyashi.phoneos.core.input.GestureManager gestureManager;

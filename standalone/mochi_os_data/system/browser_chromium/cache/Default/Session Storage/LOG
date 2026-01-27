@@ -1,6 +1,5 @@
-2025/12/28-23:24:52.500 d890 Reusing MANIFEST C:\Users\dora2\IdeaProjects\MochiMobileOS\standalone\mochi_os_data\system\browser_chromium\cache\Default\Session Storage/MANIFEST-000001
-2025/12/28-23:24:52.502 d890 Recovering log #59
-2025/12/28-23:24:52.505 d890 Reusing old log C:\Users\dora2\IdeaProjects\MochiMobileOS\standalone\mochi_os_data\system\browser_chromium\cache\Default\Session Storage/000059.log 
-2025/12/28-23:25:00.058 eb9c Level-0 table #63: started
-2025/12/28-23:25:00.070 eb9c Level-0 table #63: 258415 bytes OK
-2025/12/28-23:25:00.080 eb9c Delete type=0 #59
+2026/01/21-10:03:44.724 33768 Reusing MANIFEST C:\Users\dora2\IdeaProjects\MochiMobileOS\standalone\mochi_os_data\system\browser_chromium\cache\Default\Session Storage/MANIFEST-000001
+2026/01/21-10:03:44.725 33768 Recovering log #84
+2026/01/21-10:03:44.728 33768 Level-0 table #87: started
+2026/01/21-10:03:44.737 33768 Level-0 table #87: 167284 bytes OK
+2026/01/21-10:03:44.746 33768 Delete type=0 #84

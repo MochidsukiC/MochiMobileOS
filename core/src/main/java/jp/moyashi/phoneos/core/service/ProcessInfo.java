@@ -1,5 +1,6 @@
 package jp.moyashi.phoneos.core.service;
 
+import jp.moyashi.phoneos.core.app.IApplication;
 import jp.moyashi.phoneos.core.ui.Screen;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -29,7 +30,12 @@ public class ProcessInfo {
     }
 
     private final String appId;
-    private final Screen screen;
+    /** アプリケーションインスタンス（シングルトン） */
+    private final IApplication application;
+    /** フォアグラウンド用スクリーン（UI表示用） */
+    private volatile Screen foregroundScreen;
+    /** バックグラウンドサービス用スクリーン（バックグラウンド処理用） */
+    private volatile Screen backgroundServiceScreen;
     /** 優先度 - UIスレッドとTickスレッド間で共有されるためvolatile */
     private volatile Priority priority;
     /** フォアグラウンド状態 - 複数スレッドから参照されるためvolatile */
@@ -48,11 +54,13 @@ public class ProcessInfo {
      * ProcessInfoを作成する。
      *
      * @param appId アプリケーションID
-     * @param screen Screenインスタンス
+     * @param application IApplicationインスタンス（シングルトン）
      */
-    public ProcessInfo(String appId, Screen screen) {
+    public ProcessInfo(String appId, IApplication application) {
         this.appId = appId;
-        this.screen = screen;
+        this.application = application;
+        this.foregroundScreen = null;
+        this.backgroundServiceScreen = null;
         this.priority = Priority.NORMAL;
         this.isForeground = false;
         this.isBackgroundService = false;
@@ -70,8 +78,43 @@ public class ProcessInfo {
         return appId;
     }
 
+    /**
+     * IApplicationインスタンスを取得する。
+     *
+     * @return IApplicationインスタンス
+     */
+    public IApplication getApplication() {
+        return application;
+    }
+
+    /**
+     * フォアグラウンド用スクリーンを取得する。
+     *
+     * @return フォアグラウンドスクリーン
+     */
+    public Screen getForegroundScreen() {
+        return foregroundScreen;
+    }
+
+    /**
+     * バックグラウンドサービス用スクリーンを取得する。
+     *
+     * @return バックグラウンドサービススクリーン
+     */
+    public Screen getBackgroundServiceScreen() {
+        return backgroundServiceScreen;
+    }
+
+    /**
+     * スクリーンを取得する（後方互換性のため）。
+     * フォアグラウンドスクリーンがあればそれを、なければバックグラウンドサービススクリーンを返す。
+     *
+     * @return スクリーン
+     * @deprecated getForegroundScreen() または getBackgroundServiceScreen() を使用してください
+     */
+    @Deprecated
     public Screen getScreen() {
-        return screen;
+        return foregroundScreen != null ? foregroundScreen : backgroundServiceScreen;
     }
 
     public Priority getPriority() {
@@ -118,6 +161,36 @@ public class ProcessInfo {
 
     public void setBackgroundService(boolean backgroundService) {
         this.isBackgroundService = backgroundService;
+    }
+
+    /**
+     * フォアグラウンドスクリーンを設定する。
+     *
+     * @param screen Screenインスタンス
+     */
+    public void setForegroundScreen(Screen screen) {
+        this.foregroundScreen = screen;
+    }
+
+    /**
+     * バックグラウンドサービススクリーンを設定する。
+     *
+     * @param screen Screenインスタンス
+     */
+    public void setBackgroundServiceScreen(Screen screen) {
+        this.backgroundServiceScreen = screen;
+    }
+
+    /**
+     * Screenインスタンスを設定する（後方互換性のため）。
+     * フォアグラウンドスクリーンとして設定される。
+     *
+     * @param screen Screenインスタンス
+     * @deprecated setForegroundScreen() または setBackgroundServiceScreen() を使用してください
+     */
+    @Deprecated
+    public void setScreen(Screen screen) {
+        this.foregroundScreen = screen;
     }
 
     // ==================== 統計情報の更新 ====================

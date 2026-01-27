@@ -167,6 +167,14 @@ public interface ChromiumSurface {
      */
     boolean isReadyToRender();
 
+    /**
+     * ページを読み込み中かどうかを返します。
+     * ローディングUIの表示判定に使用します。
+     *
+     * @return 読み込み中の場合true
+     */
+    boolean isLoading();
+
     // ========== TextInputProtocol用メソッド ==========
 
     /**

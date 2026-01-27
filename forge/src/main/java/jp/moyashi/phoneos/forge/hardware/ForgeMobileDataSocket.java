@@ -34,26 +34,8 @@ public class ForgeMobileDataSocket implements MobileDataSocket {
 
     @Override
     public int getSignalStrength() {
-        if (player == null || level == null) {
-            return 0;
-        }
-
-        // Y座標に基づいて通信強度を計算
-        double y = player.getY();
-
-        if (y >= 60 && y <= 100) {
-            // 地上：強い信号（4-5）
-            return 4 + (Math.random() < 0.5 ? 1 : 0);
-        } else if (y > 100) {
-            // 高所：中程度の信号（3-4）
-            return 3 + (Math.random() < 0.5 ? 1 : 0);
-        } else if (y >= 30) {
-            // 浅い地下：弱い信号（2-3）
-            return 2 + (Math.random() < 0.5 ? 1 : 0);
-        } else {
-            // 深い地下：非常に弱い信号（0-1）
-            return Math.random() < 0.3 ? 1 : 0;
-        }
+        // 常に最大強度を返す
+        return 5;
     }
 
     @Override

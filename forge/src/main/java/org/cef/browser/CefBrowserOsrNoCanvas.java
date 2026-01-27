@@ -236,9 +236,24 @@ public class CefBrowserOsrNoCanvas extends CefBrowser_N implements CefRenderHand
      * 重要: このメソッドはCEFのUIスレッドから呼ばれる。
      * ピクセルデータはBGRA形式で渡される。
      */
+    /** onPaintのデバッグログ用カウンタ */
+    private volatile long onPaintCallCount = 0;
+    private volatile long lastOnPaintLogTime = 0;
+
     @Override
     public void onPaint(CefBrowser browser, boolean popup, Rectangle[] dirtyRects,
                         ByteBuffer buffer, int width, int height) {
+        onPaintCallCount++;
+        long now = System.currentTimeMillis();
+        // 3秒ごとにログ出力（スパム防止）
+        if (now - lastOnPaintLogTime > 3000) {
+            System.out.println("[CefBrowserOsrNoCanvas] onPaint() called #" + onPaintCallCount +
+                " - size: " + width + "x" + height + ", popup: " + popup +
+                ", buffer: " + (buffer != null ? buffer.remaining() + " bytes" : "null") +
+                ", listeners: " + onPaintListeners.size());
+            lastOnPaintLogTime = now;
+        }
+
         if (popup) {
             // ポップアップは現在サポートしない
             return;

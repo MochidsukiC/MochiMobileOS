@@ -27,6 +27,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class ServiceManager {
 
+    private static final String TAG = "ServiceManager";
+
     private final Kernel kernel;
     private final ServiceConfig config;
 
@@ -48,30 +50,84 @@ public class ServiceManager {
         this.frameCount = 0;
     }
 
+    // ==================== ロギングヘルパー ====================
+
+    private void logInfo(String message) {
+        if (kernel != null && kernel.getLogger() != null) {
+            kernel.getLogger().info(TAG, message);
+        }
+    }
+
+    private void logDebug(String message) {
+        if (kernel != null && kernel.getLogger() != null) {
+            kernel.getLogger().debug(TAG, message);
+        }
+    }
+
+    private void logWarn(String message) {
+        if (kernel != null && kernel.getLogger() != null) {
+            kernel.getLogger().warn(TAG, message);
+        }
+    }
+
+    private void logError(String message) {
+        if (kernel != null && kernel.getLogger() != null) {
+            kernel.getLogger().error(TAG, message);
+        }
+    }
+
     // ==================== 初期化とシャットダウン ====================
 
     /**
      * ServiceManagerを初期化する。
-     * 自動起動リストのアプリをバックグラウンドサービスとして起動する。
+     * 1. hasBackgroundService()がtrueを返すアプリを自動検出して初期化
+     * 2. 自動起動リストのアプリをバックグラウンドサービスとして起動
      */
     public void initialize() {
-        System.out.println("ServiceManager: Initializing...");
+        logInfo("Initializing...");
 
-        // 自動起動リストを読み込む
+        // Phase 1: AppLoaderに登録されている全アプリをスキャンし、
+        // hasBackgroundService()がtrueを返すアプリを自動的に初期化
+        AppLoader appLoader = kernel.getAppLoader();
+        if (appLoader != null) {
+            for (IApplication app : appLoader.getLoadedApps()) {
+                if (app.hasBackgroundService()) {
+                    String appId = app.getApplicationId();
+                    // まだ初期化されていない場合のみ初期化
+                    if (!processes.containsKey(appId)) {
+                        logInfo("Auto-detected background service app: " + appId);
+                        try {
+                            initializeBackgroundService(appId);
+                            // autostartリストにも追加（次回起動時のため）
+                            config.addAutostartApp(appId);
+                        } catch (Exception e) {
+                            logError("Failed to initialize auto-detected background service " + appId + ": " + e.getMessage());
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+        }
+
+        // Phase 2: 自動起動リストからも初期化（Phase 1で漏れたアプリ用）
         Set<String> autostartApps = config.getAutostartApps();
-        System.out.println("ServiceManager: Autostart apps: " + autostartApps);
+        logInfo("Autostart apps from config: " + autostartApps);
 
-        // 自動起動アプリをバックグラウンドサービスとして初期化
         for (String appId : autostartApps) {
+            // 既に初期化済みの場合はスキップ
+            if (processes.containsKey(appId)) {
+                logDebug("Skipping already initialized: " + appId);
+                continue;
+            }
             try {
                 initializeBackgroundService(appId);
             } catch (Exception e) {
-                System.err.println("ServiceManager: Failed to initialize background service " + appId + ": " + e.getMessage());
+                logError("Failed to initialize background service " + appId + ": " + e.getMessage());
                 e.printStackTrace();
             }
         }
 
-        System.out.println("ServiceManager: Initialized with " + autostartApps.size() + " background services");
+        logInfo("Initialized with " + processes.size() + " background services");
     }
 
     /**
@@ -79,105 +135,131 @@ public class ServiceManager {
      * 全てのプロセスをクリーンアップする。
      */
     public void shutdown() {
-        System.out.println("ServiceManager: Shutting down...");
+        logInfo("Shutting down...");
 
         // 全てのプロセスをクリーンアップ
         for (ProcessInfo info : processes.values()) {
             try {
-                Screen screen = info.getScreen();
-                if (screen != null) {
-                    screen.cleanup((PGraphics) null); // PGraphicsはnullでOK（cleanup内で使わない）
+                // フォアグラウンドスクリーンのクリーンアップ
+                Screen foregroundScreen = info.getForegroundScreen();
+                if (foregroundScreen != null) {
+                    foregroundScreen.cleanup((PGraphics) null);
+                }
+                // バックグラウンドサービススクリーンのクリーンアップ
+                Screen backgroundServiceScreen = info.getBackgroundServiceScreen();
+                if (backgroundServiceScreen != null) {
+                    backgroundServiceScreen.cleanup((PGraphics) null);
                 }
             } catch (Exception e) {
-                System.err.println("ServiceManager: Error during cleanup of " + info.getAppId() + ": " + e.getMessage());
+                logError("Error during cleanup of " + info.getAppId() + ": " + e.getMessage());
             }
         }
 
         processes.clear();
-        System.out.println("ServiceManager: Shutdown complete");
+        logInfo("Shutdown complete");
     }
 
     // ==================== アプリ起動 ====================
 
     /**
      * アプリを起動する。
-     * 既にインスタンスが存在する場合は再利用し、新規の場合はAppLoaderから取得して作成する。
-     * スレッドセーフ: ConcurrentHashMap.computeIfAbsentを使用して競合を防止。
+     * IApplicationインスタンスはシングルトンとして管理され、ProcessInfoに保持される。
+     * フォアグラウンド用スクリーンはIApplication.getEntryScreen()から取得する。
+     * バックグラウンドサービス用スクリーンとは完全に分離される。
      *
      * @param appId アプリID
      * @return Screenインスタンス、起動失敗時はnull
      */
     public Screen launchApp(String appId) {
-        LoggerContext.info("ServiceManager", "Launching app: " + appId);
-        LoggerContext.info("ServiceManager", "Current processes keys: " + processes.keySet());
+        logInfo("Launching app: " + appId);
+        logDebug("Current processes keys: " + processes.keySet());
 
-        // computeIfAbsentを使用してスレッドセーフにプロセスを取得または作成
-        // 注意: computeIfAbsentのラムダ内で例外が発生した場合はnullを返すため、
-        // その場合は既存プロセスなしかつ作成失敗を意味する
-        final boolean[] isNewInstance = {false};
-        ProcessInfo info;
+        // 既存のプロセスがあるか確認
+        ProcessInfo existingInfo = processes.get(appId);
+        if (existingInfo != null) {
+            logInfo("ProcessInfo exists for " + appId + ", getting entry screen from IApplication");
+            existingInfo.incrementLaunchCount();
+            existingInfo.setForeground(true);
 
-        try {
-            info = processes.computeIfAbsent(appId, id -> {
-                LoggerContext.info("ServiceManager", "Creating new instance for: " + id);
-                try {
-                    AppLoader appLoader = kernel.getAppLoader();
-                    IApplication app = appLoader.findApplicationById(id);
-
-                    if (app == null) {
-                        LoggerContext.error("ServiceManager", "App not found: " + id);
-                        return null;
-                    }
-
-                    Screen screen = app.getEntryScreen(kernel);
-                    if (screen == null) {
-                        LoggerContext.error("ServiceManager", "Failed to create screen for " + id);
-                        return null;
-                    }
-
-                    // アプリケーションIDを設定
-                    screen.setApplicationId(id);
-
-                    // ProcessInfoを作成
-                    ProcessInfo newInfo = new ProcessInfo(id, screen);
-                    newInfo.setForeground(true);
-                    newInfo.incrementLaunchCount();
-
-                    isNewInstance[0] = true;
-                    LoggerContext.info("ServiceManager", "Created new instance for " + id + ", total processes: " + (processes.size() + 1));
-                    return newInfo;
-
-                } catch (Exception e) {
-                    LoggerContext.error("ServiceManager", "Failed to launch app " + id + ": " + e.getMessage());
-                    e.printStackTrace();
-                    return null;
-                }
-            });
-        } catch (Exception e) {
-            LoggerContext.error("ServiceManager", "Failed to launch app " + appId + ": " + e.getMessage());
-            e.printStackTrace();
-            return null;
-        }
-
-        if (info == null) {
-            return null;
-        }
-
-        // 既存インスタンスの場合はライフサイクルイベント通知
-        if (!isNewInstance[0]) {
-            LoggerContext.info("ServiceManager", "Reusing existing instance for " + appId);
-            info.incrementLaunchCount();
-            info.setForeground(true);
+            // IApplicationインスタンスからエントリースクリーンを取得
+            IApplication app = existingInfo.getApplication();
+            if (app == null) {
+                logError("IApplication is null for existing ProcessInfo: " + appId);
+                return null;
+            }
 
             try {
-                info.getScreen().onForeground();
+                // フォアグラウンド用のエントリースクリーンを取得
+                Screen entryScreen = app.getEntryScreen(kernel);
+                if (entryScreen == null) {
+                    logError("Failed to get entry screen for " + appId);
+                    existingInfo.incrementCrashCount();
+                    return null;
+                }
+
+                entryScreen.setApplicationId(appId);
+                existingInfo.setForegroundScreen(entryScreen);
+
+                // onForegroundを呼び出す
+                try {
+                    entryScreen.onForeground();
+                } catch (Exception e) {
+                    logError("Error calling onForeground for " + appId + ": " + e.getMessage());
+                }
+
+                logInfo("Entry screen obtained for app: " + appId);
+                return entryScreen;
+
             } catch (Exception e) {
-                System.err.println("ServiceManager: Error calling onForeground for " + appId + ": " + e.getMessage());
-                info.incrementCrashCount();
+                logError("Error getting entry screen for " + appId + ": " + e.getMessage());
+                existingInfo.incrementCrashCount();
+                return null;
             }
         }
 
-        return info.getScreen();
+        // 新規インスタンスを作成
+        logInfo("Creating new instance for: " + appId);
+
+        try {
+            AppLoader appLoader = kernel.getAppLoader();
+            IApplication app = appLoader.findApplicationById(appId);
+
+            if (app == null) {
+                logError("App not found: " + appId);
+                return null;
+            }
+
+            // 重要: getEntryScreen()を呼ぶ前にProcessInfoをマップに登録
+            // これにより、アプリがgetEntryScreen()内でregisterBackgroundService()を呼べる
+            ProcessInfo newInfo = new ProcessInfo(appId, app);
+            newInfo.setForeground(true);
+            newInfo.incrementLaunchCount();
+            processes.put(appId, newInfo);
+            logDebug("ProcessInfo registered for " + appId + " with IApplication before getEntryScreen()");
+
+            // getEntryScreen()を呼び出し（アプリはここでregisterBackgroundServiceを呼べる）
+            Screen screen = app.getEntryScreen(kernel);
+            if (screen == null) {
+                logError("Failed to create screen for " + appId);
+                processes.remove(appId); // 失敗したので削除
+                return null;
+            }
+
+            // アプリケーションIDを設定
+            screen.setApplicationId(appId);
+
+            // ProcessInfoにフォアグラウンドスクリーンを設定
+            newInfo.setForegroundScreen(screen);
+
+            logInfo("Created new instance for " + appId + ", total processes: " + processes.size());
+            return screen;
+
+        } catch (Exception e) {
+            logError("Failed to launch app " + appId + ": " + e.getMessage());
+            e.printStackTrace();
+            processes.remove(appId); // 失敗したので削除
+            return null;
+        }
     }
 
     // ==================== バックグラウンドサービス管理 ====================
@@ -192,9 +274,9 @@ public class ServiceManager {
         if (info != null) {
             info.setBackgroundService(true);
             config.addAutostartApp(appId);
-            System.out.println("ServiceManager: Registered background service: " + appId);
+            logInfo("Registered background service: " + appId);
         } else {
-            System.err.println("ServiceManager: Cannot register background service - app not found: " + appId);
+            logError("Cannot register background service - app not found: " + appId + " (processes: " + processes.keySet() + ")");
         }
     }
 
@@ -208,47 +290,72 @@ public class ServiceManager {
         if (info != null) {
             info.setBackgroundService(false);
             config.removeAutostartApp(appId);
-            System.out.println("ServiceManager: Unregistered background service: " + appId);
+            logInfo("Unregistered background service: " + appId);
         }
     }
 
     /**
      * バックグラウンドサービスとして初期化する（自動起動時）。
+     * アプリがgetBackgroundService()を実装している場合はそれを使用し、
+     * 実装していない場合はgetEntryScreen()にフォールバックする（後方互換性）。
      *
      * @param appId アプリID
      */
     private void initializeBackgroundService(String appId) {
-        System.out.println("ServiceManager: Initializing background service: " + appId);
+        logInfo("Initializing background service: " + appId);
 
         try {
             AppLoader appLoader = kernel.getAppLoader();
             IApplication app = appLoader.findApplicationById(appId);
 
             if (app == null) {
-                System.err.println("ServiceManager: Background service app not found: " + appId);
+                logError("Background service app not found: " + appId);
                 return;
             }
 
-            Screen screen = app.getEntryScreen(kernel);
-            if (screen == null) {
-                System.err.println("ServiceManager: Failed to create screen for background service: " + appId);
+            Screen backgroundScreen;
+
+            // 新しいAPIを使用：getBackgroundService()が実装されていればそれを使用
+            if (app.hasBackgroundService()) {
+                logDebug("App " + appId + " has background service, calling getBackgroundService()");
+                backgroundScreen = app.getBackgroundService(kernel);
+                if (backgroundScreen != null) {
+                    logInfo("Using dedicated background service screen for: " + appId);
+                } else {
+                    // hasBackgroundService()がtrueなのにgetBackgroundService()がnullの場合は警告
+                    logWarn("hasBackgroundService() returned true but getBackgroundService() returned null for: " + appId);
+                    // フォールバック
+                    backgroundScreen = app.getEntryScreen(kernel);
+                }
+            } else {
+                // 後方互換性：getBackgroundService()が未実装の場合はgetEntryScreen()を使用
+                backgroundScreen = app.getEntryScreen(kernel);
+                logInfo("Using entry screen as background service (legacy mode) for: " + appId);
+            }
+
+            if (backgroundScreen == null) {
+                logError("Failed to create screen for background service: " + appId);
                 return;
             }
 
-            // ProcessInfoを作成して登録
-            ProcessInfo info = new ProcessInfo(appId, screen);
+            // アプリケーションIDを設定
+            backgroundScreen.setApplicationId(appId);
+
+            // ProcessInfoを作成して登録（IApplicationインスタンスを保持）
+            ProcessInfo info = new ProcessInfo(appId, app);
+            info.setBackgroundServiceScreen(backgroundScreen);
             info.setBackgroundService(true);
             info.setForeground(false);
             info.setPriority(ProcessInfo.Priority.BACKGROUND);
             processes.put(appId, info);
 
             // backgroundInit()を呼び出す
-            screen.backgroundInit();
+            backgroundScreen.backgroundInit();
 
-            System.out.println("ServiceManager: Background service initialized: " + appId);
+            logInfo("Background service initialized: " + appId);
 
         } catch (Exception e) {
-            System.err.println("ServiceManager: Failed to initialize background service " + appId + ": " + e.getMessage());
+            logError("Failed to initialize background service " + appId + ": " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -257,6 +364,7 @@ public class ServiceManager {
 
     /**
      * アプリのフォアグラウンド状態を設定する。
+     * フォアグラウンドスクリーンに対してライフサイクルイベントを通知する。
      *
      * @param appId アプリID
      * @param isForeground フォアグラウンドの場合true
@@ -267,19 +375,22 @@ public class ServiceManager {
             boolean wasForeground = info.isForeground();
             info.setForeground(isForeground);
 
-            // ライフサイクルイベント通知
-            try {
-                if (isForeground && !wasForeground) {
-                    info.getScreen().onForeground();
-                } else if (!isForeground && wasForeground) {
-                    info.getScreen().onBackground();
+            // フォアグラウンドスクリーンに対してライフサイクルイベント通知
+            Screen foregroundScreen = info.getForegroundScreen();
+            if (foregroundScreen != null) {
+                try {
+                    if (isForeground && !wasForeground) {
+                        foregroundScreen.onForeground();
+                    } else if (!isForeground && wasForeground) {
+                        foregroundScreen.onBackground();
+                    }
+                } catch (Exception e) {
+                    logError("Error calling lifecycle event for " + appId + ": " + e.getMessage());
+                    info.incrementCrashCount();
                 }
-            } catch (Exception e) {
-                System.err.println("ServiceManager: Error calling lifecycle event for " + appId + ": " + e.getMessage());
-                info.incrementCrashCount();
             }
 
-            System.out.println("ServiceManager: Set foreground for " + appId + ": " + isForeground);
+            logDebug("Set foreground for " + appId + ": " + isForeground);
         }
     }
 
@@ -295,7 +406,7 @@ public class ServiceManager {
         ProcessInfo info = processes.get(appId);
         if (info != null) {
             info.setPriority(priority);
-            System.out.println("ServiceManager: Set priority for " + appId + ": " + priority);
+            logDebug("Set priority for " + appId + ": " + priority);
         }
     }
 
@@ -323,15 +434,22 @@ public class ServiceManager {
     // ==================== tick処理 ====================
 
     /**
-     * フォアグラウンド・バックグラウンドアプリのtick処理を実行する。
+     * フォアグラウンドアプリのtick処理を実行する。
+     * フォアグラウンドスクリーン（foregroundScreen）に対してtick()を呼び出す。
      * 優先度に応じてtick頻度を調整する。
      */
     public void tick() {
         frameCount++;
 
         for (ProcessInfo info : processes.values()) {
-            // バックグラウンドサービスはticBackground()で処理するのでスキップ
-            if (info.isBackgroundService() && !info.isForeground()) {
+            // フォアグラウンドスクリーンがない場合はスキップ
+            Screen foregroundScreen = info.getForegroundScreen();
+            if (foregroundScreen == null) {
+                continue;
+            }
+
+            // フォアグラウンドでない場合はスキップ（バックグラウンドに移行したアプリ）
+            if (!info.isForeground()) {
                 continue;
             }
 
@@ -342,11 +460,11 @@ public class ServiceManager {
 
             try {
                 long startTime = System.nanoTime();
-                info.getScreen().tick();
+                foregroundScreen.tick();
                 long endTime = System.nanoTime();
                 info.addTickTime(endTime - startTime);
             } catch (Exception e) {
-                System.err.println("ServiceManager: Error during tick for " + info.getAppId() + ": " + e.getMessage());
+                logError("Error during tick for " + info.getAppId() + ": " + e.getMessage());
                 e.printStackTrace();
                 info.incrementCrashCount();
             }
@@ -355,17 +473,28 @@ public class ServiceManager {
 
     /**
      * バックグラウンドサービスのbackground()処理を実行する。
+     * バックグラウンドサービススクリーン（backgroundServiceScreen）に対してbackground()を呼び出す。
+     * フォアグラウンド/バックグラウンド状態に関係なく、常にバックグラウンドサービスを実行する。
      * 優先度に応じてtick頻度を調整する。
      */
     public void tickBackground() {
         for (ProcessInfo info : processes.values()) {
-            // バックグラウンドサービスのみ
+            // バックグラウンドサービスでない場合はスキップ
             if (!info.isBackgroundService()) {
+                // デバッグ: なぜスキップされたか
+                if (frameCount % 600 == 0) { // 10秒に1回だけログ出力
+                    logDebug("tickBackground skip (not background service): " + info.getAppId());
+                }
                 continue;
             }
 
-            // フォアグラウンドの場合はtick()で処理済みなのでスキップ
-            if (info.isForeground()) {
+            // バックグラウンドサービススクリーンがない場合はスキップ
+            Screen backgroundServiceScreen = info.getBackgroundServiceScreen();
+            if (backgroundServiceScreen == null) {
+                // デバッグ: なぜスキップされたか
+                if (frameCount % 600 == 0) { // 10秒に1回だけログ出力
+                    logDebug("tickBackground skip (backgroundServiceScreen is null): " + info.getAppId());
+                }
                 continue;
             }
 
@@ -376,11 +505,11 @@ public class ServiceManager {
 
             try {
                 long startTime = System.nanoTime();
-                info.getScreen().background();
+                backgroundServiceScreen.background();
                 long endTime = System.nanoTime();
                 info.addTickTime(endTime - startTime);
             } catch (Exception e) {
-                System.err.println("ServiceManager: Error during background for " + info.getAppId() + ": " + e.getMessage());
+                logError("Error during background for " + info.getAppId() + ": " + e.getMessage());
                 e.printStackTrace();
                 info.incrementCrashCount();
             }

@@ -1,5 +1,6 @@
 {
   "version": "1.0",
   "autostartApps": [
+    "jp.houlab.mochidsuki.rein"
   ]
 }

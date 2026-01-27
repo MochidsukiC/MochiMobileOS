@@ -7,6 +7,8 @@ import jp.moyashi.phoneos.server.network.SystemServerRegistry;
 import jp.moyashi.phoneos.server.network.VirtualHttpServer;
 import jp.moyashi.phoneos.server.network.builtin.TestSystemServer;
 
+import java.nio.file.Path;
+
 /**
  * MochiMobileOS サーバーサイドエントリーポイント。
  *
@@ -14,10 +16,17 @@ import jp.moyashi.phoneos.server.network.builtin.TestSystemServer;
  * - システムサーバーの登録
  * - パケットのルーティング
  * - 組み込みサーバーの初期化
+ * - サーバーアプリの動的ロード
  */
 public class MMOSServer {
 
     private static boolean initialized = false;
+
+    /** サーバーデータのベースパス */
+    private static Path serverDataPath = null;
+
+    /** サーバーアプリローダー */
+    private static ServerAppLoader serverAppLoader = null;
 
     /**
      * サーバーモジュールを初期化する。
@@ -34,8 +43,30 @@ public class MMOSServer {
         // 組み込みシステムサーバーを登録
         registerBuiltinServers();
 
+        // サーバーアプリを読み込み・登録
+        loadServerApps();
+
         initialized = true;
         log("MMOS Server initialized successfully");
+    }
+
+    /**
+     * サーバーアプリを読み込んで登録する
+     */
+    private static void loadServerApps() {
+        Path dataPath = getServerDataPath();
+        if (dataPath == null) {
+            log("Server data path not set, skipping server app loading");
+            return;
+        }
+
+        log("Loading server apps from: " + dataPath);
+
+        serverAppLoader = new ServerAppLoader();
+        serverAppLoader.scanAndLoad(dataPath);
+        serverAppLoader.registerAll();
+
+        log("Server apps loaded: " + serverAppLoader.getLoadedServerCount());
     }
 
     /**
@@ -126,9 +157,40 @@ public class MMOSServer {
         }
 
         log("Shutting down MMOS Server...");
+
+        // サーバーアプリローダーをクローズ
+        if (serverAppLoader != null) {
+            serverAppLoader.close();
+            serverAppLoader = null;
+        }
+
         SystemServerRegistry.getInstance().clear();
         initialized = false;
         log("MMOS Server shutdown complete");
+    }
+
+    /**
+     * サーバーデータのベースパスを取得する。
+     * Forge環境ではゲームディレクトリ/mmos_server_data等が設定される。
+     *
+     * @return サーバーデータのベースパス
+     */
+    public static Path getServerDataPath() {
+        return serverDataPath;
+    }
+
+    /**
+     * サーバーデータのベースパスを設定する。
+     * MMOSServer.initialize()を呼び出す前に設定する必要がある。
+     *
+     * @param path サーバーデータのベースパス
+     */
+    public static void setServerDataPath(Path path) {
+        if (initialized) {
+            log("Warning: setServerDataPath called after initialization");
+        }
+        serverDataPath = path;
+        log("Server data path set to: " + path);
     }
 
     private static void log(String message) {

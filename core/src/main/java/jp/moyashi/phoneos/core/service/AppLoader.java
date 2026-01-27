@@ -85,7 +85,7 @@ public class AppLoader {
      * 4. IApplicationを実装したアプリケーションをインスタンス化
      * 5. 有効なアプリケーションを読み込まれたアプリリストに追加
      */
-    public void scanForApps() {
+    public synchronized void scanForApps() {
         System.out.println("AppLoader: Scanning /apps/ directory for applications...");
         
         if (hasScannedApps) {
@@ -316,7 +316,7 @@ public class AppLoader {
      * @param application 登録するアプリケーションインスタンス
      * @return アプリケーションが正常に登録された場合true、すでに登録済みの場合false
      */
-    public boolean registerApplication(IApplication application) {
+    public synchronized boolean registerApplication(IApplication application) {
         if (application == null) {
             System.err.println("AppLoader: Cannot register null application");
             return false;
@@ -350,7 +350,7 @@ public class AppLoader {
      * @param applicationId 登録解除するアプリケーションの一意識別子
      * @return アプリケーションが正常に登録解除された場合true、見つからない場合false
      */
-    public boolean unregisterApplication(String applicationId) {
+    public synchronized boolean unregisterApplication(String applicationId) {
         IApplication app = findApplicationById(applicationId);
         if (app != null) {
             loadedApps.remove(app);
@@ -408,7 +408,7 @@ public class AppLoader {
      * @throws IllegalArgumentException applicationがnullの場合
      * @return 正常に登録された場合true、既に登録済みの場合false
      */
-    public boolean registerAvailableModApp(IApplication application) {
+    public synchronized boolean registerAvailableModApp(IApplication application) {
         if (application == null) {
             throw new IllegalArgumentException("Application cannot be null");
         }
@@ -494,7 +494,7 @@ public class AppLoader {
      * @return インストールが成功した場合true
      * @throws IllegalArgumentException applicationIdがnullまたは空の場合
      */
-    public boolean installModApp(String applicationId, Object kernel) {
+    public synchronized boolean installModApp(String applicationId, Object kernel) {
         if (applicationId == null || applicationId.trim().isEmpty()) {
             throw new IllegalArgumentException("Application ID cannot be null or empty");
         }
