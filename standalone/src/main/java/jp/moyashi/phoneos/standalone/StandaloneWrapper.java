@@ -55,7 +55,6 @@ public class StandaloneWrapper extends PApplet {
     @Override
     public void settings() {
         size(SCREEN_WIDTH, SCREEN_HEIGHT, P2D);
-        System.out.println("StandaloneWrapper: Processing窓口設定完了 (" + SCREEN_WIDTH + "x" + SCREEN_HEIGHT + ", P2D renderer)");
     }
 
     /**
@@ -89,8 +88,6 @@ public class StandaloneWrapper extends PApplet {
      */
     @Override
     public void setup() {
-        System.out.println("StandaloneWrapper: Kernel初期化開始...");
-
         // ProcessingのESCキーによる終了を無効化
         // これによりESCキーを通常のキー入力として使用可能にする
         // リフレクションは一度だけ実行してキャッシュ
@@ -99,24 +96,20 @@ public class StandaloneWrapper extends PApplet {
             exitCalledField.setAccessible(true);
             exitFieldAccessible = true;
         } catch (Exception e) {
-            System.out.println("StandaloneWrapper: Note - exitCalled field access: " + e);
             exitFieldAccessible = false;
         }
 
         // IMEを有効化（日本語入力のインライン編集対応）
         try {
             if (surface != null) {
-                System.out.println("StandaloneWrapper: Setting up input methods for IME support");
                 surface.setResizable(false); // ウィンドウサイズ固定
 
                 Object nativeWindow = surface.getNative();
-                System.out.println("StandaloneWrapper: Native window class: " + nativeWindow.getClass().getName());
 
                 // P2Dレンダラーの場合、NEWTのGLWindowを使用
                 // com.jogamp.newt.opengl.GLWindow はAWT Componentではないため、
                 // リフレクションでマウスリスナーを登録
                 if (nativeWindow.getClass().getName().equals("com.jogamp.newt.opengl.GLWindow")) {
-                    System.out.println("StandaloneWrapper: Detected NEWT GLWindow (P2D renderer)");
 
                     // NEWTウィンドウでマウスホイールリスナーを登録
                     try {
@@ -153,10 +146,9 @@ public class StandaloneWrapper extends PApplet {
                         // addMouseListener()を呼び出し
                         java.lang.reflect.Method addMouseListenerMethod = glWindowClass.getMethod("addMouseListener", mouseListenerClass);
                         addMouseListenerMethod.invoke(nativeWindow, mouseListener);
-                        System.out.println("StandaloneWrapper: NEWT MouseListener registered");
 
                     } catch (Exception e) {
-                        System.err.println("StandaloneWrapper: Failed to register NEWT mouse listener: " + e.getMessage());
+                        // リスナー登録失敗
                     }
 
                     // CRITICAL: NEWTウィンドウでIMEを有効化
@@ -172,68 +164,34 @@ public class StandaloneWrapper extends PApplet {
                                 java.lang.reflect.Method setInputMethodEnabledMethod =
                                     nativeWindow.getClass().getMethod("setInputMethodEnabled", boolean.class);
                                 setInputMethodEnabledMethod.invoke(nativeWindow, true);
-                                System.out.println("StandaloneWrapper: IME enabled on NEWT window via setInputMethodEnabled()");
                             } catch (NoSuchMethodException e) {
                                 // メソッドが存在しない場合、WindowImplのフィールドを直接操作
-                                System.out.println("StandaloneWrapper: setInputMethodEnabled() not found, trying field access...");
-
                                 // inputMethodEnabledフィールドを探す
                                 try {
                                     java.lang.reflect.Field inputMethodEnabledField =
                                         windowImplClass.getDeclaredField("inputMethodEnabled");
                                     inputMethodEnabledField.setAccessible(true);
                                     inputMethodEnabledField.set(nativeWindow, true);
-                                    System.out.println("StandaloneWrapper: IME enabled on NEWT window via field access");
                                 } catch (Exception fieldEx) {
-                                    System.err.println("StandaloneWrapper: Failed to enable IME via field: " + fieldEx.getMessage());
+                                    // IME有効化失敗
                                 }
                             }
                         }
 
-                        System.out.println("StandaloneWrapper: IME configuration completed for NEWT window");
-                        System.out.println("StandaloneWrapper: Note - IME input will work through Processing's keyTyped() events");
-
                     } catch (Exception e) {
-                        System.err.println("StandaloneWrapper: Failed to enable IME on NEWT window: " + e.getMessage());
-                        System.out.println("StandaloneWrapper: Falling back to Processing's default keyTyped() handling");
+                        // IME有効化失敗（ProcessingのデフォルトkeyTyped()で処理）
                     }
 
                 } else if (nativeWindow instanceof java.awt.Component) {
                     // AWT Componentの場合（JAVA2Dレンダラー）
-                    System.out.println("StandaloneWrapper: Detected AWT Component");
                     java.awt.Component component = (java.awt.Component) nativeWindow;
 
                     // IMEを明示的に有効化
                     component.enableInputMethods(true);
-
-                    // InputContextを取得してIMEが有効か確認
-                    java.awt.im.InputContext inputContext = component.getInputContext();
-                    if (inputContext != null) {
-                        System.out.println("StandaloneWrapper: InputContext available - IME should be working");
-                        System.out.println("StandaloneWrapper: InputContext locale: " + inputContext.getLocale());
-                    } else {
-                        System.err.println("StandaloneWrapper: WARNING - InputContext is null");
-                    }
-
-                    // DISABLED: Duplicate mouseWheel event handling
-                    // Processing's mouseWheel() method (line 343) already handles this
-                    // Multiple listeners were causing duplicate/conflicting scroll events
-                    /*
-                    // AWTのMouseWheelListenerを登録
-                    component.addMouseWheelListener(e -> {
-                        if (kernel != null) {
-                            kernel.mouseWheel(mouseX, mouseY, e.getWheelRotation());
-                        }
-                    });
-                    System.out.println("StandaloneWrapper: AWT MouseWheelListener registered");
-                    */
-                } else {
-                    System.err.println("StandaloneWrapper: Unknown native window type: " + nativeWindow.getClass().getName());
                 }
             }
         } catch (Exception e) {
-            System.err.println("StandaloneWrapper: Failed to setup input methods: " + e.getMessage());
-            e.printStackTrace();
+            // IME設定失敗
         }
 
         // Kernelを作成し、ChromiumServiceを注入してから初期化する
@@ -244,11 +202,8 @@ public class StandaloneWrapper extends PApplet {
         // AWT EventQueue を計測するラッパーを登録
         try {
             java.awt.Toolkit.getDefaultToolkit().getSystemEventQueue().push(new InstrumentedEventQueue(kernel));
-            if (kernel.getLogger() != null) {
-                kernel.getLogger().info("StandaloneWrapper", "Instrumented AWT EventQueue installed");
-            }
         } catch (Exception e) {
-            System.err.println("StandaloneWrapper: Failed to install InstrumentedEventQueue: " + e.getMessage());
+            // EventQueue登録失敗
         }
 
         // IME入力レイヤーを初期化（P2DレンダラーでIME入力を可能にする）
@@ -256,11 +211,7 @@ public class StandaloneWrapper extends PApplet {
         try {
             // ProcessingウィンドウのAWTコンポーネントを取得
             java.awt.Frame[] frames = java.awt.Frame.getFrames();
-            System.out.println("StandaloneWrapper: Searching for Processing Frame among " + frames.length + " frames");
             for (java.awt.Frame frame : frames) {
-                System.out.println("StandaloneWrapper: Frame: " + frame.getTitle() +
-                    ", visible=" + frame.isVisible() +
-                    ", size=" + frame.getWidth() + "x" + frame.getHeight());
                 // ウィンドウ装飾のためサイズが完全一致しない場合があるので、近似値で判定
                 // または可視フレームで最初のものを使用
                 if (frame.isVisible() && frame.getWidth() > 0 && frame.getHeight() > 0) {
@@ -269,20 +220,15 @@ public class StandaloneWrapper extends PApplet {
                     if (className.contains("processing") || className.contains("PSurface") ||
                         processingFrame == null) {
                         processingFrame = frame;
-                        System.out.println("StandaloneWrapper: Selected frame: " + frame.getTitle());
                     }
                 }
             }
 
             if (processingFrame != null) {
                 imeInputLayer = new IMEInputLayer(kernel, processingFrame);
-                System.out.println("StandaloneWrapper: IMEInputLayer initialized");
-            } else {
-                System.err.println("StandaloneWrapper: Could not find Processing Frame for IMEInputLayer");
             }
         } catch (Exception e) {
-            System.err.println("StandaloneWrapper: Failed to initialize IMEInputLayer: " + e.getMessage());
-            e.printStackTrace();
+            // IMEInputLayer初期化失敗
         }
 
         // ハードウェアボタンウィンドウを初期化（ホーム/音量ボタン）
@@ -290,14 +236,10 @@ public class StandaloneWrapper extends PApplet {
             try {
                 hardwareWindow = new HardwareWindow(kernel, SCREEN_WIDTH, SCREEN_HEIGHT);
                 hardwareWindow.showWindow();
-                System.out.println("StandaloneWrapper: HardwareWindow initialized and shown");
             } catch (Exception ex) {
-                System.err.println("StandaloneWrapper: Failed to create HardwareWindow: " + ex.getMessage());
-                ex.printStackTrace();
+                // HardwareWindow作成失敗
             }
         });
-
-        System.out.println("StandaloneWrapper: Kernel初期化完了");
     }
 
     /**
@@ -360,7 +302,6 @@ public class StandaloneWrapper extends PApplet {
             }
 
         } catch (Exception e) {
-            System.err.println("StandaloneWrapper: 描画エラー: " + e.getMessage());
             // エラー表示
             background(255, 0, 0);
             fill(255);
@@ -376,9 +317,6 @@ public class StandaloneWrapper extends PApplet {
     @Override
     public void mousePressed() {
         if (kernel != null) {
-            if (kernel.getLogger() != null) {
-                kernel.getLogger().debug("StandaloneWrapper", "mousePressed event received at (" + mouseX + ", " + mouseY + ")");
-            }
             kernel.mousePressed(mouseX, mouseY);
         }
     }
@@ -389,9 +327,6 @@ public class StandaloneWrapper extends PApplet {
     @Override
     public void mouseReleased() {
         if (kernel != null) {
-            if (kernel.getLogger() != null) {
-                kernel.getLogger().debug("StandaloneWrapper", "mouseReleased event received at (" + mouseX + ", " + mouseY + ")");
-            }
             kernel.mouseReleased(mouseX, mouseY);
         }
     }
@@ -405,9 +340,6 @@ public class StandaloneWrapper extends PApplet {
     @Override
     public void mouseDragged() {
         if (kernel != null) {
-            if (kernel.getLogger() != null) {
-                kernel.getLogger().debug("StandaloneWrapper", "mouseDragged event received at (" + mouseX + ", " + mouseY + ")");
-            }
             kernel.mouseDragged(mouseX, mouseY);
         }
     }
@@ -443,8 +375,6 @@ public class StandaloneWrapper extends PApplet {
      */
     @Override
     public void keyPressed() {
-        System.out.println("StandaloneWrapper: keyPressed - key: '" + key + "', keyCode: " + keyCode);
-
         // Ctrl/Alt/Metaの状態を取得（複数箇所で使用）
         boolean isCtrlPressed = (kernel != null && kernel.isCtrlPressed());
         boolean isAltPressed = (kernel != null && kernel.isAltPressed());
@@ -452,7 +382,6 @@ public class StandaloneWrapper extends PApplet {
 
         // Ctrl+Space でホームに戻る（プラットフォーム固有のホームボタンショートカット）
         if (isCtrlPressed && !isAltPressed && !isMetaPressed && (key == ' ' || keyCode == 32)) {
-            System.out.println("StandaloneWrapper: Ctrl+Space detected - requesting go home");
             if (kernel != null) {
                 kernel.requestGoHome();
             }
@@ -461,7 +390,6 @@ public class StandaloneWrapper extends PApplet {
 
         // ESCキー（keyCode == 27）の場合、Processingのデフォルト動作（アプリケーション終了）を無効化
         if (keyCode == 27) {
-            System.out.println("StandaloneWrapper: ESC key detected - disabling default exit behavior");
             if (kernel != null) {
                 kernel.keyPressed(key, keyCode);
             }
@@ -483,13 +411,8 @@ public class StandaloneWrapper extends PApplet {
 
         if (shouldForwardKey) {
             if (kernel != null) {
-                System.out.println("StandaloneWrapper: Forwarding key to Kernel (key: '" + key + "', keyCode: " + keyCode + ", Ctrl: " + isCtrlPressed + ", Alt: " + isAltPressed + ", Meta: " + isMetaPressed + ")");
                 kernel.keyPressed(key, keyCode);
-            } else {
-                System.out.println("StandaloneWrapper: kernel is null, cannot forward key event");
             }
-        } else {
-            System.out.println("StandaloneWrapper: Skipping normal character in keyPressed() - will be handled by keyTyped()");
         }
     }
 
@@ -500,13 +423,10 @@ public class StandaloneWrapper extends PApplet {
      */
     @Override
     public void keyTyped() {
-        System.out.println("StandaloneWrapper: keyTyped - key: '" + key + "' (Unicode: " + (int)key + ")");
-
         // 制御文字、CODEDキー、特殊キーコード（35-40: Home, End, 矢印）を除外
         // これらはkeyPressed()で既に処理されている
         // スペースキー（32）は通常の文字として扱う
         if (key == CODED || key < 32 || (key >= 35 && key <= 40) || key == 127) {
-            System.out.println("StandaloneWrapper: Skipping control character or special key in keyTyped()");
             return;
         }
 
@@ -514,8 +434,6 @@ public class StandaloneWrapper extends PApplet {
             // keyTypedでは通常のUnicode文字が渡される
             // keyCodeは常に0なので、keyのみを使用
             kernel.keyPressed(key, 0);
-        } else {
-            System.out.println("StandaloneWrapper: kernel is null, cannot forward key event");
         }
     }
 
@@ -537,7 +455,6 @@ public class StandaloneWrapper extends PApplet {
     public void exitActual() {
         // ESCキーが押された場合は終了をキャンセル
         if (keyCode == 27) {
-            System.out.println("StandaloneWrapper: ESC key exit cancelled");
             return; // 終了をキャンセル
         }
         // 通常の終了処理
@@ -549,17 +466,13 @@ public class StandaloneWrapper extends PApplet {
      */
     @Override
     public void exit() {
-        System.out.println("StandaloneWrapper: 終了処理開始...");
-
         if (kernel != null) {
             try {
                 kernel.shutdown();
             } catch (Exception e) {
-                System.err.println("StandaloneWrapper: Kernel終了処理エラー: " + e.getMessage());
+                // Kernel終了処理エラー
             }
         }
-
-        System.out.println("StandaloneWrapper: 終了処理完了");
         super.exit();
     }
 

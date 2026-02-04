@@ -128,7 +128,7 @@ public interface IApplication {
      * @param kernel The OS kernel instance
      */
     default void onInitialize(Kernel kernel) {
-        System.out.println("Application " + getName() + " initialized");
+        // Application initialized
     }
     
     /**
@@ -137,7 +137,7 @@ public interface IApplication {
      * save state, and perform any necessary cleanup operations.
      */
     default void onDestroy() {
-        System.out.println("Application " + getName() + " destroyed");
+        // Application destroyed
     }
 
     /**

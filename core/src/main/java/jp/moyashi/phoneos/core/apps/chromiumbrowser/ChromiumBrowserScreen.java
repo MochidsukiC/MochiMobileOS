@@ -538,7 +538,6 @@ public class ChromiumBrowserScreen implements Screen {
 
         // アドレスバーの外側をクリックした場合、フォーカスを解除
         if (addressBar.isFocused() && !addressBar.contains(mouseX, mouseY)) {
-            System.out.println("[ChromiumBrowserScreen] Clicked outside addressBar, clearing focus");
             addressBar.setVisible(false);
             addressBar.setFocused(false);
         }
@@ -546,7 +545,6 @@ public class ChromiumBrowserScreen implements Screen {
         // Forward mouse press to Chromium if in content area
         // Button: 1=左, 2=中, 3=右 (Processing convention)
         if (isInContentArea(g, mouseX, mouseY)) {
-            System.out.println("[ChromiumBrowserScreen] Clicked in content area, forwarding to Chromium");
             getActiveBrowserSurface().ifPresent(s -> s.sendMousePressed(mouseX - 10, mouseY - 60, 1));
         }
     }
@@ -610,9 +608,6 @@ public class ChromiumBrowserScreen implements Screen {
     }
 
     public void keyPressed(PGraphics g, char key, int keyCode) {
-        System.out.println("[ChromiumBrowserScreen] keyPressed: key=" + (int)key + ", keyCode=" + keyCode +
-                           ", addressBarFocused=" + addressBar.isFocused());
-
         // アドレスバーがフォーカスされている場合、アドレスバーにイベントを転送
         if (addressBar.isFocused()) {
             if (keyCode == PApplet.ENTER || keyCode == PApplet.RETURN) {
@@ -628,7 +623,6 @@ public class ChromiumBrowserScreen implements Screen {
                 addressBar.setFocused(false);
                 addressBar.setVisible(false);
             } else {
-                System.out.println("[ChromiumBrowserScreen] Forwarding to addressBar");
                 addressBar.onKeyPressed(key, keyCode);
             }
         } else {
@@ -637,25 +631,17 @@ public class ChromiumBrowserScreen implements Screen {
             boolean ctrlPressed = kernel != null && kernel.isCtrlPressed();
             boolean altPressed = kernel != null && kernel.isAltPressed();
             boolean metaPressed = kernel != null && kernel.isMetaPressed();
-            System.out.println("[ChromiumBrowserScreen] Sending to Chromium: shift=" + shiftPressed +
-                               ", ctrl=" + ctrlPressed + ", alt=" + altPressed + ", meta=" + metaPressed);
             Optional<ChromiumSurface> surface = getActiveBrowserSurface();
             if (surface.isPresent()) {
-                System.out.println("[ChromiumBrowserScreen] Active surface found, calling sendKeyPressed");
                 surface.get().sendKeyPressed(keyCode, key, shiftPressed, ctrlPressed, altPressed, metaPressed);
-            } else {
-                System.out.println("[ChromiumBrowserScreen] No active surface!");
             }
         }
     }
 
     public void keyReleased(PGraphics g, char key, int keyCode) {
-        System.out.println("[ChromiumBrowserScreen] keyReleased: key=" + (int)key + ", keyCode=" + keyCode + ", addressBarFocused=" + addressBar.isFocused());
-
         // アドレスバーがフォーカスされている場合はChromiumに送信しない
         // BaseTextInputにはonKeyReleasedがないため、フォーカス時は何もしない
         if (addressBar.isFocused()) {
-            System.out.println("[ChromiumBrowserScreen] Address bar focused, ignoring keyReleased");
             return;
         }
 
@@ -664,7 +650,6 @@ public class ChromiumBrowserScreen implements Screen {
         boolean ctrlPressed = kernel != null && kernel.isCtrlPressed();
         boolean altPressed = kernel != null && kernel.isAltPressed();
         boolean metaPressed = kernel != null && kernel.isMetaPressed();
-        System.out.println("[ChromiumBrowserScreen] Sending keyReleased to Chromium: shift=" + shiftPressed + ", ctrl=" + ctrlPressed + ", alt=" + altPressed + ", meta=" + metaPressed);
         getActiveBrowserSurface().ifPresent(s -> s.sendKeyReleased(keyCode, key, shiftPressed, ctrlPressed, altPressed, metaPressed));
     }
 

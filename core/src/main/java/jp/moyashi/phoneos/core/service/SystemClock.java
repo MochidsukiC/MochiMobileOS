@@ -31,7 +31,6 @@ public class SystemClock {
      */
     public SystemClock() {
         systemStartTime = LocalDateTime.now();
-        System.out.println("SystemClock: System clock initialized at " + getFormattedDateTime());
     }
     
     /**

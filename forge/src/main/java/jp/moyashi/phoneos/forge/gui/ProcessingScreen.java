@@ -651,7 +651,7 @@ public class ProcessingScreen extends Screen {
             return true;
 
         } catch (Exception e) {
-            System.err.println("[ProcessingScreen] Mouse release error: " + e.getMessage());
+            LOGGER.error("[ProcessingScreen] Mouse release error: " + e.getMessage(), e);
         }
 
         return super.mouseReleased(mouseX, mouseY, button);
@@ -681,7 +681,7 @@ public class ProcessingScreen extends Screen {
             return true;
 
         } catch (Exception e) {
-            System.err.println("[ProcessingScreen] Mouse drag error: " + e.getMessage());
+            LOGGER.error("[ProcessingScreen] Mouse drag error: " + e.getMessage(), e);
         }
 
         return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
@@ -711,7 +711,7 @@ public class ProcessingScreen extends Screen {
                 return true;
 
             } catch (Exception e) {
-                System.err.println("[ProcessingScreen] Mouse scroll error: " + e.getMessage());
+                LOGGER.error("[ProcessingScreen] Mouse scroll error: " + e.getMessage(), e);
             }
         }
 

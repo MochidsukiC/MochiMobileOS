@@ -49,9 +49,6 @@ public class LockManager {
         
         // 初回起動時にデフォルトパターンを設定
         initializeDefaultPatternIfNeeded();
-        
-        System.out.println("LockManager: ロック管理サービスを初期化完了");
-        System.out.println("LockManager: 現在のロック状態 = " + (isLocked ? "ロック中" : "アンロック中"));
     }
     
     /**
@@ -62,7 +59,6 @@ public class LockManager {
         this.isLocked = false;
         settingsManager.setSetting(SETTING_LOCK_STATE, false);
         settingsManager.saveSettings();
-        System.out.println("LockManager: OSをアンロック状態に変更しました");
     }
     
     /**
@@ -73,7 +69,6 @@ public class LockManager {
         this.isLocked = true;
         settingsManager.setSetting(SETTING_LOCK_STATE, true);
         settingsManager.saveSettings();
-        System.out.println("LockManager: OSをロック状態に変更しました");
     }
     
     /**
@@ -93,17 +88,11 @@ public class LockManager {
      */
     public boolean checkPattern(List<Integer> inputPattern) {
         if (inputPattern == null || inputPattern.isEmpty()) {
-            System.out.println("LockManager: 空のパターンが入力されました");
             return false;
         }
-        
-        List<Integer> savedPattern = getSavedPattern();
-        boolean isMatch = inputPattern.equals(savedPattern);
-        
-        // セキュリティ: 認証結果のみログ出力。パターン自体はログに残さない (CWE-532対策)
-        System.out.println("LockManager: パターン認証結果 = " + (isMatch ? "成功" : "失敗"));
 
-        return isMatch;
+        List<Integer> savedPattern = getSavedPattern();
+        return inputPattern.equals(savedPattern);
     }
     
     /**
@@ -114,21 +103,18 @@ public class LockManager {
      */
     public void savePattern(List<Integer> pattern) {
         if (pattern == null || pattern.isEmpty()) {
-            System.out.println("LockManager: 無効なパターンが指定されました");
             return;
         }
-        
+
         // パターンを文字列形式で保存（例: "0,3,6,7,8"）
         StringBuilder patternStr = new StringBuilder();
         for (int i = 0; i < pattern.size(); i++) {
             if (i > 0) patternStr.append(",");
             patternStr.append(pattern.get(i));
         }
-        
+
         settingsManager.setSetting(SETTING_LOCK_PATTERN, patternStr.toString());
         settingsManager.saveSettings();
-        
-        System.out.println("LockManager: 新しいロックパターンを保存しました = " + pattern);
     }
     
     /**
@@ -151,7 +137,6 @@ public class LockManager {
             try {
                 pattern.add(Integer.parseInt(part.trim()));
             } catch (NumberFormatException e) {
-                System.err.println("LockManager: パターン復元エラー: " + e.getMessage());
                 return new ArrayList<>(DEFAULT_PATTERN);
             }
         }
@@ -165,13 +150,9 @@ public class LockManager {
      */
     private void initializeDefaultPatternIfNeeded() {
         String existingPattern = settingsManager.getStringSetting(SETTING_LOCK_PATTERN, "");
-        
+
         if (existingPattern.isEmpty()) {
-            System.out.println("LockManager: デフォルトパターンを初期化中...");
             savePattern(DEFAULT_PATTERN);
-            System.out.println("LockManager: L字型パターン (0-3-6-7-8) を設定しました");
-        } else {
-            System.out.println("LockManager: 既存のパターンを読み込みました");
         }
     }
     

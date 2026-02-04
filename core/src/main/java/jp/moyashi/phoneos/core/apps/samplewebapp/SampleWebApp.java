@@ -58,11 +58,11 @@ public class SampleWebApp implements IApplication {
 
     @Override
     public void onInitialize(Kernel kernel) {
-        System.out.println("[SampleWebApp] Initialized");
+        // Initialization complete
     }
 
     @Override
     public void onDestroy() {
-        System.out.println("[SampleWebApp] Destroyed");
+        // Cleanup complete
     }
 }

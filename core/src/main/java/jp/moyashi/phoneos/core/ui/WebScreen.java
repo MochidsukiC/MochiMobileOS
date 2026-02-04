@@ -628,7 +628,6 @@ public class WebScreen implements Screen {
     // ========== ログ出力 ==========
 
     private void log(String message) {
-        System.out.println("[WebScreen:" + modId + "] " + message);
         if (kernel != null && kernel.getLogger() != null) {
             kernel.getLogger().info("WebScreen:" + modId, message);
         }

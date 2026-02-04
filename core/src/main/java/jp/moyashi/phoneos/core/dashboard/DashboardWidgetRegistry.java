@@ -39,7 +39,6 @@ public class DashboardWidgetRegistry {
     public DashboardWidgetRegistry(SettingsManager settingsManager) {
         this.settingsManager = settingsManager;
         loadAssignments();
-        System.out.println("DashboardWidgetRegistry: Initialized with " + slotAssignments.size() + " saved assignments");
     }
 
     /**
@@ -67,14 +66,11 @@ public class DashboardWidgetRegistry {
         String widgetId = widget.getId();
 
         if (registeredWidgets.containsKey(widgetId)) {
-            System.out.println("DashboardWidgetRegistry: Widget already registered: " + widgetId);
             return false;
         }
 
         registeredWidgets.put(widgetId, widget);
         notifyWidgetAdded(widget);
-        System.out.println("DashboardWidgetRegistry: Registered widget: " + widgetId +
-                " (size=" + widget.getSize() + ", type=" + widget.getType() + ")");
         return true;
     }
 
@@ -91,7 +87,6 @@ public class DashboardWidgetRegistry {
             slotAssignments.entrySet().removeIf(entry -> widgetId.equals(entry.getValue()));
             removed.onDetach();
             notifyWidgetRemoved(removed);
-            System.out.println("DashboardWidgetRegistry: Unregistered widget: " + widgetId);
             return true;
         }
         return false;
@@ -120,7 +115,6 @@ public class DashboardWidgetRegistry {
 
         if (!toRemove.isEmpty()) {
             saveAssignments();
-            System.out.println("DashboardWidgetRegistry: Removed " + toRemove.size() + " widgets for app: " + appId);
         }
     }
 
@@ -202,7 +196,6 @@ public class DashboardWidgetRegistry {
      */
     public synchronized boolean assignWidgetToSlot(DashboardSlot slot, String widgetId) {
         if (slot == null || !slot.isConfigurable()) {
-            System.out.println("DashboardWidgetRegistry: Slot is not configurable: " + slot);
             return false;
         }
 
@@ -225,14 +218,11 @@ public class DashboardWidgetRegistry {
         // ウィジェットの存在確認
         IDashboardWidget widget = registeredWidgets.get(widgetId);
         if (widget == null) {
-            System.out.println("DashboardWidgetRegistry: Widget not found: " + widgetId);
             return false;
         }
 
         // サイズ互換性チェック
         if (widget.getSize() != slot.getRequiredSize()) {
-            System.out.println("DashboardWidgetRegistry: Widget size mismatch: " +
-                    widget.getSize() + " != " + slot.getRequiredSize());
             return false;
         }
 
@@ -242,7 +232,6 @@ public class DashboardWidgetRegistry {
             widget.onAttach(kernel);
         }
         notifyAssignmentChanged(slot, widgetId);
-        System.out.println("DashboardWidgetRegistry: Assigned " + widgetId + " to " + slot);
         return true;
     }
 
@@ -272,7 +261,6 @@ public class DashboardWidgetRegistry {
 
         settingsManager.setSetting(SETTINGS_KEY_ASSIGNMENTS, map);
         settingsManager.saveSettings();
-        System.out.println("DashboardWidgetRegistry: Saved " + map.size() + " assignments");
     }
 
     /**

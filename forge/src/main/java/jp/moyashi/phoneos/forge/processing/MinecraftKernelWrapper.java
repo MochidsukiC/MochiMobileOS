@@ -39,7 +39,6 @@ public class MinecraftKernelWrapper {
     public MinecraftKernelWrapper(int width, int height) {
         this.width = width;
         this.height = height;
-        System.out.println("[MinecraftKernelWrapper] Creating kernel wrapper: " + width + "x" + height);
     }
 
     /**
@@ -47,19 +46,14 @@ public class MinecraftKernelWrapper {
      */
     public void initialize() {
         try {
-            System.out.println("[MinecraftKernelWrapper] Initializing MochiMobileOS kernel...");
-
             // Minecraft環境用の初期化メソッドを使用
             kernel = new Kernel();
             kernel.initializeForMinecraft(width, height);
-            System.out.println("[MinecraftKernelWrapper] Kernel instance created and initialized");
 
             initialized = true;
-            System.out.println("[MinecraftKernelWrapper] Kernel initialized successfully (size: " + width + "x" + height + ")");
 
         } catch (Exception e) {
-            System.err.println("[MinecraftKernelWrapper] Failed to initialize kernel: " + e.getMessage());
-            e.printStackTrace();
+            LOGGER.error("[MinecraftKernelWrapper] Failed to initialize kernel: " + e.getMessage(), e);
             // フォールバック: 初期化を失敗としてマークするが、エラーでクラッシュはしない
             initialized = false;
         }
@@ -82,8 +76,7 @@ public class MinecraftKernelWrapper {
             kernel.render();
 
         } catch (Exception e) {
-            System.err.println("[MinecraftKernelWrapper] Draw error: " + e.getMessage());
-            e.printStackTrace();
+            LOGGER.error("[MinecraftKernelWrapper] Draw error: " + e.getMessage(), e);
         }
     }
 
@@ -103,7 +96,7 @@ public class MinecraftKernelWrapper {
             kernel.mousePressed(x, y);
 
         } catch (Exception e) {
-            System.err.println("[MinecraftKernelWrapper] Mouse press error: " + e.getMessage());
+            LOGGER.error("[MinecraftKernelWrapper] Mouse press error: " + e.getMessage(), e);
         }
     }
 
@@ -123,7 +116,7 @@ public class MinecraftKernelWrapper {
             kernel.mouseReleased(x, y);
 
         } catch (Exception e) {
-            System.err.println("[MinecraftKernelWrapper] Mouse release error: " + e.getMessage());
+            LOGGER.error("[MinecraftKernelWrapper] Mouse release error: " + e.getMessage(), e);
         }
     }
 
@@ -143,7 +136,7 @@ public class MinecraftKernelWrapper {
             kernel.keyPressed(key, keyCode);
 
         } catch (Exception e) {
-            System.err.println("[MinecraftKernelWrapper] Key press error: " + e.getMessage());
+            LOGGER.error("[MinecraftKernelWrapper] Key press error: " + e.getMessage(), e);
         }
     }
 
@@ -190,7 +183,7 @@ public class MinecraftKernelWrapper {
             return kernel.getPixels();
 
         } catch (Exception e) {
-            System.err.println("[MinecraftKernelWrapper] Failed to get pixels: " + e.getMessage());
+            LOGGER.error("[MinecraftKernelWrapper] Failed to get pixels: " + e.getMessage(), e);
             return new int[width * height];
         }
     }
@@ -200,8 +193,6 @@ public class MinecraftKernelWrapper {
      */
     public void cleanup() {
         try {
-            System.out.println("[MinecraftKernelWrapper] Cleaning up kernel wrapper...");
-
             if (kernel != null) {
                 // Kernelのクリーンアップ処理
                 // TODO: PGraphics統一アーキテクチャに移行後、クリーンアップを再実装
@@ -210,11 +201,9 @@ public class MinecraftKernelWrapper {
             }
 
             initialized = false;
-            System.out.println("[MinecraftKernelWrapper] Kernel wrapper cleanup completed");
 
         } catch (Exception e) {
-            System.err.println("[MinecraftKernelWrapper] Cleanup error: " + e.getMessage());
-            e.printStackTrace();
+            LOGGER.error("[MinecraftKernelWrapper] Cleanup error: " + e.getMessage(), e);
         }
     }
 

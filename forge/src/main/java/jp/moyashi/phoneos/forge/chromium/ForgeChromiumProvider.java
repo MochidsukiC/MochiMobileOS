@@ -58,8 +58,7 @@ public class ForgeChromiumProvider extends JCEFChromiumProvider {
         try {
             configureSystemBootstrapEarly();
         } catch (Exception e) {
-            System.err.println("[" + TAG + "] Failed to configure SystemBootstrap in static initializer: " + e.getMessage());
-            e.printStackTrace();
+            LOGGER.error("[" + TAG + "] Failed to configure SystemBootstrap in static initializer: " + e.getMessage(), e);
         }
     }
 
@@ -74,13 +73,11 @@ public class ForgeChromiumProvider extends JCEFChromiumProvider {
         // jcef.pathからJCEFパスを取得
         String jcefPathStr = System.getProperty("jcef.path");
         if (jcefPathStr == null || jcefPathStr.isEmpty()) {
-            System.out.println("[" + TAG + "] jcef.path not set yet, skipping early SystemBootstrap configuration");
             return;
         }
 
         Path jcefPath = Path.of(jcefPathStr);
         if (!Files.exists(jcefPath)) {
-            System.out.println("[" + TAG + "] JCEF path does not exist: " + jcefPath);
             return;
         }
 
@@ -107,17 +104,14 @@ public class ForgeChromiumProvider extends JCEFChromiumProvider {
 
                 File libFile = jcefPath.resolve(fileName).toFile();
                 if (libFile.exists()) {
-                    System.out.println("[" + TAG + "] SystemBootstrap loading: " + libFile.getAbsolutePath());
                     System.load(libFile.getAbsolutePath());
                 } else {
-                    System.out.println("[" + TAG + "] Library not found, falling back: " + libName + " (tried: " + libFile.getAbsolutePath() + ")");
                     System.loadLibrary(libName);
                 }
             }
         });
 
         systemBootstrapConfigured = true;
-        System.out.println("[" + TAG + "] SystemBootstrap configured early with JCEF path: " + jcefPath);
     }
 
     @Override

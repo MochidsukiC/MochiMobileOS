@@ -73,7 +73,6 @@ public class AppLibraryScreen_Complete implements Screen {
         this.homeScreen = null;
         this.showingContextMenu = false;
         
-        System.out.println("AppLibraryScreen: Complete app library screen created");
     }
     
     /**
@@ -93,8 +92,6 @@ public class AppLibraryScreen_Complete implements Screen {
     public void setup(PGraphics g) {
         isInitialized = true;
         loadAllApps();
-        System.out.println("AppLibraryScreen: App library initialized with " +
-                          (allApps != null ? allApps.size() : 0) + " applications");
     }
 
     /**
@@ -160,7 +157,6 @@ public class AppLibraryScreen_Complete implements Screen {
      */
     @Override
     public void mousePressed(PGraphics g, int mouseX, int mouseY) {
-        System.out.println("AppLibraryScreen: Touch at (" + mouseX + ", " + mouseY + ")");
 
         touchStartTime = System.currentTimeMillis();
 
@@ -230,7 +226,6 @@ public class AppLibraryScreen_Complete implements Screen {
         isInitialized = false;
         allApps = null;
         hideContextMenu();
-        System.out.println("AppLibraryScreen: App library screen cleaned up");
     }
 
     /**
@@ -259,14 +254,12 @@ public class AppLibraryScreen_Complete implements Screen {
     private void loadAllApps() {
         if (kernel != null && kernel.getAppLoader() != null) {
             allApps = kernel.getAppLoader().getLoadedApps();
-            System.out.println("AppLibraryScreen: Loaded " + allApps.size() + " applications");
         }
     }
     
     private void showContextMenu(IApplication app, int x, int y) {
         longPressedApp = app;
         showingContextMenu = true;
-        System.out.println("AppLibraryScreen: Showing context menu for " + app.getName());
     }
     
     private void hideContextMenu() {
@@ -293,19 +286,16 @@ public class AppLibraryScreen_Complete implements Screen {
         
         // Check if app already has a shortcut on this page
         if (currentPage.hasShortcutForApplication(app)) {
-            System.out.println("AppLibraryScreen: App already has shortcut on current page");
             return;
         }
         
         // Try to add shortcut
         if (currentPage.addShortcut(app)) {
-            System.out.println("AppLibraryScreen: Added " + app.getName() + " to home screen");
         } else {
             // Page is full, try to add new page
             homeScreen.addNewPage();
             HomePage newPage = homeScreen.getCurrentPage();
             if (newPage != null && newPage.addShortcut(app)) {
-                System.out.println("AppLibraryScreen: Added " + app.getName() + " to new home page");
             } else {
                 System.err.println("AppLibraryScreen: Failed to add shortcut");
             }

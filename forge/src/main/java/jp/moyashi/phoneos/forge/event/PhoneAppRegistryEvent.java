@@ -50,10 +50,6 @@ public class PhoneAppRegistryEvent extends Event implements IModBusEvent {
         // 実際の登録は、MochiMobileOSModが行う
         ModAppRegistry.getInstance().addAvailableApp(application);
         registeredAppsCount++;
-
-        System.out.println("[PhoneAppRegistryEvent] Registered app: " +
-                          application.getName() + " (" +
-                          application.getApplicationId() + ")");
     }
 
     /**

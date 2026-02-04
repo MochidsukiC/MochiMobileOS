@@ -80,7 +80,6 @@ public class JCEFChromiumProvider implements ChromiumProvider {
     @Override
     public CefApp createCefApp(Kernel kernel) {
         try {
-            System.out.println("[JCEFChromiumProvider] Initializing JCEF with jcefmaven...");
 
             // ChromiumAppHandlerを作成（coreモジュール）
             ChromiumAppHandler coreAppHandler = new ChromiumAppHandler(kernel);
@@ -105,7 +104,6 @@ public class JCEFChromiumProvider implements ChromiumProvider {
             // （スタンドアロンと同じ方式 - Forge側からのパス指定に依存しない）
             CefAppBuilder builder = new CefAppBuilder();
             builder.setAppHandler(appHandler);
-            System.out.println("[JCEFChromiumProvider] jcefmaven will handle JCEF installation automatically");
 
             // CefSettingsを取得して設定
             CefSettings settings = builder.getCefSettings();
@@ -113,7 +111,6 @@ public class JCEFChromiumProvider implements ChromiumProvider {
             // キャッシュパス（VFS内）
             String cachePath = kernel.getVFS().getFullPath("system/browser_chromium/cache");
             settings.cache_path = cachePath;
-            System.out.println("[JCEFChromiumProvider] Cache path: " + cachePath);
 
             // User-Agent（モバイル最適化）
             settings.user_agent = "Mozilla/5.0 (Linux; Android 12; MochiMobileOS) " +
@@ -134,7 +131,6 @@ public class JCEFChromiumProvider implements ChromiumProvider {
             boolean isMac = osName.contains("mac");
 
             if (isMac) {
-                System.out.println("[JCEFChromiumProvider] Detected Mac - applying workarounds for code signing issues");
                 // Macでのコード署名エラーを回避（サンドボックス無効化のみ）
                 builder.addJcefArgs("--no-sandbox");
                 builder.addJcefArgs("--disable-gpu-sandbox");
@@ -144,13 +140,11 @@ public class JCEFChromiumProvider implements ChromiumProvider {
                 builder.addJcefArgs("--enable-gpu");
                 builder.addJcefArgs("--enable-accelerated-video-decode");
                 builder.addJcefArgs("--enable-accelerated-2d-canvas");
-                System.out.println("[JCEFChromiumProvider] GPU acceleration enabled (sandboxes disabled for Mac compatibility)");
             } else {
                 // Windows/その他のプラットフォームでは従来通りの設定（サンドボックス有効）
                 builder.addJcefArgs("--enable-gpu");
                 builder.addJcefArgs("--enable-accelerated-video-decode");
                 builder.addJcefArgs("--enable-accelerated-2d-canvas");
-                System.out.println("[JCEFChromiumProvider] GPU acceleration enabled");
             }
 
             // 共通設定（全プラットフォーム）
@@ -160,9 +154,6 @@ public class JCEFChromiumProvider implements ChromiumProvider {
 
             // JCEFをビルドして初期化
             CefApp cefApp = builder.build();
-
-            System.out.println("[JCEFChromiumProvider] JCEF initialized successfully");
-            System.out.println("[JCEFChromiumProvider] Chromium version: " + cefApp.getVersion());
 
             return cefApp;
 
@@ -199,14 +190,9 @@ public class JCEFChromiumProvider implements ChromiumProvider {
     @Override
     public CefBrowser createBrowser(CefClient client, String url, boolean osrEnabled, boolean transparent) {
         try {
-            System.out.println("[JCEFChromiumProvider] Creating browser with jcefmaven API...");
-            System.out.println("[JCEFChromiumProvider] - URL: " + url);
-            System.out.println("[JCEFChromiumProvider] - OSR: " + osrEnabled + ", Transparent: " + transparent);
-
             // jcefmaven 135.0.20の3引数API: createBrowser(url, osrEnabled, transparent)
             CefBrowser browser = client.createBrowser(url, osrEnabled, transparent);
 
-            System.out.println("[JCEFChromiumProvider] Browser created successfully");
             return browser;
 
         } catch (Exception e) {
@@ -223,9 +209,7 @@ public class JCEFChromiumProvider implements ChromiumProvider {
         }
 
         try {
-            System.out.println("[JCEFChromiumProvider] Disposing CefApp...");
             cefApp.dispose();
-            System.out.println("[JCEFChromiumProvider] CefApp disposed");
 
         } catch (Exception e) {
             System.err.println("[JCEFChromiumProvider] Error during CefApp disposal: " + e.getMessage());

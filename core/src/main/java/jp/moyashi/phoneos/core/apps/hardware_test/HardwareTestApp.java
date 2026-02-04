@@ -25,7 +25,6 @@ public class HardwareTestApp implements IApplication {
     @Override
     public void onInitialize(Kernel kernel) {
         this.kernel = kernel;
-        System.out.println("HardwareTestApp: Initialized");
     }
 
     @Override
@@ -38,6 +37,5 @@ public class HardwareTestApp implements IApplication {
 
     @Override
     public void onDestroy() {
-        System.out.println("HardwareTestApp: Terminated");
     }
 }

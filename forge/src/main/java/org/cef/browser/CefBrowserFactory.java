@@ -28,7 +28,6 @@ public class CefBrowserFactory {
      */
     public static void setNoCanvasMode(boolean enabled) {
         noCanvasMode = enabled;
-        System.out.println("[CefBrowserFactory] NoCanvas mode: " + enabled);
     }
 
     /**
@@ -50,7 +49,6 @@ public class CefBrowserFactory {
         if (isOffscreenRendered) {
             if (noCanvasMode) {
                 // AWTを使わないブラウザを作成（Forge環境用）
-                System.out.println("[CefBrowserFactory] Creating CefBrowserOsrNoCanvas (NoCanvas mode)");
                 return new CefBrowserOsrNoCanvas(client, url, isTransparent, context, settings);
             } else {
                 // Forge環境ではCefBrowserOsr（AWT使用）は禁止
@@ -71,7 +69,6 @@ public class CefBrowserFactory {
      */
     public static CefBrowserOsrNoCanvas createNoCanvas(CefClient client, String url,
             boolean isTransparent, CefRequestContext context, CefBrowserSettings settings) {
-        System.out.println("[CefBrowserFactory] Creating CefBrowserOsrNoCanvas directly");
         return new CefBrowserOsrNoCanvas(client, url, isTransparent, context, settings);
     }
 }

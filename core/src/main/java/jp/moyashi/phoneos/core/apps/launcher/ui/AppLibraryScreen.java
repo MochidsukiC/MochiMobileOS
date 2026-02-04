@@ -110,8 +110,6 @@ public class AppLibraryScreen implements Screen, GestureListener {
         this.searchQuery = "";
         this.hoveredIndex = -1;
         this.pressedIndex = -1;
-        
-        System.out.println("AppLibraryScreen: App library screen created");
     }
     
     /**
@@ -135,11 +133,7 @@ public class AppLibraryScreen implements Screen, GestureListener {
         // ジェスチャーリスナーを登録
         if (kernel != null && kernel.getGestureManager() != null) {
             kernel.getGestureManager().addGestureListener(this);
-            System.out.println("AppLibraryScreen: Registered gesture listener");
         }
-
-        System.out.println("AppLibraryScreen: App library initialized with " +
-                          (allApps != null ? allApps.size() : 0) + " applications");
     }
 
     /**
@@ -244,7 +238,6 @@ public class AppLibraryScreen implements Screen, GestureListener {
         touchStartX = mouseX;
         touchStartY = mouseY;
         isPressed = true;
-        System.out.println("AppLibraryScreen: 👆 Touch start at (" + mouseX + ", " + mouseY + ") time: " + touchStartTime);
 
         // Check if click is on an app item
         IApplication clickedApp = getAppAtPosition(mouseX, mouseY);
@@ -291,15 +284,10 @@ public class AppLibraryScreen implements Screen, GestureListener {
             // Calculate drag distance from original touch point
             int dragDistance = (int) Math.sqrt(Math.pow(mouseX - touchStartX, 2) + Math.pow(mouseY - touchStartY, 2));
 
-            System.out.println("AppLibraryScreen: mouseDragged at (" + mouseX + ", " + mouseY + ") - distance: " + dragDistance + "px");
-
             if (dragDistance > DRAG_TOLERANCE) {
                 // Too much movement, cancel long press
-                System.out.println("AppLibraryScreen: Drag distance exceeded tolerance (" + dragDistance + " > " + DRAG_TOLERANCE + "), canceling long press");
                 isPressed = false;
                 longPressedApp = null;
-            } else {
-                System.out.println("AppLibraryScreen: Drag within tolerance, continuing long press detection");
             }
         }
     }
@@ -333,24 +321,18 @@ public class AppLibraryScreen implements Screen, GestureListener {
         // Only handle short press here, long press is handled in checkLongPress() during draw loop
         if (pressDuration < LONG_PRESS_DURATION && longPressedApp != null && !showingContextMenu) {
             // Short press - launch app
-            System.out.println("AppLibraryScreen: Short press detected, launching app: " + longPressedApp.getName());
-            
             // アイコン位置を計箁E
             int itemIndex = getAppIndex(longPressedApp);
             if (itemIndex >= 0) {
                 int itemY = LIST_START_Y + (itemIndex * ITEM_HEIGHT) - scrollOffset;
                 float iconCenterX = ITEM_PADDING + ICON_SIZE / 2;
                 float iconCenterY = itemY + ITEM_HEIGHT / 2;
-                
-                System.out.println("AppLibraryScreen: Using animation launch for " + longPressedApp.getName());
+
                 launchApplicationWithAnimation(longPressedApp, iconCenterX, iconCenterY);
             } else {
                 // フォールバック
-                System.out.println("AppLibraryScreen: Using fallback launch for " + longPressedApp.getName());
                 launchApplication(longPressedApp);
             }
-        } else if (showingContextMenu) {
-            System.out.println("AppLibraryScreen: Context menu was already shown via long press detection");
         }
 
         // Reset long press tracking if not showing context menu
@@ -373,27 +355,13 @@ public class AppLibraryScreen implements Screen, GestureListener {
      * This is more reliable than relying on mouseReleased timing.
      */
     private void checkLongPress() {
-        // デバッグ用にフレームに1回状態を出力
-        if (isPressed && System.currentTimeMillis() % 100 < 20) {
-            System.out.println("AppLibraryScreen: checkLongPress() - isPressed=" + isPressed + 
-                              ", longPressedApp=" + (longPressedApp != null ? longPressedApp.getName() : "null") + 
-                              ", showingContextMenu=" + showingContextMenu);
-        }
-        
         if (isPressed && longPressedApp != null && !showingContextMenu) {
             long currentTime = System.currentTimeMillis();
             long pressDuration = currentTime - touchStartTime;
-            
-            // デバッグ用に進行状況を表示
-            if (pressDuration % 100 < 20) {
-                System.out.println("AppLibraryScreen: Long press progress: " + pressDuration + "ms / " + LONG_PRESS_DURATION + "ms");
-            }
-            
+
             if (pressDuration >= LONG_PRESS_DURATION) {
                 // Long press detected!
                 showingContextMenu = true;
-                System.out.println("AppLibraryScreen: ✅🔥 LONG PRESS DETECTED in draw loop for " + longPressedApp.getName() + " after " + pressDuration + "ms ✅🔥");
-                System.out.println("AppLibraryScreen: Setting showingContextMenu = " + showingContextMenu);
             }
         }
     }
@@ -406,12 +374,10 @@ public class AppLibraryScreen implements Screen, GestureListener {
         // ジェスチャーリスナーを削除
         if (kernel != null && kernel.getGestureManager() != null) {
             kernel.getGestureManager().removeGestureListener(this);
-            System.out.println("AppLibraryScreen: Unregistered gesture listener");
         }
 
         isInitialized = false;
         allApps = null;
-        System.out.println("AppLibraryScreen: App library screen cleaned up");
     }
 
     /**
@@ -441,20 +407,11 @@ public class AppLibraryScreen implements Screen, GestureListener {
         if (kernel != null && kernel.getAppLoader() != null) {
             // アプリローダーから最新のアプリリストを取得
             allApps = kernel.getAppLoader().getLoadedApps();
-            System.out.println("AppLibraryScreen: Loaded " + allApps.size() + " applications");
-            
-            // デバッグ用: ロードされたアプリの詳細を表示
-            for (int i = 0; i < allApps.size(); i++) {
-                IApplication app = allApps.get(i);
-                System.out.println("  " + (i+1) + ". " + app.getName() + " (" + app.getApplicationId() + ") - " + app.getDescription());
-            }
-            
-            // もしアプリぁEつもなぁE��合、�Eスキャンを実衁E
+
+            // もしアプリがひとつもない場合、再スキャンを実行
             if (allApps.isEmpty()) {
-                System.out.println("AppLibraryScreen: No apps found, triggering rescan...");
                 kernel.getAppLoader().refreshApps();
                 allApps = kernel.getAppLoader().getLoadedApps();
-                System.out.println("AppLibraryScreen: After rescan: " + allApps.size() + " applications");
             }
         }
     }
@@ -768,8 +725,6 @@ public class AppLibraryScreen implements Screen, GestureListener {
      * Goes back to the previous screen (home screen).
      */
     private void goBack() {
-        System.out.println("AppLibraryScreen: Going back to home screen");
-        
         if (kernel != null && kernel.getScreenManager() != null) {
             kernel.getScreenManager().popScreen();
         }
@@ -777,12 +732,10 @@ public class AppLibraryScreen implements Screen, GestureListener {
     
     /**
      * Launches the specified application.
-     * 
+     *
      * @param app The application to launch
      */
     private void launchApplication(IApplication app) {
-        System.out.println("AppLibraryScreen: Launching app: " + app.getName());
-
         if (kernel != null && kernel.getScreenManager() != null && kernel.getServiceManager() != null) {
             try {
                 // 解決済みappIdを使用してServiceManager経由でアプリを起動
@@ -790,38 +743,30 @@ public class AppLibraryScreen implements Screen, GestureListener {
                 Screen appScreen = kernel.getServiceManager().launchApp(appId);
                 if (appScreen != null) {
                     kernel.getScreenManager().pushScreen(appScreen);
-                } else {
-                    System.err.println("AppLibraryScreen: ServiceManager returned null screen for " + app.getName());
                 }
             } catch (Exception e) {
-                System.err.println("AppLibraryScreen: Failed to launch app " + app.getName() + ": " + e.getMessage());
-                e.printStackTrace();
+                // アプリ起動失敗
             }
         }
     }
     
     /**
      * Launches the specified application with animation from icon position.
-     * 
+     *
      * @param app The application to launch
      * @param iconX Icon center X position
      * @param iconY Icon center Y position
      */
     private void launchApplicationWithAnimation(IApplication app, float iconX, float iconY) {
-        System.out.println("AppLibraryScreen: Launching app with animation: " + app.getName());
-        System.out.println("AppLibraryScreen: Icon position: (" + iconX + ", " + iconY + "), size: " + ICON_SIZE);
-
         if (kernel != null && kernel.getScreenManager() != null && kernel.getServiceManager() != null) {
             try {
                 // 解決済みappIdを使用してServiceManager経由でアプリを起動
                 String appId = kernel.getAppLoader().getResolvedAppId(app);
                 Screen appScreen = kernel.getServiceManager().launchApp(appId);
                 if (appScreen == null) {
-                    System.err.println("AppLibraryScreen: ServiceManager returned null screen for " + app.getName());
                     return;
                 }
-                System.out.println("AppLibraryScreen: Got app screen: " + appScreen.getScreenTitle());
-                
+
                 // Get app icon for animation
                 processing.core.PImage appIcon = app.getIcon(kernel);
 
@@ -836,20 +781,15 @@ public class AppLibraryScreen implements Screen, GestureListener {
                     appIcon.updatePixels();
                 }
 
-                System.out.println("AppLibraryScreen: Got app icon: " + (appIcon != null ? appIcon.width + "x" + appIcon.height : "null"));
-                
                 // Launch with animation
                 if (appIcon != null) {
-                    System.out.println("AppLibraryScreen: Calling pushScreenWithAnimation...");
                     kernel.getScreenManager().pushScreenWithAnimation(appScreen, iconX, iconY, ICON_SIZE, appIcon);
                 } else {
-                    System.out.println("AppLibraryScreen: No icon available, using normal launch");
                     // Fallback to normal launch
                     kernel.getScreenManager().pushScreen(appScreen);
                 }
             } catch (Exception e) {
-                System.err.println("AppLibraryScreen: Failed to launch app with animation " + app.getName() + ": " + e.getMessage());
-                e.printStackTrace();
+                // アプリ起動失敗
             }
         }
     }
@@ -860,7 +800,6 @@ public class AppLibraryScreen implements Screen, GestureListener {
     public void refreshApps() {
         loadAllApps();
         scrollOffset = 0; // Reset scroll position
-        System.out.println("AppLibraryScreen: Refreshed application list");
     }
     
     /**
@@ -885,39 +824,31 @@ public class AppLibraryScreen implements Screen, GestureListener {
                         Shortcut newShortcut = new Shortcut(app);
                         if (page.addShortcut(newShortcut)) {
                             added = true;
-                            System.out.println("AppLibraryScreen: " + app.getName() + "をホーム画面に追加しました");
                             break;
                         }
                     }
                 }
                 
                 if (!added) {
-                    // 全てのペ�Eジが満員の場合、新しいペ�Eジを作�E
+                    // 全てのページが満員の場合、新しいページを作成
                     HomePage newPage = new HomePage();
                     Shortcut newShortcut = new Shortcut(app);
                     if (newPage.addShortcut(newShortcut)) {
                         homePages.add(newPage);
-                        System.out.println("AppLibraryScreen: " + app.getName() + "を新しいペ�Eジに追加しました");
                         added = true;
                     }
                 }
-                
+
                 if (added) {
-                    // レイアウトを保孁E
+                    // レイアウトを保存
                     if (kernel.getLayoutManager() != null) {
                         kernel.getLayoutManager().saveLayout(homePages);
-                        System.out.println("AppLibraryScreen: レイアウトを保存しました");
                     }
-                } else {
-                    System.err.println("AppLibraryScreen: " + app.getName() + "の追加に失敗しました");
                 }
-                
+
             } catch (Exception e) {
-                System.err.println("AppLibraryScreen: ホーム追加エラー: " + e.getMessage());
-                e.printStackTrace();
+                // ホーム追加エラー
             }
-        } else {
-            System.err.println("AppLibraryScreen: ホーム画面参照またはカーネルがnull");
         }
     }
     
@@ -927,14 +858,9 @@ public class AppLibraryScreen implements Screen, GestureListener {
      * @param g 描画用のPGraphicsインスタンス
      */
     private void drawContextMenu(PGraphics g) {
-        System.out.println("AppLibraryScreen: drawContextMenu() called, longPressedApp=" + (longPressedApp != null ? longPressedApp.getName() : "null"));
-
         if (longPressedApp == null) {
-            System.out.println("AppLibraryScreen: ❁ECannot draw context menu - longPressedApp is null");
             return;
         }
-
-        System.out.println("AppLibraryScreen: 🎨 Drawing context menu overlay and box...");
 
         // 半透�Eの背景オーバ�Eレイ
         g.fill(0, 0, 0, 150);
@@ -999,26 +925,21 @@ public class AppLibraryScreen implements Screen, GestureListener {
      */
     private void showContextMenuForApp(IApplication app) {
         if (kernel == null || kernel.getPopupManager() == null) {
-            System.err.println("AppLibraryScreen: PopupManager not available");
             return;
         }
-        
-        System.out.println("AppLibraryScreen: Creating popup menu for " + app.getName());
-        
+
         // ポップアップメニューを作成
         PopupMenu popup = new PopupMenu(app.getName())
             .addItem("ホーム画面に追加", () -> {
-                System.out.println("AppLibraryScreen: Adding " + app.getName() + " to home screen via PopupAPI");
                 addAppToHome(app);
             })
             .addSeparator()
             .addItem("キャンセル", () -> {
-                System.out.println("AppLibraryScreen: Popup cancelled");
+                // キャンセル
             });
-        
+
         // ポップアップを表示
         kernel.getPopupManager().showPopup(popup);
-        System.out.println("AppLibraryScreen: ✅ Popup shown via PopupManager");
     }
     
     // ===========================================
@@ -1027,8 +948,6 @@ public class AppLibraryScreen implements Screen, GestureListener {
     
     @Override
     public boolean onGesture(GestureEvent event) {
-        System.out.println("AppLibraryScreen: Received gesture: " + event);
-        
         switch (event.getType()) {
             case TAP:
                 return handleTap(event.getCurrentX(), event.getCurrentY());
@@ -1061,91 +980,79 @@ public class AppLibraryScreen implements Screen, GestureListener {
     }
     
     /**
-     * タチE�Eジェスチャーを�E琁E��る、E
-     * 
-     * @param x X座樁E
-     * @param y Y座樁E
-     * @return 処琁E��た場吁Erue
+     * タップジェスチャーを処理する
+     *
+     * @param x X座標
+     * @param y Y座標
+     * @return 処理した場合true
      */
     private boolean handleTap(int x, int y) {
-        System.out.println("AppLibraryScreen: Handling tap at (" + x + ", " + y + ")");
-        
-        // ヘッダー領域のタチE�E�E�戻る！E
+        // ヘッダー領域のタップ → 戻る
         if (y < LIST_START_Y) {
             goBack();
             return true;
         }
-        
-        // アプリアイチE��のタチE�E�E�起動！E
+
+        // アプリアイテムのタップ → 起動
         IApplication tappedApp = getAppAtPosition(x, y);
         if (tappedApp != null) {
-            System.out.println("AppLibraryScreen: Launching app with animation: " + tappedApp.getName());
-            
-            // アイコン位置を計箁E
+            // アイコン位置を計算
             int itemIndex = getAppIndex(tappedApp);
-            System.out.println("AppLibraryScreen: getAppIndex returned " + itemIndex + " for " + tappedApp.getName());
             if (itemIndex >= 0) {
                 int itemY = LIST_START_Y + (itemIndex * ITEM_HEIGHT) - scrollOffset;
                 float iconCenterX = ITEM_PADDING + ICON_SIZE / 2;
                 float iconCenterY = itemY + ITEM_HEIGHT / 2;
-                
-                System.out.println("AppLibraryScreen: Using animation launch for " + tappedApp.getName());
+
                 launchApplicationWithAnimation(tappedApp, iconCenterX, iconCenterY);
             } else {
                 // フォールバック
-                System.out.println("AppLibraryScreen: Using fallback launch for " + tappedApp.getName());
                 launchApplication(tappedApp);
             }
             return true;
         }
-        
+
         return false;
     }
     
     /**
-     * 長押しジェスチャーを�E琁E��る、E
-     * 
-     * @param x X座樁E
-     * @param y Y座樁E
-     * @return 処琁E��た場吁Erue
+     * 長押しジェスチャーを処理する
+     *
+     * @param x X座標
+     * @param y Y座標
+     * @return 処理した場合true
      */
     private boolean handleLongPress(int x, int y) {
-        System.out.println("AppLibraryScreen: Handling long press at (" + x + ", " + y + ")");
-        
         // ヘッダー領域では長押し無効
         if (y < LIST_START_Y) {
             return false;
         }
-        
-        // アプリアイチE��の長押し（コンチE��ストメニュー�E�E
+
+        // アプリアイテムの長押し（コンテキストメニュー表示）
         IApplication longPressedApp = getAppAtPosition(x, y);
         if (longPressedApp != null) {
-            System.out.println("AppLibraryScreen: ✁ELong press detected for " + longPressedApp.getName() + " - showing popup via GestureManager");
             showContextMenuForApp(longPressedApp);
             return true;
         }
-        
+
         return false;
     }
     
     /**
-     * 左スワイプジェスチャーを�E琁E��る、E
-     * 
-     * @return 処琁E��た場吁Erue
+     * 左スワイプジェスチャーを処理する
+     *
+     * @return 処理した場合true
      */
     private boolean handleSwipeLeft() {
-        System.out.println("AppLibraryScreen: Left swipe detected");
-        // 忁E��に応じて実裁E���Eージング等！E
+        // 必要に応じて実装（ページング等）
         return false;
     }
-    
+
     /**
-     * 右スワイプジェスチャーを�E琁E��る、E
-     * 
-     * @return 処琁E��た場吁Erue
+     * 右スワイプジェスチャーを処理する
+     *
+     * @return 処理した場合true
      */
     private boolean handleSwipeRight() {
-        System.out.println("AppLibraryScreen: Right swipe detected - going back");
         goBack();
         return true;
     }

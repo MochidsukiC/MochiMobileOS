@@ -257,14 +257,12 @@ public class HardwareWindow extends JFrame {
     }
 
     private void onHomeButtonClicked() {
-        System.out.println("HardwareWindow: Home button clicked");
         if (kernel != null) {
             kernel.requestGoHome();
         }
     }
 
     private void onVolumeUp() {
-        System.out.println("HardwareWindow: Volume up clicked");
         // TODO: 音量アップ処理を実装
         if (kernel != null) {
             // kernel.volumeUp();
@@ -272,7 +270,6 @@ public class HardwareWindow extends JFrame {
     }
 
     private void onVolumeDown() {
-        System.out.println("HardwareWindow: Volume down clicked");
         // TODO: 音量ダウン処理を実装
         if (kernel != null) {
             // kernel.volumeDown();

@@ -143,7 +143,6 @@ public enum MMOSPlatform {
             if (isAmd64) return MACOS_AMD64;
         }
 
-        System.err.println("[MMOSPlatform] Unknown platform: os=" + osName + ", arch=" + osArch);
         return UNKNOWN;
     }
 
@@ -157,14 +156,15 @@ public enum MMOSPlatform {
     }
 
     /**
-     * デバッグ情報を出力する。
+     * デバッグ情報を取得する。
+     * @return デバッグ情報の文字列
      */
-    public static void printDebugInfo() {
-        System.out.println("[MMOSPlatform] System Information:");
-        System.out.println("  os.name: " + System.getProperty("os.name"));
-        System.out.println("  os.arch: " + System.getProperty("os.arch"));
-        System.out.println("  os.version: " + System.getProperty("os.version"));
-        System.out.println("  java.version: " + System.getProperty("java.version"));
-        System.out.println("  Detected platform: " + detect().getNormalizedName());
+    public static String getDebugInfo() {
+        return "[MMOSPlatform] System Information: " +
+               "os.name=" + System.getProperty("os.name") +
+               ", os.arch=" + System.getProperty("os.arch") +
+               ", os.version=" + System.getProperty("os.version") +
+               ", java.version=" + System.getProperty("java.version") +
+               ", Detected platform=" + detect().getNormalizedName();
     }
 }

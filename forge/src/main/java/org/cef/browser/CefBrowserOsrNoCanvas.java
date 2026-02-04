@@ -75,8 +75,6 @@ public class CefBrowserOsrNoCanvas extends CefBrowser_N implements CefRenderHand
                                   CefRequestContext context, CefBrowserSettings settings) {
         super(client, url, context, null, null, settings);
         this.isTransparent = transparent;
-
-        System.out.println("[CefBrowserOsrNoCanvas] Created - URL: " + url + ", Transparent: " + transparent);
     }
 
     /**
@@ -84,9 +82,6 @@ public class CefBrowserOsrNoCanvas extends CefBrowser_N implements CefRenderHand
      */
     @Override
     public void createImmediately() {
-        System.out.println("[CefBrowserOsrNoCanvas] createImmediately() called");
-        System.out.println("[CefBrowserOsrNoCanvas] - browserRect: " + browserRect.width + "x" + browserRect.height);
-        System.out.println("[CefBrowserOsrNoCanvas] - URL: " + getUrl());
         justCreated = true;
         createBrowserIfRequired(false);
     }
@@ -111,7 +106,6 @@ public class CefBrowserOsrNoCanvas extends CefBrowser_N implements CefRenderHand
                 createBrowser(getClient(), windowHandle, getUrl(), true, isTransparent, null,
                         getRequestContext());
             }
-            System.out.println("[CefBrowserOsrNoCanvas] Browser creation initiated (windowHandle=0, osr=true)");
         } else if (justCreated) {
             // ブラウザが既に存在する場合、親変更通知を送信
             notifyAfterParentChanged();
@@ -244,15 +238,6 @@ public class CefBrowserOsrNoCanvas extends CefBrowser_N implements CefRenderHand
     public void onPaint(CefBrowser browser, boolean popup, Rectangle[] dirtyRects,
                         ByteBuffer buffer, int width, int height) {
         onPaintCallCount++;
-        long now = System.currentTimeMillis();
-        // 3秒ごとにログ出力（スパム防止）
-        if (now - lastOnPaintLogTime > 3000) {
-            System.out.println("[CefBrowserOsrNoCanvas] onPaint() called #" + onPaintCallCount +
-                " - size: " + width + "x" + height + ", popup: " + popup +
-                ", buffer: " + (buffer != null ? buffer.remaining() + " bytes" : "null") +
-                ", listeners: " + onPaintListeners.size());
-            lastOnPaintLogTime = now;
-        }
 
         if (popup) {
             // ポップアップは現在サポートしない
@@ -266,7 +251,6 @@ public class CefBrowserOsrNoCanvas extends CefBrowser_N implements CefRenderHand
                 pixels = new int[width * height];
                 pixelsWidth = width;
                 pixelsHeight = height;
-                System.out.println("[CefBrowserOsrNoCanvas] Pixel buffer created: " + width + "x" + height);
             }
 
             // ByteBuffer (BGRA) → int[] (ARGB) 変換
@@ -362,28 +346,22 @@ public class CefBrowserOsrNoCanvas extends CefBrowser_N implements CefRenderHand
      */
     public void setSize(int width, int height) {
         if (width > 0 && height > 0) {
-            System.out.println("[CefBrowserOsrNoCanvas] setSize() called: " + width + "x" + height);
             browserRect.setSize(width, height);
 
             // wasResized()を呼び出してCEFにサイズ変更を通知
             // これによりonPaint()が発火する
             try {
                 wasResized(width, height);
-                System.out.println("[CefBrowserOsrNoCanvas] wasResized() called successfully");
             } catch (Exception e) {
-                System.err.println("[CefBrowserOsrNoCanvas] wasResized() failed: " + e.getMessage());
-                e.printStackTrace();
+                // サイズ変更に失敗
             }
 
             // setWindowVisibility(true)を呼び出してレンダリングを有効化
             try {
                 setWindowVisibility(true);
-                System.out.println("[CefBrowserOsrNoCanvas] setWindowVisibility(true) called");
             } catch (Exception e) {
-                System.err.println("[CefBrowserOsrNoCanvas] setWindowVisibility() failed: " + e.getMessage());
+                // 可視性設定に失敗
             }
-
-            System.out.println("[CefBrowserOsrNoCanvas] Size set to: " + width + "x" + height);
         }
     }
 
@@ -451,7 +429,7 @@ public class CefBrowserOsrNoCanvas extends CefBrowser_N implements CefRenderHand
 
             sendMouseEvent(event);
         } catch (Exception e) {
-            System.err.println("[CefBrowserOsrNoCanvas] Failed to send mouse event: " + e.getMessage());
+            // マウスイベント送信に失敗
         }
     }
 
@@ -477,7 +455,7 @@ public class CefBrowserOsrNoCanvas extends CefBrowser_N implements CefRenderHand
 
             sendMouseWheelEvent(event);
         } catch (Exception e) {
-            System.err.println("[CefBrowserOsrNoCanvas] Failed to send mouse wheel event: " + e.getMessage());
+            // マウスホイールイベント送信に失敗
         }
     }
 
@@ -499,7 +477,7 @@ public class CefBrowserOsrNoCanvas extends CefBrowser_N implements CefRenderHand
 
             sendKeyEvent(event);
         } catch (Exception e) {
-            System.err.println("[CefBrowserOsrNoCanvas] Failed to send key event: " + e.getMessage());
+            // キーイベント送信に失敗
         }
     }
 }

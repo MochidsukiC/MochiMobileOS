@@ -46,22 +46,17 @@ public class AppAssetSchemeHandlerFactory implements CefSchemeHandlerFactory {
      */
     @Override
     public CefResourceHandler create(CefBrowser browser, CefFrame frame, String schemeName, CefRequest request) {
-        System.out.println("[AppAssetSchemeHandlerFactory] create() called - scheme: " + schemeName + ", url: " + (request != null ? request.getURL() : "null"));
-
         // mochiapp:// スキームを処理
         if ("mochiapp".equals(schemeName)) {
-            System.out.println("[AppAssetSchemeHandlerFactory] Creating handler for mochiapp:// scheme");
             return new AppAssetSchemeHandler(kernel, schemeName);
         }
 
         // 後方互換性: app-で始まるスキームも処理
         if (schemeName != null && schemeName.startsWith("app-")) {
-            System.out.println("[AppAssetSchemeHandlerFactory] Creating handler for legacy scheme: " + schemeName);
             return new AppAssetSchemeHandler(kernel, schemeName);
         }
 
         // その他のスキームはnullを返す（処理しない）
-        System.out.println("[AppAssetSchemeHandlerFactory] Unknown scheme, returning null: " + schemeName);
         return null;
     }
 }

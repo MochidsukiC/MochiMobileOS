@@ -187,7 +187,6 @@ public class VirtualRouter {
             return;
         }
 
-        System.out.println("[VirtualRouter] Handling app install request from: " + source);
 
         // TODO: 実際のアプリケーションインストール処理を実装
         // 仮の応答を送信

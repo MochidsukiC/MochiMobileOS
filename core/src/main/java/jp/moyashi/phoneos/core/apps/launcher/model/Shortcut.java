@@ -70,8 +70,6 @@ public class Shortcut {
         this.dockPosition = -1; // 初期値はDockにない状態
         this.shortcutId = "shortcut_" + (nextId++);
         
-        System.out.println("Shortcut: Created shortcut for " + application.getName() + 
-                          " at position (" + gridX + ", " + gridY + ")");
     }
     
     /**

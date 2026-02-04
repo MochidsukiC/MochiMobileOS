@@ -44,16 +44,12 @@ public class ModItems {
      */
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
-        System.out.println("[ModItems] Items registered to event bus");
     }
 
     /**
      * 登録済みアイテムの初期化処理。
-     * アイテムが正常に登録されたかをログで確認する。
      */
     public static void initialize() {
-        System.out.println("[ModItems] Initializing mod items...");
-        System.out.println("[ModItems] Smartphone item: " + (SMARTPHONE.get() != null ? "OK" : "FAILED"));
-        System.out.println("[ModItems] All mod items initialized");
+        // アイテムの初期化完了
     }
 }

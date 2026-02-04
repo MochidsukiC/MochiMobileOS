@@ -25,7 +25,6 @@ public class ForgeCameraSocket implements CameraSocket {
     @Override
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
-        System.out.println("ForgeCameraSocket: Camera " + (enabled ? "enabled" : "disabled"));
     }
 
     @Override

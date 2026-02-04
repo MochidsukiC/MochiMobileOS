@@ -50,7 +50,6 @@ public class LauncherApp implements IApplication {
      * Constructs a new LauncherApp instance.
      */
     public LauncherApp() {
-        System.out.println("LauncherApp: ランチャーアプリケーションを作成");
     }
     
     /**
@@ -81,25 +80,17 @@ public class LauncherApp implements IApplication {
             
             switch (screenMode) {
                 case "simple":
-                    System.out.println("🔧 LauncherApp: Creating SIMPLE home screen for debugging...");
                     homeScreen = new SimpleHomeScreen(kernel);
-                    System.out.println("✅ LauncherApp: Simple home screen created!");
                     break;
                 case "basic":
-                    System.out.println("🏠 LauncherApp: Creating BASIC functional home screen...");
                     homeScreen = new BasicHomeScreen(kernel);
-                    System.out.println("✅ LauncherApp: Basic home screen created!");
                     break;
                 case "safe":
-                    System.out.println("🛡️ LauncherApp: Creating SAFE home screen with error handling...");
                     homeScreen = new SafeHomeScreen(kernel);
-                    System.out.println("✅ LauncherApp: Safe home screen created!");
                     break;
                 case "advanced":
                 default:
-                    System.out.println("🚀 LauncherApp: Creating ADVANCED multi-page home screen...");
                     homeScreen = new HomeScreen(kernel);
-                    System.out.println("✅ LauncherApp: Advanced home screen created!");
                     break;
             }
         }
@@ -144,8 +135,6 @@ public class LauncherApp implements IApplication {
      */
     @Override
     public void onInitialize(Kernel kernel) {
-        System.out.println("LauncherApp: Initializing launcher with " + 
-                          kernel.getAppLoader().getLoadedAppCount() + " available apps");
     }
     
     /**
@@ -154,7 +143,6 @@ public class LauncherApp implements IApplication {
      */
     @Override
     public void onDestroy() {
-        System.out.println("LauncherApp: Launcher application shutting down");
         if (homeScreen != null) {
             homeScreen.cleanup((processing.core.PGraphics) null); // LauncherApp onDestroy context - no PGraphics available
             homeScreen = null;

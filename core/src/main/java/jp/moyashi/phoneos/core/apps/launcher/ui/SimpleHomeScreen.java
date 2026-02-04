@@ -20,13 +20,11 @@ public class SimpleHomeScreen implements Screen {
     
     public SimpleHomeScreen(Kernel kernel) {
         this.kernel = kernel;
-        System.out.println("✅ SimpleHomeScreen: Created simple home screen for debugging");
     }
     
     @Override
     public void setup(PGraphics g) {
         isInitialized = true;
-        System.out.println("🚀 SimpleHomeScreen: Setup complete!");
     }
 
     /**
@@ -42,11 +40,6 @@ public class SimpleHomeScreen implements Screen {
     @Override
     public void draw(PGraphics g) {
         frameCount++;
-
-        // Log first few frames
-        if (frameCount <= 5) {
-            System.out.println("🎨 SimpleHomeScreen: Drawing frame " + frameCount);
-        }
 
         try {
             // Title
@@ -92,9 +85,6 @@ public class SimpleHomeScreen implements Screen {
             }
 
         } catch (Exception e) {
-            System.err.println("❌ SimpleHomeScreen: Error in draw() - " + e.getMessage());
-            e.printStackTrace();
-
             // Emergency fallback
             g.background(255, 100, 100); // Light red
             g.fill(0);
@@ -117,11 +107,7 @@ public class SimpleHomeScreen implements Screen {
     
     @Override
     public void mousePressed(PGraphics g, int mouseX, int mouseY) {
-        System.out.println("🖱️ SimpleHomeScreen: Mouse clicked at (" + mouseX + ", " + mouseY + ")");
-
-        // Test: change background color on click
-        // This would require storing state, but for now just log
-        System.out.println("   Frame: " + frameCount + ", Initialized: " + isInitialized);
+        // No-op for simple home screen
     }
 
     /**
@@ -137,7 +123,6 @@ public class SimpleHomeScreen implements Screen {
     @Override
     public void cleanup(PGraphics g) {
         isInitialized = false;
-        System.out.println("🧹 SimpleHomeScreen: Cleanup completed");
     }
 
     /**

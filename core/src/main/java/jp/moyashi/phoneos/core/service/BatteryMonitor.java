@@ -67,7 +67,6 @@ public class BatteryMonitor {
                 settingsManager.setSetting("power.battery_saver.enabled", true);
                 settingsManager.setSetting("ui.performance.low_power", true);
                 settingsManager.saveSettings();
-                System.out.println("BatteryMonitor: バッテリーセーバーを自動的に有効化しました（残量: " + currentLevel + "%）");
             }
         } else {
             // バッテリーレベルが閾値を上回った場合、自動で有効化されたバッテリーセーバーを無効化

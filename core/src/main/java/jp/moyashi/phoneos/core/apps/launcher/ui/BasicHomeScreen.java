@@ -35,19 +35,14 @@ public class BasicHomeScreen implements Screen {
     private final int accentColor = 0x4A90E2;
     
     public BasicHomeScreen(Kernel kernel) {
-        System.out.println("🔧 BasicHomeScreen: Constructor called with kernel: " + (kernel != null));
         this.kernel = kernel;
         this.apps = new ArrayList<>();
-        System.out.println("✅ BasicHomeScreen: Created basic functional home screen");
     }
     
     @Override
     public void setup(PGraphics g) {
-        System.out.println("🚀 BasicHomeScreen: Starting setup...");
         isInitialized = true;
         loadApps();
-        System.out.println("🚀 BasicHomeScreen: Setup complete with " + apps.size() + " apps");
-        System.out.println("   isInitialized: " + isInitialized);
     }
 
     /**
@@ -81,8 +76,6 @@ public class BasicHomeScreen implements Screen {
             drawNavigationArea(g);
 
         } catch (Exception e) {
-            System.err.println("❌ BasicHomeScreen draw error: " + e.getMessage());
-            e.printStackTrace();
             // Fallback
             g.background(255, 100, 100); // Red background for error
             g.fill(255);
@@ -212,7 +205,6 @@ public class BasicHomeScreen implements Screen {
             g.rect(x - 2, y - 2, ICON_SIZE + 4, ICON_SIZE + 20);
 
         } catch (Exception e) {
-            System.err.println("❌ Error drawing icon for " + app.getName() + ": " + e.getMessage());
             // Emergency fallback - draw bright red square
             g.fill(255, 0, 0);
             g.noStroke();
@@ -241,48 +233,28 @@ public class BasicHomeScreen implements Screen {
     
     private void loadApps() {
         apps.clear();
-        
-        System.out.println("🔍 BasicHomeScreen: Loading apps...");
-        System.out.println("   Kernel: " + (kernel != null));
-        System.out.println("   AppLoader: " + (kernel != null && kernel.getAppLoader() != null));
-        
+
         if (kernel != null && kernel.getAppLoader() != null) {
             try {
                 List<IApplication> loadedApps = kernel.getAppLoader().getLoadedApps();
-                System.out.println("   Total loaded apps: " + (loadedApps != null ? loadedApps.size() : "null"));
-                
+
                 if (loadedApps != null) {
                     for (IApplication app : loadedApps) {
-                        System.out.println("   Checking app: " + (app != null ? app.getName() + " (" + app.getApplicationId() + ")" : "null"));
                         if (app != null && !"jp.moyashi.phoneos.core.apps.launcher".equals(app.getApplicationId())) {
                             apps.add(app);
-                            System.out.println("   ✅ Added: " + app.getName());
-                        } else {
-                            System.out.println("   ⏭️ Skipped: " + (app != null ? "launcher app" : "null app"));
                         }
                     }
                 }
             } catch (Exception e) {
-                System.err.println("❌ Error loading apps: " + e.getMessage());
-                e.printStackTrace();
+                // Error loading apps - silently ignore
             }
-        } else {
-            System.err.println("❌ Kernel or AppLoader is null!");
-        }
-        
-        System.out.println("✅ BasicHomeScreen: Loaded " + apps.size() + " applications");
-        for (IApplication app : apps) {
-            System.out.println("   • " + app.getName() + " (" + app.getApplicationId() + ")");
         }
     }
     
     @Override
     public void mousePressed(PGraphics g, int mouseX, int mouseY) {
-        System.out.println("🖱️ BasicHomeScreen: Click at (" + mouseX + ", " + mouseY + ")");
-
         // Check navigation area (App Library)
         if (mouseY > getHeight() - 80) {
-            System.out.println("📚 Opening App Library...");
             openAppLibrary();
             return;
         }
@@ -303,7 +275,6 @@ public class BasicHomeScreen implements Screen {
                     mouseY >= y && mouseY <= y + ICON_SIZE) {
 
                 IApplication clickedApp = apps.get(i);
-                System.out.println("🚀 Launching: " + clickedApp.getName());
 
                 float iconCenterX = x + ICON_SIZE / 2f;
                 float iconCenterY = y + ICON_SIZE / 2f;
@@ -330,7 +301,7 @@ public class BasicHomeScreen implements Screen {
                 AppLibraryScreen appLibrary = new AppLibraryScreen(kernel);
                 kernel.getScreenManager().pushScreen(appLibrary);
             } catch (Exception e) {
-                System.err.println("Error opening App Library: " + e.getMessage());
+                // Error opening App Library - silently ignore
             }
         }
     }
@@ -341,20 +312,16 @@ public class BasicHomeScreen implements Screen {
                 Screen appScreen = app.getEntryScreen(kernel);
                 kernel.getScreenManager().pushScreen(appScreen);
             } catch (Exception e) {
-                System.err.println("Error launching app: " + e.getMessage());
+                // Error launching app - silently ignore
             }
         }
     }
 
     private void launchApplicationWithAnimation(IApplication app, float iconX, float iconY, float iconSize) {
-        System.out.println("BasicHomeScreen: Launching app with animation: " + app.getName());
-        System.out.println("BasicHomeScreen: Icon position: (" + iconX + ", " + iconY + "), size: " + iconSize);
-
         if (kernel != null && kernel.getScreenManager() != null) {
             try {
                 Screen appScreen = app.getEntryScreen(kernel);
                 if (appScreen == null) {
-                    System.err.println("BasicHomeScreen: getEntryScreen returned null for " + app.getName());
                     return;
                 }
                 
@@ -380,8 +347,7 @@ public class BasicHomeScreen implements Screen {
                     kernel.getScreenManager().pushScreen(appScreen);
                 }
             } catch (Exception e) {
-                System.err.println("BasicHomeScreen: Failed to launch app with animation " + app.getName() + ": " + e.getMessage());
-                e.printStackTrace();
+                // Error launching app with animation - silently ignore
             }
         }
     }
@@ -393,7 +359,6 @@ public class BasicHomeScreen implements Screen {
     @Override
     public void cleanup(PGraphics g) {
         isInitialized = false;
-        System.out.println("🧹 BasicHomeScreen: Cleanup completed");
     }
 
     /**

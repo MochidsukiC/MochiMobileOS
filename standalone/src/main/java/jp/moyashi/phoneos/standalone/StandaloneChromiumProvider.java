@@ -81,8 +81,6 @@ public class StandaloneChromiumProvider implements ChromiumProvider {
     @Override
     public CefApp createCefApp(Kernel kernel) {
         try {
-            System.out.println("[StandaloneChromiumProvider] Initializing JCEF with jcefmaven...");
-
             // ChromiumAppHandlerを作成（coreモジュール）
             ChromiumAppHandler coreAppHandler = new ChromiumAppHandler(kernel);
 
@@ -111,7 +109,6 @@ public class StandaloneChromiumProvider implements ChromiumProvider {
             // キャッシュパス（VFS内）
             String cachePath = kernel.getVFS().getFullPath("system/browser_chromium/cache");
             settings.cache_path = cachePath;
-            System.out.println("[StandaloneChromiumProvider] Cache path: " + cachePath);
 
             // User-Agent（モバイル最適化）
             settings.user_agent = "Mozilla/5.0 (Linux; Android 12; MochiMobileOS) " +
@@ -136,7 +133,6 @@ public class StandaloneChromiumProvider implements ChromiumProvider {
             boolean isMac = osName.contains("mac");
 
             if (isMac) {
-                System.out.println("[StandaloneChromiumProvider] Detected Mac - applying workarounds for code signing issues");
                 // Macでのコード署名エラーを回避（サンドボックス無効化のみ）
                 builder.addJcefArgs("--no-sandbox");
                 builder.addJcefArgs("--disable-gpu-sandbox");
@@ -146,13 +142,11 @@ public class StandaloneChromiumProvider implements ChromiumProvider {
                 builder.addJcefArgs("--enable-gpu");
                 builder.addJcefArgs("--enable-accelerated-video-decode");
                 builder.addJcefArgs("--enable-accelerated-2d-canvas");
-                System.out.println("[StandaloneChromiumProvider] GPU acceleration enabled (sandboxes disabled for Mac compatibility)");
             } else {
                 // Windows/その他のプラットフォームでは従来通りの設定（サンドボックス有効）
                 builder.addJcefArgs("--enable-gpu");
                 builder.addJcefArgs("--enable-accelerated-video-decode");
                 builder.addJcefArgs("--enable-accelerated-2d-canvas");
-                System.out.println("[StandaloneChromiumProvider] GPU acceleration enabled");
             }
 
             // 共通設定（全プラットフォーム）
@@ -163,7 +157,6 @@ public class StandaloneChromiumProvider implements ChromiumProvider {
             // Windows固有のGPU最適化設定
             boolean isWindows = osName.contains("windows");
             if (isWindows) {
-                System.out.println("[StandaloneChromiumProvider] Detected Windows - applying GPU optimizations");
                 // ゼロコピー転送を有効化（GPU→CPU転送オーバーヘッド削減）
                 builder.addJcefArgs("--enable-zero-copy");
                 // 共有メモリを使用してバッファ転送を最適化
@@ -175,14 +168,9 @@ public class StandaloneChromiumProvider implements ChromiumProvider {
             // JCEFをビルドして初期化
             CefApp cefApp = builder.build();
 
-            System.out.println("[StandaloneChromiumProvider] JCEF initialized successfully");
-            System.out.println("[StandaloneChromiumProvider] Chromium version: " + cefApp.getVersion());
-
             return cefApp;
 
         } catch (Exception e) {
-            System.err.println("[StandaloneChromiumProvider] Failed to initialize JCEF: " + e.getMessage());
-            e.printStackTrace();
             throw new RuntimeException("Failed to initialize JCEF with jcefmaven", e);
         }
     }
@@ -206,26 +194,19 @@ public class StandaloneChromiumProvider implements ChromiumProvider {
         try {
             cefApp.doMessageLoopWork(0);
         } catch (Exception e) {
-            System.err.println("[StandaloneChromiumProvider] Error in CEF message loop: " + e.getMessage());
+            // Silently ignore CEF message loop errors
         }
     }
 
     @Override
     public org.cef.browser.CefBrowser createBrowser(org.cef.CefClient client, String url, boolean osrEnabled, boolean transparent) {
         try {
-            System.out.println("[StandaloneChromiumProvider] Creating browser with jcefmaven API...");
-            System.out.println("[StandaloneChromiumProvider] - URL: " + url);
-            System.out.println("[StandaloneChromiumProvider] - OSR: " + osrEnabled + ", Transparent: " + transparent);
-
             // jcefmaven 135.0.20の3引数API: createBrowser(url, osrEnabled, transparent)
             org.cef.browser.CefBrowser browser = client.createBrowser(url, osrEnabled, transparent);
 
-            System.out.println("[StandaloneChromiumProvider] Browser created successfully");
             return browser;
 
         } catch (Exception e) {
-            System.err.println("[StandaloneChromiumProvider] Failed to create browser: " + e.getMessage());
-            e.printStackTrace();
             throw new RuntimeException("Failed to create browser with jcefmaven", e);
         }
     }
@@ -237,8 +218,6 @@ public class StandaloneChromiumProvider implements ChromiumProvider {
     @Override
     public org.cef.browser.CefRequestContext createRequestContext(CefApp app, String cachePath) {
         try {
-            System.out.println("[StandaloneChromiumProvider] RequestContext creation requested (cachePath=" + cachePath + ")");
-            
             // NOTE: Currently disabled due to native crashes in JCEF 135 (invalid version -1).
             // When re-enabling, ensure this runs on EDT and handler is properly proxied.
             /*
@@ -251,7 +230,6 @@ public class StandaloneChromiumProvider implements ChromiumProvider {
             */
             return null;
         } catch (Exception e) {
-            System.err.println("[StandaloneChromiumProvider] Failed to create RequestContext: " + e.getMessage());
             return null;
         }
     }
@@ -272,7 +250,6 @@ public class StandaloneChromiumProvider implements ChromiumProvider {
             
             return result[0];
         } catch (Exception e) {
-            System.err.println("[StandaloneChromiumProvider] Failed to create browser with context: " + e.getMessage());
             return createBrowser(client, url, osrEnabled, transparent);
         }
     }
@@ -284,13 +261,9 @@ public class StandaloneChromiumProvider implements ChromiumProvider {
         }
 
         try {
-            System.out.println("[StandaloneChromiumProvider] Disposing CefApp...");
             cefApp.dispose();
-            System.out.println("[StandaloneChromiumProvider] CefApp disposed");
-
         } catch (Exception e) {
-            System.err.println("[StandaloneChromiumProvider] Error during CefApp disposal: " + e.getMessage());
-            e.printStackTrace();
+            // Silently ignore CefApp disposal errors
         }
     }
 
@@ -354,8 +327,7 @@ public class StandaloneChromiumProvider implements ChromiumProvider {
             // 注意: browser.setFocus(true) は呼び出さない（理由はsendKeyPressed()と同じ）
 
         } catch (Exception e) {
-            System.err.println("[StandaloneChromiumProvider] Error sending mouse pressed: " + e.getMessage());
-            e.printStackTrace();
+            // Silently ignore mouse event errors
         }
     }
 
@@ -404,8 +376,7 @@ public class StandaloneChromiumProvider implements ChromiumProvider {
             cache.sendMouseEvent.invoke(browser, mouseEvent);
 
         } catch (Exception e) {
-            System.err.println("[StandaloneChromiumProvider] Error sending mouse released: " + e.getMessage());
-            e.printStackTrace();
+            // Silently ignore mouse event errors
         }
     }
 
@@ -515,8 +486,7 @@ public class StandaloneChromiumProvider implements ChromiumProvider {
             cache.sendMouseWheelEvent.invoke(browser, wheelEvent);
 
         } catch (Exception e) {
-            System.err.println("[StandaloneChromiumProvider] Error sending mouse wheel: " + e.getMessage());
-            e.printStackTrace();
+            // Silently ignore mouse wheel event errors
         }
     }
 
@@ -579,35 +549,19 @@ public class StandaloneChromiumProvider implements ChromiumProvider {
             // ProcessingキーコードをAWTキーコードに変換
             int awtKeyCode = convertProcessingToAwtKeyCode(keyCode, keyChar);
 
-            // デバッグログ: 元のイベント情報を出力
-            System.out.println("[StandaloneChromiumProvider] sendKeyPressed: keyCode=" + keyCode +
-                               ", keyChar=" + (int)keyChar + " ('" + (keyChar >= 32 ? keyChar : "?") + "')" +
-                               ", shift=" + shiftPressed + ", ctrl=" + ctrlPressed +
-                               ", alt=" + altPressed + ", meta=" + metaPressed);
-
             // Ctrl/Alt/Meta押下時で制御文字の場合、keyCharをUNDEFINEDにする
             // ChromiumはmodifiersとkeyCodeの組み合わせでショートカットを判定するため、keyCharは不要
             char adjustedKeyChar = keyChar;
             if ((ctrlPressed || altPressed || metaPressed) && keyChar < 32 && keyChar != 0) {
                 // すべての制御文字をUNDEFINEDにする
                 adjustedKeyChar = java.awt.event.KeyEvent.CHAR_UNDEFINED;
-                System.out.println("[StandaloneChromiumProvider] Adjusted control char to UNDEFINED: keyCode=" + keyCode +
-                                   ", original keyChar=" + (int)keyChar);
             }
-
-            System.out.println("[StandaloneChromiumProvider] Sending KEY_PRESSED: awtKeyCode=" + awtKeyCode +
-                               ", adjustedKeyChar=" + (int)adjustedKeyChar + ", modifiers=" + modifiers);
 
             // 実際のUIコンポーネントを取得（ブラウザのGLCanvas）
             // これがKeyEventのソースとして使用される
             Component sourceComponent = browser.getUIComponent();
             if (sourceComponent == null) {
-                System.err.println("[StandaloneChromiumProvider] Warning: getUIComponent() returned null, using fallback");
                 sourceComponent = fallbackComponent;
-            } else {
-                System.out.println("[StandaloneChromiumProvider] Using UI component: " + sourceComponent.getClass().getName() +
-                                   ", focusable=" + sourceComponent.isFocusable() +
-                                   ", hasFocus=" + sourceComponent.hasFocus());
             }
 
             // KEY_PRESSED イベント
@@ -631,7 +585,6 @@ public class StandaloneChromiumProvider implements ChromiumProvider {
                 sourceComponent.dispatchEvent(focusEvent);
             } catch (Exception focusEx) {
                 // フォーカスイベント送信に失敗しても続行
-                System.err.println("[StandaloneChromiumProvider] FocusEvent dispatch failed: " + focusEx.getMessage());
             }
 
             cache.sendKeyEvent.invoke(browser, keyEvent);
@@ -656,16 +609,7 @@ public class StandaloneChromiumProvider implements ChromiumProvider {
             }
 
         } catch (Exception e) {
-            System.err.println("[StandaloneChromiumProvider] Error sending key pressed: " + e.getMessage());
-
-            // InvocationTargetExceptionの場合、実際の例外を取得
-            if (e instanceof java.lang.reflect.InvocationTargetException) {
-                Throwable cause = ((java.lang.reflect.InvocationTargetException) e).getTargetException();
-                System.err.println("[StandaloneChromiumProvider] Actual exception: " + cause.getClass().getName() + ": " + cause.getMessage());
-                cause.printStackTrace();
-            } else {
-                e.printStackTrace();
-            }
+            // Silently ignore key event errors
         }
     }
 
@@ -696,20 +640,11 @@ public class StandaloneChromiumProvider implements ChromiumProvider {
             // ProcessingキーコードをAWTキーコードに変換
             int awtKeyCode = convertProcessingToAwtKeyCode(keyCode, keyChar);
 
-            // デバッグログ: 元のイベント情報を出力
-            System.out.println("[StandaloneChromiumProvider] sendKeyReleased: keyCode=" + keyCode +
-                               ", keyChar=" + (int)keyChar + " ('" + (keyChar >= 32 ? keyChar : "?") + "')" +
-                               ", shift=" + shiftPressed + ", ctrl=" + ctrlPressed +
-                               ", alt=" + altPressed + ", meta=" + metaPressed);
-
             // Ctrl/Alt/Meta押下時で制御文字の場合、keyCharをUNDEFINEDにする
             char adjustedKeyChar = keyChar;
             if ((ctrlPressed || altPressed || metaPressed) && keyChar < 32 && keyChar != 0) {
                 adjustedKeyChar = java.awt.event.KeyEvent.CHAR_UNDEFINED;
             }
-
-            System.out.println("[StandaloneChromiumProvider] Sending KEY_RELEASED: awtKeyCode=" + awtKeyCode +
-                               ", adjustedKeyChar=" + (int)adjustedKeyChar + ", modifiers=" + modifiers);
 
             // 実際のUIコンポーネントを取得（ブラウザのGLCanvas）
             Component sourceComponent = browser.getUIComponent();
@@ -730,16 +665,7 @@ public class StandaloneChromiumProvider implements ChromiumProvider {
             cache.sendKeyEvent.invoke(browser, keyEvent);
 
         } catch (Exception e) {
-            System.err.println("[StandaloneChromiumProvider] Error sending key released: " + e.getMessage());
-
-            // InvocationTargetExceptionの場合、実際の例外を取得
-            if (e instanceof java.lang.reflect.InvocationTargetException) {
-                Throwable cause = ((java.lang.reflect.InvocationTargetException) e).getTargetException();
-                System.err.println("[StandaloneChromiumProvider] Actual exception: " + cause.getClass().getName() + ": " + cause.getMessage());
-                cause.printStackTrace();
-            } else {
-                e.printStackTrace();
-            }
+            // Silently ignore key event errors
         }
     }
 }

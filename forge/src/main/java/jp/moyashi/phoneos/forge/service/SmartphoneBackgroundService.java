@@ -55,8 +55,11 @@ public class SmartphoneBackgroundService {
                     worldName = mc.getSingleplayerServer().getWorldData().getLevelName();
                 } else if (mc.getCurrentServer() != null) {
                     // マルチプレイヤー：サーバー名を使用
-                    worldName = mc.getCurrentServer().name.replace(" ", "_");
+                    worldName = mc.getCurrentServer().name;
                 }
+
+                // ワールド名をVFS用にサニタイズ（英数字、ハイフン、アンダースコアのみ許可）
+                worldName = sanitizeWorldId(worldName);
 
                 LOGGER.info("[SmartphoneBackgroundService] World loaded: " + worldName);
 
@@ -352,8 +355,9 @@ public class SmartphoneBackgroundService {
      * MODアプリケーションの同期とプリインストールを行う。
      *
      * 1. ModAppRegistryからAppLoaderに利用可能なアプリを同期
-     * 2. MMOSConfigのプリインストールリストに含まれるアプリを自動インストール
-     * 3. AppStoreアプリを組み込みアプリとして登録
+     * 2. 永続化されたインストール状態からMODアプリを復元
+     * 3. MMOSConfigのプリインストールリストに含まれるアプリを自動インストール
+     * 4. AppStoreアプリを組み込みアプリとして登録
      *
      * @param kernel Kernelインスタンス
      */
@@ -364,11 +368,22 @@ public class SmartphoneBackgroundService {
             int availableCount = kernel.getAppLoader().getAvailableModAppsCount();
             LOGGER.info("[SmartphoneBackgroundService] Synced " + availableCount + " MOD apps from registry");
 
-            // 2. プリインストールリストのアプリを自動インストール
+            // 2. 永続化されたインストール状態からMODアプリを復元
+            LOGGER.info("[SmartphoneBackgroundService] Restoring previously installed MOD apps...");
+            int restoredCount = kernel.getAppLoader().restoreInstalledModApps(kernel);
+            LOGGER.info("[SmartphoneBackgroundService] Restored " + restoredCount + " MOD apps from persisted data");
+
+            // 3. プリインストールリストのアプリを自動インストール（まだインストールされていないもののみ）
             java.util.List<String> preinstalledIds = jp.moyashi.phoneos.forge.MMOSConfig.getPreinstalledAppIds();
             LOGGER.info("[SmartphoneBackgroundService] Preinstall list: " + preinstalledIds);
 
             for (String appId : preinstalledIds) {
+                // 既にインストール済み（復元済み含む）ならスキップ
+                if (kernel.getAppLoader().isModAppInstalled(appId)) {
+                    LOGGER.info("[SmartphoneBackgroundService] Already installed (skipping preinstall): " + appId);
+                    continue;
+                }
+
                 if (kernel.getAppLoader().getAvailableModApp(appId) != null) {
                     boolean success = kernel.getAppLoader().installModApp(appId, kernel);
                     if (success) {
@@ -381,7 +396,7 @@ public class SmartphoneBackgroundService {
                 }
             }
 
-            // 3. AppStoreアプリを組み込みアプリとして登録
+            // 4. AppStoreアプリを組み込みアプリとして登録
             LOGGER.info("[SmartphoneBackgroundService] Registering AppStore app...");
             kernel.getAppLoader().registerApplication(
                 new jp.moyashi.phoneos.core.apps.appstore.AppStoreApp()
@@ -392,7 +407,7 @@ public class SmartphoneBackgroundService {
             LOGGER.info("[SmartphoneBackgroundService] MOD app sync complete - " +
                        availableCount + " available, " + installedCount + " installed");
 
-            // 4. 現在の画面がHomeScreenの場合、アプリリストをリフレッシュ
+            // 5. 現在の画面がHomeScreenの場合、アプリリストをリフレッシュ
             // ログイン済み状態でOS起動した場合、HomeScreenはすでに表示されているため
             // 新しくインストールされたアプリを反映する必要がある
             if (kernel.getScreenManager() != null) {
@@ -408,6 +423,39 @@ public class SmartphoneBackgroundService {
             LOGGER.error("[SmartphoneBackgroundService] Error syncing MOD applications", e);
             e.printStackTrace();
         }
+    }
+
+    /**
+     * ワールド名をVFS用のIDにサニタイズする。
+     * 英数字、ハイフン、アンダースコアのみ許可し、その他の文字はアンダースコアに置換。
+     * 空の場合は"unknown"を返す。
+     *
+     * @param worldName 元のワールド名
+     * @return サニタイズされたワールドID
+     */
+    private static String sanitizeWorldId(String worldName) {
+        if (worldName == null || worldName.isEmpty()) {
+            return "unknown";
+        }
+
+        // スペースをアンダースコアに置換
+        String sanitized = worldName.replace(" ", "_");
+
+        // 英数字、ハイフン、アンダースコア以外をアンダースコアに置換
+        sanitized = sanitized.replaceAll("[^a-zA-Z0-9_-]", "_");
+
+        // 連続するアンダースコアを1つに圧縮
+        sanitized = sanitized.replaceAll("_+", "_");
+
+        // 先頭と末尾のアンダースコアを除去
+        sanitized = sanitized.replaceAll("^_+|_+$", "");
+
+        // 空になった場合はフォールバック
+        if (sanitized.isEmpty()) {
+            return "world_" + System.currentTimeMillis();
+        }
+
+        return sanitized;
     }
 
     /**

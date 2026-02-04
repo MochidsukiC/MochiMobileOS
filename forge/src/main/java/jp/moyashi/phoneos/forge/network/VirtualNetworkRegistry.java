@@ -49,7 +49,6 @@ public class VirtualNetworkRegistry {
 
         // 既に登録されている場合はそのアドレスを返す
         if (serverAddresses.containsKey(modId)) {
-            System.out.println("[VirtualNetworkRegistry] Mod '" + modId + "' is already registered");
             return serverAddresses.get(modId);
         }
 
@@ -61,7 +60,6 @@ public class VirtualNetworkRegistry {
         serverHandlers.put(serverId, handler);
         serverAddresses.put(modId, address);
 
-        System.out.println("[VirtualNetworkRegistry] Registered server: " + modId + " -> " + address);
         return address;
     }
 
@@ -73,7 +71,6 @@ public class VirtualNetworkRegistry {
         IPvMAddress address = serverAddresses.remove(modId);
         if (address != null) {
             serverHandlers.remove(address.getUUID());
-            System.out.println("[VirtualNetworkRegistry] Unregistered server: " + modId);
         }
     }
 
@@ -84,7 +81,6 @@ public class VirtualNetworkRegistry {
     public static void handlePacket(VirtualPacket packet) {
         IPvMAddress destination = packet.getDestination();
         if (!destination.isServer()) {
-            System.err.println("[VirtualNetworkRegistry] Packet destination is not a server: " + destination);
             return;
         }
 
@@ -94,13 +90,9 @@ public class VirtualNetworkRegistry {
         if (handler != null) {
             try {
                 handler.handle(packet);
-                System.out.println("[VirtualNetworkRegistry] Packet handled by server: " + serverId);
             } catch (Exception e) {
-                System.err.println("[VirtualNetworkRegistry] Error handling packet: " + e.getMessage());
                 e.printStackTrace();
             }
-        } else {
-            System.err.println("[VirtualNetworkRegistry] No handler registered for server: " + serverId);
         }
     }
 
@@ -128,7 +120,6 @@ public class VirtualNetworkRegistry {
         serverHandlers.clear();
         serverAddresses.clear();
         nextServerId = 1;
-        System.out.println("[VirtualNetworkRegistry] Registry cleared");
     }
 
     /**

@@ -152,8 +152,6 @@ public class ShortcutKeyProcessor {
         String selectedText = focusedInput.getSelectedText();
         if (selectedText != null && !selectedText.isEmpty()) {
             clipboardManager.copyText(selectedText);
-            System.out.println("ShortcutKeyProcessor: Copied text to clipboard: " +
-                              (selectedText.length() > 20 ? selectedText.substring(0, 20) + "..." : selectedText));
             return true;
         }
 
@@ -180,8 +178,6 @@ public class ShortcutKeyProcessor {
             } else {
                 focusedInput.insertTextAtCursor(clipboardText);
             }
-            System.out.println("ShortcutKeyProcessor: Pasted text from clipboard: " +
-                              (clipboardText.length() > 20 ? clipboardText.substring(0, 20) + "..." : clipboardText));
             return true;
         }
 
@@ -206,8 +202,6 @@ public class ShortcutKeyProcessor {
             clipboardManager.copyText(selectedText);
             // 選択範囲を削除
             focusedInput.deleteSelection();
-            System.out.println("ShortcutKeyProcessor: Cut text to clipboard: " +
-                              (selectedText.length() > 20 ? selectedText.substring(0, 20) + "..." : selectedText));
             return true;
         }
 
@@ -226,7 +220,6 @@ public class ShortcutKeyProcessor {
         }
 
         focusedInput.selectAll();
-        System.out.println("ShortcutKeyProcessor: Selected all text");
         return true;
     }
 }

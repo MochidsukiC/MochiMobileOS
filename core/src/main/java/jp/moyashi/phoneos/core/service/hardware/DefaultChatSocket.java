@@ -15,7 +15,6 @@ public class DefaultChatSocket implements ChatSocket {
 
     @Override
     public void sendMessage(String message) {
-        // スタンドアロンでは何もしない（デバッグ用にログ出力）
-        System.out.println("DefaultChatSocket: (not sent) " + message);
+        // スタンドアロンでは何もしない
     }
 }

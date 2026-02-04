@@ -225,7 +225,6 @@ public class AppAssetSchemeHandler extends CefResourceHandlerAdapter {
      * ログ出力（INFO）。
      */
     private void log(String message) {
-        System.out.println("[AppAssetSchemeHandler:" + schemeName + "] " + message);
         if (kernel != null && kernel.getLogger() != null) {
             kernel.getLogger().debug("AppAssetSchemeHandler:" + schemeName, message);
         }

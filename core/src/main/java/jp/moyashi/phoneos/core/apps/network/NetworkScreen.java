@@ -32,7 +32,6 @@ public class NetworkScreen implements Screen {
 
     @Override
     public void setup(PGraphics g) {
-        System.out.println("[NetworkScreen] Network screen setup");
         loadMessages();
     }
 
@@ -196,8 +195,6 @@ public class NetworkScreen implements Screen {
      * テストメッセージを送信
      */
     private void sendTestMessage() {
-        System.out.println("[NetworkScreen] Sending test message");
-
         // フォールバックUUIDを使用（統合サーバーではプレイヤーUUIDを取得できないため）
         String myUUID = "00000000-0000-0000-0000-000000000000";
         IPvMAddress myAddress = IPvMAddress.forPlayer(myUUID);
@@ -214,7 +211,6 @@ public class NetworkScreen implements Screen {
         if (virtualRouter != null) {
             // sendPacket()を使用してネットワーク経由で送信
             virtualRouter.sendPacket(packet);
-            System.out.println("[NetworkScreen] Test message sent to self");
         }
 
         // 画面を更新
@@ -225,8 +221,6 @@ public class NetworkScreen implements Screen {
      * システムアドレスにパケットを送信
      */
     private void sendSystemPacket() {
-        System.out.println("[NetworkScreen] Sending system packet");
-
         // フォールバックUUIDを使用
         String myUUID = "00000000-0000-0000-0000-000000000000";
         IPvMAddress myAddress = IPvMAddress.forPlayer(myUUID);
@@ -242,7 +236,6 @@ public class NetworkScreen implements Screen {
 
         if (virtualRouter != null) {
             virtualRouter.sendPacket(packet);
-            System.out.println("[NetworkScreen] System packet sent");
         }
     }
 
@@ -252,7 +245,6 @@ public class NetworkScreen implements Screen {
     private void loadMessages() {
         if (messageStorage != null) {
             messages = messageStorage.getAllMessages();
-            System.out.println("[NetworkScreen] Loaded " + messages.size() + " messages");
         }
     }
 

@@ -44,8 +44,6 @@ public class LayerManager {
         this.sortedLayers = new CopyOnWriteArrayList<>();
         this.gestureManager = gestureManager;
         this.lastCleanupTime = System.currentTimeMillis();
-        
-        System.out.println("LayerManager: Dynamic layer management system initialized");
     }
     
     /**
@@ -62,7 +60,6 @@ public class LayerManager {
                                                      int basePriority, UILayer.LayerRenderer renderer) {
         // 既存レイヤーの確認
         if (layers.containsKey(layerId)) {
-            System.out.println("LayerManager: Layer '" + layerId + "' already exists - request denied");
             return false;
         }
         
@@ -72,8 +69,7 @@ public class LayerManager {
         // レイヤー登録
         layers.put(layerId, newLayer);
         updateLayerOrder();
-        
-        System.out.println("LayerManager: Layer permission granted - " + newLayer);
+
         return true;
     }
     
@@ -87,7 +83,6 @@ public class LayerManager {
         UILayer layer = layers.get(layerId);
         if (layer != null) {
             layer.markForDeletion();
-            System.out.println("LayerManager: Layer '" + layerId + "' marked for removal");
             return true;
         }
         return false;
@@ -172,14 +167,7 @@ public class LayerManager {
      * レイヤー情報をデバッグ出力する。
      */
     public void printLayerStatus() {
-        System.out.println("=== Layer Status ===");
-        List<UILayer> debugList = new ArrayList<>(sortedLayers);
-        debugList.sort(Comparator.comparingInt(UILayer::getCurrentPriority).reversed());
-        
-        for (UILayer layer : debugList) {
-            System.out.println("  " + layer);
-        }
-        System.out.println("==================");
+        // Layer status printing disabled
     }
     
     /**
@@ -211,10 +199,7 @@ public class LayerManager {
         }
         
         for (String layerId : toRemove) {
-            UILayer removed = layers.remove(layerId);
-            if (removed != null) {
-                System.out.println("LayerManager: Layer '" + layerId + "' cleaned up and removed");
-            }
+            layers.remove(layerId);
         }
         
         if (!toRemove.isEmpty()) {

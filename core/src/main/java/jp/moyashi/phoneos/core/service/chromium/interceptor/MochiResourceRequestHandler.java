@@ -126,8 +126,6 @@ public class MochiResourceRequestHandler extends CefResourceRequestHandlerAdapte
      * ログ出力（INFO）。
      */
     private void log(String message) {
-        System.out.println("[MochiResourceRequestHandler] " + message);
-        System.out.flush();
         if (kernel != null && kernel.getLogger() != null) {
             kernel.getLogger().info("MochiResourceRequestHandler", message);
         }

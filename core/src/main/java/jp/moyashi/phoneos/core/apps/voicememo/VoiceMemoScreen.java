@@ -114,7 +114,6 @@ public class VoiceMemoScreen implements Screen {
         if (kernel != null && kernel.getLogger() != null) {
             kernel.getLogger().debug("VoiceMemoScreen", message);
         }
-        System.out.println("[VoiceMemoScreen] " + message);
     }
 
     private void logError(String message) {

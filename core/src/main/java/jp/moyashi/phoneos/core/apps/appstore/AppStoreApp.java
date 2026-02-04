@@ -34,7 +34,7 @@ public class AppStoreApp implements IApplication {
      * 新しいAppStoreアプリケーションインスタンスを作成する。
      */
     public AppStoreApp() {
-        System.out.println("AppStoreApp: App Store application created");
+        // Instance created
     }
 
     /**
@@ -160,7 +160,6 @@ public class AppStoreApp implements IApplication {
      */
     @Override
     public Screen getEntryScreen(Kernel kernel) {
-        System.out.println("AppStoreApp: Creating App Store screen");
         return new AppStoreScreen(kernel);
     }
 
@@ -174,7 +173,6 @@ public class AppStoreApp implements IApplication {
     public void onInitialize(Kernel kernel) {
         if (!isInitialized) {
             isInitialized = true;
-            System.out.println("AppStoreApp: App Store application initialized");
         }
     }
 
@@ -186,7 +184,6 @@ public class AppStoreApp implements IApplication {
     public void onDestroy() {
         if (isInitialized) {
             isInitialized = false;
-            System.out.println("AppStoreApp: App Store application destroyed");
         }
     }
 

@@ -401,11 +401,6 @@ public class ChromiumBrowser {
             // paintEvent（CefPaintEvent）からデータを取得してrenderHandlerに渡す
             java.util.function.Consumer<Object> paintListener = paintEvent -> {
                 listenerCallCount[0]++;
-                // 最初の数回と、その後100回ごとにログ出力
-                if (listenerCallCount[0] <= 3 || listenerCallCount[0] % 100 == 0) {
-                    System.out.println("[ChromiumBrowser] onPaint listener called #" + listenerCallCount[0] +
-                        " - event class: " + (paintEvent != null ? paintEvent.getClass().getName() : "null"));
-                }
                 try {
                     // CefPaintEventからデータを取得（リフレクション使用）
                     Class<?> eventClass = paintEvent.getClass();
@@ -1162,10 +1157,7 @@ public class ChromiumBrowser {
      * @param metaPressed Metaキー（Command/Windowsキー）が押されているか
      */
     public void sendKeyPressed(int keyCode, char keyChar, boolean shiftPressed, boolean ctrlPressed, boolean altPressed, boolean metaPressed) {
-        System.out.println("[ChromiumBrowser] sendKeyPressed: keyCode=" + keyCode + ", keyChar=" + (int)keyChar +
-                           ", shift=" + shiftPressed + ", ctrl=" + ctrlPressed + ", alt=" + altPressed + ", meta=" + metaPressed);
         enqueueInput(InputEvent.keyPress(keyCode, keyChar));
-        System.out.println("[ChromiumBrowser] Enqueued KEY_PRESS event, queue size=" + inputQueue.size());
     }
 
     /**
@@ -1179,17 +1171,10 @@ public class ChromiumBrowser {
      * @param metaPressed Metaキー（Command/Windowsキー）が押されているか
      */
     public void sendKeyReleased(int keyCode, char keyChar, boolean shiftPressed, boolean ctrlPressed, boolean altPressed, boolean metaPressed) {
-        System.out.println("[ChromiumBrowser] sendKeyReleased: keyCode=" + keyCode + ", keyChar=" + (int)keyChar +
-                           ", shift=" + shiftPressed + ", ctrl=" + ctrlPressed + ", alt=" + altPressed + ", meta=" + metaPressed);
         enqueueInput(InputEvent.keyRelease(keyCode, keyChar));
-        System.out.println("[ChromiumBrowser] Enqueued KEY_RELEASE event, queue size=" + inputQueue.size());
     }
 
     public void flushInputEvents() {
-        if (inputQueue.size() > 0) {
-            System.out.println("[ChromiumBrowser] flushInputEvents: queue size=" + inputQueue.size());
-        }
-
         if (browser == null) {
             inputQueue.clear();
             return;
@@ -1212,9 +1197,6 @@ public class ChromiumBrowser {
 
         InputEvent event;
         while ((event = inputQueue.poll()) != null) {
-            if (event.type == InputEvent.Type.KEY_PRESS || event.type == InputEvent.Type.KEY_RELEASE) {
-                System.out.println("[ChromiumBrowser] Processing " + event.type + " event: keyCode=" + event.keyCode);
-            }
             boolean isMouseMove = (event.type == InputEvent.Type.MOUSE_MOVE);
 
             // マウス移動イベントの制限チェック
@@ -1700,7 +1682,6 @@ public class ChromiumBrowser {
                     provider.sendKeyPressed(browser, keyCode, keyChar, shiftPressed, ctrlPressed, altPressed, metaPressed);
                     break;
                 case KEY_RELEASE:
-                    System.out.println("[ChromiumBrowser] Processing KEY_RELEASE event: keyCode=" + keyCode);
                     boolean shiftReleased = kernel != null && kernel.isShiftPressed();
                     boolean ctrlReleased = kernel != null && kernel.isCtrlPressed();
                     boolean altReleased = kernel != null && kernel.isAltPressed();

@@ -67,7 +67,7 @@ public class MMOSInstaller implements Runnable {
     @Override
     public void run() {
         LOGGER.info("[MMOSInstaller] Starting MMOS installation...");
-        MMOSPlatform.printDebugInfo();
+        LOGGER.info(MMOSPlatform.getDebugInfo());
 
         try {
             // プラットフォーム確認

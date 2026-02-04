@@ -163,7 +163,6 @@ public class MessageStorage {
                 writer.newLine();
             }
 
-            System.out.println("[MessageStorage] Message saved: " + message.getId());
 
         } catch (IOException e) {
             System.err.println("[MessageStorage] Failed to save message: " + e.getMessage());

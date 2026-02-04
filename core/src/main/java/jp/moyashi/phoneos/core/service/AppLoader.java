@@ -50,8 +50,14 @@ public class AppLoader {
     /** baseAppId -> resolvedAppIdのマッピング（永続化対応、スレッドセーフ） */
     private final Map<String, String> appIdRegistry;
 
+    /** 永続化されたインストール済みMODアプリのIDセット */
+    private final java.util.Set<String> persistedInstalledModAppIds;
+
     /** 永続化ファイルパス */
     private static final String APP_ID_REGISTRY_PATH = "system/app_id_registry.json";
+
+    /** インストール済みMODアプリの永続化ファイルパス */
+    private static final String INSTALLED_MOD_APPS_PATH = "system/installed_mod_apps.json";
 
     /**
      * 新しいAppLoaderサービスインスタンスを構築する。
@@ -66,11 +72,11 @@ public class AppLoader {
         this.availableModApps = new CopyOnWriteArrayList<>();
         this.installedModApps = new CopyOnWriteArrayList<>();
         this.appIdRegistry = new ConcurrentHashMap<>();
+        this.persistedInstalledModAppIds = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
         // 永続化データを読み込み
         loadAppIdRegistry();
-
-        System.out.println("AppLoader: Application loader service initialized");
+        loadInstalledModApps();
     }
     
     /**
@@ -86,26 +92,20 @@ public class AppLoader {
      * 5. 有効なアプリケーションを読み込まれたアプリリストに追加
      */
     public synchronized void scanForApps() {
-        System.out.println("AppLoader: Scanning /apps/ directory for applications...");
-        
         if (hasScannedApps) {
-            System.out.println("AppLoader: Apps already scanned, skipping");
             return;
         }
-        
+
         try {
             // appsディレクトリが存在しない場合は作成
             if (!vfs.directoryExists("apps")) {
-                System.out.println("AppLoader: /apps/ directory not found, creating it");
                 vfs.createDirectory("apps");
             }
-            
+
             // JARファイルを検索
             List<String> jarFiles = vfs.listFilesByExtension("apps", ".jar");
-            System.out.println("AppLoader: Found " + jarFiles.size() + " JAR files in /apps/");
-            
+
             if (jarFiles.isEmpty()) {
-                System.out.println("AppLoader: No JAR files found, scanning for class files in subdirectories");
                 scanForClassFiles();
             } else {
                 // 各JARファイルを処理
@@ -113,18 +113,15 @@ public class AppLoader {
                     try {
                         loadApplicationFromJar(jarFileName);
                     } catch (Exception e) {
-                        System.err.println("AppLoader: Failed to load JAR file " + jarFileName + ": " + e.getMessage());
-                        e.printStackTrace();
+                        // Skip failed JAR files
                     }
                 }
             }
-            
-            System.out.println("AppLoader: Scanning complete. Found " + loadedApps.size() + " applications");
+
             hasScannedApps = true;
-            
+
         } catch (Exception e) {
-            System.err.println("AppLoader: Error during application scanning: " + e.getMessage());
-            e.printStackTrace();
+            // Scanning failed
         }
     }
     
@@ -134,23 +131,21 @@ public class AppLoader {
     private void scanForClassFiles() {
         try {
             List<String> subDirs = vfs.listDirectories("apps");
-            System.out.println("AppLoader: Found " + subDirs.size() + " subdirectories in /apps/");
-            
+
             for (String subDir : subDirs) {
                 try {
                     String appPath = "apps/" + subDir;
                     List<String> classFiles = vfs.listFilesByExtension(appPath, ".class");
-                    
+
                     if (!classFiles.isEmpty()) {
-                        System.out.println("AppLoader: Found " + classFiles.size() + " class files in " + appPath);
                         loadApplicationFromDirectory(subDir, appPath);
                     }
                 } catch (Exception e) {
-                    System.err.println("AppLoader: Failed to scan directory " + subDir + ": " + e.getMessage());
+                    // Skip failed directories
                 }
             }
         } catch (Exception e) {
-            System.err.println("AppLoader: Error scanning for class files: " + e.getMessage());
+            // Scanning failed
         }
     }
     
@@ -163,26 +158,23 @@ public class AppLoader {
         try {
             String jarPath = vfs.getFullPath("apps/" + jarFileName);
             File jarFile = new File(jarPath);
-            
+
             if (!jarFile.exists()) {
-                System.err.println("AppLoader: JAR file not found: " + jarPath);
                 return;
             }
-            
-            System.out.println("AppLoader: Loading JAR: " + jarPath);
-            
+
             // JARファイル内のクラスをスキャン
             try (JarFile jar = new JarFile(jarFile)) {
                 Enumeration<JarEntry> entries = jar.entries();
-                
+
                 while (entries.hasMoreElements()) {
                     JarEntry entry = entries.nextElement();
                     String entryName = entry.getName();
-                    
+
                     // .classファイルのみを処理
                     if (entryName.endsWith(".class")) {
                         String className = entryName.replace('/', '.').replace(".class", "");
-                        
+
                         try {
                             // クラスローダーを作成してクラスをロード
                             // 親クラスローダーを指定して、IApplicationなどのコアクラスを参照可能にする
@@ -192,27 +184,24 @@ public class AppLoader {
                                 getClass().getClassLoader()
                             );
                             Class<?> clazz = classLoader.loadClass(className);
-                            
+
                             // IApplicationインターフェースを実装しているかチェック
                             if (IApplication.class.isAssignableFrom(clazz) && !clazz.isInterface()) {
                                 try {
                                     IApplication app = (IApplication) clazz.getDeclaredConstructor().newInstance();
-                                    if (registerApplication(app)) {
-                                        System.out.println("AppLoader: Successfully loaded app from JAR: " + app.getName());
-                                    }
+                                    registerApplication(app);
                                 } catch (Exception e) {
-                                    System.err.println("AppLoader: Failed to instantiate app class " + className + ": " + e.getMessage());
+                                    // Failed to instantiate app class
                                 }
                             }
                         } catch (Exception e) {
                             // Skip classes that can't be loaded (e.g., dependencies missing)
-                            System.out.println("AppLoader: Skipping class " + className + " (load error: " + e.getMessage() + ")");
                         }
                     }
                 }
             }
         } catch (Exception e) {
-            System.err.println("AppLoader: Error loading JAR file " + jarFileName + ": " + e.getMessage());
+            // Error loading JAR file
         }
     }
     
@@ -223,21 +212,18 @@ public class AppLoader {
      * @param dirPath ディレクトリのVFSパス
      */
     private void loadApplicationFromDirectory(String dirName, String dirPath) {
-        System.out.println("AppLoader: Attempting to load app from directory: " + dirPath);
-        
         try {
             // ディレクトリ内のJavaクラスファイルをスキャンする
             // ここでは簡単な実装として、既知のアプリケーション構造をチェック
-            
+
             // アプリ名からクラス名を推測（例：calculator -> CalculatorApp）
             String expectedClassName = capitalizeFirst(dirName) + "App";
-            System.out.println("AppLoader: Looking for app class: " + expectedClassName);
-            
+
             // 既存のロードされたアプリから探す（開発中のアプリ用）
             // この実装は動的クラスローディングよりも安全
-            
+
         } catch (Exception e) {
-            System.err.println("AppLoader: Error loading app from directory " + dirName + ": " + e.getMessage());
+            // Error loading app from directory
         }
     }
     
@@ -318,7 +304,6 @@ public class AppLoader {
      */
     public synchronized boolean registerApplication(IApplication application) {
         if (application == null) {
-            System.err.println("AppLoader: Cannot register null application");
             return false;
         }
 
@@ -328,9 +313,8 @@ public class AppLoader {
         // 既に登録済みかチェック（解決済みIDで検索）
         IApplication existingApp = findApplicationById(resolvedId);
         if (existingApp != null) {
-            System.out.println("AppLoader: Application " + application.getName() + " (ID: " + resolvedId + ") already registered. Overwriting...");
             loadedApps.remove(existingApp);
-            
+
             // MODアプリリストからも削除（もしあれば）
             if (installedModApps.contains(existingApp)) {
                 installedModApps.remove(existingApp);
@@ -339,8 +323,6 @@ public class AppLoader {
         }
 
         loadedApps.add(application);
-        System.out.println("AppLoader: Registered application: " + application.getName() +
-                          " (ID: " + resolvedId + ")");
         return true;
     }
     
@@ -354,7 +336,6 @@ public class AppLoader {
         IApplication app = findApplicationById(applicationId);
         if (app != null) {
             loadedApps.remove(app);
-            System.out.println("AppLoader: Unregistered application: " + app.getName());
             return true;
         }
         return false;
@@ -365,12 +346,10 @@ public class AppLoader {
      * このメソッドは現在読み込まれているアプリケーションをクリアし、新たなスキャンを実行する。
      */
     public void refreshApps() {
-        System.out.println("AppLoader: Refreshing application list...");
-        
         // Don't clear built-in apps, only those loaded from files
         // In a full implementation, we would differentiate between
         // file-loaded and manually-registered apps
-        
+
         hasScannedApps = false;
         scanForApps();
     }
@@ -416,8 +395,6 @@ public class AppLoader {
         // 重複チェック（利用可能リスト内）
         for (IApplication existingApp : availableModApps) {
             if (existingApp.getApplicationId().equals(application.getApplicationId())) {
-                System.out.println("AppLoader: MOD app " + application.getApplicationId() +
-                                 " already registered as available, skipping");
                 return false;
             }
         }
@@ -425,8 +402,6 @@ public class AppLoader {
         // インストール済みリストでもチェック
         for (IApplication installedApp : installedModApps) {
             if (installedApp.getApplicationId().equals(application.getApplicationId())) {
-                System.out.println("AppLoader: MOD app " + application.getApplicationId() +
-                                 " already installed, skipping registration as available");
                 return false;
             }
         }
@@ -434,15 +409,11 @@ public class AppLoader {
         // プリインストールアプリ（loadedApps）との重複チェック
         for (IApplication loadedApp : loadedApps) {
             if (loadedApp.getApplicationId().equals(application.getApplicationId())) {
-                System.out.println("AppLoader: App " + application.getApplicationId() +
-                                 " is a pre-installed app, skipping MOD registration");
                 return false;
             }
         }
 
         availableModApps.add(application);
-        System.out.println("AppLoader: Registered available MOD app: " +
-                          application.getName() + " (" + application.getApplicationId() + ")");
         return true;
     }
 
@@ -502,30 +473,24 @@ public class AppLoader {
         // 利用可能なアプリケーション候補から検索
         IApplication appToInstall = getAvailableModApp(applicationId);
         if (appToInstall == null) {
-            System.err.println("AppLoader: Cannot install MOD app " + applicationId +
-                             " - not found in available apps");
             return false;
         }
 
         // 既にインストール済みかチェック
         for (IApplication installedApp : installedModApps) {
             if (installedApp.getApplicationId().equals(applicationId)) {
-                System.out.println("AppLoader: MOD app " + applicationId + " already installed");
                 return false;
             }
         }
 
         try {
-            // アプリケーションをインストール
-            System.out.println("AppLoader: Installing MOD app: " + appToInstall.getName());
-
             // アプリケーションのonInstall()メソッドを呼び出し
             if (kernel instanceof jp.moyashi.phoneos.core.Kernel) {
                 appToInstall.onInitialize((jp.moyashi.phoneos.core.Kernel) kernel);
             }
 
             // appIdを解決してレジストリに登録（セッション再利用のため）
-            String resolvedId = resolveAppId(appToInstall);
+            resolveAppId(appToInstall);
 
             // 利用可能リストから削除してインストール済みリストに追加
             availableModApps.remove(appToInstall);
@@ -534,14 +499,15 @@ public class AppLoader {
             // 通常のアプリケーションリストにも追加（ランチャーで表示されるように）
             loadedApps.add(appToInstall);
 
-            System.out.println("AppLoader: Successfully installed MOD app: " +
-                             appToInstall.getName() + " (ID: " + resolvedId + ")");
+            // 永続化データを更新
+            persistedInstalledModAppIds.add(applicationId);
+            saveInstalledModApps();
+
+            LoggerContext.info("AppLoader", "MOD app installed and persisted: " + applicationId);
+
             return true;
 
         } catch (Exception e) {
-            System.err.println("AppLoader: Failed to install MOD app " + applicationId +
-                             ": " + e.getMessage());
-            e.printStackTrace();
             return false;
         }
     }
@@ -599,21 +565,14 @@ public class AppLoader {
             List<IApplication> forgeApps = (List<IApplication>) modRegistryClass
                 .getMethod("getAvailableApps").invoke(registryInstance);
 
-            System.out.println("AppLoader: Syncing with Forge ModAppRegistry - found " +
-                             forgeApps.size() + " apps");
-
             for (IApplication app : forgeApps) {
                 registerAvailableModApp(app);
             }
 
-            System.out.println("AppLoader: Sync complete - " + availableModApps.size() +
-                             " MOD apps now available");
-
         } catch (ClassNotFoundException e) {
             // Forgeモジュールが存在しない（スタンドアロン環境）
-            System.out.println("AppLoader: Forge module not found - running in standalone mode");
         } catch (Exception e) {
-            System.err.println("AppLoader: Error syncing with ModAppRegistry: " + e.getMessage());
+            // Error syncing with ModAppRegistry
         }
     }
 
@@ -689,7 +648,6 @@ public class AppLoader {
     private void loadAppIdRegistry() {
         try {
             if (!vfs.fileExists(APP_ID_REGISTRY_PATH)) {
-                System.out.println("AppLoader: No app ID registry found, starting fresh");
                 return;
             }
 
@@ -715,10 +673,8 @@ public class AppLoader {
                 }
             }
 
-            System.out.println("AppLoader: Loaded " + appIdRegistry.size() + " app ID mappings from registry");
-
         } catch (Exception e) {
-            System.err.println("AppLoader: Error loading app ID registry: " + e.getMessage());
+            // Error loading app ID registry
         }
     }
 
@@ -746,10 +702,223 @@ public class AppLoader {
             json.append("\n}");
 
             vfs.writeFile(APP_ID_REGISTRY_PATH, json.toString());
-            System.out.println("AppLoader: Saved app ID registry with " + appIdRegistry.size() + " mappings");
 
         } catch (Exception e) {
-            System.err.println("AppLoader: Error saving app ID registry: " + e.getMessage());
+            // Error saving app ID registry
         }
+    }
+
+    // ==================== インストール済みMODアプリの永続化機構 ====================
+
+    /**
+     * VFSからインストール済みMODアプリのリストを読み込む。
+     */
+    private void loadInstalledModApps() {
+        try {
+            if (!vfs.fileExists(INSTALLED_MOD_APPS_PATH)) {
+                LoggerContext.info("AppLoader", "No installed_mod_apps.json found, starting fresh");
+                return;
+            }
+
+            String json = vfs.readFile(INSTALLED_MOD_APPS_PATH);
+            if (json == null || json.trim().isEmpty()) {
+                return;
+            }
+
+            // 簡易JSONパース（[ "id1", "id2", ... ] 形式）
+            json = json.trim();
+            if (json.startsWith("[") && json.endsWith("]")) {
+                json = json.substring(1, json.length() - 1).trim();
+                if (!json.isEmpty()) {
+                    String[] ids = json.split(",");
+                    for (String id : ids) {
+                        String cleanId = id.trim().replace("\"", "");
+                        if (!cleanId.isEmpty()) {
+                            persistedInstalledModAppIds.add(cleanId);
+                        }
+                    }
+                }
+            }
+
+            LoggerContext.info("AppLoader", "Loaded " + persistedInstalledModAppIds.size() + " persisted installed MOD app IDs");
+
+        } catch (Exception e) {
+            LoggerContext.error("AppLoader", "Error loading installed MOD apps: " + e.getMessage());
+        }
+    }
+
+    /**
+     * インストール済みMODアプリのリストをVFSに保存する。
+     */
+    private void saveInstalledModApps() {
+        try {
+            // systemディレクトリが存在しない場合は作成
+            if (!vfs.directoryExists("system")) {
+                vfs.createDirectory("system");
+            }
+
+            // 簡易JSON生成（配列形式）
+            StringBuilder json = new StringBuilder();
+            json.append("[\n");
+            boolean first = true;
+            for (String appId : persistedInstalledModAppIds) {
+                if (!first) {
+                    json.append(",\n");
+                }
+                json.append("  \"").append(appId).append("\"");
+                first = false;
+            }
+            json.append("\n]");
+
+            vfs.writeFile(INSTALLED_MOD_APPS_PATH, json.toString());
+
+            LoggerContext.info("AppLoader", "Saved " + persistedInstalledModAppIds.size() + " installed MOD app IDs");
+
+        } catch (Exception e) {
+            LoggerContext.error("AppLoader", "Error saving installed MOD apps: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 永続化されたインストール状態に基づいて、利用可能なMODアプリから
+     * 以前インストールされていたアプリを復元する。
+     *
+     * このメソッドはsyncWithModRegistry()の後に呼び出されるべきである。
+     *
+     * @param kernel OSカーネルインスタンス（onInstall()メソッド用）
+     * @return 復元されたアプリの数
+     */
+    public synchronized int restoreInstalledModApps(Object kernel) {
+        int restoredCount = 0;
+
+        LoggerContext.info("AppLoader", "Restoring installed MOD apps from persisted data...");
+        LoggerContext.info("AppLoader", "Persisted IDs: " + persistedInstalledModAppIds);
+        LoggerContext.info("AppLoader", "Available MOD apps: " + availableModApps.size());
+
+        for (String appId : persistedInstalledModAppIds) {
+            // 既にインストール済みならスキップ
+            if (isModAppInstalled(appId)) {
+                LoggerContext.info("AppLoader", "Already installed, skipping: " + appId);
+                continue;
+            }
+
+            // 利用可能なアプリから探してインストール
+            IApplication app = getAvailableModApp(appId);
+            if (app != null) {
+                boolean success = installModAppWithoutPersist(appId, kernel);
+                if (success) {
+                    restoredCount++;
+                    LoggerContext.info("AppLoader", "Restored MOD app: " + appId);
+                } else {
+                    LoggerContext.warn("AppLoader", "Failed to restore MOD app: " + appId);
+                }
+            } else {
+                LoggerContext.warn("AppLoader", "Persisted MOD app not found in available list: " + appId);
+            }
+        }
+
+        LoggerContext.info("AppLoader", "Restored " + restoredCount + " MOD apps from persisted data");
+        return restoredCount;
+    }
+
+    /**
+     * MODアプリケーションをインストールする（永続化を行わない内部メソッド）。
+     * 復元処理で使用される。
+     *
+     * @param applicationId インストールするアプリケーションのID
+     * @param kernel OSカーネルインスタンス
+     * @return インストールが成功した場合true
+     */
+    private synchronized boolean installModAppWithoutPersist(String applicationId, Object kernel) {
+        if (applicationId == null || applicationId.trim().isEmpty()) {
+            return false;
+        }
+
+        // 利用可能なアプリケーション候補から検索
+        IApplication appToInstall = getAvailableModApp(applicationId);
+        if (appToInstall == null) {
+            return false;
+        }
+
+        // 既にインストール済みかチェック
+        for (IApplication installedApp : installedModApps) {
+            if (installedApp.getApplicationId().equals(applicationId)) {
+                return false;
+            }
+        }
+
+        try {
+            // アプリケーションのonInstall()メソッドを呼び出し
+            if (kernel instanceof jp.moyashi.phoneos.core.Kernel) {
+                appToInstall.onInitialize((jp.moyashi.phoneos.core.Kernel) kernel);
+            }
+
+            // appIdを解決してレジストリに登録
+            resolveAppId(appToInstall);
+
+            // 利用可能リストから削除してインストール済みリストに追加
+            availableModApps.remove(appToInstall);
+            installedModApps.add(appToInstall);
+
+            // 通常のアプリケーションリストにも追加
+            loadedApps.add(appToInstall);
+
+            return true;
+
+        } catch (Exception e) {
+            LoggerContext.error("AppLoader", "Error installing MOD app: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * MODアプリケーションをアンインストールする。
+     *
+     * @param applicationId アンインストールするアプリケーションのID
+     * @return アンインストールが成功した場合true
+     */
+    public synchronized boolean uninstallModApp(String applicationId) {
+        if (applicationId == null || applicationId.trim().isEmpty()) {
+            return false;
+        }
+
+        // インストール済みリストから探す
+        IApplication appToUninstall = null;
+        for (IApplication app : installedModApps) {
+            if (app.getApplicationId().equals(applicationId)) {
+                appToUninstall = app;
+                break;
+            }
+        }
+
+        if (appToUninstall == null) {
+            return false;
+        }
+
+        // インストール済みリストから削除
+        installedModApps.remove(appToUninstall);
+
+        // 通常のアプリケーションリストからも削除
+        loadedApps.remove(appToUninstall);
+
+        // 利用可能リストに戻す
+        availableModApps.add(appToUninstall);
+
+        // 永続化データを更新
+        persistedInstalledModAppIds.remove(applicationId);
+        saveInstalledModApps();
+
+        LoggerContext.info("AppLoader", "MOD app uninstalled and persisted: " + applicationId);
+
+        return true;
+    }
+
+    /**
+     * 永続化されているインストール済みMODアプリのIDセットを取得する。
+     *
+     * @return 永続化されたアプリIDのセット（読み取り専用）
+     */
+    public java.util.Set<String> getPersistedInstalledModAppIds() {
+        return Collections.unmodifiableSet(persistedInstalledModAppIds);
     }
 }

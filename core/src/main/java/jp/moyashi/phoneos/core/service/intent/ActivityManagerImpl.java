@@ -30,7 +30,6 @@ public class ActivityManagerImpl implements ActivityManager {
 
     @Override
     public boolean startActivity(Intent intent) {
-        System.out.println("ActivityManager: Starting activity with intent: " + intent);
 
         // Intentを解決
         ActivityInfo activityInfo = intentResolver.resolveIntent(intent);
@@ -46,7 +45,6 @@ public class ActivityManagerImpl implements ActivityManager {
 
     @Override
     public boolean startActivityForResult(Intent intent, ActivityResultCallback callback) {
-        System.out.println("ActivityManager: Starting activity for result with intent: " + intent);
 
         // コールバックを保存
         this.currentCallback = callback;
@@ -57,7 +55,6 @@ public class ActivityManagerImpl implements ActivityManager {
 
     @Override
     public boolean startActivityWithChooser(Intent intent) {
-        System.out.println("ActivityManager: Starting activity with chooser for intent: " + intent);
 
         // マッチするアクティビティを検索
         List<ActivityInfo> matchingActivities = intentResolver.findMatchingActivities(intent);
@@ -80,7 +77,6 @@ public class ActivityManagerImpl implements ActivityManager {
 
     @Override
     public void setActivityResult(int resultCode, Intent data) {
-        System.out.println("ActivityManager: Activity result set - resultCode: " + resultCode);
 
         // コールバックが設定されている場合は呼び出す
         if (currentCallback != null) {
@@ -117,7 +113,6 @@ public class ActivityManagerImpl implements ActivityManager {
      * @return 起動に成功した場合true
      */
     private boolean launchApplication(String appId, Intent intent) {
-        System.out.println("ActivityManager: Launching application: " + appId);
 
         try {
             // AppLoaderからアプリケーションを検索
@@ -147,7 +142,6 @@ public class ActivityManagerImpl implements ActivityManager {
             // スクリーンマネージャーで画面を開く
             kernel.getScreenManager().pushScreen(entryScreen);
 
-            System.out.println("ActivityManager: Successfully launched app: " + appId);
             return true;
 
         } catch (Exception e) {
@@ -164,7 +158,6 @@ public class ActivityManagerImpl implements ActivityManager {
      * @param matchingActivities マッチするアクティビティのリスト
      */
     private void showAppChooserDialog(Intent intent, List<ActivityInfo> matchingActivities) {
-        System.out.println("ActivityManager: Showing app chooser dialog for " + matchingActivities.size() + " apps");
 
         // ポップアップマネージャーでリスト選択ダイアログを表示
         StringBuilder message = new StringBuilder();

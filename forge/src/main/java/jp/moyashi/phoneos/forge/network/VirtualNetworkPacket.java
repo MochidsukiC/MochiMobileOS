@@ -84,25 +84,17 @@ public class VirtualNetworkPacket {
      * @param ctx ネットワークコンテキスト
      */
     public void handle(Supplier<NetworkEvent.Context> ctx) {
-        System.out.println("[VirtualNetworkPacket] Packet received: " + packetType + " from " + sourceAddress + " to " + destinationAddress);
-        System.out.println("[VirtualNetworkPacket] About to enqueue work");
         ctx.get().enqueueWork(() -> {
-            System.out.println("[VirtualNetworkPacket] Work executing on thread: " + Thread.currentThread().getName());
             try {
                 // VirtualPacketに変換
                 VirtualPacket virtualPacket = toVirtualPacket();
-                System.out.println("[VirtualNetworkPacket] VirtualPacket created");
 
                 // VirtualRouterに転送
-                System.out.println("[VirtualNetworkPacket] Calling NetworkHandler.handleReceivedPacket");
                 NetworkHandler.handleReceivedPacket(virtualPacket, ctx.get());
-                System.out.println("[VirtualNetworkPacket] NetworkHandler.handleReceivedPacket completed");
             } catch (Exception e) {
-                System.err.println("[VirtualNetworkPacket] Error in packet handling: " + e.getMessage());
                 e.printStackTrace();
             }
         });
-        System.out.println("[VirtualNetworkPacket] setPacketHandled called");
         ctx.get().setPacketHandled(true);
     }
 

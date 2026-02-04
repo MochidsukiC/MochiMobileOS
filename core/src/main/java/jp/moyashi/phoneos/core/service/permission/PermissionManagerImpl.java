@@ -146,7 +146,6 @@ public class PermissionManagerImpl implements PermissionManager {
 
         // TODO: PopupManager.showConfirmation()が実装されていないため、一時的に自動許可
         // 将来的には確認ダイアログを表示する
-        System.out.println("PermissionManager: Auto-granting permissions (dialog not yet implemented)");
         for (Permission permission : permissions) {
             grantPermission(appId, permission);
             if (callback != null) {
@@ -166,7 +165,6 @@ public class PermissionManagerImpl implements PermissionManager {
             denied.remove(permission);
         }
 
-        System.out.println("PermissionManager: Granted " + permission.getPermissionString() + " to " + appId);
     }
 
     @Override
@@ -174,7 +172,6 @@ public class PermissionManagerImpl implements PermissionManager {
         Set<Permission> permissions = grantedPermissions.get(appId);
         if (permissions != null) {
             permissions.remove(permission);
-            System.out.println("PermissionManager: Revoked " + permission.getPermissionString() + " from " + appId);
         }
     }
 
@@ -195,7 +192,6 @@ public class PermissionManagerImpl implements PermissionManager {
         grantedPermissions.remove(appId);
         deniedPermanently.remove(appId);
         savePermissions();
-        System.out.println("PermissionManager: Reset all permissions for " + appId);
     }
 
     @Override
@@ -209,7 +205,6 @@ public class PermissionManagerImpl implements PermissionManager {
             String json = gson.toJson(data);
             vfs.writeFile(PERMISSIONS_FILE, json);
 
-            System.out.println("PermissionManager: Saved permissions to VFS");
         } catch (Exception e) {
             System.err.println("PermissionManager: Failed to save permissions: " + e.getMessage());
             e.printStackTrace();
@@ -220,7 +215,6 @@ public class PermissionManagerImpl implements PermissionManager {
     public void loadPermissions() {
         try {
             if (!vfs.fileExists(PERMISSIONS_FILE)) {
-                System.out.println("PermissionManager: No permissions file found, starting with empty permissions");
                 return;
             }
 
@@ -234,7 +228,6 @@ public class PermissionManagerImpl implements PermissionManager {
                 deniedPermanently.clear();
                 deniedPermanently.putAll(convertStringsToPermissions(data.deniedPermanently));
 
-                System.out.println("PermissionManager: Loaded permissions from VFS");
             }
         } catch (Exception e) {
             System.err.println("PermissionManager: Failed to load permissions: " + e.getMessage());

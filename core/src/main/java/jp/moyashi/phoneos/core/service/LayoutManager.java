@@ -49,8 +49,6 @@ public class LayoutManager {
         this.gson = new GsonBuilder()
                 .setPrettyPrinting()
                 .create();
-        
-        System.out.println("LayoutManager: レイアウト管理サービスを初期化完了");
     }
     
     /**
@@ -114,21 +112,9 @@ public class LayoutManager {
 
             // JSONに変換して保存
             String jsonData = gson.toJson(layoutData);
-            boolean success = vfs.writeFile(LAYOUT_FILE_PATH, jsonData);
-
-            if (success) {
-                int totalShortcuts = layoutData.pages.stream().mapToInt(p -> p.shortcuts.size()).sum();
-                System.out.println("LayoutManager: レイアウトを保存しました (" +
-                                 pages.size() + "ページ, " +
-                                 totalShortcuts + "ショートカット, " +
-                                 (globalDockShortcuts != null ? globalDockShortcuts.size() : 0) + "Dockアイテム)");
-            }
-
-            return success;
+            return vfs.writeFile(LAYOUT_FILE_PATH, jsonData);
 
         } catch (Exception e) {
-            System.err.println("LayoutManager: レイアウト保存エラー: " + e.getMessage());
-            e.printStackTrace();
             return false;
         }
     }
@@ -155,13 +141,11 @@ public class LayoutManager {
     public LayoutLoadResult loadLayoutWithDock() {
         try {
             if (!vfs.fileExists(LAYOUT_FILE_PATH)) {
-                System.out.println("LayoutManager: レイアウトファイルが存在しません、デフォルトレイアウトを使用");
                 return null;
             }
 
             String jsonData = vfs.readFile(LAYOUT_FILE_PATH);
             if (jsonData == null || jsonData.trim().isEmpty()) {
-                System.out.println("LayoutManager: レイアウトファイルが空です");
                 return null;
             }
 
@@ -172,7 +156,7 @@ public class LayoutManager {
                     return loadFromNewFormat(layoutData);
                 }
             } catch (Exception e) {
-                System.out.println("LayoutManager: 新しい形式での読み込みに失敗、旧形式を試行します");
+                // 新しい形式での読み込みに失敗、旧形式を試行
             }
 
             // 旧形式での読み込みを試行
@@ -180,15 +164,12 @@ public class LayoutManager {
             List<PageLayoutData> oldLayoutData = gson.fromJson(jsonData, listType);
 
             if (oldLayoutData == null || oldLayoutData.isEmpty()) {
-                System.out.println("LayoutManager: 無効なレイアウトデータ");
                 return null;
             }
 
             return loadFromOldFormat(oldLayoutData);
 
         } catch (Exception e) {
-            System.err.println("LayoutManager: レイアウト読み込みエラー: " + e.getMessage());
-            e.printStackTrace();
             return null;
         }
     }
@@ -214,9 +195,6 @@ public class LayoutManager {
                     }
 
                     page.addShortcut(shortcut, shortcutData.gridX, shortcutData.gridY);
-                } else {
-                    System.out.println("LayoutManager: アプリケーションが見つかりません: " +
-                                     shortcutData.applicationId);
                 }
             }
 
@@ -241,18 +219,9 @@ public class LayoutManager {
                     }
 
                     globalDockShortcuts.add(shortcut);
-                } else {
-                    System.out.println("LayoutManager: Dockアプリケーションが見つかりません: " +
-                                     dockData.applicationId);
                 }
             }
         }
-
-        int totalShortcuts = pages.stream().mapToInt(p -> p.getShortcutCount()).sum();
-        System.out.println("LayoutManager: レイアウトを復元しました (" +
-                         pages.size() + "ページ, " +
-                         totalShortcuts + "ショートカット, " +
-                         globalDockShortcuts.size() + "Dockアイテム)");
 
         return new LayoutLoadResult(pages, globalDockShortcuts);
     }
@@ -277,9 +246,6 @@ public class LayoutManager {
                     }
 
                     page.addShortcut(shortcut, shortcutData.gridX, shortcutData.gridY);
-                } else {
-                    System.out.println("LayoutManager: アプリケーションが見つかりません: " +
-                                     shortcutData.applicationId);
                 }
             }
 
@@ -290,10 +256,6 @@ public class LayoutManager {
 
             pages.add(page);
         }
-
-        System.out.println("LayoutManager: 旧形式レイアウトを復元しました (" +
-                         pages.size() + "ページ, " +
-                         pages.stream().mapToInt(p -> p.getShortcutCount()).sum() + "ショートカット)");
 
         return new LayoutLoadResult(pages, new ArrayList<>());
     }
@@ -308,7 +270,6 @@ public class LayoutManager {
                 }
             }
             page.setAllApplications(availableApps);
-            System.out.println("LayoutManager: AppLibraryページに " + availableApps.size() + " 個のアプリを設定");
         }
     }
     
@@ -327,11 +288,7 @@ public class LayoutManager {
      * @return 削除に成功した場合true、失敗した場合false
      */
     public boolean deleteLayoutFile() {
-        boolean success = vfs.deleteFile(LAYOUT_FILE_PATH);
-        if (success) {
-            System.out.println("LayoutManager: レイアウトファイルを削除しました");
-        }
-        return success;
+        return vfs.deleteFile(LAYOUT_FILE_PATH);
     }
     
     /**

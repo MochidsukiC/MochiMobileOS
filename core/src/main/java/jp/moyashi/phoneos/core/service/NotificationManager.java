@@ -130,7 +130,6 @@ public class NotificationManager implements GestureListener {
         this.bannerTargetProgress = 0.0f;
         this.bannerShowTime = 0;
 
-        System.out.println("NotificationManager: Notification center service initialized");
     }
     
     /**
@@ -383,7 +382,6 @@ public class NotificationManager implements GestureListener {
         boolean removed = notifications.removeIf(notification -> {
             if (notification.getId().equals(notificationId)) {
                 notification.dismiss();
-                System.out.println("NotificationManager: Removed notification '" + notification.getTitle() + "'");
                 return true;
             }
             return false;
@@ -418,7 +416,6 @@ public class NotificationManager implements GestureListener {
         notifications.clear();
         scrollOffset = 0;
         updateScrollLimits();
-        System.out.println("NotificationManager: Cleared " + count + " notifications");
     }
     
     /**
@@ -433,7 +430,6 @@ public class NotificationManager implements GestureListener {
         notifications.removeAll(toRemove);
         updateScrollLimits();
         
-        System.out.println("NotificationManager: Cleared " + toRemove.size() + " read notifications");
     }
     
     /**
@@ -1110,7 +1106,6 @@ public class NotificationManager implements GestureListener {
             if (event.getType() == GestureType.TAP ||
                 event.getType() == GestureType.LONG_PRESS ||
                 event.getType() == GestureType.DRAG_START) {
-                System.out.println("NotificationManager: Tapped outside panel, hiding notification center");
                 hide();
                 return true;
             }
@@ -1142,13 +1137,11 @@ public class NotificationManager implements GestureListener {
                 // 上向きスワイプで下にスクロール（通知を上に移動）
                 float scrollAmount = 80.0f;
                 scrollOffset = Math.min(maxScrollOffset, scrollOffset + scrollAmount);
-                System.out.println("NotificationManager: Swipe up scroll, offset: " + scrollOffset);
                 return true;
             } else if (event.getType() == GestureType.SWIPE_DOWN) {
                 // 下向きスワイプで上にスクロール（通知を下に移動）
                 float scrollAmount = 80.0f;
                 scrollOffset = Math.max(0, scrollOffset - scrollAmount);
-                System.out.println("NotificationManager: Swipe down scroll, offset: " + scrollOffset);
                 return true;
             } else if (event.getType() == GestureType.DRAG_START) {
                 // ドラッグ開始時に現在のスクロール位置を保存
@@ -1159,7 +1152,6 @@ public class NotificationManager implements GestureListener {
                 float deltaY = event.getCurrentY() - event.getStartY();
                 // 上にドラッグ（deltaY < 0）すると下にスクロール（offset増加）
                 scrollOffset = Math.max(0, Math.min(dragStartScrollOffset - deltaY, maxScrollOffset));
-                System.out.println("NotificationManager: Drag scroll, offset: " + scrollOffset);
                 return true;
             }
         }
@@ -1167,7 +1159,6 @@ public class NotificationManager implements GestureListener {
         // 上向きスワイプで閉じる（通知エリア外、またはスクロール不要な場合）
         if (event.getType() == GestureType.SWIPE_UP &&
             (!inNotificationArea || maxScrollOffset <= 0)) {
-            System.out.println("NotificationManager: Swipe up detected, hiding notification center");
             hide();
             return true;
         }
@@ -1227,7 +1218,6 @@ public class NotificationManager implements GestureListener {
                 
                 // 通知のクリック処理
                 if (notification.onClick(event.getCurrentX(), event.getCurrentY())) {
-                    System.out.println("NotificationManager: Clicked notification: " + notification.getTitle());
                     return true;
                 }
             }
@@ -1271,7 +1261,6 @@ public class NotificationManager implements GestureListener {
     public void setDynamicPriority(int priority) {
         if (this.dynamicPriority != priority) {
             this.dynamicPriority = priority;
-            System.out.println("NotificationManager: Dynamic priority updated to " + priority);
             
             // GestureManagerに再ソートを要求
             if (kernel != null && kernel.getGestureManager() != null) {

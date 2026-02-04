@@ -331,7 +331,6 @@ public class NowPlayingItem implements IControlCenterItem {
         float dx = tx - (playBtnX + playBtnR);
         float dy = ty - (playBtnY + playBtnR);
         if (dx*dx + dy*dy <= playBtnR * playBtnR * 1.5) { // 少し判定を甘く(1.5倍)
-            System.out.println("NowPlaying: Toggle Play/Pause");
             controller.togglePlayPause();
             return true;
         }
@@ -339,7 +338,6 @@ public class NowPlayingItem implements IControlCenterItem {
         // Next
         if (tx >= nextBtnX - 10 && tx <= nextBtnX + nextBtnW + 10 &&
             ty >= nextBtnY - 10 && ty <= nextBtnY + nextBtnH + 10) {
-            System.out.println("NowPlaying: Skip Next");
             controller.skipToNext();
             return true;
         }
@@ -347,7 +345,6 @@ public class NowPlayingItem implements IControlCenterItem {
         // Prev
         if (tx >= prevBtnX - 10 && tx <= prevBtnX + prevBtnW + 10 &&
             ty >= prevBtnY - 10 && ty <= prevBtnY + prevBtnH + 10) {
-            System.out.println("NowPlaying: Skip Prev");
             controller.skipToPrevious();
             return true;
         }

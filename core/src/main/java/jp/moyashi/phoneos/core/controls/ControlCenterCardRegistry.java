@@ -35,7 +35,6 @@ public class ControlCenterCardRegistry {
     public ControlCenterCardRegistry(SettingsManager settingsManager) {
         this.settingsManager = settingsManager;
         loadPlacements();
-        System.out.println("ControlCenterCardRegistry: Initialized with " + placements.size() + " saved placements");
     }
 
     // === カード登録 ===
@@ -55,7 +54,6 @@ public class ControlCenterCardRegistry {
         String cardId = card.getId();
 
         if (registeredCards.containsKey(cardId)) {
-            System.out.println("ControlCenterCardRegistry: Card already registered: " + cardId);
             return false;
         }
 
@@ -68,7 +66,6 @@ public class ControlCenterCardRegistry {
         }
 
         notifyCardAdded(card);
-        System.out.println("ControlCenterCardRegistry: Registered card: " + cardId);
         return true;
     }
 
@@ -82,7 +79,6 @@ public class ControlCenterCardRegistry {
         IControlCenterItem removed = registeredCards.remove(cardId);
         if (removed != null) {
             notifyCardRemoved(removed);
-            System.out.println("ControlCenterCardRegistry: Unregistered card: " + cardId);
             return true;
         }
         return false;
@@ -112,7 +108,6 @@ public class ControlCenterCardRegistry {
 
         if (!toRemove.isEmpty()) {
             savePlacements();
-            System.out.println("ControlCenterCardRegistry: Removed " + toRemove.size() + " cards for app: " + appId);
         }
     }
 
@@ -328,7 +323,6 @@ public class ControlCenterCardRegistry {
 
         settingsManager.setSetting(SETTINGS_KEY_PLACEMENTS, list);
         settingsManager.saveSettings();
-        System.out.println("ControlCenterCardRegistry: Saved " + list.size() + " placements");
     }
 
     /**

@@ -154,9 +154,6 @@ public class ChromiumAppHandler extends CefAppHandlerAdapter {
     public static void preRegisterAppScheme(String schemeName) {
         if (!contextInitialized) {
             pendingAppSchemes.add(schemeName);
-            System.out.println("[ChromiumAppHandler] Pre-registered scheme: " + schemeName);
-        } else {
-            System.err.println("[ChromiumAppHandler] Cannot pre-register scheme after context initialized: " + schemeName);
         }
     }
 

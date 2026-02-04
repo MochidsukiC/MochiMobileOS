@@ -355,9 +355,6 @@ public class NoteEditScreen implements Screen {
         }
 
         clipboard.copyText("Note", textToCopy);
-
-        System.out.println("✓ クリップボードにコピーしました: " +
-            (textToCopy.length() > 20 ? textToCopy.substring(0, 20) + "..." : textToCopy));
     }
 
     /**
@@ -369,14 +366,15 @@ public class NoteEditScreen implements Screen {
             if (kernel.getLogger() != null) {
                 kernel.getLogger().warn("NoteEditScreen", "クリップボードが空です");
             }
-            System.out.println("✗ クリップボードが空です");
             return;
         }
 
         ClipData clipData = clipboard.getPrimaryClip();
         String pastedText = clipData != null ? clipData.getText() : null;
         if (pastedText == null || pastedText.isEmpty()) {
-            System.out.println("✗ クリップボードにテキストがありません");
+            if (kernel.getLogger() != null) {
+                kernel.getLogger().warn("NoteEditScreen", "クリップボードにテキストがありません");
+            }
             return;
         }
 
@@ -404,9 +402,6 @@ public class NoteEditScreen implements Screen {
                 kernel.getLogger().info("NoteEditScreen", "コンテンツに貼り付け（自動フォーカス）: " + pastedText.length() + "文字");
             }
         }
-
-        System.out.println("✓ クリップボードから貼り付けました: " +
-            (pastedText.length() > 20 ? pastedText.substring(0, 20) + "..." : pastedText));
     }
 
     /**
@@ -421,7 +416,6 @@ public class NoteEditScreen implements Screen {
             kernel.getLogger().info("NoteEditScreen", "メモを保存: " + note.id);
         }
 
-        System.out.println("✓ メモを保存しました");
         kernel.getScreenManager().popScreen();
     }
 
@@ -435,7 +429,6 @@ public class NoteEditScreen implements Screen {
             kernel.getLogger().info("NoteEditScreen", "メモを削除: " + note.id);
         }
 
-        System.out.println("✓ メモを削除しました");
         kernel.getScreenManager().popScreen();
     }
 }

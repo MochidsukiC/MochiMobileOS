@@ -38,8 +38,6 @@ public class PopupManager {
     public PopupManager() {
         this.popupQueue = new ConcurrentLinkedQueue<>();
         this.autoCloseTime = 0;
-        
-        System.out.println("PopupManager: Global popup manager initialized");
     }
     
     /**
@@ -50,21 +48,16 @@ public class PopupManager {
      */
     public void showPopup(PopupMenu popup) {
         if (popup == null) {
-            System.err.println("PopupManager: Cannot show null popup");
             return;
         }
-        
-        System.out.println("PopupManager: Showing popup with " + popup.getItems().size() + " items");
-        
+
         if (currentPopup == null) {
             // すぐに表示
             currentPopup = popup;
             autoCloseTime = System.currentTimeMillis() + AUTO_CLOSE_DELAY;
-            System.out.println("PopupManager: ✅ Popup displayed immediately");
         } else {
             // キューに追加
             popupQueue.offer(popup);
-            System.out.println("PopupManager: Popup queued (queue size: " + popupQueue.size() + ")");
         }
     }
     
@@ -74,14 +67,12 @@ public class PopupManager {
      */
     public void closeCurrentPopup() {
         if (currentPopup != null) {
-            System.out.println("PopupManager: Closing current popup");
             currentPopup = null;
             autoCloseTime = 0;
-            
+
             // キューから次のポップアップを取得
             PopupMenu nextPopup = popupQueue.poll();
             if (nextPopup != null) {
-                System.out.println("PopupManager: Showing next popup from queue");
                 showPopup(nextPopup);
             }
         }
@@ -91,7 +82,6 @@ public class PopupManager {
      * すべてのポップアップを閉じて、キューもクリアする。
      */
     public void closeAllPopups() {
-        System.out.println("PopupManager: Closing all popups and clearing queue");
         currentPopup = null;
         autoCloseTime = 0;
         popupQueue.clear();
@@ -115,7 +105,6 @@ public class PopupManager {
     public void draw(PGraphics g) {
         // 自動クローズ処理
         if (currentPopup != null && autoCloseTime > 0 && System.currentTimeMillis() > autoCloseTime) {
-            System.out.println("PopupManager: Auto-closing popup after timeout");
             closeCurrentPopup();
             return;
         }
@@ -135,7 +124,6 @@ public class PopupManager {
     public void draw(PApplet p) {
         // 自動クローズ処理
         if (currentPopup != null && autoCloseTime > 0 && System.currentTimeMillis() > autoCloseTime) {
-            System.out.println("PopupManager: Auto-closing popup after timeout");
             closeCurrentPopup();
             return;
         }
@@ -158,9 +146,7 @@ public class PopupManager {
         if (currentPopup == null) {
             return false;
         }
-        
-        System.out.println("PopupManager: Processing mouse click at (" + mouseX + ", " + mouseY + ")");
-        
+
         // メニューの実際の位置とサイズを計算
         int[] bounds = calculateMenuBounds(currentPopup, 400, 600); // 仮のスクリーンサイズ
         int actualX = bounds[0];
@@ -173,14 +159,12 @@ public class PopupManager {
             // アイテムクリック処理
             PopupItem clickedItem = currentPopup.getClickedItem(mouseX, mouseY, actualX, actualY, actualWidth, ITEM_HEIGHT);
             if (clickedItem != null && clickedItem.isEnabled()) {
-                System.out.println("PopupManager: Clicked item: " + clickedItem.getText());
                 clickedItem.executeAction();
                 closeCurrentPopup();
                 return true;
             }
         } else {
             // メニュー外クリック - ポップアップを閉じる
-            System.out.println("PopupManager: Click outside popup, closing");
             closeCurrentPopup();
             return true; // クリックは処理済み（下のレイヤーに渡さない）
         }

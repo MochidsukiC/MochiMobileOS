@@ -43,7 +43,6 @@ public class NotificationSoundService {
         // デフォルト通知音を事前読み込み
         loadDefaultSound();
 
-        System.out.println("NotificationSoundService: Initialized");
     }
 
     /**
@@ -53,9 +52,7 @@ public class NotificationSoundService {
         try (InputStream is = getClass().getResourceAsStream(DEFAULT_SOUND_RESOURCE)) {
             if (is != null) {
                 defaultSoundData = is.readAllBytes();
-                System.out.println("NotificationSoundService: Default sound loaded (" + defaultSoundData.length + " bytes)");
             } else {
-                System.out.println("NotificationSoundService: Default sound resource not found, will use fallback beep");
                 defaultSoundData = null;
             }
         } catch (Exception e) {
@@ -158,7 +155,6 @@ public class NotificationSoundService {
     private void playFallbackBeep() {
         try {
             // 簡易ビープ音（Toolkit.beep()はGUI環境が必要なため、代替手段）
-            System.out.println("NotificationSoundService: Playing fallback beep");
             java.awt.Toolkit.getDefaultToolkit().beep();
         } catch (Exception e) {
             // ビープも失敗した場合は無視

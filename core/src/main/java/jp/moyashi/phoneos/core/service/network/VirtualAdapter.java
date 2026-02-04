@@ -255,7 +255,6 @@ public class VirtualAdapter {
         if (kernel != null && kernel.getLogger() != null) {
             kernel.getLogger().info("VirtualAdapter", message);
         } else {
-            System.out.println("[VirtualAdapter] " + message);
         }
     }
 }

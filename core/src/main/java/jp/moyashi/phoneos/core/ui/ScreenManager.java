@@ -57,7 +57,6 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
         if (kernel != null && kernel.getLogger() != null) {
             kernel.getLogger().debug("ScreenManager", message);
         }
-        System.out.println("ScreenManager: " + message);
     }
 
     /**
@@ -298,17 +297,23 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
         // 未セットアップリストからも削除
         unsetupScreens.remove(poppedScreen);
 
-        // アプリケーション画面の場合はKernelレイヤースタックからAPPLICATIONレイヤーを削除
-        if (kernel != null && !isLauncherScreen(poppedScreen)) {
-            kernel.removeLayer(LayerType.APPLICATION);
-            log("Removed APPLICATION layer from Kernel stack for screen: " + poppedScreen.getScreenTitle());
-        }
-
         // ポップされたスクリーンをバックグラウンドに設定
         notifyServiceManagerForegroundState(poppedScreen, false);
 
         // 新しいトップスクリーンをフォアグラウンドに復帰（OS側で強制的に制御）
         Screen newTopScreen = getCurrentScreen();
+
+        // アプリケーション画面の場合、新しいトップがランチャー画面なら
+        // KernelレイヤースタックからAPPLICATIONレイヤーを削除
+        // （アプリ内画面遷移の場合は削除しない）
+        if (kernel != null && !isLauncherScreen(poppedScreen)) {
+            if (newTopScreen == null || isLauncherScreen(newTopScreen)) {
+                kernel.removeLayer(LayerType.APPLICATION);
+                log("Removed APPLICATION layer from Kernel stack for screen: " + poppedScreen.getScreenTitle());
+            } else {
+                log("Kept APPLICATION layer - still in app (new top: " + newTopScreen.getScreenTitle() + ")");
+            }
+        }
         if (newTopScreen != null) {
             newTopScreen.onForeground();
             notifyServiceManagerForegroundState(newTopScreen, true);

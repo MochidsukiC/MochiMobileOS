@@ -73,8 +73,6 @@ public class ScreenTransition {
         this.targetY = 0;
         this.targetWidth = 400;
         this.targetHeight = 600;
-        
-        System.out.println("ScreenTransition: Animation system initialized");
     }
     
     /**
@@ -86,29 +84,18 @@ public class ScreenTransition {
      * @param icon Icon image
      */
     public void startZoomIn(float iconX, float iconY, float iconSize, PImage icon) {
-        System.out.println("ScreenTransition: startZoomIn called");
-        System.out.println("ScreenTransition: Current state before: " + currentState);
-        
         this.currentState = AnimationState.ZOOM_IN;
         this.animationStartTime = System.currentTimeMillis();
         this.progress = 0.0f;
-        
+
         // Source (icon) position
         this.sourceX = iconX;
         this.sourceY = iconY;
         this.sourceWidth = iconSize;
         this.sourceHeight = iconSize;
-        
+
         // Store icon image
         this.iconImage = icon;
-        
-        System.out.println("ScreenTransition: Animation state set to " + currentState);
-        System.out.println("ScreenTransition: Animation start time: " + animationStartTime);
-        System.out.println("ScreenTransition: Source position: (" + sourceX + ", " + sourceY + ") size " + sourceWidth + "x" + sourceHeight);
-        System.out.println("ScreenTransition: Target dimensions: (" + targetX + ", " + targetY + ") " + targetWidth + "x" + targetHeight);
-        System.out.println("ScreenTransition: Icon image: " + (iconImage != null ? iconImage.width + "x" + iconImage.height : "null"));
-        System.out.println("ScreenTransition: Starting zoom-in animation from icon at (" + 
-                          iconX + ", " + iconY + ") size " + iconSize);
     }
     
     /**
@@ -134,9 +121,6 @@ public class ScreenTransition {
         // Store images
         this.iconImage = icon;
         this.screenCapture = screenCapture;
-        
-        System.out.println("ScreenTransition: Starting zoom-out animation to icon at (" + 
-                          iconX + ", " + iconY + ") size " + iconSize);
     }
     
     /**
@@ -156,15 +140,9 @@ public class ScreenTransition {
         // Apply easing function (ease-out-quart for iOS-like feel)
         // Use cubic ease-out for consistency
         this.progress = 1.0f - (float) Math.pow(1.0f - linearProgress, 3);
-        
-        // Debug logging
-        if (elapsed % 50 == 0 || linearProgress >= 1.0f) { // Log every ~50ms or at completion
-            System.out.println("ScreenTransition: update() - elapsed=" + elapsed + "ms, linearProgress=" + linearProgress + ", easedProgress=" + progress);
-        }
-        
+
         // Check if animation is complete
         if (linearProgress >= 1.0f) {
-            System.out.println("ScreenTransition: Animation completing - elapsed=" + elapsed + "ms, duration=" + animationDurationMs + "ms");
             completeAnimation();
         }
     }
@@ -178,9 +156,7 @@ public class ScreenTransition {
         if (currentState == AnimationState.NONE) {
             return;
         }
-        
-        System.out.println("ScreenTransition: Drawing animation " + currentState + " with progress " + progress);
-        
+
         switch (currentState) {
             case ZOOM_IN:
                 drawZoomIn(p);
@@ -205,22 +181,17 @@ public class ScreenTransition {
      */
     private void drawZoomIn(PApplet p) {
         if (iconImage == null) {
-            System.out.println("ScreenTransition: drawZoomIn - iconImage is null!");
             return;
         }
-        
-        System.out.println("ScreenTransition: drawZoomIn - progress=" + progress + ", iconImage size=" + iconImage.width + "x" + iconImage.height);
-        
+
         // DON'T clear background - let ScreenManager draw the background screen first
-        
+
         // Calculate current size and position
         float currentWidth = PApplet.lerp(sourceWidth, targetWidth, progress);
         float currentHeight = PApplet.lerp(sourceHeight, targetHeight, progress);
         float currentX = PApplet.lerp(sourceX - sourceWidth/2, targetX, progress);
         float currentY = PApplet.lerp(sourceY - sourceHeight/2, targetY, progress);
-        
-        System.out.println("ScreenTransition: Drawing at (" + currentX + ", " + currentY + ") size " + currentWidth + "x" + currentHeight);
-        
+
         // Calculate opacity for fade effect
         float iconOpacity = 255 * (1.0f - progress);
         
@@ -293,8 +264,6 @@ public class ScreenTransition {
      * Completes the current animation.
      */
     private void completeAnimation() {
-        System.out.println("ScreenTransition: Animation " + currentState + " completed");
-        
         AnimationState completedState = currentState;
         
         this.currentState = AnimationState.NONE;

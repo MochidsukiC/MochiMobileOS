@@ -35,19 +35,16 @@ public class ForgeNetworkInitializer {
      */
     public static void initialize(Kernel kernel) {
         if (kernel == null) {
-            System.err.println("[ForgeNetworkInitializer] Kernel is null, cannot initialize network");
             return;
         }
 
         NetworkAdapter networkAdapter = kernel.getNetworkAdapter();
         if (networkAdapter == null) {
-            System.err.println("[ForgeNetworkInitializer] NetworkAdapter is null, cannot initialize network");
             return;
         }
 
         VirtualAdapter virtualAdapter = networkAdapter.getVirtualAdapter();
         if (virtualAdapter == null) {
-            System.err.println("[ForgeNetworkInitializer] VirtualAdapter is null, cannot initialize network");
             return;
         }
 
@@ -65,11 +62,6 @@ public class ForgeNetworkInitializer {
 
         // レスポンスハンドラーを登録
         registerResponseHandlers(kernel);
-
-        System.out.println("[ForgeNetworkInitializer] Network initialized successfully");
-        System.out.println("[ForgeNetworkInitializer]   - VirtualSocket: ForgeVirtualSocket");
-        System.out.println("[ForgeNetworkInitializer]   - Status: " + virtualAdapter.getStatus().getDisplayName());
-        System.out.println("[ForgeNetworkInitializer]   - Carrier: " + virtualAdapter.getCarrierName());
     }
 
     /**
@@ -92,7 +84,6 @@ public class ForgeNetworkInitializer {
             currentSocket.close();
             currentSocket = null;
         }
-        System.out.println("[ForgeNetworkInitializer] Network shutdown");
     }
 
     /**
@@ -113,7 +104,6 @@ public class ForgeNetworkInitializer {
     private static void registerResponseHandlers(Kernel kernel) {
         VirtualRouter router = kernel.getVirtualRouter();
         if (router == null) {
-            System.err.println("[ForgeNetworkInitializer] VirtualRouter is null, cannot register response handlers");
             return;
         }
 
@@ -123,8 +113,5 @@ public class ForgeNetworkInitializer {
                 currentSocket.onPacketReceived(packet);
             }
         });
-
-        System.out.println("[ForgeNetworkInitializer] Response handlers registered");
-        System.out.println("[ForgeNetworkInitializer] Note: System servers (3-sys-*) are managed by server module");
     }
 }

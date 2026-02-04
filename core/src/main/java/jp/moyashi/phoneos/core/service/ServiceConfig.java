@@ -78,7 +78,6 @@ public class ServiceConfig {
             String json = vfs.readFile(CONFIG_PATH);
             if (json != null && !json.isEmpty()) {
                 parseJson(json);
-                System.out.println("ServiceConfig: Loaded autostart config: " + autostartApps.size() + " apps");
             } else {
                 // デフォルトリストを作成
                 createDefaultConfig();
@@ -96,7 +95,6 @@ public class ServiceConfig {
         try {
             String json = toJson();
             vfs.writeFile(CONFIG_PATH, json);
-            System.out.println("ServiceConfig: Saved autostart config: " + autostartApps.size() + " apps");
         } catch (Exception e) {
             System.err.println("ServiceConfig: Failed to save config: " + e.getMessage());
             e.printStackTrace();
@@ -111,7 +109,6 @@ public class ServiceConfig {
         autostartApps = new HashSet<>();
         // デフォルトでは自動起動アプリなし
         // 将来的にはシステムサービス（通知監視など）を追加可能
-        System.out.println("ServiceConfig: Created default config (no autostart apps)");
         save();
     }
 

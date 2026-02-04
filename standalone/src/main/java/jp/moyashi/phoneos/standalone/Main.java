@@ -36,61 +36,30 @@ public class Main {
             }
         }
         
-        System.out.println("MochiMobileOS Standalone Launcher");
-        System.out.println("==================================");
-        System.out.println("Initializing phone OS...");
-        System.out.println("Target Resolution: 400x600 (smartphone-like)");
-        System.out.println("Processing Version: 4.4.4");
-        System.out.println();
-        
         try {
             // Create the standalone wrapper (PGraphics統一アーキテクチャ)
-            System.out.println("[1/4] Creating StandaloneWrapper...");
             StandaloneWrapper wrapper = new StandaloneWrapper();
 
             // Wait a moment for initialization
             Thread.sleep(500);
 
-            System.out.println("[2/4] Preparing PApplet→Kernel API conversion...");
             // Kernel初期化はStandaloneWrapper.setup()で実行される
 
-            System.out.println("[3/4] Configuring Processing window...");
             String[] sketchArgs = new String[]{
                 StandaloneWrapper.class.getName()
             };
 
-            System.out.println("[4/4] Launching OS window (PGraphics統一アーキテクチャ)...");
-            System.out.println("-> StandaloneWrapper(PApplet) → Kernel(独立API) → PGraphics");
-            System.out.println("-> LauncherApp will start automatically");
-            System.out.println("-> Use mouse/touch to interact");
-            System.out.println("-> Long press for edit mode");
-            System.out.println("-> Swipe up for App Library");
-            System.out.println();
-
             PApplet.runSketch(sketchArgs, wrapper);
-            
-            System.out.println("✅ MochiMobileOS launched successfully!");
-            System.out.println("   Window should be visible now.");
-            
+
             // Add shutdown hook for cleanup
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                System.out.println("MochiMobileOS: Shutting down...");
                 // Perform any necessary cleanup here
-                System.out.println("MochiMobileOS: Shutdown complete.");
             }));
-            
+
         } catch (InterruptedException e) {
-            System.err.println("Initialization interrupted: " + e.getMessage());
             Thread.currentThread().interrupt();
             System.exit(1);
         } catch (Exception e) {
-            System.err.println("❌ Failed to launch MochiMobileOS: " + e.getMessage());
-            System.err.println("\nTroubleshooting:");
-            System.err.println("1. Check if Processing 4.x is properly installed");
-            System.err.println("2. Verify Java version (requires Java 17+)");
-            System.err.println("3. Ensure JOGL libraries are available");
-            System.err.println("4. Try running with --help for usage information");
-            e.printStackTrace();
             System.exit(1);
         }
     }

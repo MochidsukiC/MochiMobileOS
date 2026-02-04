@@ -25,12 +25,10 @@ public class DefaultSpeakerSocket implements SpeakerSocket {
     @Override
     public void playAudio(byte[] audioData) {
         // TODO: Java標準のAudio APIを使用して音声を再生
-        System.out.println("DefaultSpeakerSocket: Playing audio with volume level " + volumeLevel);
     }
 
     @Override
     public void stopAudio() {
         // TODO: 音声再生を停止
-        System.out.println("DefaultSpeakerSocket: Stopping audio");
     }
 }

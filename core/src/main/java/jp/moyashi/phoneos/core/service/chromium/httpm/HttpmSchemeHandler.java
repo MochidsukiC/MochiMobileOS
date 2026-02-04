@@ -278,7 +278,6 @@ public class HttpmSchemeHandler extends CefResourceHandlerAdapter {
      * ログ出力（INFO）。
      */
     private void log(String message) {
-        System.out.println("[HttpmSchemeHandler] " + message);
         if (kernel.getLogger() != null) {
             kernel.getLogger().debug("HttpmSchemeHandler", message);
         }

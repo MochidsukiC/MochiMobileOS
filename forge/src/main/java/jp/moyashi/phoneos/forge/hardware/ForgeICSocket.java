@@ -28,7 +28,6 @@ public class ForgeICSocket implements ICSocket {
     @Override
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
-        System.out.println("ForgeICSocket: IC communication " + (enabled ? "enabled" : "disabled"));
     }
 
     @Override
@@ -50,7 +49,6 @@ public class ForgeICSocket implements ICSocket {
     public void onBlockScanned(BlockPos pos) {
         if (enabled) {
             pendingData = new ICData(pos.getX(), pos.getY(), pos.getZ());
-            System.out.println("ForgeICSocket: Block scanned at " + pos);
         }
     }
 
@@ -60,7 +58,6 @@ public class ForgeICSocket implements ICSocket {
     public void onEntityScanned(Entity entity) {
         if (enabled) {
             pendingData = new ICData(entity.getUUID().toString());
-            System.out.println("ForgeICSocket: Entity scanned: " + entity.getUUID());
         }
     }
 
@@ -70,7 +67,6 @@ public class ForgeICSocket implements ICSocket {
     public void onEntityScanned(UUID uuid) {
         if (enabled) {
             pendingData = new ICData(uuid.toString());
-            System.out.println("ForgeICSocket: Entity scanned: " + uuid);
         }
     }
 }

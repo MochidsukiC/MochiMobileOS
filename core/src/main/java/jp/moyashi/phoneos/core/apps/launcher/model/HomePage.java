@@ -98,7 +98,6 @@ public class HomePage {
             this.shortcuts = new ArrayList<>();
         }
         
-        System.out.println("HomePage: Created new home page with ID " + pageId);
     }
     
     /**
@@ -257,8 +256,6 @@ public class HomePage {
         shortcut.setGridPosition(gridX, gridY);
         shortcuts.add(shortcut);
         
-        System.out.println("HomePage: Added shortcut " + shortcut.getDisplayName() + 
-                          " to position (" + gridX + ", " + gridY + ") on page " + pageId);
         return true;
     }
     
@@ -327,8 +324,6 @@ public class HomePage {
         // Remove from list
         shortcuts.remove(shortcut);
         
-        System.out.println("HomePage: Removed shortcut " + shortcut.getDisplayName() + 
-                          " from page " + pageId);
         return true;
     }
     
@@ -377,8 +372,6 @@ public class HomePage {
         grid[newGridX][newGridY] = shortcut;
         shortcut.setGridPosition(newGridX, newGridY);
         
-        System.out.println("HomePage: Moved shortcut " + shortcut.getDisplayName() + 
-                          " from (" + oldX + ", " + oldY + ") to (" + newGridX + ", " + newGridY + ")");
         return true;
     }
     
@@ -408,8 +401,6 @@ public class HomePage {
         shortcut1.setGridPosition(x2, y2);
         shortcut2.setGridPosition(x1, y1);
         
-        System.out.println("HomePage: Swapped shortcuts " + shortcut1.getDisplayName() + 
-                          " and " + shortcut2.getDisplayName());
         return true;
     }
     
@@ -455,7 +446,6 @@ public class HomePage {
             addShortcut(shortcut);
         }
         
-        System.out.println("HomePage: Compacted page " + pageId + ", now has " + shortcuts.size() + " shortcuts");
     }
     
     /**
@@ -472,7 +462,6 @@ public class HomePage {
         // Clear shortcuts list
         shortcuts.clear();
         
-        System.out.println("HomePage: Cleared all shortcuts from page " + pageId);
     }
     
     /**
@@ -626,8 +615,6 @@ public class HomePage {
         dockShortcuts.add(shortcut);
         shortcut.setDockPosition(dockShortcuts.size() - 1);
 
-        System.out.println("HomePage: Added shortcut " + shortcut.getDisplayName() +
-                          " to dock position " + (dockShortcuts.size() - 1));
         return true;
     }
 
@@ -663,8 +650,6 @@ public class HomePage {
             dockShortcuts.get(i).setDockPosition(i);
         }
 
-        System.out.println("HomePage: Removed shortcut " + shortcut.getDisplayName() +
-                          " from dock");
         return true;
     }
 
@@ -695,8 +680,6 @@ public class HomePage {
             dockShortcuts.get(i).setDockPosition(i);
         }
 
-        System.out.println("HomePage: Moved dock shortcut " + shortcut.getDisplayName() +
-                          " from position " + oldPosition + " to " + newPosition);
         return true;
     }
 

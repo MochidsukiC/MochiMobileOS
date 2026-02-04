@@ -33,8 +33,6 @@ public class CoordinateTransform {
     public CoordinateTransform(float screenWidth, float screenHeight) {
         this.screenWidth = screenWidth;
         this.screenHeight = screenHeight;
-
-        System.out.println("CoordinateTransform: 統一座標変換システムを初期化 (" + screenWidth + "x" + screenHeight + ")");
     }
 
     /**

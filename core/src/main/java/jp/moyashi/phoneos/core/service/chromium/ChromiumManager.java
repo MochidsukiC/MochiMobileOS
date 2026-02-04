@@ -249,7 +249,6 @@ public class ChromiumManager {
      * ログ出力（INFO）。
      */
     private void log(String message) {
-        System.out.println("[ChromiumManager] " + message);
         if (kernel.getLogger() != null) {
             kernel.getLogger().info("ChromiumManager", message);
         }

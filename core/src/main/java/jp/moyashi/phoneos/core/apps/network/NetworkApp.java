@@ -15,7 +15,6 @@ public class NetworkApp implements IApplication {
 
     @Override
     public void onInitialize(Kernel kernel) {
-        System.out.println("[NetworkApp] Network app initialized");
     }
 
     @Override

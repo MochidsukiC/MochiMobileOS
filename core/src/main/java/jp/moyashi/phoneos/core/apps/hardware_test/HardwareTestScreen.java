@@ -28,7 +28,6 @@ public class HardwareTestScreen implements Screen {
 
     @Override
     public void setup(PGraphics g) {
-        System.out.println("HardwareTestScreen: Setup");
     }
 
     @Override
@@ -268,7 +267,6 @@ public class HardwareTestScreen implements Screen {
     public void keyPressed(PGraphics g, char key, int keyCode) {
         if (key == 'r' || key == 'R') {
             // リフレッシュ（再描画）
-            System.out.println("HardwareTestScreen: Refreshing test data");
         } else if (key == 'q' || key == 'Q') {
             // アプリを閉じる
             kernel.getScreenManager().popScreen();

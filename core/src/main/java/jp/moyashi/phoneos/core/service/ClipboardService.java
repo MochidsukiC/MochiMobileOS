@@ -35,7 +35,6 @@ public class ClipboardService {
         } else {
             // Headless環境ではシステムクリップボードは使用しない
             this.systemClipboard = null;
-            System.out.println("[ClipboardService] Running in headless mode, using internal clipboard");
         }
     }
 

@@ -69,32 +69,20 @@ public class MochiMobileOSMod {
      * Forgeによって自動的に呼び出されます。
      */
     public MochiMobileOSMod() {
-        System.out.println("[MochiMobileOSMod] ==================== CONSTRUCTOR START ====================");
-        System.out.println("[MochiMobileOSMod] Initializing MochiMobileOS Forge Integration");
-
         try {
             // 設定ファイルを登録
-            System.out.println("[MochiMobileOSMod] Registering config...");
             ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, MMOSConfig.SPEC);
-            System.out.println("[MochiMobileOSMod] Config registered successfully");
 
             // アイテム登録
-            System.out.println("[MochiMobileOSMod] Registering items...");
             ModItems.register(FMLJavaModLoadingContext.get().getModEventBus());
-            System.out.println("[MochiMobileOSMod] Items registered successfully");
 
             // イベントバスに登録
-            System.out.println("[MochiMobileOSMod] Adding event listeners...");
             FMLJavaModLoadingContext.get().getModEventBus().addListener(this::commonSetup);
             FMLJavaModLoadingContext.get().getModEventBus().addListener(this::processIMC);
-            System.out.println("[MochiMobileOSMod] Event listeners added successfully");
 
         } catch (Exception e) {
-            System.err.println("[MochiMobileOSMod] ERROR in constructor: " + e.getMessage());
             e.printStackTrace();
         }
-
-        System.out.println("[MochiMobileOSMod] ==================== CONSTRUCTOR END ====================");
     }
 
     /**
@@ -107,23 +95,16 @@ public class MochiMobileOSMod {
      */
     @SubscribeEvent
     public void commonSetup(FMLCommonSetupEvent event) {
-        System.out.println("[MochiMobileOSMod] Starting common setup...");
-
         // 初期化フェーズ1: 仮想ネットワークの初期化
         event.enqueueWork(() -> {
-            System.out.println("[MochiMobileOSMod] Registering virtual network packets...");
             jp.moyashi.phoneos.forge.network.NetworkHandler.register();
-            System.out.println("[MochiMobileOSMod] Virtual network packets registered");
 
             // サーバーデータパスを設定（サーバーアプリ用）
             Path serverDataPath = FMLPaths.GAMEDIR.get().resolve("mmos_server_data");
-            System.out.println("[MochiMobileOSMod] Setting server data path: " + serverDataPath);
             MMOSServer.setServerDataPath(serverDataPath);
 
             // サーバーモジュールの初期化（IPvMシステムサーバー登録 + サーバーアプリロード）
-            System.out.println("[MochiMobileOSMod] Initializing MMOS Server module...");
             MMOSServer.initialize();
-            System.out.println("[MochiMobileOSMod] MMOS Server module initialized");
         });
 
         // 初期化フェーズ2: ModAppRegistryの準備
@@ -136,8 +117,6 @@ public class MochiMobileOSMod {
         boolean kernelReady = checkKernelReadiness();
 
         if (kernelReady) {
-            System.out.println("[MochiMobileOSMod] Kernel (or equivalent) is ready");
-
             // 初期化フェーズ4: アイテム初期化
             ModItems.initialize();
 
@@ -147,10 +126,6 @@ public class MochiMobileOSMod {
             firePhoneAppRegistryEvent();
 
             initialized = true;
-            System.out.println("[MochiMobileOSMod] MochiMobileOS Forge integration initialized");
-            System.out.println("[MochiMobileOSMod] Waiting for IMC messages from other mods...");
-        } else {
-            System.out.println("[MochiMobileOSMod] Warning: Kernel not ready, deferring app registration");
         }
     }
 
@@ -167,7 +142,6 @@ public class MochiMobileOSMod {
     private boolean checkKernelReadiness() {
         // TODO: 将来的にはForge環境用のKernelAdapterまたはAppManagerServiceの存在をチェック
         // 現在は、MOD環境では常に「準備完了」として扱う
-        System.out.println("[MochiMobileOSMod] Checking kernel readiness for Forge environment");
         return true;
     }
 
@@ -181,8 +155,6 @@ public class MochiMobileOSMod {
      */
     @SubscribeEvent
     public void processIMC(InterModProcessEvent event) {
-        System.out.println("[MochiMobileOSMod] Processing InterModComms messages...");
-
         ModAppRegistry registry = ModAppRegistry.getInstance();
         final int[] registeredCount = {0};
 
@@ -196,8 +168,6 @@ public class MochiMobileOSMod {
                         IApplication app = (IApplication) payload;
                         registry.addAvailableApp(app);
                         registeredCount[0]++;
-                        System.out.println("[MochiMobileOSMod] IMC: Registered app from '" + msg.senderModId() +
-                            "': " + app.getName() + " (" + app.getApplicationId() + ")");
                     } else if (payload instanceof Supplier) {
                         // Supplier<IApplication> として処理
                         @SuppressWarnings("unchecked")
@@ -206,22 +176,12 @@ public class MochiMobileOSMod {
                         if (app != null) {
                             registry.addAvailableApp(app);
                             registeredCount[0]++;
-                            System.out.println("[MochiMobileOSMod] IMC: Registered app from '" + msg.senderModId() +
-                                "': " + app.getName() + " (" + app.getApplicationId() + ")");
                         }
-                    } else {
-                        System.err.println("[MochiMobileOSMod] IMC: Invalid payload type from '" + msg.senderModId() +
-                            "': expected IApplication or Supplier<IApplication>, got " +
-                            (payload != null ? payload.getClass().getName() : "null"));
                     }
                 } catch (Exception e) {
-                    System.err.println("[MochiMobileOSMod] IMC: Error processing message from '" + msg.senderModId() +
-                        "': " + e.getMessage());
                     e.printStackTrace();
                 }
             });
-
-        System.out.println("[MochiMobileOSMod] IMC processing complete: " + registeredCount[0] + " apps registered");
 
         // 登録されたアプリケーションを処理
         if (registeredCount[0] > 0) {
@@ -239,17 +199,10 @@ public class MochiMobileOSMod {
      */
     @Deprecated
     private void firePhoneAppRegistryEvent() {
-        System.out.println("[MochiMobileOSMod] [DEPRECATED] Firing PhoneAppRegistryEvent (use IMC instead)");
-
         PhoneAppRegistryEvent event = new PhoneAppRegistryEvent();
 
         // MODイベントバスに投稿（他のMODからの登録を受け付ける - 実際には動作しない）
         FMLJavaModLoadingContext.get().getModEventBus().post(event);
-
-        if (event.getRegisteredAppsCount() > 0) {
-            System.out.println("[MochiMobileOSMod] PhoneAppRegistryEvent: " +
-                              event.getRegisteredAppsCount() + " apps registered");
-        }
     }
 
     /**
@@ -258,18 +211,7 @@ public class MochiMobileOSMod {
      * ModAppRegistryに保持されているアプリケーションを取得し、ログ出力します。
      */
     private void processRegisteredApps() {
-        ModAppRegistry registry = ModAppRegistry.getInstance();
-        int appCount = registry.getAvailableAppsCount();
-
-        System.out.println("[MochiMobileOSMod] Total registered apps: " + appCount);
-
-        if (appCount > 0) {
-            System.out.println("[MochiMobileOSMod] Apps available for installation:");
-            registry.getAvailableApps().forEach(app -> {
-                System.out.println("  - " + app.getName() +
-                                 " (" + app.getApplicationId() + ") v" + app.getVersion());
-            });
-        }
+        // アプリケーションの登録処理は完了
     }
 
     /**

@@ -284,8 +284,6 @@ public class NetworkAdapter {
     private void log(String message) {
         if (kernel != null && kernel.getLogger() != null) {
             kernel.getLogger().info("NetworkAdapter", message);
-        } else {
-            System.out.println("[NetworkAdapter] " + message);
         }
     }
 

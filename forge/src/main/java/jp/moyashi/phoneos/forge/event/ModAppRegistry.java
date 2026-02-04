@@ -63,15 +63,11 @@ public class ModAppRegistry {
         // 重複チェック
         for (IApplication existingApp : availableApps) {
             if (existingApp.getApplicationId().equals(application.getApplicationId())) {
-                System.out.println("[ModAppRegistry] Warning: App with ID " +
-                                 application.getApplicationId() + " already registered, skipping");
                 return;
             }
         }
 
         availableApps.add(application);
-        System.out.println("[ModAppRegistry] Added available app: " +
-                          application.getName() + " (Total: " + availableApps.size() + ")");
     }
 
     /**
@@ -119,9 +115,7 @@ public class ModAppRegistry {
      * 主にテストやリセット目的で使用されます。
      */
     public void clearAvailableApps() {
-        int count = availableApps.size();
         availableApps.clear();
-        System.out.println("[ModAppRegistry] Cleared " + count + " available apps");
     }
 
     /**
@@ -140,7 +134,5 @@ public class ModAppRegistry {
      */
     public void markAsInitialized() {
         this.initialized = true;
-        System.out.println("[ModAppRegistry] Marked as initialized with " +
-                          availableApps.size() + " available apps");
     }
 }

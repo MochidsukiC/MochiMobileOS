@@ -53,26 +53,17 @@ public class SafeHomeScreen implements Screen {
         this.currentPageIndex = 0;
         this.isShowingAppLibrary = false;
         this.allApps = new ArrayList<>();
-        System.out.println("✅ SafeHomeScreen: アプリライブラリーサポート付きセーフホームスクリーンを作成");
     }
     
     @Override
     public void setup(PGraphics g) {
         try {
             isInitialized = true;
-            System.out.println("🚀 SafeHomeScreen: セーフ初期化を開始...");
 
             // ホームページの安全な初期化
             initializeHomePagesWithErrorHandling();
 
-            System.out.println("✅ SafeHomeScreen: セーフ初期化完了!");
-            System.out.println("    • Pages: " + homePages.size());
-            System.out.println("    • Current page shortcuts: " +
-                (homePages.isEmpty() ? 0 : homePages.get(0).getShortcutCount()));
-
         } catch (Exception e) {
-            System.err.println("❌ SafeHomeScreen setup error: " + e.getMessage());
-            e.printStackTrace();
             // Create empty fallback page
             homePages.clear();
             homePages.add(new HomePage("Emergency Page"));
@@ -92,46 +83,37 @@ public class SafeHomeScreen implements Screen {
     private void initializeHomePagesWithErrorHandling() {
         try {
             homePages.clear();
-            
+
             // Create first page
             HomePage firstPage = new HomePage("Home");
             homePages.add(firstPage);
-            
+
             // Safely load applications
             if (kernel != null && kernel.getAppLoader() != null) {
                 List<IApplication> apps = kernel.getAppLoader().getLoadedApps();
-                System.out.println("SafeHomeScreen: Found " + apps.size() + " applications");
-                
+
                 // Store all apps for app library page
                 allApps.clear();
                 allApps.addAll(apps);
-                
+
                 for (IApplication app : apps) {
                     try {
                         // Skip launcher app itself
                         if ("jp.moyashi.phoneos.core.apps.launcher".equals(app.getApplicationId())) {
                             continue;
                         }
-                        
+
                         // Try to add shortcut to first page
-                        boolean added = firstPage.addShortcut(app);
-                        if (added) {
-                            System.out.println("SafeHomeScreen: Added shortcut for " + app.getName());
-                        } else {
-                            System.out.println("SafeHomeScreen: Could not add shortcut for " + app.getName() + " (page may be full)");
-                        }
-                        
+                        firstPage.addShortcut(app);
+
                     } catch (Exception appError) {
-                        System.err.println("SafeHomeScreen: Error adding app " + app.getName() + ": " + appError.getMessage());
+                        // Ignore app loading errors
                     }
                 }
-            } else {
-                System.out.println("SafeHomeScreen: No apps available (kernel or appLoader is null)");
             }
-            
+
         } catch (Exception e) {
-            System.err.println("❌ SafeHomeScreen: Critical error in initializeHomePagesWithErrorHandling: " + e.getMessage());
-            e.printStackTrace();
+            // Critical error - ignore silently
         }
     }
     
@@ -185,9 +167,6 @@ public class SafeHomeScreen implements Screen {
             drawPageIndicators(g);
 
         } catch (Exception e) {
-            System.err.println("❌ SafeHomeScreen draw error: " + e.getMessage());
-            e.printStackTrace();
-
             // Emergency fallback drawing
             g.background(100, 50, 50); // Red background to indicate error
             g.fill(255);
@@ -252,19 +231,17 @@ public class SafeHomeScreen implements Screen {
                     g.text(name, x + ICON_SIZE/2, y + ICON_SIZE + 3);
 
                 } catch (Exception shortcutError) {
-                    System.err.println("Error drawing shortcut " + shortcut.getDisplayName() + ": " + shortcutError.getMessage());
+                    // Ignore shortcut drawing errors
                 }
             }
 
         } catch (Exception e) {
-            System.err.println("Error in drawShortcuts: " + e.getMessage());
+            // Ignore drawing errors
         }
     }
     
     @Override
     public void mousePressed(PGraphics g, int mouseX, int mouseY) {
-        System.out.println("🖱️ SafeHomeScreen: Mouse pressed at (" + mouseX + ", " + mouseY + ")");
-
         try {
             // Start drag detection
             isDragging = false;
@@ -274,7 +251,7 @@ public class SafeHomeScreen implements Screen {
             dragCurrentY = mouseY;
 
         } catch (Exception e) {
-            System.err.println("Error in mousePressed: " + e.getMessage());
+            // Ignore mouse press errors
         }
     }
 
@@ -307,7 +284,7 @@ public class SafeHomeScreen implements Screen {
             }
 
         } catch (Exception e) {
-            System.err.println("Error in mouseDragged: " + e.getMessage());
+            // Ignore mouse drag errors
         }
     }
 
@@ -325,8 +302,6 @@ public class SafeHomeScreen implements Screen {
      */
     @Override
     public void mouseReleased(PGraphics g, int mouseX, int mouseY) {
-        System.out.println("🖱️ SafeHomeScreen: Mouse released at (" + mouseX + ", " + mouseY + ")");
-
         try {
             if (isDragging) {
                 // Handle swipe gesture
@@ -344,7 +319,7 @@ public class SafeHomeScreen implements Screen {
             dragCurrentY = 0;
 
         } catch (Exception e) {
-            System.err.println("Error in mouseReleased: " + e.getMessage());
+            // Ignore mouse release errors
         }
     }
 
@@ -376,22 +351,18 @@ public class SafeHomeScreen implements Screen {
                 kernel.getScreenManager().pushScreen(appScreen);
             }
         } catch (Exception e) {
-            System.err.println("Error launching application: " + e.getMessage());
+            // Ignore launch errors
         }
     }
 
     private void launchApplicationWithAnimation(IApplication app, float iconX, float iconY, float iconSize) {
-        System.out.println("SafeHomeScreen: Launching app with animation: " + app.getName());
-        System.out.println("SafeHomeScreen: Icon position: (" + iconX + ", " + iconY + "), size: " + iconSize);
-
         if (kernel != null && kernel.getScreenManager() != null) {
             try {
                 Screen appScreen = app.getEntryScreen(kernel);
                 if (appScreen == null) {
-                    System.err.println("SafeHomeScreen: getEntryScreen returned null for " + app.getName());
                     return;
                 }
-                
+
                 processing.core.PImage appIcon = app.getIcon(kernel);
 
                 if (appIcon == null && kernel != null) {
@@ -406,7 +377,7 @@ public class SafeHomeScreen implements Screen {
                         appIcon.updatePixels();
                     }
                 }
-                
+
                 if (appIcon != null) {
                     kernel.getScreenManager().pushScreenWithAnimation(appScreen, iconX, iconY, iconSize, appIcon);
                 } else {
@@ -414,8 +385,7 @@ public class SafeHomeScreen implements Screen {
                     kernel.getScreenManager().pushScreen(appScreen);
                 }
             } catch (Exception e) {
-                System.err.println("SafeHomeScreen: Failed to launch app with animation " + app.getName() + ": " + e.getMessage());
-                e.printStackTrace();
+                // Ignore animation launch errors
             }
         }
     }
@@ -423,7 +393,6 @@ public class SafeHomeScreen implements Screen {
     @Override
     public void cleanup(PGraphics g) {
         isInitialized = false;
-        System.out.println("🧹 SafeHomeScreen: Cleanup completed");
     }
 
     /**
@@ -469,7 +438,7 @@ public class SafeHomeScreen implements Screen {
             }
 
         } catch (Exception e) {
-            System.err.println("Error in drawAppLibraryPage: " + e.getMessage());
+            // Ignore app library page drawing errors
         }
     }
     
@@ -509,7 +478,7 @@ public class SafeHomeScreen implements Screen {
             g.text(name, x + ICON_SIZE/2, y + ICON_SIZE + 3);
 
         } catch (Exception e) {
-            System.err.println("Error drawing app library icon for " + app.getName() + ": " + e.getMessage());
+            // Ignore icon drawing errors
         }
     }
     
@@ -549,7 +518,7 @@ public class SafeHomeScreen implements Screen {
             }
 
         } catch (Exception e) {
-            System.err.println("Error drawing page indicators: " + e.getMessage());
+            // Ignore page indicator drawing errors
         }
     }
     
@@ -577,16 +546,15 @@ public class SafeHomeScreen implements Screen {
                 int x = startX + col * (ICON_SIZE + ICON_SPACING);
                 int y = startY + row * (ICON_SIZE + ICON_SPACING + 15);
                 
-                if (mouseX >= x && mouseX <= x + ICON_SIZE && 
+                if (mouseX >= x && mouseX <= x + ICON_SIZE &&
                     mouseY >= y && mouseY <= y + ICON_SIZE) {
-                    System.out.println("🚀 Launching from App Library: " + displayApps.get(i).getName());
                     launchApplication(displayApps.get(i));
                     return;
                 }
             }
             
         } catch (Exception e) {
-            System.err.println("Error in handleAppLibraryClick: " + e.getMessage());
+            // Ignore app library click errors
         }
     }
     
@@ -597,39 +565,31 @@ public class SafeHomeScreen implements Screen {
         try {
             int deltaX = dragCurrentX - dragStartX;
             int deltaY = Math.abs(dragCurrentY - dragStartY);
-            
+
             // Check if swipe is significant enough and mostly horizontal
             if (Math.abs(deltaX) >= SWIPE_THRESHOLD && deltaY < SWIPE_VERTICAL_THRESHOLD) {
-                System.out.println("🌊 Swipe detected: deltaX=" + deltaX + ", deltaY=" + deltaY);
-                
                 if (deltaX > 0) {
                     // Swiped right - go to previous page or exit app library
                     if (isShowingAppLibrary) {
                         isShowingAppLibrary = false;
-                        System.out.println("📄 Swiped right: Returning to home pages");
                     } else if (currentPageIndex > 0) {
                         currentPageIndex--;
-                        System.out.println("📄 Swiped right: Switched to page " + (currentPageIndex + 1));
                     }
                 } else {
                     // Swiped left - go to next page or app library
                     if (!isShowingAppLibrary) {
                         if (currentPageIndex < homePages.size() - 1) {
                             currentPageIndex++;
-                            System.out.println("📄 Swiped left: Switched to page " + (currentPageIndex + 1));
                         } else {
                             // AppLibraryScreenに遷移
                             openAppLibrary();
-                            System.out.println("📚 Swiped left: Navigating to App Library Screen");
                         }
                     }
                 }
-            } else {
-                System.out.println("🌊 Swipe not significant enough: deltaX=" + deltaX + ", deltaY=" + deltaY);
             }
-            
+
         } catch (Exception e) {
-            System.err.println("Error in handleSwipeGesture: " + e.getMessage());
+            // Ignore swipe gesture errors
         }
     }
     
@@ -652,10 +612,8 @@ public class SafeHomeScreen implements Screen {
                     int x = startX + shortcut.getGridX() * (ICON_SIZE + ICON_SPACING);
                     int y = startY + shortcut.getGridY() * (ICON_SIZE + ICON_SPACING + 15);
 
-                    if (mouseX >= x && mouseX <= x + ICON_SIZE && 
+                    if (mouseX >= x && mouseX <= x + ICON_SIZE &&
                         mouseY >= y && mouseY <= y + ICON_SIZE) {
-                        
-                        System.out.println("🚀 Clicking to launch: " + shortcut.getDisplayName());
                         float iconCenterX = x + ICON_SIZE / 2f;
                         float iconCenterY = y + ICON_SIZE / 2f;
                         launchApplicationWithAnimation(shortcut.getApplication(), iconCenterX, iconCenterY, ICON_SIZE);
@@ -664,7 +622,7 @@ public class SafeHomeScreen implements Screen {
                 }
             }
         } catch (Exception e) {
-            System.err.println("Error in handleAppClick: " + e.getMessage());
+            // Ignore app click errors
         }
     }
     
@@ -673,25 +631,19 @@ public class SafeHomeScreen implements Screen {
      */
     private void openAppLibrary() {
         try {
-            System.out.println("SafeHomeScreen: Opening AppLibraryScreen");
-            
             if (kernel != null && kernel.getScreenManager() != null) {
                 // AppLibraryScreenを作成
                 AppLibraryScreen appLibraryScreen = new AppLibraryScreen(kernel);
-                
+
                 // HomeScreenの参照を設定（ショートカット追加のため）
                 // SafeHomeScreenをHomeScreenとして使用できるように、適切な方法を検討する必要があります
                 // 今回は直接設定はしませんが、必要に応じて後で実装
-                
+
                 // AppLibraryScreenに遷移
                 kernel.getScreenManager().pushScreen(appLibraryScreen);
-                System.out.println("SafeHomeScreen: ✅ Successfully pushed AppLibraryScreen");
-            } else {
-                System.err.println("SafeHomeScreen: Cannot open AppLibrary - ScreenManager not available");
             }
         } catch (Exception e) {
-            System.err.println("SafeHomeScreen: Error opening AppLibrary: " + e.getMessage());
-            e.printStackTrace();
+            // Ignore app library open errors
         }
     }
 

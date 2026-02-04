@@ -25,8 +25,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public class ControlCenterManager implements GestureListener {
     
-    private static final boolean DEBUG_GESTURE_LOG = Boolean.getBoolean("mochi.debugGesture");
-    
     /** コントロールセンターアイテムのリスト（スレッドセーフ） */
     private final List<IControlCenterItem> items;
     
@@ -116,8 +114,6 @@ public class ControlCenterManager implements GestureListener {
         this.isVisible = false;
         this.animationProgress = 0.0f;
         this.targetAnimationProgress = 0.0f;
-        
-        System.out.println("ControlCenterManager: Control center service initialized");
     }
     
     /**
@@ -145,9 +141,6 @@ public class ControlCenterManager implements GestureListener {
             if (kernel != null && kernel.getLayerController() != null) {
                 kernel.getLayerController().activateControlCenterLayer();
             }
-
-            System.out.println("ControlCenterManager: Showing control center with " + items.size() + " items");
-            System.out.println("ControlCenterManager: Set priority to 15000 (highest)");
         }
     }
     
@@ -172,9 +165,6 @@ public class ControlCenterManager implements GestureListener {
             scrollVelocity = 0.0f;
             isDragScrolling = false;
             lastDragY = 0;
-
-            System.out.println("ControlCenterManager: Hiding control center");
-            System.out.println("ControlCenterManager: Set priority to 0 (low)");
         }
     }
     
@@ -197,20 +187,17 @@ public class ControlCenterManager implements GestureListener {
      */
     public boolean addItem(IControlCenterItem item) {
         if (item == null) {
-            System.err.println("ControlCenterManager: Cannot add null item");
             return false;
         }
-        
+
         // 重複IDチェック
         for (IControlCenterItem existingItem : items) {
             if (existingItem.getId().equals(item.getId())) {
-                System.err.println("ControlCenterManager: Item with ID '" + item.getId() + "' already exists");
                 return false;
             }
         }
-        
+
         items.add(item);
-        System.out.println("ControlCenterManager: Added item '" + item.getDisplayName() + "' (ID: " + item.getId() + ")");
         return true;
     }
     
@@ -221,13 +208,7 @@ public class ControlCenterManager implements GestureListener {
      * @return 削除に成功した場合true
      */
     public boolean removeItem(String itemId) {
-        return items.removeIf(item -> {
-            if (item.getId().equals(itemId)) {
-                System.out.println("ControlCenterManager: Removed item '" + item.getDisplayName() + "' (ID: " + itemId + ")");
-                return true;
-            }
-            return false;
-        });
+        return items.removeIf(item -> item.getId().equals(itemId));
     }
     
     /**
@@ -247,9 +228,7 @@ public class ControlCenterManager implements GestureListener {
      * すべてのアイテムを削除する。
      */
     public void clearItems() {
-        int count = items.size();
         items.clear();
-        System.out.println("ControlCenterManager: Cleared " + count + " items");
     }
     
     /**
@@ -302,7 +281,6 @@ public class ControlCenterManager implements GestureListener {
         CoordinateTransform.PanelCoordinates panelCoords = null;
         if (coordinateTransform != null) {
             panelCoords = coordinateTransform.calculateAnimatedPanel(CONTROL_CENTER_HEIGHT_RATIO, animationProgress);
-            System.out.println("🔧 ControlCenter: Using unified coordinate system - " + panelCoords.toString());
         }
 
         // パネルの寸法と位置を設定（統一座標系がない場合は従来の計算）
@@ -490,11 +468,6 @@ public class ControlCenterManager implements GestureListener {
         // スクロール慣性を更新
         updateScrollPhysics();
         
-        // デバッグ情報出力（最初の数フレームのみ）
-        if (isVisible && p.frameCount % 60 == 0) {
-            System.out.println("ControlCenter: Drawing - visible=" + isVisible + ", progress=" + animationProgress + ", items=" + items.size());
-        }
-        
         // 完全に非表示の場合は描画をスキップ
         if (animationProgress <= 0.01f) {
             return;
@@ -661,8 +634,6 @@ public class ControlCenterManager implements GestureListener {
                             
                             p.popStyle();
                         } catch (Exception e) {
-                            System.err.println("ControlCenterManager: Error drawing item '" + item.getId() + "': " + e.getMessage());
-                            
                             // エラー時のフォールバック描画（表示領域内のみ）
                             if (currentY >= startY && currentY + ITEM_HEIGHT <= startY + availableHeight) {
                                 drawErrorItem(p, itemX, currentY, itemWidth, ITEM_HEIGHT, item.getDisplayName());
@@ -782,12 +753,6 @@ public class ControlCenterManager implements GestureListener {
         return animationProgress;
     }
 
-    private void debugGesture(String message) {
-        if (DEBUG_GESTURE_LOG) {
-            System.out.println("ControlCenterManager: " + message);
-        }
-    }
-    
     /**
      * アイテム一覧のコピーを取得する。
      * 
@@ -822,7 +787,6 @@ public class ControlCenterManager implements GestureListener {
         // 優先度が変更された場合、ジェスチャーマネージャーにリスナーの再ソートを要求
         if (oldPriority != priority && gestureManager != null) {
             gestureManager.resortListeners();
-            System.out.println("ControlCenterManager: Priority changed from " + oldPriority + " to " + priority + ", triggered re-sort");
         }
     }
     
@@ -861,14 +825,12 @@ public class ControlCenterManager implements GestureListener {
                     // 重複チェックして追加
                     if (items.stream().noneMatch(i -> i.getId().equals(card.getId()))) {
                         items.add(card);
-                        System.out.println("ControlCenterManager: Card synced from registry: " + card.getId());
                     }
                 }
 
                 @Override
                 public void onCardRemoved(IControlCenterItem card) {
                     items.removeIf(i -> i.getId().equals(card.getId()));
-                    System.out.println("ControlCenterManager: Card removed via registry: " + card.getId());
                 }
 
                 @Override
@@ -876,8 +838,6 @@ public class ControlCenterManager implements GestureListener {
                     // 配置変更時は再描画が必要（自動的に次フレームで反映される）
                 }
             });
-
-            System.out.println("ControlCenterManager: CardRegistry connected");
         }
     }
 
@@ -904,10 +864,7 @@ public class ControlCenterManager implements GestureListener {
         if (!isVisible || animationProgress <= 0.1f) {
             return false;
         }
-        
-        debugGesture("Processing gesture - " + event.getType() + " at (" +
-                event.getCurrentX() + ", " + event.getCurrentY() + ")");
-        
+
         switch (event.getType()) {
             case SWIPE_DOWN:
                 hide();
@@ -923,13 +880,11 @@ public class ControlCenterManager implements GestureListener {
                 if (item != null && item.isDraggable()) {
                     dragTargetItem = item;
                     item.onGesture(event);
-                    debugGesture("Started dragging item: " + item.getId());
                 } else {
                     // スクロール開始
                     isDragScrolling = true;
                     lastDragY = event.getCurrentY();
                     scrollVelocity = 0;
-                    debugGesture("Started scrolling panel");
                 }
                 return true;
                 
@@ -945,10 +900,8 @@ public class ControlCenterManager implements GestureListener {
                 if (dragTargetItem != null) {
                     dragTargetItem.onGesture(event);
                     dragTargetItem = null;
-                    debugGesture("Ended dragging item");
                 }
                 isDragScrolling = false;
-                debugGesture("Drag ended, resetting state");
                 return true;
                 
             case SWIPE_UP:
@@ -1091,15 +1044,11 @@ public class ControlCenterManager implements GestureListener {
             panelCoords = coordinateTransform.calculateAnimatedPanel(CONTROL_CENTER_HEIGHT_RATIO, animationProgress);
             panelHeight = panelCoords.panelHeight;
             panelY = panelCoords.panelY;
-            System.out.println("🔧 Click: Using unified coordinate system - " + panelCoords.toString());
         } else {
             // フォールバック：従来の計算
             panelHeight = screenHeight * CONTROL_CENTER_HEIGHT_RATIO;
             panelY = screenHeight - panelHeight * animationProgress;
-            System.out.println("⚠️ Click: Using fallback coordinate calculation");
         }
-
-        System.out.println("🖱️ ControlCenterManager: Click at (" + x + ", " + y + ") in panel area (panelY=" + panelY + ")");
 
         // 【重要】PGraphics版の描画ロジックに合わせた3列グリッドレイアウトでのクリック判定
         // draw(PGraphics g)の座標計算と完全に一致させる
@@ -1112,8 +1061,6 @@ public class ControlCenterManager implements GestureListener {
         int cols = 4; // 4カラム
         int cellWidth = (panelWidthInt - (PADDING * 2) - (GAP * (cols - 1))) / cols;
         int cellHeight = cellWidth; // 正方形
-
-        System.out.println("🔧 Grid layout: panelWidth=" + panelWidthInt + ", cols=" + cols + ", cellWidth=" + cellWidth + ", cellHeight=" + cellHeight);
 
         // グリッド占有状況を追跡（描画と同じロジック）
         boolean[][] gridOccupied = new boolean[20][cols];
@@ -1198,14 +1145,11 @@ public class ControlCenterManager implements GestureListener {
 
             // クリック判定
             if (x >= itemX && x <= itemX + itemW && y >= itemY && y <= itemY + itemH) {
-                System.out.println("ControlCenterManager: Grid item clicked - " + item.getDisplayName());
                 GestureEvent tapEvent = new GestureEvent(jp.moyashi.phoneos.core.input.GestureType.TAP, x, y, x, y, System.currentTimeMillis(), System.currentTimeMillis());
                 item.onGesture(tapEvent);
                 return;
             }
         }
-
-        System.out.println("ControlCenterManager: No grid item clicked at (" + x + "," + y + ")");
     }
     
     /**
@@ -1241,8 +1185,6 @@ public class ControlCenterManager implements GestureListener {
     @Override
     public boolean isInBounds(int x, int y) {
         // コントロールセンターが表示中の場合、画面全体をカバー
-        boolean inBounds = this.isVisible && animationProgress > 0.1f;
-        debugGesture("isInBounds(" + x + ", " + y + ") = " + inBounds + " (visible=" + isVisible + ", animProgress=" + animationProgress + ", priority=" + getPriority() + ")");
-        return inBounds;
+        return this.isVisible && animationProgress > 0.1f;
     }
 }

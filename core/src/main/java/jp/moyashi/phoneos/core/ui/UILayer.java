@@ -93,7 +93,6 @@ public class UILayer {
         if (newVisibility != isVisible) {
             isVisible = newVisibility;
             lastUpdateTime = System.currentTimeMillis();
-            System.out.println("UILayer '" + layerName + "' visibility changed to: " + isVisible);
         }
 
         // 表示中の場合のみ描画
@@ -120,7 +119,6 @@ public class UILayer {
         if (newVisibility != isVisible) {
             isVisible = newVisibility;
             lastUpdateTime = System.currentTimeMillis();
-            System.out.println("UILayer '" + layerName + "' visibility changed to: " + isVisible);
         }
 
         // 表示中の場合のみ描画
@@ -164,7 +162,6 @@ public class UILayer {
      */
     public void markForDeletion() {
         this.isActive = false;
-        System.out.println("UILayer '" + layerName + "' marked for deletion");
     }
     
     @Override

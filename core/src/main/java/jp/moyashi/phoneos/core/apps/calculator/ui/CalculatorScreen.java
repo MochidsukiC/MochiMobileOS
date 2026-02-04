@@ -47,7 +47,6 @@ public class CalculatorScreen implements Screen {
     }
 
     public void setup(PGraphics g) {
-        System.out.println("CalculatorScreen: Calculator initialized with GUI components");
 
         // ディスプレイラベル
         displayLabel = new Label(20, 20, 360, 80, display);
@@ -218,8 +217,6 @@ public class CalculatorScreen implements Screen {
     }
 
     private void handleButtonPress(String button) {
-        System.out.println("Calculator: Button pressed: " + button);
-
         switch (button) {
             case "C":
                 clear();
@@ -326,7 +323,6 @@ public class CalculatorScreen implements Screen {
     }
 
     private void goBack() {
-        System.out.println("CalculatorScreen: Going back");
         if (kernel != null && kernel.getScreenManager() != null) {
             kernel.getScreenManager().popScreen();
         }
@@ -341,7 +337,7 @@ public class CalculatorScreen implements Screen {
     }
 
     public void cleanup(PGraphics g) {
-        System.out.println("CalculatorScreen: Calculator screen cleaned up");
+        // Cleanup complete
     }
 
     public void mouseDragged(PGraphics g, int mouseX, int mouseY) {

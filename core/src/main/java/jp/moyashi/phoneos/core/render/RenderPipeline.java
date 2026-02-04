@@ -194,9 +194,7 @@ public class RenderPipeline {
             fpsStartTime = currentTime;
 
             // デバッグモードの場合はFPSを出力
-            if (kernel.isDebugMode()) {
-                System.out.println("RenderPipeline: FPS = " + String.format("%.1f", currentFps));
-            }
+            // (ログ出力は削除済み)
         }
 
         lastFrameTime = currentTime;
@@ -226,7 +224,6 @@ public class RenderPipeline {
             this.height = newHeight;
             this.pixelsCache = new int[newWidth * newHeight];
             this.pixelsCacheDirty = true;
-            System.out.println("RenderPipeline: Screen size updated to " + newWidth + "x" + newHeight);
         }
     }
 

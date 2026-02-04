@@ -64,7 +64,6 @@ public class AppSchemeManager {
         SchemeInfo info = new SchemeInfo(modId, schemeName, classLoader);
         registeredSchemes.put(schemeName, info);
 
-        System.out.println("[AppSchemeManager] Registered scheme: " + schemeName + " for modId: " + modId);
         return schemeName;
     }
 
@@ -252,12 +251,9 @@ public class AppSchemeManager {
             // パスを正規化
             String resourcePath = normalizeResourcePath(path);
 
-            System.out.println("[SchemeInfo:" + modId + "] Loading resource: " + resourcePath);
-
             // 1. 登録されたClassLoaderから試す
             InputStream stream = tryLoadResource(classLoader, resourcePath);
             if (stream != null) {
-                System.out.println("[SchemeInfo:" + modId + "] Found in registered ClassLoader");
                 return stream;
             }
 
@@ -266,7 +262,6 @@ public class AppSchemeManager {
             if (contextClassLoader != null && contextClassLoader != classLoader) {
                 stream = tryLoadResource(contextClassLoader, resourcePath);
                 if (stream != null) {
-                    System.out.println("[SchemeInfo:" + modId + "] Found in context ClassLoader");
                     return stream;
                 }
             }
@@ -274,11 +269,9 @@ public class AppSchemeManager {
             // 3. システムClassLoaderから試す
             stream = tryLoadResource(ClassLoader.getSystemClassLoader(), resourcePath);
             if (stream != null) {
-                System.out.println("[SchemeInfo:" + modId + "] Found in system ClassLoader");
                 return stream;
             }
 
-            System.err.println("[SchemeInfo:" + modId + "] Resource not found: " + resourcePath);
             return null;
         }
 

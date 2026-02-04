@@ -63,11 +63,8 @@ public class VFS {
             Files.createDirectories(rootPath);
             Files.createDirectories(systemPath);
 
-            System.out.println("VFS: 仮想ファイルシステムを初期化完了");
-            System.out.println("VFS: ルートパス: " + rootPath.toAbsolutePath());
 
         } catch (IOException e) {
-            System.err.println("VFS: ディレクトリ初期化エラー: " + e.getMessage());
             throw new RuntimeException("VFSの初期化に失敗しました", e);
         }
     }
@@ -91,15 +88,12 @@ public class VFS {
             // ファイルを作成（存在しない場合のみ）
             if (!Files.exists(filePath)) {
                 Files.createFile(filePath);
-                System.out.println("VFS: ファイル作成成功: " + path);
                 return true;
             } else {
-                System.out.println("VFS: ファイルは既に存在: " + path);
                 return false;
             }
-            
+
         } catch (IOException e) {
-            System.err.println("VFS: ファイル作成エラー [" + path + "]: " + e.getMessage());
             return false;
         }
     }
@@ -115,16 +109,13 @@ public class VFS {
             Path filePath = resolveVFSPath(path);
             
             if (!Files.exists(filePath)) {
-                System.out.println("VFS: ファイルが見つかりません: " + path);
                 return null;
             }
-            
+
             String content = Files.readString(filePath, StandardCharsets.UTF_8);
-            //System.out.println("VFS: ファイル読み込み成功: " + path + " (" + content.length() + "文字)");
             return content;
 
         } catch (IOException e) {
-            System.err.println("VFS: ファイル読み込みエラー [" + path + "]: " + e.getMessage());
             return null;
         }
     }
@@ -140,16 +131,13 @@ public class VFS {
             Path filePath = resolveVFSPath(path);
 
             if (!Files.exists(filePath)) {
-                System.out.println("VFS: ファイルが見つかりません: " + path);
                 return null;
             }
 
             byte[] data = Files.readAllBytes(filePath);
-            //System.out.println("VFS: バイナリファイル読み込み成功: " + path + " (" + data.length + "バイト)");
             return data;
 
         } catch (IOException e) {
-            System.err.println("VFS: バイナリファイル読み込みエラー [" + path + "]: " + e.getMessage());
             return null;
         }
     }
@@ -173,11 +161,9 @@ public class VFS {
 
             // ファイルに書き込み（既存ファイルを上書き）
             Files.write(filePath, data, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-            //System.out.println("VFS: バイナリファイル書き込み成功: " + path + " (" + data.length + "バイト)");
             return true;
 
         } catch (IOException e) {
-            System.err.println("VFS: バイナリファイル書き込みエラー [" + path + "]: " + e.getMessage());
             return false;
         }
     }
@@ -201,11 +187,9 @@ public class VFS {
             
             // ファイルに書き込み（既存ファイルを上書き）
             Files.writeString(filePath, data, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-            //System.out.println("VFS: ファイル書き込み成功: " + path + " (" + data.length() + "文字)");
             return true;
-            
+
         } catch (IOException e) {
-            System.err.println("VFS: ファイル書き込みエラー [" + path + "]: " + e.getMessage());
             return false;
         }
     }
@@ -234,7 +218,6 @@ public class VFS {
             return true;
 
         } catch (IOException e) {
-            System.err.println("VFS: ファイル追記エラー [" + path + "]: " + e.getMessage());
             return false;
         }
     }
@@ -250,16 +233,13 @@ public class VFS {
             Path filePath = resolveVFSPath(path);
             
             if (!Files.exists(filePath)) {
-                System.out.println("VFS: 削除対象のファイルが見つかりません: " + path);
                 return false;
             }
-            
+
             Files.delete(filePath);
-            System.out.println("VFS: ファイル削除成功: " + path);
             return true;
-            
+
         } catch (IOException e) {
-            System.err.println("VFS: ファイル削除エラー [" + path + "]: " + e.getMessage());
             return false;
         }
     }
@@ -340,10 +320,8 @@ public class VFS {
         try {
             Path dirPath = resolveVFSPath(path);
             Files.createDirectories(dirPath);
-            System.out.println("VFS: ディレクトリ作成成功: " + path);
             return true;
         } catch (IOException e) {
-            System.err.println("VFS: ディレクトリ作成エラー [" + path + "]: " + e.getMessage());
             return false;
         }
     }
@@ -359,23 +337,20 @@ public class VFS {
             Path dirPath = resolveVFSPath(directoryPath);
             
             if (!Files.exists(dirPath) || !Files.isDirectory(dirPath)) {
-                System.out.println("VFS: ディレクトリが存在しません: " + directoryPath);
                 return new ArrayList<>();
             }
-            
+
             try (Stream<Path> stream = Files.list(dirPath)) {
                 List<String> files = stream
                     .filter(Files::isRegularFile)
                     .map(Path::getFileName)
                     .map(Path::toString)
                     .collect(Collectors.toList());
-                
-                System.out.println("VFS: ディレクトリスキャン完了: " + directoryPath + " (" + files.size() + "ファイル)");
+
                 return files;
             }
-            
+
         } catch (IOException e) {
-            System.err.println("VFS: ディレクトリスキャンエラー [" + directoryPath + "]: " + e.getMessage());
             return new ArrayList<>();
         }
     }
@@ -392,10 +367,9 @@ public class VFS {
             Path dirPath = resolveVFSPath(directoryPath);
             
             if (!Files.exists(dirPath) || !Files.isDirectory(dirPath)) {
-                System.out.println("VFS: ディレクトリが存在しません: " + directoryPath);
                 return new ArrayList<>();
             }
-            
+
             try (Stream<Path> stream = Files.list(dirPath)) {
                 List<String> files = stream
                     .filter(Files::isRegularFile)
@@ -403,13 +377,11 @@ public class VFS {
                     .map(Path::toString)
                     .filter(name -> name.toLowerCase().endsWith(extension.toLowerCase()))
                     .collect(Collectors.toList());
-                
-                System.out.println("VFS: 拡張子フィルタースキャン完了: " + directoryPath + " (" + files.size() + "個の" + extension + "ファイル)");
+
                 return files;
             }
-            
+
         } catch (IOException e) {
-            System.err.println("VFS: 拡張子フィルタースキャンエラー [" + directoryPath + ", " + extension + "]: " + e.getMessage());
             return new ArrayList<>();
         }
     }
@@ -425,23 +397,20 @@ public class VFS {
             Path dirPath = resolveVFSPath(directoryPath);
             
             if (!Files.exists(dirPath) || !Files.isDirectory(dirPath)) {
-                System.out.println("VFS: ディレクトリが存在しません: " + directoryPath);
                 return new ArrayList<>();
             }
-            
+
             try (Stream<Path> stream = Files.list(dirPath)) {
                 List<String> directories = stream
                     .filter(Files::isDirectory)
                     .map(Path::getFileName)
                     .map(Path::toString)
                     .collect(Collectors.toList());
-                
-                System.out.println("VFS: サブディレクトリスキャン完了: " + directoryPath + " (" + directories.size() + "ディレクトリ)");
+
                 return directories;
             }
-            
+
         } catch (IOException e) {
-            System.err.println("VFS: サブディレクトリスキャンエラー [" + directoryPath + "]: " + e.getMessage());
             return new ArrayList<>();
         }
     }

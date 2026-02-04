@@ -131,20 +131,17 @@ public class ForgeBluetoothSocket implements BluetoothSocket {
             if (device.address.equals(address)) {
                 // 接続成功
                 connectedDevices.put(address, device);
-                System.out.println("ForgeBluetoothSocket: Connected to " + device.name);
                 return true;
             }
         }
 
-        System.out.println("ForgeBluetoothSocket: Device not found: " + address);
         return false;
     }
 
     @Override
     public void disconnect(String address) {
         if (connectedDevices.containsKey(address)) {
-            BluetoothDevice device = connectedDevices.remove(address);
-            System.out.println("ForgeBluetoothSocket: Disconnected from " + device.name);
+            connectedDevices.remove(address);
         }
     }
 }

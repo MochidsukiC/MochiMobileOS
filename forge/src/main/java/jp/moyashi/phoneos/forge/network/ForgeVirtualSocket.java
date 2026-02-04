@@ -328,16 +328,16 @@ public class ForgeVirtualSocket implements VirtualSocket {
     }
 
     /**
-     * ログ出力。
+     * ログ出力（無効化）。
      */
     private void log(String message) {
-        System.out.println("[ForgeVirtualSocket] " + message);
+        // ログ出力を無効化
     }
 
     /**
-     * エラーログ出力。
+     * エラーログ出力（無効化）。
      */
     private void logError(String message) {
-        System.err.println("[ForgeVirtualSocket] " + message);
+        // エラーログ出力を無効化
     }
 }

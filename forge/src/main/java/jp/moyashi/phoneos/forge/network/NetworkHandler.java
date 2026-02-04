@@ -39,8 +39,6 @@ public class NetworkHandler {
                 .decoder(VirtualNetworkPacket::decode)
                 .consumerMainThread(VirtualNetworkPacket::handle)
                 .add();
-
-        System.out.println("[NetworkHandler] Virtual network packets registered");
     }
 
     /**
@@ -51,7 +49,6 @@ public class NetworkHandler {
      */
     @Deprecated
     public static void sendToPlayer(VirtualPacket packet, UUID playerUUID) {
-        System.out.println("[NetworkHandler] sendToPlayer(UUID) called - this requires server lookup");
         // TODO: サーバーインスタンスからプレイヤーを検索
     }
 
@@ -62,7 +59,6 @@ public class NetworkHandler {
     public static void sendToAll(VirtualPacket packet) {
         VirtualNetworkPacket networkPacket = new VirtualNetworkPacket(packet);
         INSTANCE.send(PacketDistributor.ALL.noArg(), networkPacket);
-        System.out.println("[NetworkHandler] Broadcasting packet to all players");
     }
 
     /**
@@ -72,7 +68,6 @@ public class NetworkHandler {
     public static void sendToServer(VirtualPacket packet) {
         VirtualNetworkPacket networkPacket = new VirtualNetworkPacket(packet);
         INSTANCE.sendToServer(networkPacket);
-        System.out.println("[NetworkHandler] Sending packet to server");
     }
 
     /**
@@ -81,21 +76,14 @@ public class NetworkHandler {
      * @param ctx ネットワークコンテキスト
      */
     public static void handleReceivedPacket(VirtualPacket packet, NetworkEvent.Context ctx) {
-        System.out.println("[NetworkHandler] handleReceivedPacket called");
-        System.out.println("[NetworkHandler] Received packet: " + packet.getType() +
-                " from " + packet.getSource() + " to " + packet.getDestination());
-
         // サーバー側とクライアント側で処理を分ける
         ServerPlayer sender = ctx.getSender();
-        System.out.println("[NetworkHandler] Sender: " + (sender != null ? sender.getUUID() : "null (client side)"));
 
         if (sender != null) {
             // サーバー側での処理
-            System.out.println("[NetworkHandler] Routing to server-side handler");
             handleServerSide(packet, sender);
         } else {
             // クライアント側での処理
-            System.out.println("[NetworkHandler] Routing to client-side handler");
             handleClientSide(packet);
         }
     }
@@ -106,8 +94,6 @@ public class NetworkHandler {
      * @param sender 送信プレイヤー
      */
     private static void handleServerSide(VirtualPacket packet, ServerPlayer sender) {
-        System.out.println("[NetworkHandler] Server-side handling for packet from: " + sender.getUUID());
-
         IPvMAddress destination = packet.getDestination();
 
         // 宛先に応じて処理を分岐
@@ -117,27 +103,19 @@ public class NetworkHandler {
             sendToAll(packet);
         } else if (destination.isSystem()) {
             // システム宛て：MMOSServerで処理してレスポンスを送信元に返す
-            System.out.println("[NetworkHandler] Routing to MMOSServer for system address: " + destination);
-
             try {
                 // MMOSServerでHTTPリクエストを処理
                 VirtualPacket responsePacket = MMOSServer.handleHttpRequest(packet);
 
                 if (responsePacket != null) {
-                    System.out.println("[NetworkHandler] Got response from MMOSServer, sending to player");
                     // レスポンスを送信元プレイヤーに送信
                     sendToPlayer(responsePacket, sender);
-                } else {
-                    System.err.println("[NetworkHandler] MMOSServer returned null response");
                 }
             } catch (Exception e) {
-                System.err.println("[NetworkHandler] Error handling system packet: " + e.getMessage());
                 e.printStackTrace();
             }
         } else if (destination.isServer()) {
             // 外部Mod宛て：MMOSServerで処理（外部サーバーもServerモジュールで管理）
-            System.out.println("[NetworkHandler] Routing to MMOSServer for external server: " + destination);
-
             try {
                 VirtualPacket responsePacket = MMOSServer.handleHttpRequest(packet);
 
@@ -145,7 +123,6 @@ public class NetworkHandler {
                     sendToPlayer(responsePacket, sender);
                 }
             } catch (Exception e) {
-                System.err.println("[NetworkHandler] Error handling external server packet: " + e.getMessage());
                 e.printStackTrace();
             }
         }
@@ -158,12 +135,10 @@ public class NetworkHandler {
      */
     public static void sendToPlayer(VirtualPacket packet, ServerPlayer player) {
         if (player == null) {
-            System.err.println("[NetworkHandler] Cannot send to null player");
             return;
         }
         VirtualNetworkPacket networkPacket = new VirtualNetworkPacket(packet);
         INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), networkPacket);
-        System.out.println("[NetworkHandler] Sent packet to player: " + player.getUUID());
     }
 
     /**
@@ -171,8 +146,6 @@ public class NetworkHandler {
      * @param packet 受信パケット
      */
     private static void handleClientSide(VirtualPacket packet) {
-        System.out.println("[NetworkHandler] Client-side handling for packet: " + packet.getType());
-
         // ForgeVirtualSocketに通知（HTTPレスポンス処理用）
         ForgeNetworkInitializer.onPacketReceived(packet);
 
@@ -202,12 +175,8 @@ public class NetworkHandler {
                 } else if (destination.isServer()) {
                     // 外部Mod宛て：サーバーに送信
                     sendToServer(packet);
-                } else {
-                    System.err.println("[NetworkHandler] Unknown destination type: " + destination);
                 }
             });
-
-            System.out.println("[NetworkHandler] VirtualRouter external send handler configured");
         }
     }
 }

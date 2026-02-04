@@ -167,7 +167,7 @@ public class SettingsScreen implements Screen {
         "System version and information"
     };
     
-    private static final int ITEM_HEIGHT = 70;
+    private static final int ITEM_HEIGHT = 52;
     private static final int ITEM_PADDING = 15;
 
     //
@@ -188,8 +188,6 @@ public class SettingsScreen implements Screen {
     public SettingsScreen(Kernel kernel, SettingsApp settingsApp) {
         this.kernel = kernel;
         this.settingsApp = settingsApp;
-
-        System.out.println("SettingsScreen: Settings screen created");
 
         //  E E           E
         if (kernel != null && kernel.getThemeEngine() != null) {
@@ -224,7 +222,6 @@ public class SettingsScreen implements Screen {
      */
     public void setup(PGraphics g) {
         isInitialized = true;
-        System.out.println("SettingsScreen: Settings screen initialized");
     }
     
     /**
@@ -246,7 +243,7 @@ public class SettingsScreen implements Screen {
      * @param g The PGraphics instance to draw to
      */
     public void draw(PGraphics g) {
-        //  E E               
+        // テーマの更新を反映
         if (kernel != null && kernel.getThemeEngine() != null) {
             var theme = kernel.getThemeEngine();
             backgroundColor = theme.colorBackground();
@@ -255,56 +252,38 @@ public class SettingsScreen implements Screen {
             itemColor = theme.colorSurface();
         }
 
-        //      
+        // 背景描画
         g.background(backgroundColor);
 
-        //        
-        drawHeader(g);
+        // パネルが表示されているかチェック
+        boolean anyPanelOpen = showAppearancePanel || showBatteryPanel || showAboutSystemPanel || 
+                              showSoundVibrationPanel || showStoragePanel || showNotificationsPanel || 
+                              showControlCenterPanel || showDashboardPanel;
 
-        //    E     
-        drawSettingsItems(g);
-
-        //    E   E     
-        drawSystemInfo(g);
-
-        // Appearance
-        if (showAppearancePanel) {
-            drawAppearancePanelComponents(g);
-        }
-
-        // Battery パネル
-        if (showBatteryPanel) {
-            drawBatteryPanelComponents(g);
-        }
-
-        // About System パネル
-        if (showAboutSystemPanel) {
-            drawAboutSystemPanelComponents(g);
-        }
-
-        // Sound & Vibration パネル
-        if (showSoundVibrationPanel) {
-            drawSoundVibrationPanelComponents(g);
-        }
-
-        // Storage パネル
-        if (showStoragePanel) {
-            drawStoragePanelComponents(g);
-        }
-
-        // Notifications パネル
-        if (showNotificationsPanel) {
-            drawNotificationsPanelComponents(g);
-        }
-
-        // Control Center パネル
-        if (showControlCenterPanel) {
-            drawControlCenterPanelComponents(g);
-        }
-
-        // Dashboard パネル
-        if (showDashboardPanel) {
-            drawDashboardPanelComponents(g);
+        if (anyPanelOpen) {
+            // 個別のパネルを描画
+            if (showAppearancePanel) {
+                drawAppearancePanelComponents(g);
+            } else if (showBatteryPanel) {
+                drawBatteryPanelComponents(g);
+            } else if (showAboutSystemPanel) {
+                drawAboutSystemPanelComponents(g);
+            } else if (showSoundVibrationPanel) {
+                drawSoundVibrationPanelComponents(g);
+            } else if (showStoragePanel) {
+                drawStoragePanelComponents(g);
+            } else if (showNotificationsPanel) {
+                drawNotificationsPanelComponents(g);
+            } else if (showControlCenterPanel) {
+                drawControlCenterPanelComponents(g);
+            } else if (showDashboardPanel) {
+                drawDashboardPanelComponents(g);
+            }
+        } else {
+            // メイン設定リストを描画
+            drawHeader(g);
+            drawSettingsItems(g);
+            drawSystemInfo(g);
         }
     }
 
@@ -331,8 +310,6 @@ public class SettingsScreen implements Screen {
      * @param mouseY The y-coordinate of the mouse press
      */
     public void mousePressed(PGraphics g, int mouseX, int mouseY) {
-        System.out.println("SettingsScreen: Touch at (" + mouseX + ", " + mouseY + ")");
-
         //    E      E    E
         if (mouseX >= 10 && mouseX <= 50 && mouseY >= 10 && mouseY <= 50) {
             if (showAppearancePanel) {
@@ -370,11 +347,9 @@ public class SettingsScreen implements Screen {
 
         // Battery panel: delegate to components
         if (showBatteryPanel) {
-            System.out.println("SettingsScreen: Battery panel click at (" + mouseX + ", " + mouseY + ")");
             ensureBatteryComponents();
             if (batteryPanel != null) {
                 boolean handled = batteryPanel.onMousePressed(mouseX, mouseY);
-                System.out.println("SettingsScreen: Battery panel handled = " + handled);
                 if (handled) {
                     return;
                 }
@@ -507,7 +482,6 @@ public class SettingsScreen implements Screen {
      */
     public void cleanup(PGraphics g) {
         isInitialized = false;
-        System.out.println("SettingsScreen: Settings screen cleaned up");
     }
 
     /**
@@ -584,21 +558,16 @@ public class SettingsScreen implements Screen {
      * @param mouseY The y-coordinate of the mouse release
      */
     public void mouseReleased(PGraphics g, int mouseX, int mouseY) {
-        System.out.println("SettingsScreen.mouseReleased at (" + mouseX + ", " + mouseY + ")");
         if (showAppearancePanel && appearancePanel != null) {
-            System.out.println("  Forwarding to appearancePanel");
             appearancePanel.onMouseReleased(mouseX, mouseY);
         }
         if (showBatteryPanel && batteryPanel != null) {
-            System.out.println("  Forwarding to batteryPanel");
             batteryPanel.onMouseReleased(mouseX, mouseY);
         }
         if (showAboutSystemPanel && aboutSystemPanel != null) {
-            System.out.println("  Forwarding to aboutSystemPanel");
             aboutSystemPanel.onMouseReleased(mouseX, mouseY);
         }
         if (showSoundVibrationPanel && soundVibrationPanel != null) {
-            System.out.println("  Forwarding to soundVibrationPanel");
             soundVibrationPanel.onMouseReleased(mouseX, mouseY);
 
             // オーディオデバイスリストボタンへのmouseReleasedを転送
@@ -625,11 +594,9 @@ public class SettingsScreen implements Screen {
             }
         }
         if (showStoragePanel && storagePanel != null) {
-            System.out.println("  Forwarding to storagePanel");
             storagePanel.onMouseReleased(mouseX, mouseY);
         }
         if (showNotificationsPanel && notificationsPanel != null) {
-            System.out.println("  Forwarding to notificationsPanel");
             notificationsPanel.onMouseReleased(mouseX, mouseY);
         }
     }
@@ -684,7 +651,9 @@ public class SettingsScreen implements Screen {
             case 2: return "@";   // Apps
             case 3: return "#";   // Storage
             case 4: return "B";   // Battery
-            case 5: return "i";   // About
+            case 5: return "C";   // Control Center
+            case 6: return "D";   // Dashboard
+            case 7: return "i";   // About
             default: return ".";
         }
     }
@@ -715,9 +684,6 @@ public class SettingsScreen implements Screen {
      * @param itemIndex The clicked item index
      */
     private void handleSettingsItemClick(int itemIndex) {
-        String itemName = SETTING_ITEMS[itemIndex];
-        System.out.println("SettingsScreen: Clicked on " + itemName);
-
         //  E       E E    E
         switch (itemIndex) {
             case 0:
@@ -753,8 +719,6 @@ public class SettingsScreen implements Screen {
      * Goes back to the previous screen.
      */
     private void goBack() {
-        System.out.println("SettingsScreen: Going back");
-        
         if (kernel != null && kernel.getScreenManager() != null) {
             kernel.getScreenManager().popScreen();
         }
@@ -837,12 +801,12 @@ public class SettingsScreen implements Screen {
             g.fill(textColor);
             g.textAlign(g.LEFT, g.TOP);
             g.textSize(16);
-            g.text(SETTING_ITEMS[i], ITEM_PADDING + 55, itemY + 15);
+            g.text(SETTING_ITEMS[i], ITEM_PADDING + 55, itemY + 8);
 
             //
             { int c=textColor; g.fill((c>>16)&0xFF, (c>>8)&0xFF, c&0xFF, 150); }
             g.textSize(12);
-            g.text(SETTING_DESCRIPTIONS[i], ITEM_PADDING + 55, itemY + 35);
+            g.text(SETTING_DESCRIPTIONS[i], ITEM_PADDING + 55, itemY + 28);
 
             //
             g.fill(textColor, 100);
@@ -858,7 +822,8 @@ public class SettingsScreen implements Screen {
      * @param g The PGraphics instance for drawing
      */
     private void drawSystemInfo(PGraphics g) {
-        int infoY = 500;
+        int lastItemY = 80 + SETTING_ITEMS.length * ITEM_HEIGHT;
+        int infoY = lastItemY + 5;
 
         //
         g.fill(itemColor);
@@ -899,10 +864,13 @@ public class SettingsScreen implements Screen {
 
     //  :     E    E   Appearance  
     private void drawAppearancePanelComponents(PGraphics g) {
+        // 統一ヘッダーを描画
+        drawPanelHeader(g, "Appearance");
+
         int px = ITEM_PADDING;
         int py = 80;
         int pw = 400 - 2 * ITEM_PADDING;
-        int ph = 480;
+        int ph = 440;
 
         ensureAppearanceComponents();
         updateAppearanceButtonStyles();
@@ -911,13 +879,12 @@ public class SettingsScreen implements Screen {
             appearancePanel.draw(g);
         }
 
+        // ラベル描画（ヘッダータイトルは削除）
         if (kernel != null && kernel.getJapaneseFont() != null) g.textFont(kernel.getJapaneseFont());
         int tcol = (kernel != null && kernel.getThemeEngine() != null) ? kernel.getThemeEngine().colorOnSurface() : textColor;
         g.fill((tcol>>16)&0xFF, (tcol>>8)&0xFF, tcol&0xFF);
         g.textAlign(g.LEFT, g.TOP);
-        g.textSize(16);
-        g.text("Appearance", px + 16, py + 12);
-
+        
         // ボタン配置に同期したラベル配置
         int baseY = py + 48;              // Theme Mode 行
         int fam1Y = baseY + 32;           // Family 行1
@@ -935,6 +902,41 @@ public class SettingsScreen implements Screen {
         g.text("Text Size", px + 16, yt);
         g.text("Reduce Motion", px + 16, yr);
         g.text("Low Power Mode", px + 16, yl);
+
+        // Accent Color Presets
+        int presetY = yl + 42;
+        g.text("Accent Color", px + 16, presetY);
+
+        int presetStartX = px + 140; // Align with buttons
+        int presetStartY = presetY - 6;
+        int sw = 24, sh = 24; int gap = 8; int perRow = 6;
+        
+        // Hardcoded presets corresponding to handleAppearancePanelClick logic
+        int[] presetColors = {
+            0xFFE74C3C, 0xFFE91E63, 0xFF9B59B6, 0xFF673AB7, 0xFF3F51B5, 0xFF2196F3,
+            0xFF03A9F4, 0xFF00BCD4, 0xFF009688, 0xFF4CAF50, 0xFF8BC34A, 0xFFCDDC39
+        };
+
+        for (int i = 0; i < presetColors.length; i++) {
+            int r = i / perRow;
+            int c = i % perRow;
+            int cx = presetStartX + c * (sw + gap);
+            int cy = presetStartY + r * (sh + gap);
+            
+            g.fill(presetColors[i]);
+            g.stroke(itemColor); // border
+            // seed_color設定と比較してハイライト
+            int currentSeedColor = kernel != null && kernel.getSettingsManager() != null
+                ? kernel.getSettingsManager().getIntSetting("ui.theme.seed_color", 0xFF4A90E2)
+                : 0xFF4A90E2;
+            if (currentSeedColor == presetColors[i]) {
+                g.stroke(textColor);
+                g.strokeWeight(2);
+            } else {
+                g.strokeWeight(1);
+            }
+            g.ellipse(cx + sw/2, cy + sh/2, sw, sh);
+        }
     }
 
     private void ensureAppearanceComponents() {
@@ -943,7 +945,7 @@ public class SettingsScreen implements Screen {
         int px = ITEM_PADDING;
         int py = 80;
         int pw = 400 - 2 * ITEM_PADDING;
-        int ph = 480;
+        int ph = 440;
 
         appearancePanel = new jp.moyashi.phoneos.core.ui.components.Panel(px, py, pw, ph);
 
@@ -1108,7 +1110,7 @@ public class SettingsScreen implements Screen {
         int px = ITEM_PADDING;
         int py = 80;
         int pw = 400 - 2 * ITEM_PADDING;
-        int ph = 480;
+        int ph = 440;
         if (mouseX < px || mouseX > px + pw || mouseY < py || mouseY > py + ph) return;
 
         var sm = kernel != null ? kernel.getSettingsManager() : null;
@@ -1169,12 +1171,48 @@ public class SettingsScreen implements Screen {
             return;
         }
 
-        //        E      E    E
-        int presetStartX = px + 16;
-        int presetStartY = py + 294;
+        // Accent Color Presets - 描画位置と一致させた座標計算
+        // 描画側: baseY = py + 48, fam1Y = baseY + 32, fam2Y = fam1Y + 32, fam3Y = fam2Y + 32
+        //         yc = fam3Y + 42, yt = yc + 42, yr = yt + 42, yl = yr + 42, presetY = yl + 42
+        int baseY = py + 48;
+        int fam1Y = baseY + 32;
+        int fam2Y = fam1Y + 32;
+        int fam3Y = fam2Y + 32;
+        int yc = fam3Y + 42;
+        int yt = yc + 42;
+        int yr = yt + 42;
+        int yl = yr + 42;
+        int presetY = yl + 42;
+
+        int presetStartX = px + 140; // ボタンと同じX位置（描画側と一致）
+        int presetStartY = presetY - 6;
         int sw = 24, sh = 24; int gap = 8; int perRow = 6;
 
-        //        E      E    E         
+        int[] presetColors = {
+            0xFFE74C3C, 0xFFE91E63, 0xFF9B59B6, 0xFF673AB7, 0xFF3F51B5, 0xFF2196F3,
+            0xFF03A9F4, 0xFF00BCD4, 0xFF009688, 0xFF4CAF50, 0xFF8BC34A, 0xFFCDDC39
+        };
+
+        for (int i = 0; i < presetColors.length; i++) {
+            int r = i / perRow;
+            int c = i % perRow;
+            int cx = presetStartX + c * (sw + gap);
+            int cy = presetStartY + r * (sh + gap);
+
+            // 円形のヒット判定（中心からの距離で判定）
+            int centerX = cx + sw / 2;
+            int centerY = cy + sh / 2;
+            int dx = mouseX - centerX;
+            int dy = mouseY - centerY;
+            int radius = sw / 2;
+
+            if (dx * dx + dy * dy <= radius * radius) {
+                // プリセットカラーを設定（seed_colorとして保存）
+                sm.setSetting("ui.theme.seed_color", presetColors[i]);
+                sm.saveSettings();
+                return;
+            }
+        }
     }
 
     private boolean hit(int mx, int my, int x, int y, int w, int h) {
@@ -1191,7 +1229,7 @@ public class SettingsScreen implements Screen {
         int px = ITEM_PADDING;
         int py = 80;
         int pw = 400 - 2 * ITEM_PADDING;
-        int ph = 480;
+        int ph = 440;
 
         batteryPanel = new jp.moyashi.phoneos.core.ui.components.Panel(px, py, pw, ph);
 
@@ -1348,6 +1386,9 @@ public class SettingsScreen implements Screen {
     }
 
     private void drawBatteryPanelComponents(PGraphics g) {
+        // 統一ヘッダーを描画
+        drawPanelHeader(g, "Battery");
+
         int px = ITEM_PADDING;
         int py = 80;
 
@@ -1384,17 +1425,13 @@ public class SettingsScreen implements Screen {
             batteryPanel.draw(g);
         }
 
-        // ヘッダー（Appearanceと同じ位置）
-        if (kernel != null && kernel.getJapaneseFont() != null) g.textFont(kernel.getJapaneseFont());
-        int tcol = (kernel != null && kernel.getThemeEngine() != null) ? kernel.getThemeEngine().colorOnSurface() : textColor;
-        g.fill((tcol>>16)&0xFF, (tcol>>8)&0xFF, tcol&0xFF);
-        g.textAlign(g.LEFT, g.TOP);
-        g.textSize(16);
-        g.text("Battery", px + 16, py + 12);
+        // ヘッダーテキスト削除
 
         // セクションヘッダー
+        if (kernel != null && kernel.getJapaneseFont() != null) g.textFont(kernel.getJapaneseFont());
         g.textSize(14);
         g.fill(0xFF4A90E2);
+        g.textAlign(g.LEFT, g.TOP); // Ensure alignment
         g.text("Battery Level", px + 16, py + 48);
         g.text("Power Management", px + 16, py + 210);
         g.text("Threshold", px + 16, py + 330);
@@ -1410,32 +1447,32 @@ public class SettingsScreen implements Screen {
         int px = ITEM_PADDING;
         int py = 80;
         int pw = 400 - 2 * ITEM_PADDING;
-        int ph = 480;
+        int ph = 440;
 
         // パネルを作成
         aboutSystemPanel = new jp.moyashi.phoneos.core.ui.components.Panel(px, py, pw, ph);
 
-        int y = py + 60;
+        int y = py + 50;
 
         // システム情報セクション
         labelOSName = new jp.moyashi.phoneos.core.ui.components.Label(px + 16, y, "MochiMobileOS");
-        y += 30;
-
-        labelOSVersion = new jp.moyashi.phoneos.core.ui.components.Label(px + 16, y, "バージョン: 1.0.0");
         y += 25;
 
+        labelOSVersion = new jp.moyashi.phoneos.core.ui.components.Label(px + 16, y, "バージョン: 1.0.0");
+        y += 20;
+
         labelBuildNumber = new jp.moyashi.phoneos.core.ui.components.Label(px + 16, y, "ビルド: 2025.11.27");
-        y += 60;
+        y += 45;
 
         // Java環境セクション
         String javaVersion = System.getProperty("java.version", "不明");
         labelJavaVersion = new jp.moyashi.phoneos.core.ui.components.Label(px + 16, y, "Java: " + javaVersion);
-        y += 25;
+        y += 20;
 
         String jvmName = System.getProperty("java.vm.name", "不明");
         String jvmVersion = System.getProperty("java.vm.version", "不明");
         labelJVMVersion = new jp.moyashi.phoneos.core.ui.components.Label(px + 16, y, "JVM: " + jvmName + " " + jvmVersion);
-        y += 60;
+        y += 45;
 
         // メモリ情報セクション
         Runtime runtime = Runtime.getRuntime();
@@ -1443,19 +1480,17 @@ public class SettingsScreen implements Screen {
         long freeMemory = runtime.freeMemory() / 1024 / 1024; // MB
         long usedMemory = totalMemory - freeMemory;
         labelMemoryInfo = new jp.moyashi.phoneos.core.ui.components.Label(px + 16, y, "メモリ: " + usedMemory + " MB / " + totalMemory + " MB");
-        y += 60;
+        y += 45;
 
         // 法的情報ボタン
-        btnOpenSourceLicenses = new jp.moyashi.phoneos.core.ui.components.Button(px + 16, y, pw - 32, 40, "オープンソースライセンス");
+        btnOpenSourceLicenses = new jp.moyashi.phoneos.core.ui.components.Button(px + 16, y, pw - 32, 36, "オープンソースライセンス");
         btnOpenSourceLicenses.setOnClickListener(() -> {
-            System.out.println("SettingsScreen: Open source licenses clicked");
             // 将来的にライセンス画面を表示
         });
-        y += 50;
+        y += 42;
 
-        btnLegalInfo = new jp.moyashi.phoneos.core.ui.components.Button(px + 16, y, pw - 32, 40, "法的情報");
+        btnLegalInfo = new jp.moyashi.phoneos.core.ui.components.Button(px + 16, y, pw - 32, 36, "法的情報");
         btnLegalInfo.setOnClickListener(() -> {
-            System.out.println("SettingsScreen: Legal info clicked");
             // 将来的に法的情報画面を表示
         });
 
@@ -1474,6 +1509,9 @@ public class SettingsScreen implements Screen {
      * About Systemパネルのコンポーネントを描画する
      */
     private void drawAboutSystemPanelComponents(PGraphics g) {
+        // 統一ヘッダーを描画
+        drawPanelHeader(g, "About System");
+
         int px = ITEM_PADDING;
         int py = 80;
 
@@ -1483,31 +1521,19 @@ public class SettingsScreen implements Screen {
             aboutSystemPanel.draw(g);
         }
 
-        // ヘッダー（Appearanceと同じ位置）
-        if (kernel != null && kernel.getJapaneseFont() != null) g.textFont(kernel.getJapaneseFont());
-        int tcol = (kernel != null && kernel.getThemeEngine() != null) ? kernel.getThemeEngine().colorOnSurface() : textColor;
-        g.fill((tcol>>16)&0xFF, (tcol>>8)&0xFF, tcol&0xFF);
-        g.textAlign(g.LEFT, g.TOP);
-        g.textSize(16);
-        g.text("About System", px + 16, py + 12);
+        // ヘッダーテキスト削除
 
         // セクションヘッダー
+        if (kernel != null && kernel.getJapaneseFont() != null) g.textFont(kernel.getJapaneseFont());
         g.textSize(14);
         g.fill(0xFF4A90E2);
-        g.text("System Information", px + 16, py + 48);
-        g.text("Java Environment", px + 16, py + 133);
-        g.text("Memory", px + 16, py + 218);
-        g.text("Legal", px + 16, py + 298);
+        g.textAlign(g.LEFT, g.TOP);
+        g.text("System Information", px + 16, py + 38);
+        g.text("Java Environment", px + 16, py + 110);
+        g.text("Memory", px + 16, py + 182);
+        g.text("Legal", px + 16, py + 254);
 
-        // 全てのコンポーネントを描画
-        if (labelOSName != null) labelOSName.draw(g);
-        if (labelOSVersion != null) labelOSVersion.draw(g);
-        if (labelBuildNumber != null) labelBuildNumber.draw(g);
-        if (labelJavaVersion != null) labelJavaVersion.draw(g);
-        if (labelJVMVersion != null) labelJVMVersion.draw(g);
-        if (labelMemoryInfo != null) labelMemoryInfo.draw(g);
-        if (btnOpenSourceLicenses != null) btnOpenSourceLicenses.draw(g);
-        if (btnLegalInfo != null) btnLegalInfo.draw(g);
+        // 重複描画削除 (Panelが描画するため)
     }
 
     /**
@@ -1519,7 +1545,7 @@ public class SettingsScreen implements Screen {
         int px = ITEM_PADDING;
         int py = 80;
         int pw = 400 - 2 * ITEM_PADDING;
-        int ph = 480;
+        int ph = 440;
 
         // パネルを作成
         soundVibrationPanel = new jp.moyashi.phoneos.core.ui.components.Panel(px, py, pw, ph);
@@ -1583,7 +1609,7 @@ public class SettingsScreen implements Screen {
         // 着信音選択ボタン
         btnRingtone = new jp.moyashi.phoneos.core.ui.components.Button(px + 16, y, pw - 32, 40, "Ringtone (Coming Soon)");
         btnRingtone.setOnClickListener(() -> {
-            System.out.println("SettingsScreen: Ringtone selection clicked (coming soon)");
+            // TODO: 着信音選択機能を実装
         });
         y += 60;
 
@@ -1746,7 +1772,6 @@ public class SettingsScreen implements Screen {
             audioSocket.setSelectedMicrophone(deviceId);
             labelCurrentMicrophone.setText("Mic: " + getCurrentMicrophoneName());
             showMicrophoneList = false;
-            System.out.println("SettingsScreen: Selected microphone: " + deviceId);
         }
     }
 
@@ -1759,7 +1784,6 @@ public class SettingsScreen implements Screen {
             audioSocket.setSelectedSpeaker(deviceId);
             labelCurrentSpeaker.setText("Speaker: " + getCurrentSpeakerName());
             showSpeakerList = false;
-            System.out.println("SettingsScreen: Selected speaker: " + deviceId);
         }
     }
 
@@ -1767,6 +1791,9 @@ public class SettingsScreen implements Screen {
      * Sound & Vibrationパネルのコンポーネントを描画する
      */
     private void drawSoundVibrationPanelComponents(PGraphics g) {
+        // 統一ヘッダーを描画
+        drawPanelHeader(g, "Sound & Vibration");
+
         int px = ITEM_PADDING;
         int py = 80;
 
@@ -1776,35 +1803,18 @@ public class SettingsScreen implements Screen {
             soundVibrationPanel.draw(g);
         }
 
-        // ヘッダー（Appearanceと同じ位置）
-        if (kernel != null && kernel.getJapaneseFont() != null) g.textFont(kernel.getJapaneseFont());
-        int tcol = (kernel != null && kernel.getThemeEngine() != null) ? kernel.getThemeEngine().colorOnSurface() : textColor;
-        g.fill((tcol>>16)&0xFF, (tcol>>8)&0xFF, tcol&0xFF);
-        g.textAlign(g.LEFT, g.TOP);
-        g.textSize(16);
-        g.text("Sound & Vibration", px + 16, py + 12);
+        // ヘッダーテキスト削除
 
         // セクションヘッダー
+        if (kernel != null && kernel.getJapaneseFont() != null) g.textFont(kernel.getJapaneseFont());
         g.textSize(14);
         g.fill(0xFF4A90E2);
+        g.textAlign(g.LEFT, g.TOP);
         g.text("Volume", px + 16, py + 48);
         g.text("Sounds", px + 16, py + 113);
         g.text("Ringtone", px + 16, py + 253);
 
-        // 全てのコンポーネントを描画
-        if (sliderMasterVolume != null) sliderMasterVolume.draw(g);
-        if (switchNotificationSound != null) switchNotificationSound.draw(g);
-        if (switchTouchSound != null) switchTouchSound.draw(g);
-        if (switchVibration != null) switchVibration.draw(g);
-        if (btnRingtone != null) btnRingtone.draw(g);
-
-        // オーディオデバイス選択コンポーネントを描画
-        if (labelAudioDeviceSection != null) labelAudioDeviceSection.draw(g);
-        if (labelCurrentMicrophone != null) labelCurrentMicrophone.draw(g);
-        if (btnSelectMicrophone != null) btnSelectMicrophone.draw(g);
-        if (labelCurrentSpeaker != null) labelCurrentSpeaker.draw(g);
-        if (btnSelectSpeaker != null) btnSelectSpeaker.draw(g);
-        if (btnRefreshAudioDevices != null) btnRefreshAudioDevices.draw(g);
+        // 重複描画削除 (Panelが描画するため)
 
         // マイクリストを描画
         if (showMicrophoneList && btnSelectMicrophone != null) {
@@ -1860,7 +1870,7 @@ public class SettingsScreen implements Screen {
         int px = ITEM_PADDING;
         int py = 80;
         int pw = 400 - 2 * ITEM_PADDING;
-        int ph = 480;
+        int ph = 440;
 
         // パネルを作成
         storagePanel = new jp.moyashi.phoneos.core.ui.components.Panel(px, py, pw, ph);
@@ -1893,7 +1903,6 @@ public class SettingsScreen implements Screen {
         // キャッシュクリアボタン
         btnClearCache = new jp.moyashi.phoneos.core.ui.components.Button(px + 16, y, pw - 32, 40, "Clear Cache");
         btnClearCache.setOnClickListener(() -> {
-            System.out.println("SettingsScreen: Clear cache clicked");
             // TODO: キャッシュクリア処理を実装
             labelCacheSize.setText("Cache: 0 MB");
         });
@@ -1902,7 +1911,6 @@ public class SettingsScreen implements Screen {
         // すべてのデータ削除ボタン
         btnClearAllData = new jp.moyashi.phoneos.core.ui.components.Button(px + 16, y, pw - 32, 40, "Clear All Data");
         btnClearAllData.setOnClickListener(() -> {
-            System.out.println("SettingsScreen: Clear all data clicked");
             // TODO: すべてのデータ削除処理を実装（確認ダイアログが必要）
         });
 
@@ -1919,6 +1927,9 @@ public class SettingsScreen implements Screen {
      * Storageパネルのコンポーネントを描画する
      */
     private void drawStoragePanelComponents(PGraphics g) {
+        // 統一ヘッダーを描画
+        drawPanelHeader(g, "Storage");
+
         int px = ITEM_PADDING;
         int py = 80;
 
@@ -1928,28 +1939,18 @@ public class SettingsScreen implements Screen {
             storagePanel.draw(g);
         }
 
-        // ヘッダー（Appearanceと同じ位置）
-        if (kernel != null && kernel.getJapaneseFont() != null) g.textFont(kernel.getJapaneseFont());
-        int tcol = (kernel != null && kernel.getThemeEngine() != null) ? kernel.getThemeEngine().colorOnSurface() : textColor;
-        g.fill((tcol>>16)&0xFF, (tcol>>8)&0xFF, tcol&0xFF);
-        g.textAlign(g.LEFT, g.TOP);
-        g.textSize(16);
-        g.text("Storage", px + 16, py + 12);
+        // ヘッダーテキスト削除
 
         // セクションヘッダー
+        if (kernel != null && kernel.getJapaneseFont() != null) g.textFont(kernel.getJapaneseFont());
         g.textSize(14);
         g.fill(0xFF4A90E2);
+        g.textAlign(g.LEFT, g.TOP);
         g.text("Internal Storage", px + 16, py + 48);
         g.text("Data Usage", px + 16, py + 153);
         g.text("Storage Management", px + 16, py + 248);
 
-        // 全てのコンポーネントを描画
-        if (progressStorageUsage != null) progressStorageUsage.draw(g);
-        if (labelStorageUsage != null) labelStorageUsage.draw(g);
-        if (labelAppData != null) labelAppData.draw(g);
-        if (labelCacheSize != null) labelCacheSize.draw(g);
-        if (btnClearCache != null) btnClearCache.draw(g);
-        if (btnClearAllData != null) btnClearAllData.draw(g);
+        // 重複描画削除 (Panelが描画するため)
     }
 
     // =========================================================================
@@ -1965,7 +1966,7 @@ public class SettingsScreen implements Screen {
         int px = ITEM_PADDING;
         int py = 80;
         int pw = 400 - 2 * ITEM_PADDING;
-        int ph = 480;
+        int ph = 440;
 
         // パネルを作成
         notificationsPanel = new jp.moyashi.phoneos.core.ui.components.Panel(px, py, pw, ph);
@@ -1981,13 +1982,18 @@ public class SettingsScreen implements Screen {
             if (sm != null) {
                 sm.setSetting("audio.silent_mode", enabled);
                 sm.saveSettings();
-                System.out.println("SettingsScreen: Silent mode " + (enabled ? "enabled" : "disabled"));
 
                 // コントロールセンターのトグルも同期
                 syncControlCenterToggle("silent_mode", enabled);
             }
         });
-        y += 50;
+        y += 40; // Space for switch
+
+        // 説明ラベル1
+        var labelSilentModeDesc = new jp.moyashi.phoneos.core.ui.components.Label(px + 16, y, "通知音とチャット通知をオフにします");
+        labelSilentModeDesc.setTextSize(11);
+        labelSilentModeDesc.setTextColor(0xFFAAAAAA);
+        y += 30; // Space for label
 
         // チャット通知スイッチ（Forge環境でMinecraftチャットに通知を送信）
         switchChatNotification = new jp.moyashi.phoneos.core.ui.components.Switch(px + 16, y, "チャット通知");
@@ -1998,10 +2004,9 @@ public class SettingsScreen implements Screen {
             if (sm != null) {
                 sm.setSetting("notification.chat_enabled", enabled);
                 sm.saveSettings();
-                System.out.println("SettingsScreen: Chat notification " + (enabled ? "enabled" : "disabled"));
             }
         });
-        y += 70;
+        y += 50;
 
         // 現在の通知音を表示
         String currentSoundPath = kernel.getSettingsManager().getStringSetting("notification.sound_path", null);
@@ -2012,19 +2017,25 @@ public class SettingsScreen implements Screen {
         // 通知音選択ボタン
         btnNotificationSound = new jp.moyashi.phoneos.core.ui.components.Button(px + 16, y, pw - 32, 40, "通知音を選択...");
         btnNotificationSound.setOnClickListener(() -> {
-            System.out.println("SettingsScreen: Notification sound selection clicked");
             showNotificationSoundSelector();
         });
-        y += 60;
+        y += 50;
+
+        // 説明ラベル2
+        var labelSoundPathDesc = new jp.moyashi.phoneos.core.ui.components.Label(px + 16, y, "system/sounds にwav/mp3ファイルを配置");
+        labelSoundPathDesc.setTextSize(11);
+        labelSoundPathDesc.setTextColor(0xFFAAAAAA);
 
         // VFS内のsoundsディレクトリから利用可能な音声ファイルを取得
         loadAvailableSounds();
 
         // パネルに全てのコンポーネントを追加
         notificationsPanel.addChild(switchSilentMode);
+        notificationsPanel.addChild(labelSilentModeDesc);
         notificationsPanel.addChild(switchChatNotification);
         notificationsPanel.addChild(labelCurrentNotificationSound);
         notificationsPanel.addChild(btnNotificationSound);
+        notificationsPanel.addChild(labelSoundPathDesc);
     }
 
     /**
@@ -2041,7 +2052,6 @@ public class SettingsScreen implements Screen {
         // system/soundsディレクトリが存在するか確認
         if (!vfs.directoryExists("system/sounds")) {
             vfs.createDirectory("system/sounds");
-            System.out.println("SettingsScreen: Created system/sounds directory");
         }
 
         // 音声ファイルを検索
@@ -2054,8 +2064,6 @@ public class SettingsScreen implements Screen {
         for (String file : mp3Files) {
             availableSounds.add("system/sounds/" + file);
         }
-
-        System.out.println("SettingsScreen: Found " + (availableSounds.size() - 1) + " notification sounds");
     }
 
     /**
@@ -2095,8 +2103,8 @@ public class SettingsScreen implements Screen {
         }
 
         if (availableSounds.size() <= 1) {
-            System.out.println("SettingsScreen: No custom notification sounds available");
-            System.out.println("SettingsScreen: Place .wav or .mp3 files in system/sounds directory");
+            // カスタム通知音が利用できません
+            // system/sounds ディレクトリに .wav または .mp3 ファイルを配置してください
             return;
         }
 
@@ -2136,14 +2144,15 @@ public class SettingsScreen implements Screen {
         if (labelCurrentNotificationSound != null) {
             labelCurrentNotificationSound.setText("通知音: " + displayName);
         }
-
-        System.out.println("SettingsScreen: Notification sound set to: " + displayName);
     }
 
     /**
      * Notificationsパネルのコンポーネントを描画する
      */
     private void drawNotificationsPanelComponents(PGraphics g) {
+        // 統一ヘッダーを描画
+        drawPanelHeader(g, "Notifications");
+
         int px = ITEM_PADDING;
         int py = 80;
 
@@ -2169,29 +2178,17 @@ public class SettingsScreen implements Screen {
             notificationsPanel.draw(g);
         }
 
-        // ヘッダー
-        if (kernel != null && kernel.getJapaneseFont() != null) g.textFont(kernel.getJapaneseFont());
-        int tcol = (kernel != null && kernel.getThemeEngine() != null) ? kernel.getThemeEngine().colorOnSurface() : textColor;
-        g.fill((tcol>>16)&0xFF, (tcol>>8)&0xFF, tcol&0xFF);
-        g.textAlign(g.LEFT, g.TOP);
-        g.textSize(16);
-        g.text("Notifications", px + 16, py + 12);
+        // ヘッダーテキスト削除
 
         // セクションヘッダー
+        if (kernel != null && kernel.getJapaneseFont() != null) g.textFont(kernel.getJapaneseFont());
         g.textSize(14);
         g.fill(0xFF4A90E2);
+        g.textAlign(g.LEFT, g.TOP);
         g.text("通知モード", px + 16, py + 48);
         g.text("通知音", px + 16, py + 168);
 
-        // 説明テキスト
-        g.textSize(12);
-        // colorOnSurface()を薄くして使用
-        int baseColor = (kernel != null && kernel.getThemeEngine() != null)
-            ? kernel.getThemeEngine().colorOnSurface()
-            : 0xFFFFFFFF;
-        g.fill((baseColor >> 16) & 0xFF, (baseColor >> 8) & 0xFF, baseColor & 0xFF, 150);
-        g.text("サイレントモード: 通知音とチャット通知をオフにします", px + 16, py + 108);
-        g.text("system/sounds にwav/mp3ファイルを配置して選択できます", px + 16, py + 268);
+        // 説明テキスト削除 (Label化済み)
     }
 
     // ==================== Control Center Panel ====================
@@ -2204,7 +2201,6 @@ public class SettingsScreen implements Screen {
         if (kernel != null && kernel.getControlCenterCardRegistry() != null) {
             var registry = kernel.getControlCenterCardRegistry();
             ccPlacements.addAll(registry.getAllPlacements());
-            System.out.println("SettingsScreen: Loaded " + ccPlacements.size() + " card placements");
         }
     }
 
@@ -2491,7 +2487,6 @@ public class SettingsScreen implements Screen {
 
                     // カード選択
                     selectedCardId = cardId;
-                    System.out.println("SettingsScreen: Selected card: " + cardId);
                     return;
                 }
 
@@ -2578,7 +2573,6 @@ public class SettingsScreen implements Screen {
             if (localX >= cardX && localX < cardX + cardW &&
                     localY >= cardY && localY < cardY + cardH) {
                 selectedCardId = placement.getCardId();
-                System.out.println("SettingsScreen: Selected card from preview: " + selectedCardId);
                 return;
             }
         }
@@ -2591,7 +2585,6 @@ public class SettingsScreen implements Screen {
         for (var placement : ccPlacements) {
             if (placement.getCardId().equals(cardId)) {
                 placement.setVisible(!placement.isVisible());
-                System.out.println("SettingsScreen: Toggled visibility for " + cardId + " to " + placement.isVisible());
                 break;
             }
         }
@@ -2604,7 +2597,6 @@ public class SettingsScreen implements Screen {
         if (kernel == null || kernel.getControlCenterCardRegistry() == null) return;
         kernel.getControlCenterCardRegistry().moveCardUp(cardId);
         loadControlCenterPlacements();
-        System.out.println("SettingsScreen: Moved card up: " + cardId);
     }
 
     /**
@@ -2614,7 +2606,6 @@ public class SettingsScreen implements Screen {
         if (kernel == null || kernel.getControlCenterCardRegistry() == null) return;
         kernel.getControlCenterCardRegistry().moveCardDown(cardId);
         loadControlCenterPlacements();
-        System.out.println("SettingsScreen: Moved card down: " + cardId);
     }
 
     /**
@@ -2628,7 +2619,6 @@ public class SettingsScreen implements Screen {
             registry.setCardVisible(placement.getCardId(), placement.isVisible());
         }
         registry.savePlacements();
-        System.out.println("SettingsScreen: Saved control center placements");
     }
 
     /**
@@ -2699,7 +2689,6 @@ public class SettingsScreen implements Screen {
 
         var registry = kernel.getDashboardWidgetRegistry();
         availableWidgets.addAll(registry.getAllWidgets());
-        System.out.println("SettingsScreen: Loaded " + availableWidgets.size() + " dashboard widgets");
     }
 
     /**
@@ -2895,7 +2884,6 @@ public class SettingsScreen implements Screen {
                     var selectedWidget = compatibleWidgets.get(widgetIndex);
                     registry.assignWidgetToSlot(selectedDashboardSlot, selectedWidget.getId());
                     registry.saveAssignments();
-                    System.out.println("SettingsScreen: Assigned widget " + selectedWidget.getId() + " to slot " + selectedDashboardSlot.name());
                 }
             }
         }
@@ -2919,7 +2907,6 @@ public class SettingsScreen implements Screen {
             if (localX >= slotX && localX < slotX + slotW &&
                     localY >= slotY && localY < slotY + slotH) {
                 selectedDashboardSlot = slot;
-                System.out.println("SettingsScreen: Selected dashboard slot: " + slot.name());
                 return;
             }
         }

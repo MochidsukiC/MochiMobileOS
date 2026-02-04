@@ -83,12 +83,7 @@ public class IMEInputLayer {
         // 親コンポーネントに追加
         if (parentComponent instanceof Container) {
             ((Container) parentComponent).add(imeTextField);
-            System.out.println("IMEInputLayer: JTextField added to parent component");
-        } else {
-            System.err.println("IMEInputLayer: Parent component is not a Container, cannot add JTextField");
         }
-
-        System.out.println("IMEInputLayer: Initialized (Visible TextField + ActionListener)");
     }
 
     /**
@@ -118,7 +113,6 @@ public class IMEInputLayer {
         });
 
         isVisible = true;
-        System.out.println("IMEInputLayer: Shown at (" + x + ", " + y + ") size " + width + "x" + height);
     }
 
     /**
@@ -134,7 +128,6 @@ public class IMEInputLayer {
         imeTextField.setText("");
 
         isVisible = false;
-        System.out.println("IMEInputLayer: Hidden");
     }
 
     /**
@@ -157,8 +150,6 @@ public class IMEInputLayer {
             hide();
             return;
         }
-
-        System.out.println("IMEInputLayer: Text submitted: '" + text + "'");
 
         // 確定文字列を1文字ずつKernelに転送
         for (int i = 0; i < text.length(); i++) {
@@ -186,6 +177,5 @@ public class IMEInputLayer {
         if (imeTextField.getParent() != null) {
             imeTextField.getParent().remove(imeTextField);
         }
-        System.out.println("IMEInputLayer: Disposed");
     }
 }

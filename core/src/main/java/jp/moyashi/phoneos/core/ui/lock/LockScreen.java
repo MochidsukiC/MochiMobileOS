@@ -179,14 +179,10 @@ public class LockScreen implements Screen, GestureListener {
         this.patternInputVisible = false;
         this.patternSlideProgress = 0.0f;
         this.patternAnimating = false;
-        
-        System.out.println("LockScreen: ロック画面を初期化しました");
     }
 
     private void debugGesture(String message) {
-        if (DEBUG_GESTURE_LOG) {
-            System.out.println("LockScreen: " + message);
-        }
+        // Debug logging disabled
     }
     
     /**
@@ -195,8 +191,6 @@ public class LockScreen implements Screen, GestureListener {
      */
     @Override
     public void setup(PGraphics g) {
-        System.out.println("LockScreen: ロック画面のセットアップ中...");
-
         // パターングリッドの中心位置を計算（画面中央下部）
         gridCenterX = 400 / 2; // 画面幅の中央
         gridCenterY = 600 - 200; // 画面下部から200px上
@@ -206,8 +200,6 @@ public class LockScreen implements Screen, GestureListener {
 
         // ジェスチャーマネージャーにこのスクリーンを登録
         kernel.getGestureManager().addGestureListener(this);
-
-        System.out.println("LockScreen: セットアップ完了");
     }
 
     /**
@@ -953,7 +945,6 @@ public class LockScreen implements Screen, GestureListener {
     @Override
     public void mousePressed(PGraphics g, int mouseX, int mouseY) {
         // ジェスチャー処理に委譲
-        System.out.println("LockScreen: mousePressed - delegating to gesture system");
     }
 
     /**
@@ -976,9 +967,6 @@ public class LockScreen implements Screen, GestureListener {
      */
     @Override
     public boolean onGesture(GestureEvent event) {
-        System.out.println("LockScreen: Gesture received - " + event.getType() + 
-                         " at (" + event.getStartX() + "," + event.getStartY() + ")");
-        
         // パターン入力が表示されていない場合、システムジェスチャーと通知スクロールのみ許可
         if (!patternInputVisible && patternSlideProgress < 0.1f) {
             if (event.getType() == GestureType.SWIPE_UP && event.getStartY() >= 600 * 0.9f) {
@@ -999,18 +987,15 @@ public class LockScreen implements Screen, GestureListener {
                 inNotificationArea = isInNotificationArea(event.getStartX(), event.getStartY());
             }
             
-            if ((event.getType() == GestureType.SWIPE_UP || 
+            if ((event.getType() == GestureType.SWIPE_UP ||
                  event.getType() == GestureType.SWIPE_DOWN ||
                  event.getType() == GestureType.DRAG_START ||
                  event.getType() == GestureType.DRAG_MOVE ||
-                 event.getType() == GestureType.DRAG_END) 
+                 event.getType() == GestureType.DRAG_END)
                 && inNotificationArea) {
-                System.out.println("LockScreen: Allowing notification area gesture - " + event.getType() + 
-                                 " at (" + event.getCurrentX() + "," + event.getCurrentY() + ")");
                 // スクロール処理は後続のswitch文で処理されるため、ここではスキップ
             } else {
                 // その他のジェスチャーはブロック（パターン入力なし）
-                System.out.println("LockScreen: Blocking gesture in pattern-hidden mode - " + event.getType());
                 return true;
             }
         }
@@ -1042,38 +1027,24 @@ public class LockScreen implements Screen, GestureListener {
             case SWIPE_UP:
                 // 画面下部からのスワイプアップはコントロールセンター用に許可
                 if (event.getStartY() >= 600 * 0.9f) {
-                    System.out.println("LockScreen: SWIPE_UP from bottom (y=" + event.getStartY() + 
-                                     ") - delegating to control center");
                     return false; // イベントを他のリスナー（Kernel→コントロールセンター）に渡す
                 } else if (isInNotificationArea(event.getStartX(), event.getStartY()) && !patternInputVisible) {
                     // 通知エリア内でのスワイプアップは通知スクロール（下向きスクロール）
-                    System.out.println("LockScreen: SWIPE_UP in notification area - executing scroll");
                     handleNotificationScroll(event, false);
                     return true;
                 } else {
-                    boolean inNotificationArea = isInNotificationArea(event.getStartX(), event.getStartY());
-                    System.out.println("LockScreen: SWIPE_UP not from bottom (y=" + event.getStartY() + 
-                                     ") - inNotificationArea=" + inNotificationArea + 
-                                     ", patternInputVisible=" + patternInputVisible + " - blocked");
                     return true;
                 }
                 
             case SWIPE_DOWN:
                 // 画面上部からのスワイプダウンは通知センター用に許可
                 if (event.getStartY() <= 600 * 0.1f) {
-                    System.out.println("LockScreen: SWIPE_DOWN from top (y=" + event.getStartY() + 
-                                     ") - delegating to notification center");
                     return false; // イベントを他のリスナー（Kernel→通知センター）に渡す
                 } else if (isInNotificationArea(event.getStartX(), event.getStartY()) && !patternInputVisible) {
                     // 通知エリア内でのスワイプダウンは通知スクロール（上向きスクロール）
-                    System.out.println("LockScreen: SWIPE_DOWN in notification area - executing scroll");
                     handleNotificationScroll(event, true);
                     return true;
                 } else {
-                    boolean inNotificationArea = isInNotificationArea(event.getStartX(), event.getStartY());
-                    System.out.println("LockScreen: SWIPE_DOWN not from top (y=" + event.getStartY() + 
-                                     ") - inNotificationArea=" + inNotificationArea + 
-                                     ", patternInputVisible=" + patternInputVisible + " - blocked");
                     return true;
                 }
                 
@@ -1082,11 +1053,9 @@ public class LockScreen implements Screen, GestureListener {
             case TAP:
             case LONG_PRESS:
                 // ロック中はこれらのジェスチャーを無効化
-                System.out.println("LockScreen: " + event.getType() + " blocked during lock");
                 return true;
-                
+
             default:
-                System.out.println("LockScreen: Unknown gesture " + event.getType() + " blocked");
                 return true;
         }
     }
@@ -1101,34 +1070,27 @@ public class LockScreen implements Screen, GestureListener {
     private boolean handleDragStart(GestureEvent event) {
         int startX = event.getStartX();
         int startY = event.getStartY();
-        
-        System.out.println("LockScreen: ドラッグ開始試行 at (" + startX + ", " + startY + ")");
-        
+
         // 通知エリア内でのドラッグの場合は通知スクロール処理
         if (isInNotificationArea(startX, startY) && !patternInputVisible) {
-            System.out.println("LockScreen: 通知エリアドラッグ開始");
             isNotificationDragScrolling = true;
             lastNotificationDragY = startY;
             notificationScrollVelocity = 0;
             return true;
         }
-        
+
         // パターン入力エリアでのドラッグの場合はパターン処理
         isDragging = true;
         currentPattern.clear();
         dragPath.clear();
         dragPath.add(new int[]{startX, startY});
-        
+
         // 最初に触れたドットを追加
         int dotIndex = getDotIndexAt(startX, startY);
         if (dotIndex >= 0) {
             currentPattern.add(dotIndex);
-            System.out.println("LockScreen: 初期ドット選択 - " + dotIndex);
-        } else {
-            System.out.println("LockScreen: 初期ドット未検出 at (" + startX + ", " + startY + ")");
         }
-        
-        System.out.println("LockScreen: ドラッグ開始 - パターン: " + currentPattern);
+
         return true;
     }
     
@@ -1158,9 +1120,8 @@ public class LockScreen implements Screen, GestureListener {
         int dotIndex = getDotIndexAt(currentX, currentY);
         if (dotIndex >= 0 && !currentPattern.contains(dotIndex)) {
             currentPattern.add(dotIndex);
-            System.out.println("LockScreen: ドット追加 - 現在のパターン: " + currentPattern);
         }
-        
+
         return true;
     }
     
@@ -1174,7 +1135,6 @@ public class LockScreen implements Screen, GestureListener {
     private boolean handleDragEnd(GestureEvent event) {
         // 通知エリアでのドラッグ終了処理
         if (isNotificationDragScrolling) {
-            System.out.println("LockScreen: 通知エリアドラッグ終了 - 慣性スクロール開始");
             isNotificationDragScrolling = false;
             // 慣性スクロールは draw() メソッドで処理される
             return true;
@@ -1238,15 +1198,8 @@ public class LockScreen implements Screen, GestureListener {
         for (int i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
             int[] dotPos = getDotPosition(i);
             int distance = (int) Math.sqrt(Math.pow(x - dotPos[0], 2) + Math.pow(y - dotPos[1], 2));
-            
-            // デバッグ情報（最初の数回のみ）
-            if (System.currentTimeMillis() % 1000 < 100) {
-                System.out.println("LockScreen: Checking dot " + i + " at (" + dotPos[0] + "," + dotPos[1] + 
-                                 ") distance=" + distance + " from (" + x + "," + y + ")");
-            }
-            
+
             if (distance <= DOT_DETECTION_RADIUS) {
-                System.out.println("LockScreen: Dot " + i + " detected at distance " + distance);
                 return i;
             }
         }
@@ -1283,30 +1236,23 @@ public class LockScreen implements Screen, GestureListener {
      * アンロック処理とホーム画面への遷移。
      */
     private void unlockAndNavigateToHome() {
-        System.out.println("LockScreen: 認証成功 - アンロック処理実行中...");
-        
         // OSをアンロック状態にする
         lockManager.unlock();
-        
+
         // LauncherAppのホーム画面に遷移
         try {
-            jp.moyashi.phoneos.core.apps.launcher.LauncherApp launcherApp = 
+            jp.moyashi.phoneos.core.apps.launcher.LauncherApp launcherApp =
                 (jp.moyashi.phoneos.core.apps.launcher.LauncherApp) findLauncherApp();
-            
+
             if (launcherApp != null) {
                 jp.moyashi.phoneos.core.ui.Screen homeScreen = launcherApp.getEntryScreen(kernel);
-                
+
                 // 現在のロック画面をポップし、ホーム画面をプッシュ
                 kernel.getScreenManager().popScreen();
                 kernel.getScreenManager().pushScreen(homeScreen);
-                
-                System.out.println("LockScreen: ホーム画面への遷移完了");
-            } else {
-                System.err.println("LockScreen: LauncherAppが見つかりません");
             }
         } catch (Exception e) {
-            System.err.println("LockScreen: ホーム画面遷移エラー: " + e.getMessage());
-            e.printStackTrace();
+            // ホーム画面遷移エラー
         }
     }
     
@@ -1333,8 +1279,6 @@ public class LockScreen implements Screen, GestureListener {
      */
     @Override
     public void cleanup(PGraphics g) {
-        System.out.println("LockScreen: クリーンアップ実行中...");
-
         // レイヤー管理システムから登録解除
         unregisterFromLayerManager();
 
@@ -1348,8 +1292,6 @@ public class LockScreen implements Screen, GestureListener {
         dragPath.clear();
         isDragging = false;
         authFeedback = AuthFeedback.NONE;
-
-        System.out.println("LockScreen: クリーンアップ完了");
     }
 
     /**
@@ -1402,9 +1344,6 @@ public class LockScreen implements Screen, GestureListener {
             
             if (granted) {
                 layerRegistered = true;
-                System.out.println("LockScreen: レイヤー管理システムに登録完了");
-            } else {
-                System.err.println("LockScreen: レイヤー管理システムへの登録に失敗");
             }
         }
     }
@@ -1417,9 +1356,6 @@ public class LockScreen implements Screen, GestureListener {
             boolean removed = layerManager.removeLayer(LAYER_ID);
             if (removed) {
                 layerRegistered = false;
-                System.out.println("LockScreen: レイヤー管理システムから削除完了");
-            } else {
-                System.err.println("LockScreen: レイヤー管理システムからの削除に失敗");
             }
         }
     }
@@ -1478,9 +1414,8 @@ public class LockScreen implements Screen, GestureListener {
         patternInputVisible = true;
         patternAnimating = true;
         patternAnimationStartTime = System.currentTimeMillis();
-        System.out.println("LockScreen: Showing pattern input screen");
     }
-    
+
     /**
      * パターン入力画面を隠す。
      */
@@ -1488,7 +1423,6 @@ public class LockScreen implements Screen, GestureListener {
         patternInputVisible = false;
         patternAnimating = true;
         patternAnimationStartTime = System.currentTimeMillis();
-        System.out.println("LockScreen: Hiding pattern input screen");
     }
     
     /**
@@ -1838,7 +1772,6 @@ public class LockScreen implements Screen, GestureListener {
         if (isScrollingUp) {
             // スワイプダウン → 通知を下に移動（スクロールオフセットを減少）
             notificationScrollOffset = Math.max(0, notificationScrollOffset - scrollSpeed);
-            System.out.println("LockScreen: Notification scroll up, offset: " + notificationScrollOffset);
         } else {
             // スワイプアップ → 通知を上に移動（スクロールオフセットを増加）
             int notificationAreaHeight = 480 - 200; // 表示エリアの高さ
@@ -1847,9 +1780,8 @@ public class LockScreen implements Screen, GestureListener {
             int totalItemHeight = notificationHeight + spacing;
             int totalContentHeight = allNotifications.size() * totalItemHeight;
             int maxScrollOffset = Math.max(0, totalContentHeight - notificationAreaHeight);
-            
+
             notificationScrollOffset = Math.min(maxScrollOffset, notificationScrollOffset + scrollSpeed);
-            System.out.println("LockScreen: Notification scroll down, offset: " + notificationScrollOffset + ", max: " + maxScrollOffset);
         }
         
         isScrollingNotifications = true;
@@ -1885,10 +1817,6 @@ public class LockScreen implements Screen, GestureListener {
         
         notificationScrollVelocity = -deltaY * NOTIFICATION_SCROLL_SENSITIVITY;
         lastNotificationDragY = (float)event.getCurrentY();
-        
-        System.out.println("LockScreen: Smooth scroll - deltaY: " + deltaY + 
-                          ", offset: " + String.format("%.2f", notificationScrollOffset) + 
-                          ", velocity: " + String.format("%.2f", notificationScrollVelocity));
     }
     
     /**
@@ -1936,15 +1864,11 @@ public class LockScreen implements Screen, GestureListener {
      */
     @Override
     public void keyPressed(PGraphics g, char key, int keyCode) {
-        System.out.println("LockScreen: keyPressed - key: '" + key + "', keyCode: " + keyCode);
-
         // スペースキーでパターン入力画面を展開/閉じる
         if (key == ' ' || keyCode == 32) {
             if (!patternInputVisible) {
-                System.out.println("LockScreen: スペースキーが押されました - パターン入力画面を展開");
                 showPatternInput();
             } else {
-                System.out.println("LockScreen: スペースキーが押されました - パターン入力画面を閉じる");
                 hidePatternInput();
             }
             return;
@@ -1952,15 +1876,11 @@ public class LockScreen implements Screen, GestureListener {
 
         // ESCキーでパターン入力画面を閉じる
         if (keyCode == 27 && patternInputVisible) { // ESC key
-            System.out.println("LockScreen: ESCキーが押されました - パターン入力画面を閉じる");
             hidePatternInput();
             return;
         }
 
         // パターン入力画面が表示されていない場合、他のキー入力は無視
-        if (!patternInputVisible) {
-            System.out.println("LockScreen: パターン入力画面が非表示のため、キー入力を無視");
-        }
     }
 
     /**

@@ -31,7 +31,6 @@ public class IntentResolver {
         // 新しいアクティビティを追加
         activities.add(activityInfo);
 
-        System.out.println("IntentResolver: Registered activity: " + activityInfo);
     }
 
     /**
@@ -42,7 +41,6 @@ public class IntentResolver {
     public void unregisterActivity(String appId) {
         boolean removed = activities.removeIf(info -> info.getAppId().equals(appId));
         if (removed) {
-            System.out.println("IntentResolver: Unregistered activity: " + appId);
         }
     }
 
@@ -90,13 +88,11 @@ public class IntentResolver {
         List<ActivityInfo> matchingActivities = findMatchingActivities(intent);
 
         if (matchingActivities.isEmpty()) {
-            System.out.println("IntentResolver: No matching activity found for " + intent);
             return null;
         }
 
         // 最も優先度の高いアクティビティを返す
         ActivityInfo bestMatch = matchingActivities.get(0);
-        System.out.println("IntentResolver: Resolved intent " + intent + " to " + bestMatch.getAppId());
 
         return bestMatch;
     }

@@ -32,7 +32,6 @@ public class SettingsApp implements IApplication {
      * 新しい設定アプリケーションインスタンスを作成する。
      */
     public SettingsApp() {
-        System.out.println("SettingsApp: Settings application created");
     }
     
     /**
@@ -164,7 +163,6 @@ public class SettingsApp implements IApplication {
      */
     @Override
     public Screen getEntryScreen(Kernel kernel) {
-        System.out.println("SettingsApp: Creating settings screen");
         return new SettingsScreen(kernel, this);
     }
     
@@ -177,8 +175,7 @@ public class SettingsApp implements IApplication {
     public void onInitialize(Kernel kernel) {
         if (!isInitialized) {
             isInitialized = true;
-            System.out.println("SettingsApp: Settings application initialized");
-            
+
             // コントロールセンター用テストトグルを作成・登録
             setupControlCenterItems(kernel);
             
@@ -201,7 +198,6 @@ public class SettingsApp implements IApplication {
                 "\u753b\u9762\u3092\u6697\u3044\u30c6\u30fc\u30de\u306b\u5207\u308a\u66ff\u3048\u307e\u3059",
                 false, // 初期状態: OFF
                 (isOn) -> {
-                    System.out.println("SettingsApp: Night vision " + (isOn ? "enabled" : "disabled"));
                     // TODO: 実際のナイトモード切り替え処理を実装
                 }
             );
@@ -213,7 +209,6 @@ public class SettingsApp implements IApplication {
                 "\u30ef\u30a4\u30e4\u30ec\u30b9\u63a5\u7d9a\u3092\u7ba1\u7406\u3057\u307e\u3059",
                 true, // 初期状態: ON
                 (isOn) -> {
-                    System.out.println("SettingsApp: Wi-Fi " + (isOn ? "connected" : "disconnected"));
                     // TODO: 実際のWi-Fi切り替え処理を実装
                 }
             );
@@ -225,7 +220,6 @@ public class SettingsApp implements IApplication {
                 "\u30c7\u30d0\u30a4\u30b9\u9593\u306e\u8fd1\u8ddd\u96e2\u901a\u4fe1\u3092\u7ba1\u7406\u3057\u307e\u3059",
                 false, // 初期状態: OFF
                 (isOn) -> {
-                    System.out.println("SettingsApp: Bluetooth " + (isOn ? "enabled" : "disabled"));
                     // TODO: 実際のBluetooth切り替え処理を実装
                 }
             );
@@ -237,9 +231,8 @@ public class SettingsApp implements IApplication {
                 "\u3059\u3079\u3066\u306e\u7121\u7dda\u901a\u4fe1\u3092\u30aa\u30d5\u306b\u3057\u307e\u3059",
                 false, // 初期状態: OFF
                 (isOn) -> {
-                    System.out.println("SettingsApp: Airplane mode " + (isOn ? "enabled" : "disabled"));
                     // TODO: 実際の機内モード切り替え処理を実装
-                    
+
                     // 機内モードONの場合、他の通信機能も自動的にOFFにする
                     if (isOn) {
                         wifiToggle.setOn(false);
@@ -254,15 +247,10 @@ public class SettingsApp implements IApplication {
                 kernel.getControlCenterManager().addItem(wifiToggle);
                 kernel.getControlCenterManager().addItem(bluetoothToggle);
                 kernel.getControlCenterManager().addItem(airplaneModeToggle);
-                
-                System.out.println("SettingsApp: Added 4 test toggles to control center");
-            } else {
-                System.err.println("SettingsApp: ControlCenterManager is not available");
             }
-            
+
         } catch (Exception e) {
-            System.err.println("SettingsApp: Error setting up control center items: " + e.getMessage());
-            e.printStackTrace();
+            // エラーは無視
         }
     }
     
@@ -276,20 +264,15 @@ public class SettingsApp implements IApplication {
             if (kernel.getNotificationManager() != null) {
                 // テスト通知を追加（NotificationManagerのコンストラクタで既に追加されているが、追加で設定アプリからも追加）
                 kernel.getNotificationManager().addNotification(
-                    "\u8a2d\u5b9a\u30a2\u30d7\u30ea", 
-                    "\u901a\u77e5\u30c6\u30b9\u30c8", 
-                    "\u8a2d\u5b9a\u30a2\u30d7\u30ea\u304b\u3089\u9001\u4fe1\u3055\u308c\u305f\u30c6\u30b9\u30c8\u901a\u77e5\u3067\u3059\u3002\u901a\u77e5\u30bb\u30f3\u30bf\u30fc\u304c\u6b63\u5e38\u306b\u52d5\u4f5c\u3057\u3066\u3044\u307e\u3059\u3002", 
+                    "\u8a2d\u5b9a\u30a2\u30d7\u30ea",
+                    "\u901a\u77e5\u30c6\u30b9\u30c8",
+                    "\u8a2d\u5b9a\u30a2\u30d7\u30ea\u304b\u3089\u9001\u4fe1\u3055\u308c\u305f\u30c6\u30b9\u30c8\u901a\u77e5\u3067\u3059\u3002\u901a\u77e5\u30bb\u30f3\u30bf\u30fc\u304c\u6b63\u5e38\u306b\u52d5\u4f5c\u3057\u3066\u3044\u307e\u3059\u3002",
                     1
                 );
-                
-                System.out.println("SettingsApp: Added test notification to notification center");
-            } else {
-                System.err.println("SettingsApp: NotificationManager is not available");
             }
-            
+
         } catch (Exception e) {
-            System.err.println("SettingsApp: Error setting up notification center tests: " + e.getMessage());
-            e.printStackTrace();
+            // エラーは無視
         }
     }
     
@@ -301,7 +284,6 @@ public class SettingsApp implements IApplication {
     public void onDestroy() {
         if (isInitialized) {
             isInitialized = false;
-            System.out.println("SettingsApp: Settings application destroyed");
         }
     }
     

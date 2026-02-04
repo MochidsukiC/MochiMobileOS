@@ -53,7 +53,6 @@ public class SettingsManager {
         // 既存レジストリの読み込み。存在すればマージする。
         loadFromStorage();
 
-        System.out.println("SettingsManager: 設定サービスを初期化完了");
     }
 
     /** デフォルト設定を登録。存在しないキーのみ採用する。 */
@@ -91,7 +90,6 @@ public class SettingsManager {
         settings.putIfAbsent("audio.vibration", true);
         settings.putIfAbsent("audio.ringtone", "default"); // 着信音ID
 
-        System.out.println("SettingsManager: Default settings loaded");
     }
 
     /** ストレージからJSONを読み出して設定に反映 */
@@ -131,7 +129,6 @@ public class SettingsManager {
                 System.err.println("SettingsManager: Error in listener for key '" + key + "': " + e.getMessage());
             }
         }
-        System.out.println("SettingsManager: Setting " + key + " = " + value);
     }
 
     /** 型安全な取得ユーティリティ */
