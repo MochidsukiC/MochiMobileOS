@@ -6,7 +6,8 @@
   "refmap": "mmos.refmap.json",
   "client": [
     "MMOSInstallMixin",
-    "MMOSInitMixin"
+    "MMOSInitMixin",
+    "MMOSChatUrlInterceptMixin"
   ],
   "injectors": {
     "defaultRequire": 1

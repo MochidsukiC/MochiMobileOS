@@ -538,6 +538,59 @@ public class ServiceManager {
     }
 
     /**
+     * アプリのプロセスを終了する。
+     * フォアグラウンドスクリーンとバックグラウンドサービススクリーンをクリーンアップし、
+     * IApplication.onDestroy()を呼び出してprocessesマップから削除する。
+     *
+     * ScreenManagerからの画面除去は呼び出し側の責任で行うこと。
+     *
+     * @param appId アプリID
+     * @return 終了に成功した場合true
+     */
+    public boolean terminateApp(String appId) {
+        ProcessInfo info = processes.remove(appId);
+        if (info == null) {
+            logWarn("terminateApp: process not found: " + appId);
+            return false;
+        }
+
+        logInfo("Terminating app: " + appId);
+
+        // フォアグラウンドスクリーンのクリーンアップ
+        Screen foregroundScreen = info.getForegroundScreen();
+        if (foregroundScreen != null) {
+            try {
+                foregroundScreen.cleanup((PGraphics) null);
+            } catch (Exception e) {
+                logError("Error during foreground screen cleanup of " + appId + ": " + e.getMessage());
+            }
+        }
+
+        // バックグラウンドサービススクリーンのクリーンアップ
+        Screen backgroundServiceScreen = info.getBackgroundServiceScreen();
+        if (backgroundServiceScreen != null) {
+            try {
+                backgroundServiceScreen.cleanup((PGraphics) null);
+            } catch (Exception e) {
+                logError("Error during background service screen cleanup of " + appId + ": " + e.getMessage());
+            }
+        }
+
+        // IApplication.onDestroy()
+        IApplication app = info.getApplication();
+        if (app != null) {
+            try {
+                app.onDestroy();
+            } catch (Exception e) {
+                logError("Error during onDestroy of " + appId + ": " + e.getMessage());
+            }
+        }
+
+        logInfo("App terminated: " + appId);
+        return true;
+    }
+
+    /**
      * ServiceConfigを取得する。
      *
      * @return ServiceConfig

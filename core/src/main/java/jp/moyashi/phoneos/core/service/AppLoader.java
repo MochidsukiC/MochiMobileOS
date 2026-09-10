@@ -97,6 +97,7 @@ public class AppLoader {
         }
 
         try {
+            LoggerContext.info("AppLoader", "Scanning apps directory...");
             // appsディレクトリが存在しない場合は作成
             if (!vfs.directoryExists("apps")) {
                 vfs.createDirectory("apps");
@@ -104,6 +105,9 @@ public class AppLoader {
 
             // JARファイルを検索
             List<String> jarFiles = vfs.listFilesByExtension("apps", ".jar");
+            if (!jarFiles.isEmpty()) {
+                LoggerContext.info("AppLoader", "Found " + jarFiles.size() + " app jar(s): " + jarFiles);
+            }
 
             if (jarFiles.isEmpty()) {
                 scanForClassFiles();
@@ -113,6 +117,7 @@ public class AppLoader {
                     try {
                         loadApplicationFromJar(jarFileName);
                     } catch (Exception e) {
+                        LoggerContext.error("AppLoader", "Failed to load app jar: " + jarFileName + " - " + e);
                         // Skip failed JAR files
                     }
                 }
@@ -121,6 +126,7 @@ public class AppLoader {
             hasScannedApps = true;
 
         } catch (Exception e) {
+            LoggerContext.error("AppLoader", "App scan failed: " + e);
             // Scanning failed
         }
     }
@@ -145,6 +151,7 @@ public class AppLoader {
                 }
             }
         } catch (Exception e) {
+            LoggerContext.error("AppLoader", "App scan failed: " + e);
             // Scanning failed
         }
     }
@@ -160,6 +167,7 @@ public class AppLoader {
             File jarFile = new File(jarPath);
 
             if (!jarFile.exists()) {
+                LoggerContext.warn("AppLoader", "Jar not found: " + jarPath);
                 return;
             }
 
@@ -189,18 +197,23 @@ public class AppLoader {
                             if (IApplication.class.isAssignableFrom(clazz) && !clazz.isInterface()) {
                                 try {
                                     IApplication app = (IApplication) clazz.getDeclaredConstructor().newInstance();
-                                    registerApplication(app);
+                                    if (registerApplication(app)) {
+                                        LoggerContext.info("AppLoader", "Registered app from jar: " + app.getApplicationId());
+                                    }
                                 } catch (Exception e) {
+                                    LoggerContext.error("AppLoader", "Failed to instantiate app class: " + className + " - " + e);
                                     // Failed to instantiate app class
                                 }
                             }
                         } catch (Exception e) {
+                            LoggerContext.warn("AppLoader", "Failed to load class from jar: " + className + " - " + e);
                             // Skip classes that can't be loaded (e.g., dependencies missing)
                         }
                     }
                 }
             }
         } catch (Exception e) {
+            LoggerContext.error("AppLoader", "Error loading JAR file: " + jarFileName + " - " + e);
             // Error loading JAR file
         }
     }

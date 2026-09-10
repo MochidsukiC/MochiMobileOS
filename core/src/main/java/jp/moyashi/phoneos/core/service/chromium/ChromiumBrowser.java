@@ -45,6 +45,13 @@ import java.util.concurrent.TimeUnit;
  * @version 1.0
  */
 public class ChromiumBrowser {
+    private static final String MEDIA_STOP_SCRIPT =
+        "(function(){" +
+        "var medias=document.querySelectorAll('video, audio');" +
+        "for(var i=0;i<medias.length;i++){" +
+        "try{medias[i].pause();medias[i].currentTime=0;}catch(e){}" +
+        "}" +
+        "})();";
 
     private final Kernel kernel;
     private final ChromiumProvider provider;
@@ -1433,6 +1440,13 @@ public class ChromiumBrowser {
         log("Disposing ChromiumBrowser");
 
         inputQueue.clear();
+
+        // Best-effort: stop any playing media to avoid orphaned audio after relog/shutdown.
+        try {
+            executeScript(MEDIA_STOP_SCRIPT);
+        } catch (Exception e) {
+            logError("Failed to stop media before dispose: " + e.getMessage());
+        }
 
         // 隠しJFrameを破棄
         if (hiddenFrame != null) {

@@ -99,6 +99,9 @@ public class Kernel implements GestureListener {
     
     /** ロック状態管理サービス */
     private LockManager lockManager;
+
+    /** ロック画面のシングルトンインスタンス */
+    private jp.moyashi.phoneos.core.ui.lock.LockScreen lockScreen;
     
     /** 動的レイヤー管理システム */
     private LayerManager layerManager;
@@ -213,6 +216,9 @@ public class Kernel implements GestureListener {
     /** 旧アーキテクチャ互換用のChromiumManager */
     private ChromiumManager chromiumManager;
 
+    /** テクスチャプロバイダー（mochitexture://スキーム用） */
+    private jp.moyashi.phoneos.core.service.chromium.texture.TextureProvider textureProvider;
+
     /** PGraphics描画バッファ（PGraphics統一アーキテクチャ） */
     private PGraphics graphics;
 
@@ -264,6 +270,18 @@ public class Kernel implements GestureListener {
     // シャットダウン中フラグ（レースコンディション防止）
     /** シャットダウン処理中かどうか */
     private volatile boolean isShuttingDown = false;
+
+    /** Kernelインスタンスの一意IDカウンター */
+    private static final java.util.concurrent.atomic.AtomicLong kernelIdCounter = new java.util.concurrent.atomic.AtomicLong(0);
+
+    /** 現在アクティブなKernelのID */
+    private static volatile long activeKernelId = -1;
+
+    /** このインスタンスのID */
+    private final long myKernelId = kernelIdCounter.incrementAndGet();
+
+    /** ホットリスタートがリクエストされたかどうか */
+    private volatile boolean restartRequested = false;
 
     // 修飾キー状態管理
     /** Shiftキーが押されているかどうか */
@@ -1192,6 +1210,9 @@ public class Kernel implements GestureListener {
         this.height = screenHeight;
         this.worldId = worldId;
 
+        // このインスタンスをアクティブKernelとして登録
+        activeKernelId = this.myKernelId;
+
         try {
             // PAppletを使わず、PGraphicsを直接作成（リフレクション使用）
             // Processing内部では "processing.awt.PGraphicsJava2D" が使用される
@@ -1317,6 +1338,8 @@ public class Kernel implements GestureListener {
 
         // システム起動イベントを発行
         eventBus.post(SystemEvent.startup(this));
+        // VFSを先に初期化（worldId別ルートを確実に使う）
+        vfs = new VFS(worldId);
 
         // Phase 2リファクタリング: ServiceContainerの初期化
         serviceBootstrap = new CoreServiceBootstrap(this);
@@ -1373,6 +1396,8 @@ public class Kernel implements GestureListener {
                 logger = new LoggerService(vfs);
                 logger.setLogLevel(jp.moyashi.phoneos.core.service.LoggerService.LogLevel.DEBUG);
             }
+
+            LoggerContext.setLogger(logger);
 
             // System.out/errキャプチャを有効化
             if (logger != null) {
@@ -1830,9 +1855,7 @@ public class Kernel implements GestureListener {
             screenManager.pushScreen(setupScreen);
         } else if (lockManager.isLocked()) {
             logger.info("Kernel", "OSがロック状態 - ロック画面を初期画面として開始");
-            jp.moyashi.phoneos.core.ui.lock.LockScreen lockScreen =
-                new jp.moyashi.phoneos.core.ui.lock.LockScreen(this);
-            screenManager.pushScreen(lockScreen);
+            screenManager.pushScreen(getOrCreateLockScreen());
             addLayer(LayerType.LOCK_SCREEN); // レイヤースタックに追加
         } else {
             logger.info("Kernel", "OSがアンロック状態 - LauncherAppを初期画面として開始");
@@ -1915,6 +1938,29 @@ public class Kernel implements GestureListener {
     }
     
     /**
+     * LockScreenのシングルトンインスタンスを取得または作成する。
+     */
+    private jp.moyashi.phoneos.core.ui.lock.LockScreen getOrCreateLockScreen() {
+        if (lockScreen == null) {
+            lockScreen = new jp.moyashi.phoneos.core.ui.lock.LockScreen(this);
+        }
+        return lockScreen;
+    }
+
+    /**
+     * ControlCenterと通知センターを強制的に非表示にする。
+     * lock/wake時にオーバーレイが残留することによる入力不能を防止する。
+     */
+    private void dismissOverlays() {
+        if (controlCenterManager != null && controlCenterManager.isVisible()) {
+            controlCenterManager.hide();
+        }
+        if (notificationManager != null && notificationManager.isVisible()) {
+            notificationManager.hide();
+        }
+    }
+
+    /**
      * デバイスロック処理。
      * 現在のロック状態に関わらずロック画面を表示する。
      */
@@ -1922,14 +1968,17 @@ public class Kernel implements GestureListener {
         if (lockManager != null) {
             lockManager.lock(); // デバイスをロック状態にする
 
+            // ControlCenter/通知センターを強制非表示
+            dismissOverlays();
+
             // ロック画面に切り替え
             try {
-                jp.moyashi.phoneos.core.ui.lock.LockScreen lockScreen =
-                    new jp.moyashi.phoneos.core.ui.lock.LockScreen(this);
+                jp.moyashi.phoneos.core.ui.lock.LockScreen ls = getOrCreateLockScreen();
+                ls.resetState();
 
                 // 現在の画面をクリアしてロック画面をプッシュ
                 screenManager.clearAllScreens();
-                screenManager.pushScreen(lockScreen);
+                screenManager.pushScreen(ls);
                 addLayer(LayerType.LOCK_SCREEN); // レイヤースタックに追加
 
                 if (logger != null) {
@@ -1954,6 +2003,15 @@ public class Kernel implements GestureListener {
      * システムシャットダウン処理（独立API）。
      */
     public void shutdown() {
+        shutdown(false);
+    }
+
+    /**
+     * システムシャットダウン処理。
+     * @param forRestart trueの場合、ホットリスタート用の軽量シャットダウン
+     *                   （シャットダウン画面描画・非同期終了処理をスキップ）
+     */
+    public void shutdown(boolean forRestart) {
         // 既にシャットダウン中の場合は重複処理を防止
         if (isShuttingDown) {
             return;
@@ -1961,7 +2019,7 @@ public class Kernel implements GestureListener {
         isShuttingDown = true;
 
         if (logger != null) {
-            logger.info("Kernel", "システムシャットダウンを開始");
+            logger.info("Kernel", forRestart ? "ホットリスタート用シャットダウンを開始" : "システムシャットダウンを開始");
         }
 
         // システムシャットダウンイベントを発行
@@ -1977,6 +2035,17 @@ public class Kernel implements GestureListener {
         }
         chromiumManager = null;
 
+        // リスナークリーンアップ（リスタート時は古いリスナーが残らないようにする）
+        EventBus.getInstance().unregisterAll();
+
+        if (forRestart) {
+            // ホットリスタート: シャットダウン画面描画・非同期終了処理をスキップ
+            if (logger != null) {
+                logger.info("Kernel", "ホットリスタート用シャットダウン完了");
+            }
+            return;
+        }
+
         // シャットダウンメッセージをPGraphicsバッファに描画
         if (graphics != null) {
             graphics.beginDraw();
@@ -1989,9 +2058,18 @@ public class Kernel implements GestureListener {
         }
 
         // 少し遅延してから終了
+        final long shutdownKernelId = this.myKernelId;
         new Thread(() -> {
             try {
                 Thread.sleep(1500);
+
+                // ガード: 新しいKernelが作成済みならEventBusシャットダウンをスキップ
+                if (activeKernelId != shutdownKernelId) {
+                    if (logger != null) {
+                        logger.info("Kernel", "新しいKernelが作成済みのため、EventBusシャットダウンをスキップ");
+                    }
+                    return;
+                }
 
                 // EventBusのシャットダウン
                 EventBus.getInstance().shutdown();
@@ -2562,6 +2640,24 @@ public class Kernel implements GestureListener {
     }
 
     /**
+     * テクスチャプロバイダーを設定する。
+     *
+     * @param provider TextureProvider実装
+     */
+    public void setTextureProvider(jp.moyashi.phoneos.core.service.chromium.texture.TextureProvider provider) {
+        this.textureProvider = provider;
+    }
+
+    /**
+     * テクスチャプロバイダーを取得する。
+     *
+     * @return TextureProvider、未設定の場合はnull
+     */
+    public jp.moyashi.phoneos.core.service.chromium.texture.TextureProvider getTextureProvider() {
+        return textureProvider;
+    }
+
+    /**
      * リソースから日本語フォントを読み込む。
      * Noto Sans JP TTFファイルをリソースから読み込み、Processing PFontとして返す。
      * クロスプラットフォーム対応（Windows, Mac, Linux）およびForge環境でも動作する。
@@ -2894,6 +2990,22 @@ public class Kernel implements GestureListener {
      */
     public void requestGoHome() {
         handleHomeButton();
+    }
+
+    /**
+     * ホットリスタートをリクエストする。
+     * プラットフォーム層（Forge）の次のティックで再起動が実行される。
+     */
+    public void requestRestart() {
+        restartRequested = true;
+    }
+
+    /**
+     * ホットリスタートがリクエストされているかを返す。
+     * @return リスタートリクエスト中ならtrue
+     */
+    public boolean isRestartRequested() {
+        return restartRequested;
     }
 
     /**
@@ -3293,16 +3405,22 @@ public class Kernel implements GestureListener {
         if (lockManager != null) {
             lockManager.lock(); // デバイスをロック状態にする
 
-            // ロック画面に切り替え
-            try {
-                jp.moyashi.phoneos.core.ui.lock.LockScreen lockScreen =
-                    new jp.moyashi.phoneos.core.ui.lock.LockScreen(this);
+            // ControlCenter/通知センターを強制非表示
+            dismissOverlays();
 
-                // 既存のスクリーンスタックを保持したまま、ロック画面をプッシュ
-                // 注意: clearAllScreens()は呼ばない（WebViewの破棄を防ぐため）
-                if (screenManager != null) {
-                    screenManager.pushScreen(lockScreen);
-                    addLayer(LayerType.LOCK_SCREEN); // レイヤースタックに追加
+            try {
+                Screen currentScreen = screenManager != null ? screenManager.getCurrentScreen() : null;
+                if (currentScreen instanceof jp.moyashi.phoneos.core.ui.lock.LockScreen) {
+                    // 既にLockScreenが表示中 → 状態リセットのみ
+                    ((jp.moyashi.phoneos.core.ui.lock.LockScreen) currentScreen).resetState();
+                } else {
+                    // LockScreenをpush
+                    jp.moyashi.phoneos.core.ui.lock.LockScreen ls = getOrCreateLockScreen();
+                    ls.resetState();
+                    if (screenManager != null) {
+                        screenManager.pushScreen(ls);
+                        addLayer(LayerType.LOCK_SCREEN); // レイヤースタックに追加
+                    }
                 }
 
                 if (logger != null) {
@@ -3400,5 +3518,31 @@ public class Kernel implements GestureListener {
 
         // デフォルトの割り当てを設定
         dashboardWidgetRegistry.setDefaultAssignments();
+    }
+
+    // --- ロック解除後のペンディングURL ---
+
+    /** ロック解除後に開くべきURL（チャットURLインターセプト用） */
+    private volatile String pendingUrlAfterUnlock = null;
+
+    /**
+     * ロック解除後に開くべきURLを設定する。
+     * チャットURLクリック時にOSがロック状態の場合に使用される。
+     *
+     * @param url 開くべきURL（nullでクリア）
+     */
+    public void setPendingUrlAfterUnlock(String url) {
+        this.pendingUrlAfterUnlock = url;
+    }
+
+    /**
+     * ロック解除後に開くべきURLを取得し、クリアする。
+     *
+     * @return ペンディングURL（なければnull）
+     */
+    public String consumePendingUrlAfterUnlock() {
+        String url = this.pendingUrlAfterUnlock;
+        this.pendingUrlAfterUnlock = null;
+        return url;
     }
 }

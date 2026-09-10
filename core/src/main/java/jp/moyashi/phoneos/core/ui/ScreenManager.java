@@ -738,6 +738,50 @@ public class ScreenManager implements ScreenTransition.AnimationCallback {
     }
     
     /**
+     * 指定されたアプリIDに関連するスクリーンをスタックから除去する。
+     * アプリのアップデート時にプロセス再起動するために使用する。
+     * cleanup()はServiceManager.terminateApp()側で行うため、ここでは呼び出さない。
+     *
+     * @param appId 除去するアプリID
+     * @return 除去されたスクリーンの数
+     */
+    public int removeScreensByAppId(String appId) {
+        if (appId == null || appId.isEmpty()) return 0;
+
+        int removed = 0;
+        synchronized (screenStack) {
+            java.util.Iterator<Screen> it = screenStack.iterator();
+            while (it.hasNext()) {
+                Screen screen = it.next();
+                if (appId.equals(screen.getApplicationId())) {
+                    it.remove();
+                    setupCompletedScreens.remove(screen);
+                    unsetupScreens.remove(screen);
+                    removed++;
+                    log("Removed screen for app " + appId + ": " + screen.getScreenTitle());
+                }
+            }
+        }
+
+        if (removed > 0) {
+            // レイヤースタックを更新
+            if (kernel != null) {
+                kernel.removeLayer(LayerType.APPLICATION);
+                log("Removed APPLICATION layer after removing screens for: " + appId);
+            }
+
+            // 新しいトップスクリーンをフォアグラウンドに
+            Screen newTop = getCurrentScreen();
+            if (newTop != null) {
+                newTop.onForeground();
+                notifyServiceManagerForegroundState(newTop, true);
+            }
+        }
+
+        return removed;
+    }
+
+    /**
      * ナビゲーションスタックからすべてのスクリーンをクリアする。
      * スクリーンを除去する前にそれぞれのcleanup()を呼び出す。
      */

@@ -12,6 +12,7 @@ public class AVCDetector {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final String AVC_MOD_ID = "advancedvc2_0";
     private static Boolean avcAvailable = null;
+    private static final String DISABLE_PROP = "mmos.avc.disable";
 
     /**
      * AdvancedVC 2.0 MODがインストールされているかをチェックする。
@@ -21,6 +22,11 @@ public class AVCDetector {
      */
     public static boolean isAVCAvailable() {
         if (avcAvailable == null) {
+            if (Boolean.parseBoolean(System.getProperty(DISABLE_PROP, "true"))) {
+                avcAvailable = false;
+                LOGGER.info("[AVCDetector] AVC integration disabled via system property: " + DISABLE_PROP);
+                return false;
+            }
             avcAvailable = ModList.get().isLoaded(AVC_MOD_ID);
             if (avcAvailable) {
                 LOGGER.info("[AVCDetector] AdvancedVC 2.0 MOD detected - Audio bridge enabled");

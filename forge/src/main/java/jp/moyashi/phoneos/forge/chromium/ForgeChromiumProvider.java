@@ -47,6 +47,9 @@ public class ForgeChromiumProvider extends JCEFChromiumProvider {
     /** コンソールメッセージリスナー */
     private ConsoleMessageListener consoleListener;
 
+    /** JVMライフタイムで存続する共有CefAppインスタンス */
+    private static volatile CefApp sharedCefApp = null;
+
     /** SystemBootstrapの静的初期化フラグ */
     private static volatile boolean systemBootstrapConfigured = false;
 
@@ -117,6 +120,28 @@ public class ForgeChromiumProvider extends JCEFChromiumProvider {
     @Override
     public CefApp createCefApp(Kernel kernel) {
         try {
+            // CefAppの現在の状態をチェック（idempotent化）
+            CefApp.CefAppState currentState = CefApp.getState();
+            log("CefApp state before init: " + currentState);
+
+            // INITIALIZED / INITIALIZING: 既存インスタンスを再利用
+            if (currentState == CefApp.CefAppState.INITIALIZED ||
+                currentState == CefApp.CefAppState.INITIALIZING) {
+                log("Skip re-init: CefApp already " + currentState + ", reusing existing instance");
+                CefApp existing = CefApp.getInstance();
+                sharedCefApp = existing;
+                // スキームハンドラファクトリを新Kernelで再登録
+                ChromiumAppHandler.reRegisterFactories(kernel);
+                log("Scheme handler factories re-registered with new Kernel");
+                return existing;
+            }
+
+            // TERMINATED: 再起動不可
+            if (currentState == CefApp.CefAppState.TERMINATED) {
+                throw new RuntimeException("CefApp has been terminated and cannot be restarted in this JVM session");
+            }
+
+            // NONE / NEW: フル初期化シーケンス
             log("Initializing JCEF for Forge environment (bypassing jcefmaven)...");
 
             // MMOSInstallerの完了を待機
@@ -239,40 +264,11 @@ public class ForgeChromiumProvider extends JCEFChromiumProvider {
                 @Override
                 public void onContextInitialized() {
                     log("onContextInitialized() called");
-                    // Debug: Check kernel and logger state before calling core handler
-                    log("DEBUG: kernel=" + (kernel != null ? "available" : "NULL") +
-                        ", logger=" + (kernel != null && kernel.getLogger() != null ? "available" : "NULL"));
-
-                    // Try to log via MMOS logger directly
-                    if (kernel != null && kernel.getLogger() != null) {
-                        var logger = kernel.getLogger();
-                        log("DEBUG: LoggerService instance = " + logger.getClass().getName() + "@" + Integer.toHexString(System.identityHashCode(logger)));
-                        try {
-                            logger.info("ForgeChromiumProvider", "onContextInitialized - logging via MMOS logger");
-                            log("DEBUG: logger.info() completed without exception");
-                        } catch (Exception e) {
-                            log("DEBUG: logger.info() THREW EXCEPTION: " + e.getClass().getName() + " - " + e.getMessage());
-                            e.printStackTrace();
-                        }
-                        try {
-                            logger.error("ForgeChromiumProvider", "TEST ERROR LOG - this should appear in MMOS log");
-                            log("DEBUG: logger.error() completed without exception");
-                        } catch (Exception e) {
-                            log("DEBUG: logger.error() THREW EXCEPTION: " + e.getClass().getName() + " - " + e.getMessage());
-                            e.printStackTrace();
-                        }
-                    }
 
                     try {
                         coreAppHandler.onContextInitialized();
                     } catch (Exception e) {
                         logError("onContextInitialized() FAILED: " + e.getMessage(), e);
-                    }
-
-                    // Debug: Check again after core handler
-                    log("DEBUG: After coreAppHandler.onContextInitialized()");
-                    if (kernel != null && kernel.getLogger() != null) {
-                        kernel.getLogger().info("ForgeChromiumProvider", "onContextInitialized - completed via MMOS logger");
                     }
 
                     log("onContextInitialized() completed");
@@ -300,6 +296,7 @@ public class ForgeChromiumProvider extends JCEFChromiumProvider {
             log("Creating CefApp directly (bypassing jcefmaven.build())...");
             CefApp cefApp = CefApp.getInstance(args, cefSettings);
 
+            sharedCefApp = cefApp;
             log("JCEF initialized successfully");
             log("Chromium version: " + cefApp.getVersion());
 
@@ -309,6 +306,20 @@ public class ForgeChromiumProvider extends JCEFChromiumProvider {
             logError("Failed to initialize JCEF: " + e.getMessage(), e);
             throw new RuntimeException("Failed to initialize JCEF for Forge", e);
         }
+    }
+
+    /**
+     * Forge環境でのシャットダウン処理。
+     * CefApp.dispose()を呼ばない。CefAppはJVMライフタイムで存続し、
+     * ワールド再接続時に再利用される。
+     *
+     * @param cefApp CefAppインスタンス（使用しない）
+     */
+    @Override
+    public void shutdown(CefApp cefApp) {
+        // Forge環境ではCefApp.dispose()を呼ばない
+        // CefAppはJVMライフタイムで存続し、ワールド再接続時に再利用される
+        log("shutdown() called - skipping CefApp.dispose() (Forge: CefApp persists across worlds)");
     }
 
     /**

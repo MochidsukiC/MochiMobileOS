@@ -35,48 +35,42 @@ public class SmartphoneBackgroundService {
     /** 現在のワールドID */
     private static String currentWorldId = null;
 
+    /** ホットリスタート保留中フラグ */
+    private static volatile boolean pendingRestart = false;
+
+    /** リスタート後にProcessingScreenを再表示するフラグ */
+    private static volatile boolean pendingReopenScreen = false;
+
     /**
      * ワールドロード時の処理。
-     * ワールドIDを取得してKernelを再作成する。
+     * Kernelが既に存在する場合はディメンション移動と判断し、何もしない。
+     * Kernelがnullの場合（初回接続 or 切断後の再接続）のみ新規作成する。
      */
     @SubscribeEvent
     public static void onWorldLoad(LevelEvent.Load event) {
         // クライアント側のみ処理
         if (event.getLevel().isClientSide()) {
             try {
-                ClientLevel level = (ClientLevel) event.getLevel();
+                // Kernelが既に存在する → ディメンション移動、何もしない
+                if (sharedKernel != null) {
+                    LOGGER.info("[SmartphoneBackgroundService] World loaded with active kernel, keeping alive (dimension change)");
+                    return;
+                }
 
-                // ワールド名を取得（シングルプレイヤー/マルチプレイヤー対応）
+                // Kernelがnull → 初回接続 or 切断後の再接続、新規作成
                 Minecraft mc = Minecraft.getInstance();
                 String worldName = "unknown";
 
                 if (mc.getSingleplayerServer() != null) {
-                    // シングルプレイヤー：ワールド名を使用
                     worldName = mc.getSingleplayerServer().getWorldData().getLevelName();
                 } else if (mc.getCurrentServer() != null) {
-                    // マルチプレイヤー：サーバー名を使用
                     worldName = mc.getCurrentServer().name;
                 }
 
-                // ワールド名をVFS用にサニタイズ（英数字、ハイフン、アンダースコアのみ許可）
                 worldName = sanitizeWorldId(worldName);
-
-                LOGGER.info("[SmartphoneBackgroundService] World loaded: " + worldName);
-
-                // ワールドIDが変わった場合、または初回ロード時
-                if (!worldName.equals(currentWorldId)) {
-                    currentWorldId = worldName;
-
-                    // 既存のKernelをシャットダウン
-                    if (sharedKernel != null) {
-                        LOGGER.info("[SmartphoneBackgroundService] Shutting down previous kernel...");
-                        shutdownKernel();
-                    }
-
-                    // 新しいワールドID用のKernelを作成
-                    sharedKernel = createKernel(currentWorldId);
-                    LOGGER.info("[SmartphoneBackgroundService] Kernel created for world: " + currentWorldId);
-                }
+                currentWorldId = worldName;
+                sharedKernel = createKernel(currentWorldId);
+                LOGGER.info("[SmartphoneBackgroundService] Kernel created for world: " + currentWorldId);
 
             } catch (Exception e) {
                 LOGGER.error("[SmartphoneBackgroundService] Failed to handle world load", e);
@@ -86,26 +80,13 @@ public class SmartphoneBackgroundService {
 
     /**
      * ワールドアンロード時の処理。
-     * Kernelをクリーンアップする。
+     * ディメンション移動でも発火するため、ここではシャットダウンしない。
+     * 実際のシャットダウンは onClientTick の mc.level==null 検出で行う。
      */
     @SubscribeEvent
     public static void onWorldUnload(LevelEvent.Unload event) {
-        // クライアント側のみ処理
         if (event.getLevel().isClientSide()) {
-            try {
-                LOGGER.info("[SmartphoneBackgroundService] World unloading: " + currentWorldId);
-
-                // Kernelをシャットダウン
-                if (sharedKernel != null) {
-                    shutdownKernel();
-                    sharedKernel = null;
-                    currentWorldId = null;
-                    LOGGER.info("[SmartphoneBackgroundService] Kernel shut down successfully");
-                }
-
-            } catch (Exception e) {
-                LOGGER.error("[SmartphoneBackgroundService] Failed to handle world unload", e);
-            }
+            LOGGER.info("[SmartphoneBackgroundService] World unloading (no action, tick-based state check handles shutdown)");
         }
     }
 
@@ -145,6 +126,11 @@ public class SmartphoneBackgroundService {
             LOGGER.info("[SmartphoneBackgroundService] Initializing hardware bypass APIs...");
             initializeHardwareAPIs(kernel);
             LOGGER.info("[SmartphoneBackgroundService] Hardware bypass APIs initialized");
+
+            // テクスチャプロバイダーの初期化（mochitexture://スキーム用）
+            LOGGER.info("[SmartphoneBackgroundService] Initializing TextureProvider...");
+            kernel.setTextureProvider(new ForgeTextureProvider());
+            LOGGER.info("[SmartphoneBackgroundService] ForgeTextureProvider initialized");
 
             // クリップボードプロバイダーの初期化（GLFW実装に置き換え）
             LOGGER.info("[SmartphoneBackgroundService] Initializing clipboard provider...");
@@ -460,6 +446,8 @@ public class SmartphoneBackgroundService {
 
     /**
      * Kernelをシャットダウンする。
+     * ChromiumService（サーフェス破棄、Pumpスレッド停止）を含む
+     * 全リソースの正しいクリーンアップを行う。
      */
     private static void shutdownKernel() {
         if (sharedKernel == null) {
@@ -467,7 +455,7 @@ public class SmartphoneBackgroundService {
         }
 
         try {
-            LOGGER.info("[SmartphoneBackgroundService] Shutting down kernel...");
+            LOGGER.info("[SmartphoneBackgroundService] Shutting down kernel (full shutdown)...");
 
             // マイクを停止
             if (sharedKernel.getMicrophoneSocket() != null && sharedKernel.getMicrophoneSocket().isEnabled()) {
@@ -481,13 +469,84 @@ public class SmartphoneBackgroundService {
                 LOGGER.info("[SmartphoneBackgroundService] Speaker stopped");
             }
 
-            // その他のリソースクリーンアップ
-            // TODO: 必要に応じて他のハードウェアAPIのクリーンアップを追加
+            // Kernel.shutdown() を呼んで全リソースを解放
+            // ChromiumService → ChromiumManager → ForgeChromiumProvider.shutdown()
+            // （ForgeChromiumProviderはCefApp.dispose()を呼ばず、CefAppはJVMライフタイムで存続）
+            sharedKernel.shutdown();
 
             LOGGER.info("[SmartphoneBackgroundService] Kernel shutdown complete");
 
         } catch (Exception e) {
             LOGGER.error("[SmartphoneBackgroundService] Error during kernel shutdown", e);
+        }
+    }
+
+    /**
+     * Kernelを安全にシャットダウンする（ワールド変更時用）。
+     * shutdown(true) を使用し、非同期スレッドを起動しない。
+     * これにより、新Kernelが作成された後に旧KernelのスレッドがEventBusを無効化する
+     * レースコンディションを防止する。
+     */
+    private static void shutdownKernelSafe() {
+        if (sharedKernel == null) {
+            return;
+        }
+
+        try {
+            LOGGER.info("[SmartphoneBackgroundService] Shutting down kernel (safe/hot-restart style)...");
+
+            // マイクを停止
+            if (sharedKernel.getMicrophoneSocket() != null && sharedKernel.getMicrophoneSocket().isEnabled()) {
+                sharedKernel.getMicrophoneSocket().setEnabled(false);
+            }
+
+            // スピーカーを停止
+            if (sharedKernel.getSpeakerSocket() != null) {
+                sharedKernel.getSpeakerSocket().stopAudio();
+            }
+
+            // shutdown(true) で非同期スレッドを起動しない
+            sharedKernel.shutdown(true);
+
+            LOGGER.info("[SmartphoneBackgroundService] Kernel safe shutdown complete");
+
+        } catch (Exception e) {
+            LOGGER.error("[SmartphoneBackgroundService] Error during safe kernel shutdown", e);
+        }
+    }
+
+    /**
+     * Kernelをホットリスタートする。
+     * 同じワールドIDで再作成し、VFSデータを引き継ぐ。
+     */
+    private static void restartKernel() {
+        if (sharedKernel == null || currentWorldId == null) return;
+
+        String worldId = currentWorldId;
+        LOGGER.info("[SmartphoneBackgroundService] Hot-restarting kernel for world: " + worldId);
+
+        try {
+            // マイクを停止
+            if (sharedKernel.getMicrophoneSocket() != null && sharedKernel.getMicrophoneSocket().isEnabled()) {
+                sharedKernel.getMicrophoneSocket().setEnabled(false);
+                LOGGER.info("[SmartphoneBackgroundService] Microphone stopped for restart");
+            }
+
+            // スピーカーを停止
+            if (sharedKernel.getSpeakerSocket() != null) {
+                sharedKernel.getSpeakerSocket().stopAudio();
+                LOGGER.info("[SmartphoneBackgroundService] Speaker stopped for restart");
+            }
+
+            // ホットリスタート用シャットダウン（画面描画・非同期終了をスキップ）
+            sharedKernel.shutdown(true);
+
+            // 同じワールドIDで新しいKernelを作成
+            sharedKernel = createKernel(worldId);
+            LOGGER.info("[SmartphoneBackgroundService] Kernel hot-restart complete for world: " + worldId);
+
+        } catch (Exception e) {
+            LOGGER.error("[SmartphoneBackgroundService] Error during kernel hot-restart", e);
         }
     }
 
@@ -502,6 +561,37 @@ public class SmartphoneBackgroundService {
             return;
         }
 
+        // ワールド切断検出: mc.levelがnullならメインメニューに戻っている
+        // ディメンション移動中はmc.levelがold→newと遷移しnullにならないため誤検出しない
+        if (sharedKernel != null && Minecraft.getInstance().level == null) {
+            LOGGER.info("[SmartphoneBackgroundService] No active level detected, shutting down kernel (world disconnect)");
+            shutdownKernelSafe();
+            sharedKernel = null;
+            currentWorldId = null;
+        }
+
+        // ホットリスタートリクエスト検出
+        if (sharedKernel != null && sharedKernel.isRestartRequested()) {
+            pendingRestart = true;
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.screen instanceof jp.moyashi.phoneos.forge.gui.ProcessingScreen) {
+                mc.setScreen(null);
+                pendingReopenScreen = true;
+            }
+        }
+
+        // ホットリスタート実行（ProcessingScreen閉じた後のtickで実行）
+        if (pendingRestart && sharedKernel != null) {
+            pendingRestart = false;
+            restartKernel();
+            if (pendingReopenScreen) {
+                pendingReopenScreen = false;
+                Minecraft.getInstance().execute(() -> {
+                    Minecraft.getInstance().setScreen(new jp.moyashi.phoneos.forge.gui.ProcessingScreen());
+                });
+            }
+        }
+
         // Kernelが存在し、GUIが開いていない場合のみバックグラウンド更新
         if (sharedKernel != null) {
             Minecraft mc = Minecraft.getInstance();
@@ -513,6 +603,10 @@ public class SmartphoneBackgroundService {
 
             if (!isPhoneScreenOpen) {
                 try {
+                    // ハードウェアAPIのプレイヤー情報を更新
+                    // （ディメンション移動でmc.playerが新インスタンスに変わるため）
+                    updateHardwareAPIs();
+
                     // バックグラウンドでKernelを更新（描画なし）
                     sharedKernel.update();
                 } catch (Exception e) {

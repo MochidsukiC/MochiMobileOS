@@ -89,6 +89,7 @@ public class SettingsScreen implements Screen {
     private jp.moyashi.phoneos.core.ui.components.Label labelMemoryInfo;
     private jp.moyashi.phoneos.core.ui.components.Button btnOpenSourceLicenses;
     private jp.moyashi.phoneos.core.ui.components.Button btnLegalInfo;
+    private jp.moyashi.phoneos.core.ui.components.Button btnRestartOS;
 
     // Sound & Vibration: 音声・振動パネル
     private jp.moyashi.phoneos.core.ui.components.Panel soundVibrationPanel;
@@ -1447,7 +1448,7 @@ public class SettingsScreen implements Screen {
         int px = ITEM_PADDING;
         int py = 80;
         int pw = 400 - 2 * ITEM_PADDING;
-        int ph = 440;
+        int ph = 530;
 
         // パネルを作成
         aboutSystemPanel = new jp.moyashi.phoneos.core.ui.components.Panel(px, py, pw, ph);
@@ -1493,6 +1494,15 @@ public class SettingsScreen implements Screen {
         btnLegalInfo.setOnClickListener(() -> {
             // 将来的に法的情報画面を表示
         });
+        y += 50;
+
+        // システム再起動ボタン
+        btnRestartOS = new jp.moyashi.phoneos.core.ui.components.Button(px + 16, y, pw - 32, 40, "Restart OS");
+        btnRestartOS.setOnClickListener(() -> {
+            if (kernel != null) {
+                kernel.requestRestart();
+            }
+        });
 
         // パネルに全てのコンポーネントを追加
         aboutSystemPanel.addChild(labelOSName);
@@ -1503,6 +1513,7 @@ public class SettingsScreen implements Screen {
         aboutSystemPanel.addChild(labelMemoryInfo);
         aboutSystemPanel.addChild(btnOpenSourceLicenses);
         aboutSystemPanel.addChild(btnLegalInfo);
+        aboutSystemPanel.addChild(btnRestartOS);
     }
 
     /**
@@ -1532,6 +1543,7 @@ public class SettingsScreen implements Screen {
         g.text("Java Environment", px + 16, py + 110);
         g.text("Memory", px + 16, py + 182);
         g.text("Legal", px + 16, py + 254);
+        g.text("System", px + 16, py + 346);
 
         // 重複描画削除 (Panelが描画するため)
     }

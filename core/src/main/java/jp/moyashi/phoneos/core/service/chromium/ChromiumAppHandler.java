@@ -3,6 +3,7 @@ package jp.moyashi.phoneos.core.service.chromium;
 import jp.moyashi.phoneos.core.Kernel;
 import jp.moyashi.phoneos.core.service.chromium.httpm.HttpmSchemeHandlerFactory;
 import jp.moyashi.phoneos.core.service.chromium.interceptor.IPvMSchemeHandlerFactory;
+import jp.moyashi.phoneos.core.service.chromium.texture.TextureSchemeHandlerFactory;
 import jp.moyashi.phoneos.core.service.chromium.webapp.AppAssetSchemeHandlerFactory;
 import jp.moyashi.phoneos.core.service.chromium.webapp.AppSchemeManager;
 import org.cef.CefApp;
@@ -123,6 +124,25 @@ public class ChromiumAppHandler extends CefAppHandlerAdapter {
             logError("Failed to register mochiapp:// scheme");
         }
 
+        // mochitexture:スキームを登録（アイテムテクスチャ取得用）
+        // URL形式: mochitexture://namespace/item_path
+        boolean textureRegistered = registrar.addCustomScheme(
+            "mochitexture", // スキーム名
+            true,           // is_standard
+            true,           // is_local (ローカルリソース)
+            false,          // is_display_isolated
+            true,           // is_secure
+            true,           // is_cors_enabled
+            true,           // is_csp_bypassing
+            true            // is_fetch_enabled (img/fetch両方でアクセス可能にする)
+        );
+
+        if (textureRegistered) {
+            log("mochitexture:// scheme registered successfully");
+        } else {
+            logError("Failed to register mochitexture:// scheme");
+        }
+
         // 後方互換性: 事前登録済みapp-*スキームも登録
         for (String scheme : pendingAppSchemes) {
             boolean appRegistered = registrar.addCustomScheme(
@@ -185,6 +205,14 @@ public class ChromiumAppHandler extends CefAppHandlerAdapter {
         );
         log("AppAssetSchemeHandlerFactory registered for mochiapp://");
 
+        // mochitexture:スキームハンドラーファクトリを登録
+        cefApp.registerSchemeHandlerFactory(
+            "mochitexture",
+            "",
+            new TextureSchemeHandlerFactory(kernel)
+        );
+        log("TextureSchemeHandlerFactory registered for mochitexture://");
+
         // IPvM over HTTP: HTTPスキームでIPvMアドレス（0-*, 1-*, 2-*, 3-*）をインターセプト
         // CefRequestHandler.getResourceRequestHandler()がCefBrowserOsrNoCanvasで動作しないため、
         // 代替としてCefSchemeHandlerFactoryを使用する
@@ -207,6 +235,53 @@ public class ChromiumAppHandler extends CefAppHandlerAdapter {
         }
 
         log("All scheme handler factories registered");
+    }
+
+    /**
+     * スキームハンドラファクトリを新しいKernelインスタンスで再登録する。
+     * CefAppが既にINITIALIZED状態でワールド再接続する場合に使用する。
+     *
+     * @param kernel 新しいKernelインスタンス
+     */
+    public static void reRegisterFactories(Kernel kernel) {
+        if (!contextInitialized) {
+            return;
+        }
+
+        CefApp cefApp = CefApp.getInstance();
+
+        // httpm:スキームハンドラーファクトリを再登録
+        cefApp.registerSchemeHandlerFactory(
+            "httpm", "",
+            new HttpmSchemeHandlerFactory(kernel)
+        );
+
+        // WebApp用 mochiapp:// スキームハンドラーファクトリを再登録
+        AppAssetSchemeHandlerFactory appFactory = new AppAssetSchemeHandlerFactory(kernel);
+        cefApp.registerSchemeHandlerFactory(
+            "mochiapp", "",
+            appFactory
+        );
+
+        // mochitexture:スキームハンドラーファクトリを再登録
+        cefApp.registerSchemeHandlerFactory(
+            "mochitexture", "",
+            new TextureSchemeHandlerFactory(kernel)
+        );
+
+        // IPvM over HTTP: HTTPスキームでIPvMアドレスをインターセプト
+        cefApp.registerSchemeHandlerFactory(
+            "http", "",
+            new IPvMSchemeHandlerFactory(kernel)
+        );
+
+        // 後方互換性: 事前登録済みapp-*スキームのファクトリも再登録
+        for (String scheme : pendingAppSchemes) {
+            cefApp.registerSchemeHandlerFactory(
+                scheme, "",
+                appFactory
+            );
+        }
     }
 
     /**

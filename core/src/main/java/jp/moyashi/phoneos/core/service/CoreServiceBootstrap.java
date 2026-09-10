@@ -191,18 +191,6 @@ public class CoreServiceBootstrap {
         container.registerSingleton(ChatSocket.class,
             () -> new DefaultChatSocket());
 
-        // 通知音サービス
-        container.registerSingleton(NotificationSoundService.class,
-            () -> new NotificationSoundService(
-                container.resolve(SpeakerSocket.class),
-                container.resolve(SettingsManager.class),
-                container.resolve(VFS.class)));
-
-        // 通知システム（既存実装を使用）
-        container.registerSingleton(NotificationManager.class,
-            () -> new NotificationManager());
-
-        // コントロールセンター管理
         container.registerSingleton(ControlCenterManager.class,
             () -> new ControlCenterManager());
 
@@ -251,6 +239,20 @@ public class CoreServiceBootstrap {
         // ハードウェアバイパスAPI - スピーカー
         container.registerSingleton(SpeakerSocket.class,
             () -> new DefaultSpeakerSocket());
+
+        // Notification sound service (requires SpeakerSocket)
+        container.registerSingleton(NotificationSoundService.class,
+            () -> new NotificationSoundService(
+                container.resolve(SpeakerSocket.class),
+                container.resolve(SettingsManager.class),
+                container.resolve(VFS.class)));
+
+        // Notification manager
+        container.registerSingleton(NotificationManager.class,
+            () -> new NotificationManager());
+
+
+
 
         // ハードウェアバイパスAPI - IC（近距離通信）
         container.registerSingleton(ICSocket.class,

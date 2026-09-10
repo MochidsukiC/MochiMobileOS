@@ -12,11 +12,15 @@ import processing.core.PGraphics;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+
+import jp.moyashi.phoneos.core.service.LoggerContext;
 
 /**
  * AppStoreのメイン画面。
@@ -57,6 +61,7 @@ public class AppStoreScreen implements Screen {
     private static final int COLOR_BUTTON_INSTALL = 0xFF34C759;
     private static final int COLOR_BUTTON_INSTALLED = 0xFF8E8E93;
     private static final int COLOR_BUTTON_DOWNLOADING = 0xFF007AFF;
+    private static final int COLOR_BUTTON_UPDATE = 0xFFFF9500;
     private static final int COLOR_DIVIDER = 0xFFE5E5EA;
 
     private static final int HEADER_HEIGHT = 60;
@@ -68,6 +73,10 @@ public class AppStoreScreen implements Screen {
     /** ダウンロード中のアプリID（スレッドセーフ） */
     private final List<String> downloadingAppIds = new CopyOnWriteArrayList<>();
 
+    /** インストール済みアプリのバージョン追跡マップ（appId -> version） */
+    private final Map<String, String> installedVersions = new ConcurrentHashMap<>();
+    private static final String INSTALLED_VERSIONS_PATH = "system/appstore_installed_versions.json";
+
     /** 遅延タスク実行用スケジューラ */
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
         Thread t = new Thread(r, "AppStoreScreen-Scheduler");
@@ -77,6 +86,7 @@ public class AppStoreScreen implements Screen {
 
     public AppStoreScreen(Kernel kernel) {
         this.kernel = kernel;
+        loadInstalledVersions();
     }
 
     @Override
@@ -301,29 +311,36 @@ public class AppStoreScreen implements Screen {
         // インストールボタン
         int btnX = g.width - MARGIN - BUTTON_WIDTH;
         int btnY = y + (ITEM_HEIGHT - BUTTON_HEIGHT) / 2;
-        
+
         // インストール済み判定の強化
-        boolean isInstalled = kernel.getAppLoader().findApplicationById(pkg.id) != null;
-        if (!isInstalled) {
+        jp.moyashi.phoneos.core.app.IApplication installedApp = kernel.getAppLoader().findApplicationById(pkg.id);
+        if (installedApp == null) {
             // IDが完全一致しない場合でも、小文字一致や前方一致でチェック
             String targetId = pkg.id.toLowerCase();
             List<jp.moyashi.phoneos.core.app.IApplication> loadedApps = kernel.getAppLoader().getLoadedApps();
-            
-            // デバッグログ: 比較対象の全IDを出力（最初の1回だけ、または特定のタイミングで）
-            // System.out.println("AppStoreScreen: Checking installation for " + pkg.id);
-            
+
             for (jp.moyashi.phoneos.core.app.IApplication app : loadedApps) {
                 String appId = app.getApplicationId().toLowerCase();
-                // System.out.println("  - Loaded App ID: " + appId + " (" + app.getName() + ")");
-                
+
                 if (appId.equals(targetId) || appId.startsWith(targetId + ".") || appId.contains(targetId)) {
-                    isInstalled = true;
-                    // System.out.println("    -> MATCH FOUND!");
+                    installedApp = app;
                     break;
                 }
             }
         }
-        
+
+        boolean isInstalled = installedApp != null;
+        boolean needsUpdate = false;
+
+        // バージョン比較（Modアプリはアップデート対象外、追跡マップを使用）
+        if (isInstalled && pkg.version != null
+                && !(pkg.download_url != null && pkg.download_url.startsWith("local:mod:"))) {
+            String trackedVersion = installedVersions.get(pkg.id);
+            if (trackedVersion == null || !trackedVersion.equals(pkg.version)) {
+                needsUpdate = true;
+            }
+        }
+
         boolean isDownloading = downloadingAppIds.contains(pkg.id);
 
         if (isDownloading) {
@@ -332,6 +349,12 @@ public class AppStoreScreen implements Screen {
             g.fill(COLOR_WHITE);
             g.textAlign(PConstants.CENTER, PConstants.CENTER);
             g.text("Wait...", btnX + BUTTON_WIDTH / 2, btnY + BUTTON_HEIGHT / 2);
+        } else if (needsUpdate) {
+            g.fill(COLOR_BUTTON_UPDATE);
+            g.rect(btnX, btnY, BUTTON_WIDTH, BUTTON_HEIGHT, 16);
+            g.fill(COLOR_WHITE);
+            g.textAlign(PConstants.CENTER, PConstants.CENTER);
+            g.text("UPDATE", btnX + BUTTON_WIDTH / 2, btnY + BUTTON_HEIGHT / 2);
         } else if (isInstalled) {
             g.fill(COLOR_BUTTON_INSTALLED);
             g.rect(btnX, btnY, BUTTON_WIDTH, BUTTON_HEIGHT, 16);
@@ -387,9 +410,20 @@ public class AppStoreScreen implements Screen {
 
                 if (mouseX >= btnX && mouseX <= btnX + BUTTON_WIDTH &&
                     mouseY >= btnY && mouseY <= btnY + BUTTON_HEIGHT) {
-                    
-                    boolean isInstalled = kernel.getAppLoader().findApplicationById(pkg.id) != null;
-                    if (!isInstalled && !downloadingAppIds.contains(pkg.id)) {
+
+                    jp.moyashi.phoneos.core.app.IApplication installedApp = kernel.getAppLoader().findApplicationById(pkg.id);
+                    boolean isInstalled = installedApp != null;
+                    boolean needsUpdate = false;
+
+                    if (isInstalled && pkg.version != null
+                            && !(pkg.download_url != null && pkg.download_url.startsWith("local:mod:"))) {
+                        String trackedVersion = installedVersions.get(pkg.id);
+                        if (trackedVersion == null || !trackedVersion.equals(pkg.version)) {
+                            needsUpdate = true;
+                        }
+                    }
+
+                    if ((!isInstalled || needsUpdate) && !downloadingAppIds.contains(pkg.id)) {
                         downloadAndInstallApp(pkg);
                     }
                     return;
@@ -429,6 +463,7 @@ public class AppStoreScreen implements Screen {
                 boolean success = kernel.getAppLoader().installModApp(appId, kernel);
                 if (success) {
                     statusMessage = pkg.name + " installed!";
+                    refreshHomeScreens();
                     // UI更新のために3秒後にメッセージを消す（非ブロッキング）
                     scheduler.schedule(() -> {
                         if (statusMessage != null && statusMessage.contains("installed")) {
@@ -492,23 +527,46 @@ public class AppStoreScreen implements Screen {
     private void installJar(AppStorePackage pkg, byte[] data) {
         try {
             statusMessage = "Installing " + pkg.name + "...";
-            
+
+            // アップデート時: 起動中のアプリを終了する
+            boolean wasRunning = kernel.getServiceManager() != null
+                    && kernel.getServiceManager().isAppRunning(pkg.id);
+            if (wasRunning) {
+                statusMessage = "Restarting " + pkg.name + "...";
+                // ScreenManagerからアプリの画面を除去
+                kernel.getScreenManager().removeScreensByAppId(pkg.id);
+                // ServiceManagerからプロセスを終了（cleanup + onDestroy）
+                kernel.getServiceManager().terminateApp(pkg.id);
+            }
+
             // VFSに保存
             String fileName = pkg.id + ".jar";
             String vfsPath = "apps/" + fileName;
-            
-            // AppLoaderのrefreshを実行するために一度書き込む
             kernel.getVFS().writeBinaryFile(vfsPath, data);
-            
-            // AppLoaderをリフレッシュ
+
+            // AppLoaderをリフレッシュ（新しいバージョンのIApplicationを読み込む）
             kernel.getAppLoader().refreshApps();
-            
-            statusMessage = pkg.name + " installed!";
+
+            // アップデート時: アプリを再起動する
+            if (wasRunning) {
+                jp.moyashi.phoneos.core.ui.Screen relaunchedScreen =
+                        kernel.getServiceManager().launchApp(pkg.id);
+                if (relaunchedScreen != null) {
+                    kernel.getScreenManager().pushScreen(relaunchedScreen);
+                }
+            }
+
+            // インストール済みバージョンを記録して永続化
+            installedVersions.put(pkg.id, pkg.version);
+            saveInstalledVersions();
+
+            statusMessage = pkg.name + (wasRunning ? " updated!" : " installed!");
             downloadingAppIds.remove(pkg.id);
+            refreshHomeScreens();
 
             // 3秒後にステータスメッセージを消す（非ブロッキング）
             scheduler.schedule(() -> {
-                if (statusMessage != null && statusMessage.contains("installed")) {
+                if (statusMessage != null && (statusMessage.contains("installed") || statusMessage.contains("updated"))) {
                     statusMessage = null;
                 }
             }, 3, TimeUnit.SECONDS);
@@ -517,16 +575,95 @@ public class AppStoreScreen implements Screen {
             if (kernel.getNotificationManager() != null) {
                 kernel.getNotificationManager().addNotification(
                     "App Store",
-                    "Installed",
-                    pkg.name + " has been installed successfully.",
+                    wasRunning ? "Updated" : "Installed",
+                    pkg.name + (wasRunning ? " has been updated and restarted." : " has been installed successfully."),
                     1
                 );
             }
-            
+
         } catch (Exception e) {
             errorMessage = "Installation failed: " + e.getMessage();
             downloadingAppIds.remove(pkg.id);
             statusMessage = null;
+        }
+    }
+
+    /**
+     * インストール後にホーム画面のアプリ一覧を更新する。
+     */
+    private void refreshHomeScreens() {
+        if (kernel == null || kernel.getScreenManager() == null) {
+            return;
+        }
+        try {
+            for (Screen screen : kernel.getScreenManager().getAllScreens()) {
+                if (screen instanceof jp.moyashi.phoneos.core.apps.launcher.ui.HomeScreen) {
+                    ((jp.moyashi.phoneos.core.apps.launcher.ui.HomeScreen) screen).refreshApps();
+                }
+            }
+        } catch (Exception e) {
+            // Ignore refresh errors to avoid blocking installation UX
+        }
+    }
+
+    /**
+     * VFSからインストール済みバージョン情報を読み込む。
+     */
+    private void loadInstalledVersions() {
+        try {
+            if (!kernel.getVFS().fileExists(INSTALLED_VERSIONS_PATH)) {
+                return;
+            }
+
+            String json = kernel.getVFS().readFile(INSTALLED_VERSIONS_PATH);
+            if (json == null || json.trim().isEmpty()) {
+                return;
+            }
+
+            json = json.trim();
+            if (json.startsWith("{") && json.endsWith("}")) {
+                json = json.substring(1, json.length() - 1).trim();
+                if (!json.isEmpty()) {
+                    String[] entries = json.split(",");
+                    for (String entry : entries) {
+                        String[] keyValue = entry.split(":");
+                        if (keyValue.length == 2) {
+                            String key = keyValue[0].trim().replace("\"", "");
+                            String value = keyValue[1].trim().replace("\"", "");
+                            installedVersions.put(key, value);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            LoggerContext.error("AppStoreScreen", "Error loading installed versions: " + e.getMessage());
+        }
+    }
+
+    /**
+     * インストール済みバージョン情報をVFSに保存する。
+     */
+    private void saveInstalledVersions() {
+        try {
+            if (!kernel.getVFS().directoryExists("system")) {
+                kernel.getVFS().createDirectory("system");
+            }
+
+            StringBuilder json = new StringBuilder();
+            json.append("{\n");
+            boolean first = true;
+            for (Map.Entry<String, String> entry : installedVersions.entrySet()) {
+                if (!first) {
+                    json.append(",\n");
+                }
+                json.append("  \"").append(entry.getKey()).append("\": \"").append(entry.getValue()).append("\"");
+                first = false;
+            }
+            json.append("\n}");
+
+            kernel.getVFS().writeFile(INSTALLED_VERSIONS_PATH, json.toString());
+        } catch (Exception e) {
+            LoggerContext.error("AppStoreScreen", "Error saving installed versions: " + e.getMessage());
         }
     }
 

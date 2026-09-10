@@ -1,6 +1,7 @@
 package jp.moyashi.phoneos.core.service.chromium.interceptor;
 
 import jp.moyashi.phoneos.core.Kernel;
+import jp.moyashi.phoneos.core.service.chromium.texture.TextureSchemeHandler;
 import org.cef.browser.CefBrowser;
 import org.cef.browser.CefFrame;
 import org.cef.callback.CefSchemeHandlerFactory;
@@ -87,6 +88,12 @@ public class IPvMSchemeHandlerFactory implements CefSchemeHandlerFactory {
 
             if (host == null || host.isEmpty()) {
                 return null;
+            }
+
+            // 特殊: クライアント側テクスチャハンドラー（VirtualNetworkを経由しない）
+            if ("3-texture".equals(host)) {
+                log("3-texture detected, returning TextureSchemeHandler: " + url);
+                return new TextureSchemeHandler(kernel);
             }
 
             // IPvMアドレスパターンにマッチするか確認

@@ -323,26 +323,37 @@ public class ResourceManager {
      * @return 読み込まれたPImage
      */
     public PImage loadImage(String imagePath) {
-        // キャッシュを確認
+        // Cache first
         if (imageCache.containsKey(imagePath)) {
             return imageCache.get(imagePath);
         }
 
-        if (applet == null) {
-            logger.warning("Cannot load image without PApplet");
-            return null;
+        PImage image = null;
+
+        boolean canUseApplet = applet != null;
+        boolean hasSketchPath = false;
+        if (canUseApplet) {
+            try {
+                hasSketchPath = applet.sketchPath() != null;
+            } catch (Exception e) {
+                hasSketchPath = false;
+            }
         }
 
         try {
-            // 1. Processing標準のloadImageを試す
-            PImage image = applet.loadImage(imagePath);
-            
-            // 2. 失敗した場合はクラスパスからの読み込みを試みる
+            // Try Processing loadImage only when sketchPath is ready
+            if (canUseApplet && hasSketchPath) {
+                image = applet.loadImage(imagePath);
+            } else if (loggerService != null) {
+                loggerService.debug("ResourceManager", "Skipping applet.loadImage (sketchPath not ready), trying classpath for " + imagePath);
+            }
+
+            // Fallback to classpath
             if (image == null || image.width <= 0) {
                 if (loggerService != null) {
                     loggerService.debug("ResourceManager", "applet.loadImage failed for " + imagePath + ", trying classpath fallback");
                 }
-                
+
                 String resourcePath = imagePath.startsWith("/") ? imagePath : "/" + imagePath;
                 try (InputStream is = getClass().getResourceAsStream(resourcePath)) {
                     if (is != null) {
@@ -354,7 +365,7 @@ public class ResourceManager {
                             }
                         }
                     } else {
-                        // context class loaderも試す
+                        // Try context class loader
                         try (InputStream isContext = Thread.currentThread().getContextClassLoader().getResourceAsStream(resourcePath.substring(1))) {
                             if (isContext != null) {
                                 BufferedImage bimg = ImageIO.read(isContext);
@@ -373,10 +384,10 @@ public class ResourceManager {
             if (image != null && image.width > 0) {
                 imageCache.put(imagePath, image);
                 return image;
-            } else {
-                logger.warning("Failed to load image from all sources: " + imagePath);
-                return null;
             }
+
+            logger.warning("Failed to load image from all sources: " + imagePath);
+            return null;
         } catch (Exception e) {
             logger.warning("Failed to load image: " + imagePath + " - " + e.getMessage());
             return null;

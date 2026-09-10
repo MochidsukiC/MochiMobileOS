@@ -181,6 +181,25 @@ public class LockScreen implements Screen, GestureListener {
         this.patternAnimating = false;
     }
 
+    /**
+     * ロック画面の状態をリセットする。
+     * シングルトンインスタンスの再利用時に呼び出される。
+     */
+    public void resetState() {
+        currentPattern.clear();
+        dragPath.clear();
+        isDragging = false;
+        authFeedback = AuthFeedback.NONE;
+        patternHighlighted = false;
+        patternInputVisible = false;
+        patternSlideProgress = 0.0f;
+        patternAnimating = false;
+        notificationScrollOffset = 0.0f;
+        isScrollingNotifications = false;
+        notificationScrollVelocity = 0.0f;
+        isNotificationDragScrolling = false;
+    }
+
     private void debugGesture(String message) {
         // Debug logging disabled
     }
@@ -1238,6 +1257,20 @@ public class LockScreen implements Screen, GestureListener {
     private void unlockAndNavigateToHome() {
         // OSをアンロック状態にする
         lockManager.unlock();
+
+        // ペンディングURLがある場合はブラウザで開く
+        String pendingUrl = kernel.consumePendingUrlAfterUnlock();
+        if (pendingUrl != null) {
+            try {
+                kernel.getScreenManager().popScreen();
+                jp.moyashi.phoneos.core.apps.chromiumbrowser.ChromiumBrowserScreen browserScreen =
+                    new jp.moyashi.phoneos.core.apps.chromiumbrowser.ChromiumBrowserScreen(kernel, pendingUrl);
+                kernel.getScreenManager().pushScreen(browserScreen);
+                return;
+            } catch (Exception e) {
+                // ブラウザ起動に失敗した場合はホーム画面にフォールバック
+            }
+        }
 
         // LauncherAppのホーム画面に遷移
         try {

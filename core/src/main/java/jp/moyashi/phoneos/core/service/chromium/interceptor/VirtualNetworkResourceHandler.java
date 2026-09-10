@@ -7,6 +7,7 @@ import jp.moyashi.phoneos.core.service.network.NetworkException;
 import jp.moyashi.phoneos.core.service.network.NetworkStatus;
 import jp.moyashi.phoneos.core.service.network.VirtualAdapter;
 import jp.moyashi.phoneos.core.service.network.VirtualSocket;
+import jp.moyashi.phoneos.core.service.chromium.texture.TextureProvider;
 import org.cef.callback.CefCallback;
 import org.cef.handler.CefResourceHandlerAdapter;
 import org.cef.misc.IntRef;
@@ -48,6 +49,17 @@ public class VirtualNetworkResourceHandler extends CefResourceHandlerAdapter {
     private String redirectUrl = null;
 
     private static final int TIMEOUT_SECONDS = 10;
+    private static final byte[] FALLBACK_TEXTURE = new byte[]{
+        (byte)0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
+        0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
+        0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+        0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, (byte)0xC4,
+        (byte)0x89, 0x00, 0x00, 0x00, 0x0A, 0x49, 0x44, 0x41,
+        0x54, 0x78, (byte)0x9C, 0x62, 0x00, 0x00, 0x00, 0x02,
+        0x00, 0x01, (byte)0xE5, 0x27, (byte)0xDE, (byte)0xFC, 0x00, 0x00,
+        0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, (byte)0xAE, 0x42,
+        0x60, (byte)0x82
+    };
 
     /**
      * VirtualNetworkResourceHandlerを構築する。
@@ -76,6 +88,11 @@ public class VirtualNetworkResourceHandler extends CefResourceHandlerAdapter {
     public boolean processRequest(CefRequest request, CefCallback callback) {
         log("processRequest() ENTER - url: " + originalUrl);
         log("Processing virtual network request: " + originalUrl);
+
+        // 3-texture は常にクライアント側でローカル解決（サーバーへは送らない）
+        if ("3-texture".equals(ipvmAddressStr)) {
+            return handleTextureRequest(callback);
+        }
 
         // NetworkAdapterの取得
         NetworkAdapter networkAdapter = kernel.getNetworkAdapter();
@@ -194,6 +211,49 @@ public class VirtualNetworkResourceHandler extends CefResourceHandlerAdapter {
         log("sendHttpRequestSync: callback.Continue() returned");
     }
 
+    private boolean handleTextureRequest(CefCallback callback) {
+        String texturePath = (path != null) ? path : "";
+        if (texturePath.startsWith("/")) {
+            texturePath = texturePath.substring(1);
+        }
+
+        int slash = texturePath.indexOf('/');
+        if (slash <= 0 || slash >= texturePath.length() - 1) {
+            logError("Invalid texture path: " + texturePath);
+            setBinaryResponse(FALLBACK_TEXTURE, "image/png", 200);
+            callback.Continue();
+            return true;
+        }
+
+        String namespace = texturePath.substring(0, slash);
+        String itemPath = texturePath.substring(slash + 1);
+
+        TextureProvider provider = kernel.getTextureProvider();
+        if (provider == null) {
+            logError("TextureProvider not available for " + namespace + ":" + itemPath);
+            setBinaryResponse(FALLBACK_TEXTURE, "image/png", 200);
+            callback.Continue();
+            return true;
+        }
+
+        try {
+            byte[] textureData = provider.getItemTexture(namespace, itemPath);
+            if (textureData != null && textureData.length > 0) {
+                setBinaryResponse(textureData, "image/png", 200);
+                log("Texture loaded: " + namespace + ":" + itemPath + " (" + textureData.length + " bytes)");
+            } else {
+                logError("Texture not found: " + namespace + ":" + itemPath);
+                setBinaryResponse(FALLBACK_TEXTURE, "image/png", 200);
+            }
+        } catch (Exception e) {
+            logError("Texture load failed: " + e.getMessage());
+            setBinaryResponse(FALLBACK_TEXTURE, "image/png", 200);
+        }
+
+        callback.Continue();
+        return true;
+    }
+
     /**
      * 成功レスポンスを設定する。
      *
@@ -214,6 +274,13 @@ public class VirtualNetworkResourceHandler extends CefResourceHandlerAdapter {
         redirectUrl = null;
 
         log("Set success response (length: " + responseData.length + " bytes, mimeType: " + mimeType + ")");
+    }
+
+    private void setBinaryResponse(byte[] data, String contentType, int code) {
+        responseData = (data != null) ? data : new byte[0];
+        statusCode = code;
+        mimeType = (contentType != null && !contentType.isEmpty()) ? contentType : "application/octet-stream";
+        redirectUrl = null;
     }
 
     /**

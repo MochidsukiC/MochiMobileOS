@@ -508,6 +508,25 @@ public class ChromiumBrowserScreen implements Screen {
     public void onForeground() {
         // Re-inject media detection when coming back to foreground
         lastMediaUrl = "";
+
+        // TabListScreenからのタブ切り替えを同期する
+        // TabListScreenはChromiumService.setActiveSurface()でグローバルなアクティブサーフェスを更新するが、
+        // ChromiumBrowserScreenは独自のactiveTabSurfaceIdを持つため、ここで同期する
+        if (kernel != null && kernel.getChromiumService() != null) {
+            Optional<ChromiumSurface> globalActive = kernel.getChromiumService().getActiveSurface();
+            if (globalActive.isPresent()) {
+                String globalActiveId = globalActive.get().getSurfaceId();
+                if (myTabSurfaceIds.contains(globalActiveId)) {
+                    activeTabSurfaceId = globalActiveId;
+                }
+            }
+            // 閉じられたタブをmyTabSurfaceIdsから除去する
+            myTabSurfaceIds.removeIf(id -> kernel.getChromiumService().findSurface(id).isEmpty());
+            // アクティブタブが閉じられていた場合、残っているタブに切り替える
+            if (activeTabSurfaceId != null && !myTabSurfaceIds.contains(activeTabSurfaceId)) {
+                activeTabSurfaceId = myTabSurfaceIds.isEmpty() ? null : myTabSurfaceIds.get(0);
+            }
+        }
     }
 
     @Override
